@@ -9,7 +9,12 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { FormField } from '@app/components/transactions/send/FormField.tsx';
-import type { InputName, SendInputs } from '@app/components/transactions/send/types.ts';
+import {
+    commandErrorMessage,
+    sendErrorKey,
+    type InputName,
+    type SendInputs,
+} from '@app/components/transactions/send/types.ts';
 import type { SendStatus } from '@app/components/transactions/send/SendModal.tsx';
 import {
     BottomWrapper,
@@ -25,7 +30,6 @@ import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/P
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { setError as setStoreError } from '@app/store';
-import { PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { isMainNet } from '@app/utils/network.ts';
 import { FormatPreset, formatNumber } from '@app/utils/formatters.ts';
@@ -43,6 +47,8 @@ interface BurnReceipt {
     tx_id: string;
     output_hash: string;
     proof_file: string;
+    /** False when the node hasn't accepted the burn yet; it is recorded and retried automatically. */
+    accepted_by_node: boolean;
 }
 
 const CLAIM_KEY_RE = /^[0-9a-fA-F]{64}$/;
@@ -167,16 +173,13 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                 setStatus('completed');
             } catch (error) {
                 // Same outcomes as a send: the backend's PIN / confirmation gate said no.
-                const message = `${error}`;
-                const wasCancelled = PIN_CANCELLED_RE.test(message);
-                const timedOut = /timed out waiting for confirmation/i.test(message);
-                if (wasCancelled || timedOut) {
-                    setError('root.invoke_error', {
-                        message: wasCancelled ? t('send.error-denied') : t('send.error-timeout'),
-                    });
+                const knownKey = sendErrorKey(error);
+                if (knownKey) {
+                    setError('root.invoke_error', { message: t(knownKey) });
                 } else {
-                    setStoreError(`${t('burn.error-message')}${error}`);
-                    setError('root.invoke_error', { message: `${t('burn.error-message')}${error}` });
+                    const message = commandErrorMessage(error);
+                    setStoreError(`${t('burn.error-message')}${message}`);
+                    setError('root.invoke_error', { message: `${t('burn.error-message')}${message}` });
                 }
                 setStatus('fields');
             }
@@ -250,6 +253,15 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                                 ) : (
                                     <StatusHero icon={<CompletedIcon />} title={t('burn.completed-title')}>
                                         {t('burn.completed-text')}
+                                        {receipt?.accepted_by_node === false && (
+                                            <>
+                                                <br />
+                                                <br />
+                                                <span data-testid="burn-not-accepted">
+                                                    {t('send.not-accepted-yet')}
+                                                </span>
+                                            </>
+                                        )}
                                     </StatusHero>
                                 )}
                                 <StatusList entries={statusEntries} />

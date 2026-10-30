@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 
 vi.mock('@tauri-apps/api/window', () => ({
@@ -10,6 +10,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 
 import { L2_UNAVAILABLE, TappletSigner, TappletSignerRejection } from './TappletSigner';
 import { useWalletStore } from '@app/store/useWalletStore';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { initialState as l2StoreInitialState, useL2WalletStore } from '@app/store/useL2WalletStore';
 import { L2WalletState } from '@app/types/events-payloads';
 
@@ -43,6 +44,31 @@ describe('TappletSigner.runOne', () => {
                 paymentId: 'bridge-1',
             });
             expect(result).toBe(true);
+        });
+
+        it('tells the user when the node has not accepted a bridge send yet', async () => {
+            useToastStore.setState({ toasts: [] });
+            (invoke as unknown as Mock<() => Promise<unknown>>).mockResolvedValueOnce({
+                accepted_by_node: false,
+            });
+
+            const result = await signer.runOne('sendOneSided', [{ amount: '100', address: 'tari-address' }]);
+
+            expect(result).toBe(true);
+            expect(useToastStore.getState().toasts).toEqual([
+                expect.objectContaining({ title: 'send.not-accepted-yet', type: 'warning' }),
+            ]);
+        });
+
+        it('shows no notice when the node accepted a bridge send', async () => {
+            useToastStore.setState({ toasts: [] });
+            (invoke as unknown as Mock<() => Promise<unknown>>).mockResolvedValueOnce({
+                accepted_by_node: true,
+            });
+
+            await signer.runOne('sendOneSided', [{ amount: '100', address: 'tari-address' }]);
+
+            expect(useToastStore.getState().toasts).toEqual([]);
         });
 
         it('accepts sendOneSided without a payment id', async () => {

@@ -131,6 +131,7 @@ export default function McpTransactionDialog() {
                                 destination={pending.destination}
                                 paymentId={pending.payment_id}
                                 subtitle={t('wallet:send.confirm-subtitle')}
+                                abandon={pending}
                             />
                             <Button
                                 type="submit"

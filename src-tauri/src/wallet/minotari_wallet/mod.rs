@@ -33,6 +33,30 @@ pub struct BurnReceipt {
     pub output_hash: String,
     /// Where the complete L2 claim proof will be written once the burn is mined.
     pub proof_file: String,
+    /// False when the node hasn't accepted the burn yet. It is recorded either way and
+    /// rebroadcast automatically, so it must not be burned again.
+    pub accepted_by_node: bool,
+}
+
+/// A send or burn the node keeps refusing (stalled), which the user may abandon.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct StalledTransaction {
+    /// A string: a u64 doesn't always fit a JavaScript number.
+    pub tx_id: String,
+    /// µT sent or burned.
+    pub amount: u64,
+    /// Hex commitment when it is a burn: burns are listed by it, not by transaction id.
+    pub burn_commitment: Option<String>,
+}
+
+/// What the UI gets back from a send. A send is recorded whether or not the node
+/// accepted it; one it hasn't accepted yet is rebroadcast automatically and must not
+/// be sent again.
+#[derive(Debug, Clone, Serialize)]
+pub struct SendReceipt {
+    /// The send's transaction id, as a string: a u64 doesn't always fit a JavaScript number.
+    pub tx_id: String,
+    pub accepted_by_node: bool,
 }
 
 use crate::configs::config_core::ConfigCore;
@@ -48,21 +72,22 @@ use crate::{
         balance_tracker::BalanceTracker,
         database_manager::MinotariWalletDatabaseManager,
         transaction::{
-            CONFIRMATION_WINDOW, TransactionManager, UTXO_LOCK_DURATION_SECS,
+            CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM, TransactionManager, UTXO_LOCK_DURATION_SECS,
             parse_destination_address,
         },
     },
 };
+use anyhow::Context;
 use log::{error, info, warn};
 use minotari_wallet::{
     DisplayedTransaction, PauseReason, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
     db::{
-        AccountBalance, AccountRow, DbBurnProof, get_account_by_name,
-        get_displayed_transactions_needing_confirmation_update,
-        get_latest_scanned_tip_block_by_account, get_pending_burn_proofs,
-        mark_completed_transaction_as_broadcasted, mark_completed_transaction_as_rejected,
-        update_displayed_transaction_confirmations,
+        AccountBalance, AccountRow, CompletedTransactionStatus, DbBurnProof, fetch_unspent_outputs,
+        get_account_by_name, get_change_output_hash_for_request,
+        get_completed_transactions_by_status, get_displayed_transaction_by_id,
+        get_displayed_transactions_by_status, get_latest_scanned_tip_block_by_account,
+        get_output_spend, get_pending_burn_proofs,
     },
     get_balance,
     http::WalletHttpClient,
@@ -70,8 +95,12 @@ use minotari_wallet::{
     tasks::{burn_proof_worker::BurnProofWorker, unlocker::TransactionUnlocker},
     transactions::{
         TransactionDisplayStatus, TransactionSource,
+        abandon::{ABANDONED_REASON, abandon_send},
         burn::{BurnTxParams, BurnTxResult, create_burn_tx, persist_burn_records},
-        one_sided_transaction::Recipient,
+        fee_estimator::estimated_output_size_for_payment_id,
+        manager::record_first_broadcast,
+        monitor::MAX_BROADCAST_ATTEMPTS,
+        one_sided_transaction::{Recipient, check_memos_and_estimate_output_size},
     },
     utils::{
         crypto::{encrypt_data, parse_claimable_public_key_hex},
@@ -92,9 +121,11 @@ use std::{
     time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
-use tari_common_types::transaction::TxId;
-use tari_transaction_components::rpc::models::TxSubmissionResponse;
-use tari_transaction_components::tari_amount::MicroMinotari as WalletMicroMinotari;
+use tari_common_types::{tari_address::TariAddress, transaction::TxId};
+use tari_transaction_components::fee::Fee;
+use tari_transaction_components::tari_amount::MicroMinotari;
+use tari_transaction_components::transaction_components::{MAX_TRANSACTION_INPUTS, Transaction};
+use tari_transaction_components::weight::TransactionWeight;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -118,7 +149,7 @@ pub(crate) async fn base_node_http_url() -> Result<String, anyhow::Error> {
     Ok(app_state.node_manager.get_http_api_url().await)
 }
 
-/// Use the app's configured network for the wallet and destination address checks.
+/// The network the minotari wallet sends, burns and scans on: the app's own.
 pub(crate) fn wallet_network() -> Network {
     Network::get_current_or_user_setting_or_default()
 }
@@ -149,9 +180,13 @@ pub struct MinotariWalletManager {
     owner_tari_address: RwLock<Option<String>>,
     /// Indicates if initial sync is complete (first Completed event received)
     initial_sync_complete: AtomicBool,
-    /// Stores pending transactions by their sent_output_hashes for matching with scanned transactions
-    /// Key: comma-separated sorted output hashes, Value: DisplayedTransaction
-    pending_transactions: RwLock<HashMap<TxId, DisplayedTransaction>>,
+    /// Coinbases the scan has already shown. The monitor re-sends a coinbase on every
+    /// status change, and only the first sighting may be reported as a block won.
+    seen_coinbases: RwLock<HashSet<TxId>>,
+    /// History entries the UI has been told were reorganized. A Partial scan rolls a reorg
+    /// back at the start of its cycle without emitting `ReorgDetected`, so every cycle
+    /// compares the database's reorganized entries with this.
+    reorged_ids: RwLock<HashSet<TxId>>,
     last_progress_emit_time: RwLock<Instant>,
     unlocker_handle: RwLock<Option<JoinHandle<Result<(), anyhow::Error>>>>,
     burn_proof_handle: RwLock<Option<JoinHandle<Result<(), anyhow::Error>>>>,
@@ -171,7 +206,8 @@ impl MinotariWalletManager {
             owner_tari_address: RwLock::new(None),
             last_scanned_height: RwLock::new(0),
             initial_sync_complete: AtomicBool::new(false),
-            pending_transactions: RwLock::new(HashMap::new()),
+            seen_coinbases: RwLock::new(HashSet::new()),
+            reorged_ids: RwLock::new(HashSet::new()),
             last_progress_emit_time: RwLock::new(
                 Instant::now() - Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS),
             ),
@@ -215,7 +251,7 @@ impl MinotariWalletManager {
         amount: u64,
         payment_id: Option<String>,
         pin_context: Option<PinPromptContext>,
-    ) -> Result<DisplayedTransaction, anyhow::Error> {
+    ) -> Result<SendReceipt, anyhow::Error> {
         if amount == 0 {
             return Err(anyhow::anyhow!(
                 "Transaction amount must be greater than zero"
@@ -254,11 +290,7 @@ impl MinotariWalletManager {
             payment_id,
         };
 
-        log::debug!(
-            target: LOG_TARGET,
-            "Creating one-sided transaction from {} to {} for amount {}",
-            tari_address, address, amount
-        );
+        log::debug!(target: LOG_TARGET, "Creating one-sided transaction");
         let unsigned_one_sided_transaction = transaction_manager
             .create_one_sided_transaction(recipient)
             .await?;
@@ -271,12 +303,11 @@ impl MinotariWalletManager {
 
         info!("Finalizing and broadcasting one-sided transaction...");
 
-        let displayed_transaction = transaction_manager
+        let sent = transaction_manager
             .finalize_one_sided_transaction(signed_transaction)
             .await?;
-
-        // Store as pending transaction for later matching with scanned transactions
-        Self::store_pending_transaction(&displayed_transaction).await;
+        let displayed_transaction = sent.displayed_transaction;
+        let tx_id = displayed_transaction.id.to_string();
 
         // Re-read the balance the database now reports rather than guessing at it: the
         // spent inputs are locked, so `available` already reflects the send, fee
@@ -288,10 +319,13 @@ impl MinotariWalletManager {
             .await;
 
         // Emit to frontend immediately so user sees the pending transaction
-        EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
+        EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction]).await;
 
         info!("One-sided transaction sent successfully.");
-        Ok(displayed_transaction)
+        Ok(SendReceipt {
+            tx_id,
+            accepted_by_node: sent.accepted_by_node,
+        })
     }
 
     /// Burn `amount` µT so it can be claimed on L2 by `claim_public_key`.
@@ -346,13 +380,19 @@ impl MinotariWalletManager {
         };
         drop(signing_wallet);
 
+        // Everything that can fail happens before the burn is recorded: once
+        // `persist_burn_records` commits, the monitor broadcasts it, so an error after
+        // that would invite the user to burn again.
+        let proofs_dir = Self::burn_proofs_dir()?;
+        let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
+
         let idempotency_key = uuid::Uuid::new_v4().to_string();
         let params = BurnTxParams {
             account_id: account.id,
-            amount: WalletMicroMinotari::from(amount),
+            amount: MicroMinotari::from(amount),
             claim_public_key: Some(claim_key),
             sidechain_deployment_key: None,
-            fee_per_gram: WalletMicroMinotari::from(5u64),
+            fee_per_gram: MicroMinotari::from(SEND_FEE_PER_GRAM),
             payment_id,
             idempotency_key: Some(idempotency_key.clone()),
             seconds_to_lock: UTXO_LOCK_DURATION_SECS,
@@ -365,11 +405,11 @@ impl MinotariWalletManager {
             &password,
             params,
         )
-        .map_err(|e| anyhow::anyhow!("Failed to build burn transaction: {e}"))?;
+        .context("Failed to build burn transaction")?;
         // Proof first, broadcast second: a burn whose proof is lost is money gone for good.
         persist_burn_records(&mut conn, &result, account.id, &idempotency_key)?;
 
-        let proof_file = Self::burn_proofs_dir()?.join(format!(
+        let proof_file = proofs_dir.join(format!(
             "{}-{}.json",
             result.new_burn_proof.claim_public_key,
             hex::encode(&result.new_burn_proof.commitment)
@@ -382,18 +422,23 @@ impl MinotariWalletManager {
             ..
         } = result;
 
-        let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
         let submitted = client.submit_transaction(transaction).await;
-        record_burn_broadcast(&conn, tx_id, submitted)?;
+        // A burn the node refused, or that got no answer, stays completed with its inputs
+        // locked: the monitor rebroadcasts it, and only the scan (or an abandon) rejects it.
+        let accepted_by_node =
+            record_first_broadcast(Some(&conn), tx_id, submitted).accepted_by_node;
         drop(conn);
-        crate::airdrop::report_burn(serde_json::json!({
-            "txId": tx_id.to_string(),
-            "commitment": hex::encode(&new_burn_proof.commitment),
-            "excessSigNonce": hex::encode(&new_burn_proof.kernel_excess_nonce),
-            "excessSig": hex::encode(&new_burn_proof.kernel_excess_sig),
-            "amountMicroMinotari": amount,
-        }))
-        .await;
+        // Only node-accepted burns are reported, as before the broadcast was inlined.
+        if accepted_by_node {
+            crate::airdrop::report_burn(serde_json::json!({
+                "txId": tx_id.to_string(),
+                "commitment": hex::encode(&new_burn_proof.commitment),
+                "excessSigNonce": hex::encode(&new_burn_proof.kernel_excess_nonce),
+                "excessSig": hex::encode(&new_burn_proof.kernel_excess_sig),
+                "amountMicroMinotari": amount,
+            }))
+            .await;
+        }
 
         BalanceTracker::current()
             .update_from_transactions(Self::get_latest_account_balance().await)
@@ -404,6 +449,7 @@ impl MinotariWalletManager {
             tx_id: tx_id.to_string(),
             output_hash: hex::encode(output_hash),
             proof_file: proof_file.to_string_lossy().into_owned(),
+            accepted_by_node,
         })
     }
 
@@ -430,8 +476,10 @@ impl MinotariWalletManager {
         pending_burns_guard(Path::new(&MinotariWalletDatabaseManager::database_path()?))
     }
 
-    /// Burns broadcast but not yet mined deep enough for their claim proof to be written.
-    pub async fn pending_burns() -> Result<Vec<DbBurnProof>, anyhow::Error> {
+    /// Burns broadcast but not yet mined deep enough for their claim proof to be written,
+    /// each with whether the user abandoned it (it may yet be mined, but isn't simply
+    /// waiting any more).
+    pub async fn pending_burns() -> Result<Vec<(DbBurnProof, bool)>, anyhow::Error> {
         pending_burns(&*Self::get_db_connection().await?)
     }
 
@@ -472,37 +520,6 @@ impl MinotariWalletManager {
         Ok(())
     }
 
-    /// Store a pending transaction for later matching with scanned transactions
-    async fn store_pending_transaction(tx: &DisplayedTransaction) {
-        let mut pending = INSTANCE.pending_transactions.write().await;
-        pending.insert(tx.id, tx.clone());
-        info!(
-            target:
-            LOG_TARGET,
-            "Stored pending transaction with id: {}", tx.id
-        );
-    }
-
-    /// Try to find and remove a pending transaction that matches the given output hashes
-    /// Returns the pending transaction if found
-    async fn match_and_remove_pending_transaction(tx_id: &TxId) -> Option<DisplayedTransaction> {
-        let mut pending = INSTANCE.pending_transactions.write().await;
-        let result = pending.remove(tx_id);
-        if result.is_some() {
-            info!(
-                target: LOG_TARGET,
-                "Matched and removed pending transaction with id: {}", tx_id
-            );
-        }
-        result
-    }
-
-    /// Clear all pending transactions (e.g., on wallet import)
-    pub async fn clear_pending_transactions() {
-        let mut pending = INSTANCE.pending_transactions.write().await;
-        pending.clear();
-    }
-
     /// Forget everything the previous wallet's scan produced so a refresh or an
     /// import starts from a blank slate instead of inheriting stale sync flags,
     /// progress heights, balance and pending sends.
@@ -511,7 +528,8 @@ impl MinotariWalletManager {
             .initial_sync_complete
             .store(false, Ordering::SeqCst);
         *INSTANCE.last_scanned_height.write().await = 0;
-        Self::clear_pending_transactions().await;
+        INSTANCE.seen_coinbases.write().await.clear();
+        INSTANCE.reorged_ids.write().await.clear();
         BalanceTracker::current().clear().await;
         EventsEmitter::emit_wallet_transactions_cleared().await;
         info!(target: LOG_TARGET, "Wallet scan state reset for rescan.");
@@ -594,6 +612,80 @@ impl MinotariWalletManager {
         get_latest_scanned_tip_block_by_account(&conn, account_id).map_err(|e| e.into())
     }
 
+    /// The largest amount a send to `address` carrying `payment_id` can have, in µT. The
+    /// output size is the one the library's selection charges for that send; an address
+    /// that doesn't parse yet embeds no payment ID.
+    pub async fn max_sendable_amount(
+        address: &str,
+        payment_id: Option<String>,
+    ) -> Result<u64, anyhow::Error> {
+        let payment_id = payment_id.filter(|id| !id.is_empty());
+        let output_size = match parse_destination_address(address) {
+            Ok(destination) => check_memos_and_estimate_output_size(
+                &[Recipient {
+                    address: destination,
+                    amount: MicroMinotari::zero(),
+                    payment_id,
+                }],
+                &Self::get_owner_address().await?.parse::<TariAddress>()?,
+            )?,
+            Err(_) => estimated_output_size_for_payment_id(payment_id.map_or(0, |id| id.len()))?,
+        };
+        let account_id = Self::owner_account_id().await?;
+        let conn = Self::get_db_connection().await?;
+        max_sendable(&conn, account_id, output_size)
+    }
+
+    /// The sends and burns the node keeps refusing (stalled).
+    pub async fn stalled_transactions() -> Result<Vec<StalledTransaction>, anyhow::Error> {
+        let account_id = Self::owner_account_id().await?;
+        let conn = Self::get_db_connection().await?;
+        stalled_transactions(&conn, account_id)
+    }
+
+    /// Gives up stalled send or burn `tx_id` and releases its inputs. Only a stalled one
+    /// can be abandoned, and one without a change output only with
+    /// `accept_unreconcilable`. The PIN, when one is set, is asked for first.
+    pub async fn abandon_stalled_transaction(
+        tx_id: &str,
+        accept_unreconcilable: bool,
+        pin_context: Option<PinPromptContext>,
+    ) -> Result<(), anyhow::Error> {
+        let app_handle = INSTANCE
+            .app_handle
+            .read()
+            .await
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("App handle not set"))?;
+        // Only proves the PIN; nothing is signed.
+        drop(InternalWallet::get_tari_seed_with_prompt(&app_handle, pin_context).await?);
+
+        let id = tx_id
+            .parse::<u64>()
+            .map_err(|_| anyhow::anyhow!("Invalid transaction id '{tx_id}'"))?;
+        let account_id = Self::owner_account_id().await?;
+        let mut conn = Self::get_db_connection().await?;
+        // Never forced: one the node hasn't refused often enough is refused.
+        let abandoned = abandon_send(
+            &mut conn,
+            account_id,
+            id.into(),
+            false,
+            accept_unreconcilable,
+            None,
+        )?;
+        drop(conn);
+        info!(target: LOG_TARGET, "Transaction {tx_id} abandoned by the user.");
+
+        if let Some(tx) = abandoned.displayed_transaction {
+            EventsEmitter::emit_wallet_transaction_updated(tx).await;
+        }
+        BalanceTracker::current()
+            .update_from_transactions(Self::get_latest_account_balance().await)
+            .await;
+        Ok(())
+    }
+
     /// Get balance for the owner's account
     pub async fn get_account_balance() -> Result<AccountBalance, anyhow::Error> {
         let account_id = Self::owner_account_id().await?;
@@ -667,6 +759,14 @@ impl MinotariWalletManager {
                     "Loaded {} transactions from history (excluding reorged) via TransactionHistoryService", transactions.len()
                 );
 
+                // Coinbases already in the database were seen before this start.
+                INSTANCE.seen_coinbases.write().await.extend(
+                    transactions
+                        .iter()
+                        .filter(|tx| tx.source == TransactionSource::Coinbase)
+                        .map(|tx| tx.id),
+                );
+
                 // Emit transactions to frontend
                 EventsEmitter::emit_wallet_transactions_found(transactions).await;
             }
@@ -703,18 +803,24 @@ impl MinotariWalletManager {
             "Starting blockchain scan for Minotari wallet at database path: {}", database_path
         );
 
-        // Create cancellation token
-        let cancel_token = CancellationToken::new();
-        *INSTANCE.cancel_token.write().await = Some(cancel_token.clone());
-
-        // Get shutdown signal for graceful termination
+        // Everything that can fail comes before the token is stored: a token left behind with
+        // no shutdown listener to clear it would make every later start a no-op.
+        let db_password = CredentialManager::minotari_db_password().await?;
         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+        let cancel_token = CancellationToken::new();
+        {
+            let mut slot = INSTANCE.cancel_token.write().await;
+            if slot.is_some() {
+                return Ok(()); // Another start won the race since the check above.
+            }
+            *slot = Some(cancel_token.clone());
+        }
         let cancel_token_for_shutdown = cancel_token.clone();
         let cancel_token_for_scan = cancel_token.clone();
 
         let database_path_buf = PathBuf::from(database_path);
         let generation = INSTANCE.scan_generation.fetch_add(1, Ordering::SeqCst) + 1;
-        let db_password = CredentialManager::minotari_db_password().await?;
 
         // Tracked, not a bare `tokio::spawn`: `shutdown_phases(Wallet)` only awaits
         // tasks on this tracker, and a refresh/import deletes the database folder the
@@ -763,12 +869,12 @@ impl MinotariWalletManager {
                     // between available/locked/immature without a single transaction
                     // event, so the balance is re-read once per cycle regardless.
                     if generation == INSTANCE.scan_generation.load(Ordering::SeqCst) {
-                        Self::refresh_transaction_confirmations().await;
                         BalanceTracker::current()
                             .update_from_transactions(Self::get_latest_account_balance().await)
                             .await;
 
                         Self::restart_unlocker_if_dead().await;
+                        Self::announce_new_reorgs().await;
                     }
 
                     let caught_up = match result {
@@ -806,63 +912,42 @@ impl MinotariWalletManager {
         Ok(())
     }
 
-    /// Moves displayed transactions on from Unconfirmed once the scan is past their
-    /// confirmation depth, and tells the frontend about each one.
-    ///
-    /// The library's transaction monitor is meant to do this, but the unified scan
-    /// loop only calls it behind a condition that never holds, so on its own nothing
-    /// the wallet scans ever reads as Confirmed. The monitor is not used here because
-    /// it also counts confirmations for sends that have not been mined yet, whose
-    /// block height is still 0: "scanned height minus 0" marks a Pending send as
-    /// Confirmed, the scanner then no longer recognises it as pending when the mined
-    /// transaction arrives, and the history ends up with the send twice.
-    async fn refresh_transaction_confirmations() {
-        let scanned_height = *INSTANCE.last_scanned_height.read().await;
-        if scanned_height == 0 {
+    /// Tells the UI about history entries a reorg rolled back since the last cycle. Updates
+    /// only touch rows the UI already shows, so re-announcing old ones after a restart is
+    /// harmless.
+    async fn announce_new_reorgs() {
+        let reorged = match Self::reorganized_transactions().await {
+            Ok(reorged) => reorged,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Couldn't read reorganized transactions: {e:?}");
+                return;
+            }
+        };
+        let fresh_ids = newly_reorged(
+            &mut *INSTANCE.reorged_ids.write().await,
+            reorged.iter().map(|tx| tx.id),
+        );
+        let fresh: Vec<DisplayedTransaction> = reorged
+            .into_iter()
+            .filter(|tx| fresh_ids.contains(&tx.id))
+            .collect();
+        if fresh.is_empty() {
             return;
         }
-        let updated: Result<Vec<DisplayedTransaction>, anyhow::Error> = async {
-            let account_id = Self::owner_account_id().await?;
-            let conn = Self::get_db_connection().await?;
-            let mut updated = Vec::new();
-            for mut tx in get_displayed_transactions_needing_confirmation_update(&conn, account_id)?
-            {
-                // Not mined yet: it stays Pending until the scanner finds it in a block.
-                if tx.blockchain.block_height == 0 {
-                    continue;
-                }
-                let confirmations = scanned_height.saturating_sub(tx.blockchain.block_height);
-                if confirmations == tx.blockchain.confirmations {
-                    continue;
-                }
-                tx.blockchain.confirmations = confirmations;
-                tx.status = confirmation_status(
-                    confirmations,
-                    tx.lock_height.saturating_sub(scanned_height),
-                );
-                update_displayed_transaction_confirmations(&conn, &tx)?;
-                updated.push(tx);
-            }
-            Ok(updated)
+        info!(target: LOG_TARGET, "{} transactions were reorganized out of the chain", fresh.len());
+        for tx in fresh {
+            EventsEmitter::emit_wallet_transaction_updated(tx).await;
         }
-        .await;
-        match updated {
-            Ok(transactions) => {
-                if !transactions.is_empty() {
-                    info!(
-                        target: LOG_TARGET,
-                        "{} transactions updated against scanned height {scanned_height}",
-                        transactions.len()
-                    );
-                }
-                for tx in transactions {
-                    EventsEmitter::emit_wallet_transaction_updated(tx).await;
-                }
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Could not refresh transaction confirmations: {e:?}");
-            }
-        }
+    }
+
+    async fn reorganized_transactions() -> Result<Vec<DisplayedTransaction>, anyhow::Error> {
+        let account_id = Self::owner_account_id().await?;
+        let conn = Self::get_db_connection().await?;
+        Ok(get_displayed_transactions_by_status(
+            &conn,
+            account_id,
+            TransactionDisplayStatus::Reorganized,
+        )?)
     }
 
     async fn process_scan_events(
@@ -880,10 +965,8 @@ impl MinotariWalletManager {
                 ProcessingEvent::ScanStatus(status) => {
                     Self::handle_status_event(status).await;
                 }
-                // The library emits one of these per block. Its `ScanStatusEvent::Progress`
-                // never fires in continuous mode (the emit is behind a condition that
-                // cannot hold), so this is the only per-block signal during the initial
-                // scan and it drives the progress shown in the wallet.
+                // One per block, so progress moves within a batch; `ScanStatusEvent::Progress`
+                // only arrives once per batch.
                 ProcessingEvent::BlockProcessed(block_event) => {
                     Self::record_scanned_height(block_event.height).await;
                 }
@@ -896,26 +979,7 @@ impl MinotariWalletManager {
                         transaction_count
                     );
 
-                    // Process transactions - check each for pending transaction match
-                    let mut transactions_to_emit = Vec::new();
-
-                    for tx in transactions_event.transactions {
-                        info!(target: LOG_TARGET, "TransactionsReady event - TX id: {}, status: {:?}", tx.id, tx.status);
-
-                        // Check if this scanned transaction matches any pending transaction
-                        if let Some(_pending_tx) =
-                            Self::match_and_remove_pending_transaction(&tx.id).await
-                        {
-                            // Emit update event - the scanned transaction replaces the pending one
-                            info!(
-                                target: LOG_TARGET,
-                                "Found matching pending transaction for scanned tx: {}",
-                                tx.id
-                            );
-                        }
-
-                        transactions_to_emit.push(tx);
-                    }
+                    let mut transactions_to_emit = transactions_event.transactions;
 
                     // Update balance based on new transactions
                     if !transactions_to_emit.is_empty() {
@@ -979,16 +1043,17 @@ impl MinotariWalletManager {
     /// refresh/import rescan) walks the whole mining history, and reporting those
     /// blocks again would replay years of rewards to the airdrop API.
     async fn notify_blocks_won(transactions: &[DisplayedTransaction]) {
-        let coinbase_heights: Vec<u64> = transactions
+        let coinbases: Vec<(TxId, u64)> = transactions
             .iter()
             .filter(|tx| tx.source == TransactionSource::Coinbase)
-            .map(|tx| tx.blockchain.block_height)
+            .map(|tx| (tx.id, tx.blockchain.block_height))
             .collect();
         let allow_notifications = *ConfigCore::content().await.allow_notifications();
         let coinbase_heights = blocks_to_report(
+            &mut *INSTANCE.seen_coinbases.write().await,
             INSTANCE.initial_sync_complete.load(Ordering::SeqCst),
             allow_notifications,
-            coinbase_heights,
+            coinbases,
         );
         if coinbase_heights.is_empty() {
             return;
@@ -1078,10 +1143,19 @@ impl MinotariWalletManager {
                     *height = final_height;
                 }
 
-                // Mark initial sync as complete
+                // The library also reports Completed when the node's tip query fails or the
+                // node is behind, so only a scan that reached the tip counts as synced.
+                // Otherwise every older coinbase found later would be reported as a new win.
+                let tip_height = Self::get_chain_tip_height();
+                if !scan_reached_tip(final_height, tip_height) {
+                    warn!(
+                        target: LOG_TARGET_STATUSES,
+                        "Scan stopped at height {final_height}, short of the node tip {tip_height}; still syncing"
+                    );
+                    return;
+                }
                 INSTANCE.initial_sync_complete.store(true, Ordering::SeqCst);
 
-                let tip_height = Self::get_chain_tip_height();
                 EventsEmitter::emit_wallet_scanning_progress_update(
                     final_height,
                     if tip_height > 0 {
@@ -1107,8 +1181,8 @@ impl MinotariWalletManager {
                 );
             }
             ScanStatusEvent::MoreBlocksAvailable { .. } => {}
-            // Every cycle ends with `MaxBlocksReached`: the loop above starts the next
-            // one at once, so it is a progress marker, not a stall.
+            // A cycle that hit its block limit ends with `MaxBlocksReached` (a caught-up one
+            // with `Completed`): the loop starts the next at once, so it isn't a stall.
             ScanStatusEvent::Paused {
                 last_scanned_height,
                 reason: PauseReason::MaxBlocksReached { limit },
@@ -1177,10 +1251,16 @@ impl MinotariWalletManager {
         let wallet_dir = MinotariWalletDatabaseManager::minotari_wallet_dir()?;
         warn!(
             target: LOG_TARGET,
-            "Minotari wallet account cannot be decrypted with the stored password; removing {} and rescanning from the wallet birthday",
+            "Minotari wallet account cannot be decrypted with the stored password; discarding {} and rescanning from the wallet birthday",
             wallet_dir.display()
         );
-        tokio::fs::remove_dir_all(&wallet_dir).await?;
+        if let Some(aside) = discard_wallet_dir(&wallet_dir, Path::new(database_path))? {
+            warn!(
+                target: LOG_TARGET,
+                "It may hold the only proof of an unsettled burn to Layer 2, so it was moved to {} instead",
+                aside.display()
+            );
+        }
         Ok(())
     }
 
@@ -1287,20 +1367,24 @@ impl MinotariWalletManager {
     }
 }
 
-/// Coinbase heights worth reporting as blocks won. Nothing until the initial
-/// sync has caught up (a rescan would replay years of history), and nothing
+/// Coinbase heights worth reporting as blocks won. Each coinbase counts once, the
+/// first time it is seen, whether or not it is reported then. Nothing until the
+/// initial sync has caught up (a rescan would replay years of history), and nothing
 /// unless the user allows notifications: the report leaves the machine, as the
 /// pre-minotari path also required.
 fn blocks_to_report(
+    seen: &mut HashSet<TxId>,
     synced: bool,
     allow_notifications: bool,
-    coinbase_heights: Vec<u64>,
+    coinbases: Vec<(TxId, u64)>,
 ) -> Vec<u64> {
-    if synced && allow_notifications {
-        coinbase_heights
-    } else {
-        Vec::new()
+    let mut heights = Vec::new();
+    for (id, height) in coinbases {
+        if seen.insert(id) && synced && allow_notifications {
+            heights.push(height);
+        }
     }
+    heights
 }
 
 /// Scanned height as a percentage of the node's tip: the same ratio as the
@@ -1315,22 +1399,117 @@ fn scan_progress_percent(current_height: u64, tip_height: u64) -> f64 {
     ((current_height as f64 / tip_height as f64) * 100.0).min(100.0)
 }
 
-/// Display status for a mined transaction with `confirmations` blocks on top of it,
-/// the same rule the library's monitor applies: below the required depth it is
-/// Unconfirmed, at or past it Confirmed, unless `blocks_until_unlocked` says its
-/// outputs are still time-locked.
-fn confirmation_status(confirmations: u64, blocks_until_unlocked: u64) -> TransactionDisplayStatus {
-    if confirmations >= REQUIRED_CONFIRMATIONS {
-        if blocks_until_unlocked > 0 {
-            TransactionDisplayStatus::Locked
-        } else {
-            TransactionDisplayStatus::Confirmed
+/// The ids in `current` not in `known`, which then becomes `current`. An entry that leaves
+/// the reorganized set (re-mined) is announced again if it is reorganized again.
+fn newly_reorged(known: &mut HashSet<TxId>, current: impl Iterator<Item = TxId>) -> HashSet<TxId> {
+    let current: HashSet<TxId> = current.collect();
+    let fresh = current.difference(known).copied().collect();
+    *known = current;
+    fresh
+}
+
+/// Whether a scan that ended at `final_height` reached the node tip, allowing for blocks
+/// mined since it finished. An unknown tip (0) proves nothing.
+fn scan_reached_tip(final_height: u64, tip_height: u64) -> bool {
+    tip_height > 0 && final_height.saturating_add(REQUIRED_CONFIRMATIONS) >= tip_height
+}
+
+/// The largest amount a one-sided send whose outputs are `output_size` can carry: the spendable
+/// inputs, less the fee for a recipient and a change output and the smallest change
+/// the library's input selector accepts (what spending the change would cost, at
+/// least 1 µT). Uses the selector's fee terms so the result is exactly what
+/// `InputSelector::fetch_unspent_outputs` will select for; one µT more fails with
+/// `ChangeNotAffordable`.
+///
+/// This mirrors minotari's `minotari/src/transactions/input_selector.rs` at v0.5.2 (query,
+/// fee terms, minimum change, dust rule, input cap). Re-check it against that file on every
+/// minotari bump; `the_max_sendable_amount_sends_with_change_and_one_micro_tari_more_does_not`
+/// is the guard.
+fn max_sendable(
+    conn: &Connection,
+    account_id: i64,
+    output_size: usize,
+) -> Result<u64, anyhow::Error> {
+    let tip_height =
+        get_latest_scanned_tip_block_by_account(conn, account_id)?.map_or(0, |block| block.height);
+    let min_height = tip_height.saturating_sub(CONFIRMATION_WINDOW);
+    let outputs = fetch_unspent_outputs(conn, account_id, min_height, tip_height)?;
+
+    let fee_per_gram = MicroMinotari::from(SEND_FEE_PER_GRAM);
+    let fee = Fee::new(TransactionWeight::latest());
+    let kernel_fee = fee.calculate(fee_per_gram, 1, 0, 0, 0).as_u64();
+    let input_fee = fee.calculate(fee_per_gram, 0, 1, 0, 0).as_u64();
+    let output_fee = fee.calculate(fee_per_gram, 0, 0, 1, output_size).as_u64();
+    let min_change = input_fee.max(1);
+
+    // Outputs come largest first. One worth no more than its input fee only lowers
+    // the amount, and a transaction takes at most MAX_TRANSACTION_INPUTS inputs.
+    let mut inputs_value: u64 = 0;
+    for output in outputs.iter().take(MAX_TRANSACTION_INPUTS) {
+        let value = output.output.value().as_u64();
+        if value <= input_fee {
+            break;
         }
-    } else if confirmations > 0 {
-        TransactionDisplayStatus::Unconfirmed
-    } else {
-        TransactionDisplayStatus::Pending
+        inputs_value = inputs_value.saturating_add(value - input_fee);
     }
+
+    // Two outputs: the recipient's and the change.
+    let costs = kernel_fee
+        .saturating_add(output_fee.saturating_mul(2))
+        .saturating_add(min_change);
+    Ok(inputs_value.saturating_sub(costs))
+}
+
+/// Sends and burns not mined yet that the node has refused `MAX_BROADCAST_ATTEMPTS`
+/// times in a row: only these can be abandoned. A burn has no displayed transaction
+/// until it is mined, so its amount comes from its burn proof.
+fn stalled_transactions(
+    conn: &Connection,
+    account_id: i64,
+) -> Result<Vec<StalledTransaction>, anyhow::Error> {
+    let mut stalled_txs = Vec::new();
+    for status in [
+        CompletedTransactionStatus::Completed,
+        CompletedTransactionStatus::Broadcast,
+    ] {
+        for tx in get_completed_transactions_by_status(conn, account_id, status)? {
+            if tx.broadcast_attempts >= MAX_BROADCAST_ATTEMPTS {
+                stalled_txs.push(tx);
+            }
+        }
+    }
+    // Usually nothing is stalled: then nothing more is read.
+    if stalled_txs.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let burns = get_pending_burn_proofs(conn)?;
+    let mut stalled = Vec::new();
+    for tx in stalled_txs {
+        let burn = burns
+            .iter()
+            .find(|b| tx.sent_output_hash.as_deref() == Some(hex::encode(b.output_hash).as_str()));
+        let amount = match burn {
+            Some(b) => u64::try_from(b.value).ok(),
+            None => get_displayed_transaction_by_id(conn, &tx.id.to_string())?
+                .map(|d| d.amount.as_u64()),
+        };
+        // The abandon prompt shows this amount; without it the user would approve "0 XTM".
+        let Some(amount) = amount else {
+            warn!(
+                target: LOG_TARGET,
+                "Stalled transaction {} has no readable amount, so it isn't offered for abandoning",
+                tx.id
+            );
+            continue;
+        };
+        stalled.push(StalledTransaction {
+            tx_id: tx.id.to_string(),
+            amount,
+            burn_commitment: burn.map(|b| hex::encode(&b.commitment)),
+        });
+    }
+    Ok(stalled)
 }
 
 /// When each of the wallet's burns was made, unix seconds by commitment (hex).
@@ -1370,41 +1549,93 @@ fn move_legacy_burn_proofs(legacy: PathBuf, dir: PathBuf) -> PathBuf {
     }
 }
 
-/// Only an explicit rejection by the node marks the burn rejected. A transport error
-/// leaves it completed: the node may have it and mine it, and the scanner's monitor
-/// rebroadcasts it until it's mined or rejected. Until then it stays a pending burn.
-fn record_burn_broadcast(
-    conn: &Connection,
-    tx_id: TxId,
-    submitted: Result<TxSubmissionResponse, anyhow::Error>,
-) -> Result<(), anyhow::Error> {
-    match submitted {
-        Ok(r) if r.accepted => Ok(mark_completed_transaction_as_broadcasted(conn, tx_id, 1)?),
-        Ok(r) => {
-            let reason = r.rejection_reason.to_string();
-            mark_completed_transaction_as_rejected(conn, tx_id, &reason)?;
-            Err(anyhow::anyhow!("Burn rejected by network: {reason}"))
+/// Pending burn proofs, less those whose transaction can never be mined: one the scan
+/// rejected because its inputs were spent elsewhere, and one the user abandoned whose
+/// inputs the scan has since seen spent (by another transaction: the burn itself would
+/// have been marked mined by its change row). An abandoned burn with unspent inputs, or
+/// with no change row, still counts: a node may still mine it, and this database holds
+/// its only proof row. Each comes with whether the user abandoned it.
+fn pending_burns(conn: &Connection) -> Result<Vec<(DbBurnProof, bool)>, anyhow::Error> {
+    let mut stmt = conn.prepare(
+        "SELECT b.id, c.account_id, c.pending_tx_id, c.last_rejected_reason,
+                c.serialized_transaction
+           FROM burn_proofs b JOIN completed_transactions c
+             ON c.sent_output_hash = lower(hex(b.output_hash))
+          WHERE c.status = 'rejected'",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, i64>(0)?,
+            row.get::<_, i64>(1)?,
+            row.get::<_, String>(2)?,
+            row.get::<_, Option<String>>(3)?,
+            row.get::<_, Vec<u8>>(4)?,
+        ))
+    })?;
+    let mut dead = HashSet::new();
+    let mut abandoned = HashSet::new();
+    for row in rows {
+        let (id, account_id, pending_tx_id, reason, serialized_transaction) = row?;
+        let dead_burn = match reason.as_deref() {
+            // Without a change row (a burn from before this version) the scan can't
+            // tell it landing from its inputs going elsewhere, so it stays guarded.
+            Some(ABANDONED_REASON) => {
+                abandoned.insert(id);
+                get_change_output_hash_for_request(conn, &pending_tx_id)?.is_some()
+                    && any_input_spent(conn, account_id, &serialized_transaction)?
+            }
+            _ => true,
+        };
+        if dead_burn {
+            dead.insert(id);
         }
-        Err(e) => Err(anyhow::anyhow!(
-            "Couldn't confirm the burn reached the network ({e}). It may still go through, so check again later before burning again."
-        )),
     }
-}
-
-/// Pending burn proofs, less those whose transaction was rejected: a rejected burn is
-/// never mined, so it would sit pending forever.
-fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
-    let rejected: HashSet<i64> = conn
-        .prepare(
-            "SELECT b.id FROM burn_proofs b JOIN completed_transactions c
-               ON c.sent_output_hash = lower(hex(b.output_hash)) WHERE c.status = 'rejected'",
-        )?
-        .query_map([], |row| row.get(0))?
-        .collect::<Result<_, _>>()?;
     Ok(get_pending_burn_proofs(conn)?
         .into_iter()
-        .filter(|b| !rejected.contains(&b.id))
+        .filter(|b| !dead.contains(&b.id))
+        .map(|b| {
+            let was_abandoned = abandoned.contains(&b.id);
+            (b, was_abandoned)
+        })
         .collect())
+}
+
+/// Whether the scan has seen any input of this transaction spent on chain. One that
+/// can't be read counts as unspent, so its burn stays guarded.
+fn any_input_spent(
+    conn: &Connection,
+    account_id: i64,
+    serialized_transaction: &[u8],
+) -> Result<bool, anyhow::Error> {
+    let Ok(transaction) = serde_json::from_slice::<Transaction>(serialized_transaction) else {
+        return Ok(false);
+    };
+    for input in transaction.body().inputs() {
+        if get_output_spend(conn, account_id, &input.output_hash())?.is_some() {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+/// Deletes `wallet_dir`, unless its database may hold an unmined burn's proof (or can't be
+/// checked): then it is renamed beside itself and the new name returned, so the proof isn't lost.
+fn discard_wallet_dir(
+    wallet_dir: &Path,
+    database_path: &Path,
+) -> Result<Option<PathBuf>, std::io::Error> {
+    if pending_burns_guard(database_path).is_ok() {
+        std::fs::remove_dir_all(wallet_dir)?;
+        return Ok(None);
+    }
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    let mut name = wallet_dir.file_name().unwrap_or_default().to_os_string();
+    name.push(format!(".undecryptable-{secs}"));
+    let aside = wallet_dir.with_file_name(name);
+    std::fs::rename(wallet_dir, &aside)?;
+    Ok(Some(aside))
 }
 
 /// Reads the database file directly so the check works whether or not the wallet phase
@@ -1418,15 +1649,15 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
         .map_err(anyhow::Error::from)
         .and_then(|pool| pending_burns(&*pool.get()?))
         .map_err(|e| {
-            anyhow::anyhow!("Couldn't check for burns to Layer 2 waiting to be mined, so nothing was changed. Try again. ({e})")
+            anyhow::anyhow!("Couldn't check for unsettled burns to Layer 2, so nothing was changed. Try again. ({e})")
         })?;
     match pending.len() {
         0 => Ok(()),
         1 => Err(anyhow::anyhow!(
-            "1 burn to Layer 2 is still waiting to be mined. Try again once it's mined."
+            "1 burn to Layer 2 isn't settled yet (waiting to be mined or for its claim proof). This wallet holds the only proof needed to claim it, so it can't be reset or re-imported until it settles, which may need a later app update."
         )),
         n => Err(anyhow::anyhow!(
-            "{n} burns to Layer 2 are still waiting to be mined. Try again once they're mined."
+            "{n} burns to Layer 2 aren't settled yet (waiting to be mined or for their claim proofs). This wallet holds the only proofs needed to claim them, so it can't be reset or re-imported until they settle, which may need a later app update."
         )),
     }
 }
@@ -1434,10 +1665,187 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
 #[cfg(test)]
 mod tests {
     use super::{
-        blocks_to_report, burn_times, confirmation_status, move_legacy_burn_proofs, pending_burns,
-        pending_burns_guard, record_burn_broadcast, scan_progress_percent,
+        StalledTransaction, abandon_send, blocks_to_report, burn_times, discard_wallet_dir,
+        max_sendable, move_legacy_burn_proofs, newly_reorged, pending_burns, pending_burns_guard,
+        scan_progress_percent, scan_reached_tip, stalled_transactions,
     };
-    use minotari_wallet::transactions::TransactionDisplayStatus;
+    use crate::wallet::minotari_wallet::transaction::{CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM};
+    use minotari_wallet::db::{
+        SqlitePool, create_account, get_account_by_name, init_db, insert_input, insert_output,
+        insert_scanned_tip_block, insert_unconfirmed_change_output,
+        mark_completed_transaction_as_rejected_in_block, mark_output_confirmed,
+        update_output_status,
+    };
+    use minotari_wallet::models::OutputStatus;
+    use minotari_wallet::transactions::{
+        burn::{BurnTxParams, create_burn_tx},
+        input_selector::UtxoSelectionError,
+        manager::{TransactionSender, record_first_broadcast},
+        monitor::MAX_BROADCAST_ATTEMPTS,
+        one_sided_transaction::{Recipient, check_memos_and_estimate_output_size},
+    };
+    use std::collections::HashSet;
+    use tari_common::configuration::Network;
+    use tari_common_types::seeds::cipher_seed::CipherSeed;
+    use tari_common_types::types::{CompressedPublicKey, FixedHash, PrivateKey};
+    use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, WalletType};
+    use tari_transaction_components::rpc::models::{
+        TxSubmissionRejectionReason, TxSubmissionResponse,
+    };
+    use tari_transaction_components::tari_amount::MicroMinotari;
+    use tari_transaction_components::transaction_components::{
+        MemoField, Transaction, TransactionInput, WalletOutput,
+    };
+    use zeroize::Zeroizing;
+
+    const PASSWORD: &str = "pass";
+
+    /// An output worth `value`, told apart from others by `seed`.
+    fn test_output(value: u64, seed: u8) -> WalletOutput {
+        WalletOutput::new_from_parts(
+            Default::default(),
+            MicroMinotari::from(value),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            0,
+            Default::default(),
+            Default::default(),
+            MicroMinotari::from(0),
+            None,
+            MemoField::new_empty(),
+            FixedHash::from([seed; 32]),
+            Default::default(),
+        )
+    }
+
+    /// A wallet database with one account holding a spendable output of each value.
+    fn funded_wallet(values: &[u64]) -> (SqlitePool, i64, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let pool = init_db(dir.path().join("wallet.db")).expect("db");
+        let conn = pool.get().expect("connection");
+        let wallet = WalletType::SeedWords(
+            SeedWordsWallet::construct_new(CipherSeed::random()).expect("wallet"),
+        );
+        create_account(&conn, "test", &wallet, PASSWORD).expect("account");
+        let account_id = get_account_by_name(&conn, "test")
+            .expect("account")
+            .expect("account exists")
+            .id;
+        insert_scanned_tip_block(&conn, account_id, 200, &[0u8; 32]).expect("tip");
+        for (i, value) in values.iter().enumerate() {
+            let seed = u8::try_from(i + 1).expect("few outputs");
+            let hash = FixedHash::from([seed; 32]);
+            let output = test_output(*value, seed);
+            insert_output(
+                &conn,
+                account_id,
+                &PrivateKey::default(),
+                hash.to_vec(),
+                &output,
+                100,
+                &hash,
+                0,
+                None,
+                None,
+                FixedHash::default(),
+                false,
+            )
+            .expect("output");
+            mark_output_confirmed(&conn, &hash, 100, hash.as_slice()).expect("confirmed");
+        }
+        (pool, account_id, dir)
+    }
+
+    /// A wallet holding one burn as `persist_burn_records` leaves it (the input locked
+    /// by the burn's request, the completed burn, its proof and its unconfirmed change),
+    /// refused by the node `attempts` times in a row.
+    fn recorded_burn(attempts: i32) -> (SqlitePool, i64, tempfile::TempDir) {
+        let (pool, account_id, dir) = funded_wallet(&[1_000_000]);
+        let conn = pool.get().expect("connection");
+        conn.execute_batch("PRAGMA foreign_keys = OFF")
+            .expect("pragma");
+        conn.execute(
+            "UPDATE outputs SET status = 'LOCKED', locked_by_request_id = 'p'",
+            [],
+        )
+        .expect("locked input");
+        // The burn spends the wallet's one output.
+        let transaction = Transaction::new(
+            vec![TransactionInput::new_with_output_hash(
+                FixedHash::from([1u8; 32]),
+                Default::default(),
+                Default::default(),
+            )],
+            Vec::new(),
+            Vec::new(),
+            PrivateKey::default(),
+            PrivateKey::default(),
+        );
+        conn.execute(
+            "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
+               kernel_excess, sent_output_hash, serialized_transaction, broadcast_attempts)
+             VALUES (12, ?1, 'p', 'completed', x'', ?2, ?3, ?4)",
+            (
+                account_id,
+                hex::encode([6u8; 32]),
+                serde_json::to_vec(&transaction).expect("transaction"),
+                attempts,
+            ),
+        )
+        .expect("burn transaction");
+        conn.execute(
+            "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
+               ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
+               kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
+             VALUES (?1, ?2, ?2, '', zeroblob(32), zeroblob(32), zeroblob(32),
+               zeroblob(32), zeroblob(32), zeroblob(32), x'', 1)",
+            (account_id, [6u8; 32].as_slice()),
+        )
+        .expect("burn proof");
+        insert_unconfirmed_change_output(
+            &conn,
+            account_id,
+            &PrivateKey::default(),
+            "p",
+            &test_output(400_000, 7),
+        )
+        .expect("change");
+        drop(conn);
+        (pool, account_id, dir)
+    }
+
+    /// Prepares a send of `amount` to the wallet itself, as `TransactionManager` does.
+    fn prepare_send(
+        pool: &SqlitePool,
+        amount: u64,
+        payment_id: Option<&str>,
+    ) -> Result<tari_transaction_components::offline_signing::models::PrepareOneSidedTransactionForSigningResult, anyhow::Error>
+{
+        let password = Zeroizing::new(PASSWORD.to_string());
+        let mut sender = TransactionSender::new(
+            pool.clone(),
+            "test".to_string(),
+            password.clone(),
+            Network::LocalNet,
+            CONFIRMATION_WINDOW,
+        )
+        .expect("sender");
+        sender.fee_per_gram = MicroMinotari::from(SEND_FEE_PER_GRAM);
+        let recipient = Recipient {
+            address: sender
+                .account
+                .get_address(Network::LocalNet, &password)
+                .expect("address"),
+            amount: MicroMinotari::from(amount),
+            payment_id: payment_id.map(str::to_string),
+        };
+        sender.start_new_transaction(uuid::Uuid::new_v4().to_string(), recipient, 300)
+    }
 
     #[test]
     fn burn_proofs_move_out_of_the_wallet_folder_once() {
@@ -1454,6 +1862,73 @@ mod tests {
         std::fs::remove_dir_all(root.path().join("minotari-wallet")).expect("refresh");
         assert_eq!(move_legacy_burn_proofs(legacy, dir.clone()), dir);
         assert!(dir.join("proof.json").exists());
+    }
+
+    #[test]
+    fn each_reorganized_entry_is_announced_once_per_reorg() {
+        let id = |n: u64| tari_common_types::transaction::TxId::from(n);
+        let mut known = HashSet::new();
+        assert_eq!(
+            newly_reorged(&mut known, [id(1), id(2)].into_iter()),
+            HashSet::from([id(1), id(2)])
+        );
+        assert!(newly_reorged(&mut known, [id(1), id(2)].into_iter()).is_empty());
+        // 2 was re-mined, then reorganized again.
+        assert!(newly_reorged(&mut known, [id(1)].into_iter()).is_empty());
+        assert_eq!(
+            newly_reorged(&mut known, [id(1), id(2)].into_iter()),
+            HashSet::from([id(2)])
+        );
+    }
+
+    #[test]
+    fn only_a_scan_that_reached_the_tip_counts_as_synced() {
+        assert!(scan_reached_tip(1000, 1000));
+        assert!(scan_reached_tip(997, 1000));
+        assert!(!scan_reached_tip(996, 1000));
+        // The library reports Completed at the start height when the tip query fails.
+        assert!(!scan_reached_tip(12, 380_000));
+        assert!(!scan_reached_tip(1000, 0));
+    }
+
+    #[test]
+    fn an_undecryptable_wallet_with_a_pending_burn_is_moved_aside_not_deleted() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let wallet_dir = root.path().join("minotari-wallet");
+        std::fs::create_dir_all(&wallet_dir).expect("wallet dir");
+        let path = wallet_dir.join("wallet.db");
+
+        // Nothing pending: deleted.
+        drop(minotari_wallet::db::init_db(path.clone()).expect("db"));
+        assert_eq!(
+            discard_wallet_dir(&wallet_dir, &path).expect("discard"),
+            None
+        );
+        assert!(!wallet_dir.exists());
+
+        // A burn not yet mined: kept under another name.
+        std::fs::create_dir_all(&wallet_dir).expect("wallet dir");
+        let pool = minotari_wallet::db::init_db(path.clone()).expect("db");
+        let conn = pool.get().expect("connection");
+        conn.execute_batch("PRAGMA foreign_keys = OFF")
+            .expect("pragma");
+        conn.execute(
+            "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
+               ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
+               kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
+             VALUES (1, ?1, ?1, '', zeroblob(32), zeroblob(32), zeroblob(32),
+               zeroblob(32), zeroblob(32), zeroblob(32), x'', 1)",
+            [[1u8; 32].as_slice()],
+        )
+        .expect("burn proof");
+        drop(conn);
+        drop(pool);
+        let aside = discard_wallet_dir(&wallet_dir, &path)
+            .expect("discard")
+            .expect("moved aside");
+        assert!(!wallet_dir.exists());
+        assert!(aside.join("wallet.db").exists());
+        assert!(pending_burns_guard(&aside.join("wallet.db")).is_err());
     }
 
     #[test]
@@ -1481,7 +1956,7 @@ mod tests {
         let err = pending_burns_guard(&path).expect_err("refused");
         assert!(err.to_string().starts_with("2 burns to Layer 2"), "{err}");
 
-        // The second burn was rejected by the network: it will never be mined.
+        // The second burn was rejected: it will never be mined.
         conn.execute(
             "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
                kernel_excess, sent_output_hash, serialized_transaction)
@@ -1494,7 +1969,7 @@ mod tests {
         // The panel's list leaves the rejected burn out too.
         let listed = pending_burns(&conn).expect("pending burns");
         assert_eq!(listed.len(), 1);
-        assert_eq!(listed[0].commitment, vec![1u8; 32]);
+        assert_eq!(listed[0].0.commitment, vec![1u8; 32]);
 
         conn.execute("UPDATE burn_proofs SET status = 'complete'", [])
             .expect("mined");
@@ -1526,9 +2001,10 @@ mod tests {
         )
         .expect("burn transaction");
 
-        let err = record_burn_broadcast(&conn, 9u64.into(), Err(anyhow::anyhow!("timed out")))
-            .expect_err("reported");
-        assert!(err.to_string().contains("may still go through"), "{err}");
+        assert!(
+            !record_first_broadcast(Some(&conn), 9u64.into(), Err(anyhow::anyhow!("timed out")))
+                .accepted_by_node
+        );
         let status: String = conn
             .query_row(
                 "SELECT status FROM completed_transactions WHERE id = 9",
@@ -1539,6 +2015,261 @@ mod tests {
         assert_eq!(status, "completed");
         assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
         assert!(pending_burns_guard(&path).is_err());
+    }
+
+    #[test]
+    fn a_burn_the_node_refused_stays_pending_for_the_scan_to_settle() {
+        let (pool, _account_id, _dir) = recorded_burn(0);
+        let conn = pool.get().expect("connection");
+        let refused = TxSubmissionResponse {
+            accepted: false,
+            rejection_reason: TxSubmissionRejectionReason::DoubleSpend,
+            is_synced: true,
+            details: None,
+        };
+        assert!(!record_first_broadcast(Some(&conn), 12u64.into(), Ok(refused)).accepted_by_node);
+
+        let status: String = conn
+            .query_row(
+                "SELECT status FROM completed_transactions WHERE id = 12",
+                [],
+                |r| r.get(0),
+            )
+            .expect("status");
+        assert_eq!(status, "completed");
+        let output_statuses: Vec<String> = conn
+            .prepare("SELECT status FROM outputs ORDER BY status")
+            .expect("query")
+            .query_map([], |r| r.get(0))
+            .expect("rows")
+            .collect::<Result<_, _>>()
+            .expect("statuses");
+        assert_eq!(output_statuses, vec!["LOCKED", "UNCONFIRMED"]);
+        assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
+    }
+
+    #[test]
+    fn an_abandoned_burn_blocks_the_wallet_db_until_the_scan_rejects_it() {
+        let (pool, account_id, dir) = recorded_burn(MAX_BROADCAST_ATTEMPTS);
+        let path = dir.path().join("wallet.db");
+        let mut conn = pool.get().expect("connection");
+        // A burn has no history entry until it is mined; the stalled list still has it.
+        assert_eq!(
+            stalled_transactions(&conn, account_id).expect("stalled"),
+            vec![StalledTransaction {
+                tx_id: "12".to_string(),
+                amount: 1,
+                burn_commitment: Some(hex::encode([6u8; 32])),
+            }]
+        );
+        assert!(pending_burns_guard(&path).is_err());
+
+        abandon_send(&mut conn, account_id, 12u64.into(), false, false, None).expect("abandoned");
+
+        let status: String = conn
+            .query_row(
+                "SELECT status FROM completed_transactions WHERE id = 12",
+                [],
+                |r| r.get(0),
+            )
+            .expect("status");
+        assert_eq!(status, "rejected");
+        assert!(
+            stalled_transactions(&conn, account_id)
+                .expect("stalled")
+                .is_empty()
+        );
+        // A node may still mine it, and this database holds its only proof row.
+        assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
+        assert!(pending_burns_guard(&path).is_err());
+
+        // Another transaction spends the released input, and the scan records it as it
+        // does for any spent output: an input row and the output marked spent. The
+        // burn's own row stays as abandon left it.
+        let output_id: i64 = conn
+            .query_row(
+                "SELECT id FROM outputs WHERE output_hash = ?1",
+                [[1u8; 32].as_slice()],
+                |r| r.get(0),
+            )
+            .expect("output");
+        insert_input(&conn, account_id, output_id, 150, &[5u8; 32], 1_700_000_000).expect("input");
+        update_output_status(&conn, output_id, OutputStatus::Spent).expect("spent");
+        assert!(pending_burns(&conn).expect("pending burns").is_empty());
+        assert!(pending_burns_guard(&path).is_ok());
+    }
+
+    #[test]
+    fn an_abandoned_burn_is_listed_as_abandoned() {
+        let (pool, account_id, _dir) = recorded_burn(MAX_BROADCAST_ATTEMPTS);
+        let mut conn = pool.get().expect("connection");
+        assert!(!pending_burns(&conn).expect("pending burns")[0].1);
+
+        abandon_send(&mut conn, account_id, 12u64.into(), false, false, None).expect("abandoned");
+        let pending = pending_burns(&conn).expect("pending burns");
+        assert_eq!(pending.len(), 1, "still guarded: it may yet be mined");
+        assert!(pending[0].1);
+    }
+
+    #[test]
+    fn an_abandoned_burn_without_a_change_row_stays_guarded_once_its_input_is_spent() {
+        let (pool, account_id, dir) = recorded_burn(MAX_BROADCAST_ATTEMPTS);
+        let path = dir.path().join("wallet.db");
+        let mut conn = pool.get().expect("connection");
+        // A burn made before this version: no change row.
+        conn.execute("DELETE FROM outputs WHERE created_by_request_id = 'p'", [])
+            .expect("no change row");
+        abandon_send(&mut conn, account_id, 12u64.into(), false, true, None).expect("abandoned");
+
+        // Its input recorded spent: it may be the burn itself that landed.
+        let output_id: i64 = conn
+            .query_row(
+                "SELECT id FROM outputs WHERE output_hash = ?1",
+                [[1u8; 32].as_slice()],
+                |r| r.get(0),
+            )
+            .expect("output");
+        insert_input(&conn, account_id, output_id, 150, &[5u8; 32], 1_700_000_000).expect("input");
+        update_output_status(&conn, output_id, OutputStatus::Spent).expect("spent");
+
+        assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
+        assert!(pending_burns_guard(&path).is_err());
+    }
+
+    #[test]
+    fn a_burn_the_scan_rejected_does_not_block_deleting_the_wallet_db() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let path = dir.path().join("wallet.db");
+        let pool = init_db(path.clone()).expect("db");
+        let conn = pool.get().expect("connection");
+        conn.execute_batch("PRAGMA foreign_keys = OFF")
+            .expect("pragma");
+        conn.execute(
+            "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
+               ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
+               kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
+             VALUES (1, ?1, ?1, '', zeroblob(32), zeroblob(32), zeroblob(32),
+               zeroblob(32), zeroblob(32), zeroblob(32), x'', 1)",
+            [[4u8; 32].as_slice()],
+        )
+        .expect("burn proof");
+        conn.execute(
+            "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
+               kernel_excess, sent_output_hash, serialized_transaction)
+             VALUES (11, 1, 'p', 'broadcast', x'', ?1, x'')",
+            [hex::encode([4u8; 32])],
+        )
+        .expect("burn transaction");
+        assert!(pending_burns_guard(&path).is_err());
+
+        // The scan saw the burn's inputs spent by another transaction: it can never be mined.
+        mark_completed_transaction_as_rejected_in_block(
+            &conn,
+            11u64.into(),
+            "inputs spent by a different transaction",
+            150,
+            &[5u8; 32],
+        )
+        .expect("rejected by the scan");
+        assert!(pending_burns(&conn).expect("pending burns").is_empty());
+        assert!(pending_burns_guard(&path).is_ok());
+    }
+
+    #[test]
+    fn the_max_sendable_amount_sends_with_change_and_one_micro_tari_more_does_not() {
+        // With and without a payment id: the recipient memo carries it next to the sender's address.
+        for payment_id in [None, Some("invoice-42")] {
+            // The last output is worth less than the fee to spend it, so it adds nothing.
+            let (pool, account_id, _dir) = funded_wallet(&[3_000_000, 1_250_000, 40]);
+            let conn = pool.get().expect("connection");
+            let own_address = get_account_by_name(&conn, "test")
+                .expect("account")
+                .expect("account exists")
+                .get_address(Network::LocalNet, &Zeroizing::new(PASSWORD.to_string()))
+                .expect("address");
+            let output_size = check_memos_and_estimate_output_size(
+                &[Recipient {
+                    address: own_address.clone(),
+                    amount: MicroMinotari::zero(),
+                    payment_id: payment_id.map(str::to_string),
+                }],
+                &own_address,
+            )
+            .expect("output size");
+            let max = max_sendable(&conn, account_id, output_size).expect("max");
+            drop(conn);
+            assert!(max > 4_000_000 && max < 4_250_000, "max {max}");
+
+            let err = prepare_send(&pool, max + 1, payment_id).expect_err("no room for change");
+            assert!(
+                matches!(
+                    err.downcast_ref::<UtxoSelectionError>(),
+                    Some(UtxoSelectionError::ChangeNotAffordable { .. })
+                ),
+                "got: {err}"
+            );
+
+            let prepared = prepare_send(&pool, max, payment_id).expect("the max amount sends");
+            let inputs: u64 = prepared
+                .info
+                .inputs
+                .iter()
+                .map(|input| input.value().as_u64())
+                .sum();
+            let change = inputs - max - prepared.info.fee.as_u64();
+            assert!(change > 0, "the send carries change");
+            assert!(
+                prepared.info.recipients[0]
+                    .payment_id
+                    .claimed_sender_address()
+                    .is_some(),
+                "the recipient memo names the sender"
+            );
+        }
+    }
+
+    #[test]
+    fn a_burn_without_room_for_change_reads_as_the_change_error() {
+        let value = 1_000_000;
+        let (pool, _account_id, _dir) = funded_wallet(&[value]);
+        let mut conn = pool.get().expect("connection");
+        let account = get_account_by_name(&conn, "test")
+            .expect("account")
+            .expect("account exists");
+        let claim_key = CompressedPublicKey::from_secret_key(&PrivateKey::from(7u64));
+
+        // Walk down from the whole balance until the burn covers its fee; that first
+        // amount leaves no room for change.
+        let mut amount = value - 1;
+        let error = loop {
+            let params = BurnTxParams {
+                account_id: account.id,
+                amount: MicroMinotari::from(amount),
+                claim_public_key: Some(claim_key.clone()),
+                sidechain_deployment_key: None,
+                fee_per_gram: MicroMinotari::from(SEND_FEE_PER_GRAM),
+                payment_id: None,
+                idempotency_key: Some(uuid::Uuid::new_v4().to_string()),
+                seconds_to_lock: 300,
+                confirmation_window: CONFIRMATION_WINDOW,
+            };
+            let Err(err) = create_burn_tx(&account, &mut conn, Network::LocalNet, PASSWORD, params)
+            else {
+                panic!("a burn of {amount} built without room for change");
+            };
+            match err.downcast_ref::<UtxoSelectionError>() {
+                Some(UtxoSelectionError::InsufficientFunds { .. }) => amount -= 100,
+                _ => break err,
+            }
+        };
+        // The type the send gate turns into the `change_not_affordable` code.
+        assert!(
+            matches!(
+                error.downcast_ref::<UtxoSelectionError>(),
+                Some(UtxoSelectionError::ChangeNotAffordable { .. })
+            ),
+            "{error:#}"
+        );
     }
 
     #[test]
@@ -1575,24 +2306,39 @@ mod tests {
     }
 
     #[test]
-    fn a_mined_send_at_the_required_depth_is_confirmed_unless_still_locked() {
+    fn blocks_won_are_reported_only_when_synced_and_notifications_are_allowed() {
+        let coinbases = vec![(7u64.into(), 7), (9u64.into(), 9)];
         assert_eq!(
-            confirmation_status(3, 0),
-            TransactionDisplayStatus::Confirmed
+            blocks_to_report(&mut HashSet::new(), true, true, coinbases.clone()),
+            vec![7, 9]
         );
-        assert_eq!(confirmation_status(3, 10), TransactionDisplayStatus::Locked);
-        assert_eq!(
-            confirmation_status(1, 0),
-            TransactionDisplayStatus::Unconfirmed
-        );
-        assert_eq!(confirmation_status(0, 0), TransactionDisplayStatus::Pending);
+        assert!(blocks_to_report(&mut HashSet::new(), true, false, coinbases.clone()).is_empty());
+        assert!(blocks_to_report(&mut HashSet::new(), false, true, coinbases).is_empty());
     }
 
     #[test]
-    fn blocks_won_are_reported_only_when_synced_and_notifications_are_allowed() {
-        assert_eq!(blocks_to_report(true, true, vec![7, 9]), vec![7, 9]);
-        assert!(blocks_to_report(true, false, vec![7, 9]).is_empty());
-        assert!(blocks_to_report(false, true, vec![7, 9]).is_empty());
+    fn a_coinbase_is_reported_once_however_often_its_status_changes() {
+        let mut seen = HashSet::new();
+        let coinbase = vec![(5u64.into(), 120)];
+        // Found Unconfirmed by the scan.
+        assert_eq!(
+            blocks_to_report(&mut seen, true, true, coinbase.clone()),
+            vec![120]
+        );
+        // Re-sent by the monitor as Locked, then as Confirmed.
+        assert!(blocks_to_report(&mut seen, true, true, coinbase.clone()).is_empty());
+        assert!(blocks_to_report(&mut seen, true, true, coinbase).is_empty());
+    }
+
+    #[test]
+    fn a_coinbase_seen_while_syncing_is_not_reported_when_its_status_changes_later() {
+        let mut seen = HashSet::new();
+        assert!(blocks_to_report(&mut seen, false, true, vec![(5u64.into(), 120)]).is_empty());
+        assert!(blocks_to_report(&mut seen, true, true, vec![(5u64.into(), 120)]).is_empty());
+        assert_eq!(
+            blocks_to_report(&mut seen, true, true, vec![(6u64.into(), 121)]),
+            vec![121]
+        );
     }
 
     #[test]

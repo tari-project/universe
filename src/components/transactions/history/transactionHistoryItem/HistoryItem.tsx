@@ -26,6 +26,8 @@ export interface HistoryListItemProps {
     transaction: DisplayedTransaction;
     index: number;
     itemIsNew?: boolean;
+    /** The network keeps refusing it; it can be abandoned from its details. */
+    isStalled?: boolean;
     setDetailsItem?: (item: DisplayedTransaction) => void;
 }
 
@@ -83,6 +85,7 @@ const HistoryListItem = memo(function HistoryListItem({
     transaction,
     index,
     itemIsNew = false,
+    isStalled = false,
     setDetailsItem,
 }: HistoryListItemProps) {
     const { t } = useTranslation('wallet');
@@ -109,7 +112,7 @@ const HistoryListItem = memo(function HistoryListItem({
                     ? UITransactionDirection.Outbound
                     : UITransactionDirection.Inbound
             }
-            chip={itemIsNew ? t('new') : ''}
+            chip={isStalled ? t('abandon.chip') : itemIsNew ? t('new') : ''}
             hideWalletBalance={hideWalletBalance}
         />
     );

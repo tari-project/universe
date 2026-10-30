@@ -69,39 +69,3 @@ test.describe('Receive Flow', () => {
     await page.keyboard.press('Escape');
   });
 });
-
-test.describe('Sync with Phone (desktop side)', () => {
-  test('"I have the app" reveals the QR code and identification code', async ({ appPage: page }) => {
-    await openSettingsTab(page, 'wallet');
-
-    await page.locator(sel.settings.syncWithPhone).click({ timeout: 10_000 });
-    const haveApp = page.locator(sel.sync.haveApp);
-    await haveApp.waitFor({ state: 'visible', timeout: 15_000 });
-
-    // The backend enciphers the seed into a QR + passphrase. No PIN exists
-    // at this point in the suite, so no gate should appear. Converge on the
-    // QR: re-click "I have the app" if the first click was lost (each attempt
-    // gets a generous window for the backend to produce the code).
-    const qr = page.locator(sel.sync.qr);
-    const deadline = Date.now() + 90_000;
-    while (Date.now() < deadline) {
-      if (await qr.isVisible().catch(() => false)) break;
-      if (await haveApp.isVisible().catch(() => false)) {
-        await haveApp.click({ timeout: 5_000, force: true }).catch(() => {});
-      }
-      if (
-        await qr.waitFor({ state: 'visible', timeout: 20_000 }).then(
-          () => true,
-          () => false
-        )
-      )
-        break;
-    }
-    await expect(qr).toBeVisible({ timeout: 10_000 });
-    const code = page.locator(sel.sync.identificationCode);
-    await code.waitFor({ state: 'visible', timeout: 10_000 });
-    expect((await code.inputValue()).length).toBeGreaterThan(0);
-
-    await page.keyboard.press('Escape');
-  });
-});

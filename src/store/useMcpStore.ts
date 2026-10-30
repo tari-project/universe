@@ -23,6 +23,10 @@ export interface McpPendingTransaction {
     /** Defaults to `mcp`; `app` or `tapplet` means that send command asked for approval. */
     origin?: TransactionOrigin;
     payment_id?: string | null;
+    /** For an abandon: the user accepted that it has no change output to recognise it by. */
+    accept_unreconcilable?: boolean;
+    /** For an abandon: it is a burn to L2. */
+    is_burn?: boolean;
 }
 
 export type McpTxStatus = 'reviewing' | 'processing' | 'completed';

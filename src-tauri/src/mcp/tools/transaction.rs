@@ -64,6 +64,11 @@ struct SendTransactionSuccess {
     destination: String,
     amount: String,
     amount_micro_minotari: u64,
+    /// False when the node hasn't accepted the send yet: it is recorded and
+    /// rebroadcast automatically, so it must not be sent again.
+    accepted_by_node: bool,
+    /// To follow the send in the transaction history, especially one not accepted yet.
+    tx_id: String,
 }
 
 pub async fn send_transaction(
@@ -109,7 +114,7 @@ pub async fn send_transaction(
     .await;
 
     match result {
-        Ok(()) => {
+        Ok(receipt) => {
             EventsEmitter::emit_mcp_transaction_result(
                 crate::events::McpTransactionResultPayload {
                     request_id,
@@ -124,6 +129,8 @@ pub async fn send_transaction(
                 destination,
                 amount: amount_display,
                 amount_micro_minotari: amount_u64,
+                accepted_by_node: receipt.accepted_by_node,
+                tx_id: receipt.tx_id,
             };
             serde_json::to_string(&result)
                 .map_err(|e| TransactionError::InternalError(e.to_string()))

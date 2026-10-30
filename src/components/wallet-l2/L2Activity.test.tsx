@@ -22,10 +22,10 @@ const burn = (commitment: string, status: L2Burn['status'], timestamp = 0): L2Bu
     timestamp,
 });
 const serveBurns = (burns: L2Burn[]) =>
-    vi
-        .mocked(invoke)
-        .mockImplementation((async (cmd: string) =>
-            cmd === 'l2_claimable_burns' ? burns : undefined) as typeof invoke);
+    vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+        if (cmd === 'l2_claimable_burns') return burns;
+        if (cmd === 'get_stalled_transactions') return [];
+    }) as typeof invoke);
 const REJECTION = 'L2 claim failed: ownership proof validation failed';
 
 describe('L2Activity', () => {
@@ -40,7 +40,24 @@ describe('L2Activity', () => {
                 ];
             }
             if (cmd === 'l2_claim_burn') throw REJECTION;
+            if (cmd === 'get_stalled_transactions') return [];
         }) as typeof invoke);
+    });
+
+    it('marks a stalled burn and offers to abandon it', async () => {
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'l2_claimable_burns') return [burn('bb'.repeat(32), 'pending')];
+            if (cmd === 'get_stalled_transactions') {
+                return [{ tx_id: '12', amount: 1_000_000_000, burn_commitment: 'bb'.repeat(32) }];
+            }
+        }) as typeof invoke);
+        render(<L2Activity account={account} filter="all-activity" />);
+
+        await waitFor(() =>
+            expect(screen.getAllByTestId('l2-claim-chip').map((chip) => chip.textContent)).toEqual(['abandon.chip'])
+        );
+        fireEvent.click(screen.getByTestId('l2-burn-abandon'));
+        expect(await screen.findByTestId('tx-details-abandon')).toBeInTheDocument();
     });
 
     it('lists unclaimed burns, a Pending chip on the unmined one and Claim on the claimable one', async () => {

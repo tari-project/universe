@@ -31,9 +31,8 @@ test.describe('Settings Sweep', () => {
     await seedDisplay.waitFor({ state: 'visible', timeout: 10_000 });
     expect(await seedDisplay.textContent()).toContain('*');
 
-    // Pre-PIN: the setup-PIN section is present; sync-with-phone too.
+    // Pre-PIN: the setup-PIN section is present.
     await expect(page.locator(sel.settings.setupPin)).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator(sel.settings.syncWithPhone)).toBeVisible({ timeout: 10_000 });
   });
 
   test('mining tab: toggles reflect the seeded config and flip cleanly', async ({ appPage: page }) => {
