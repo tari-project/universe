@@ -55,6 +55,21 @@ describe('McpTransactionDialog', () => {
         });
     });
 
+    it('asks a plain approve/deny for a tapplet send, headed as one', async () => {
+        setMcpPendingTransaction({
+            request_id: 'tapplet_tx_1',
+            origin: 'tapplet',
+            destination: '5AexampleAddress',
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('wallet:send.cta-confirm')).toBeInTheDocument();
+        });
+        expect(screen.getAllByText('wallet:security.pin.approve-tapplet-send').length).toBeGreaterThan(0);
+    });
+
     it('labels a burn approval with the L2 claim key, not a destination address', async () => {
         setMcpPendingTransaction({
             request_id: 'app_tx_burn',

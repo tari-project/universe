@@ -1,12 +1,19 @@
 import { BackendBridgeTransaction, setError as setStoreError, useConfigUIStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
 import { BaseNodeStatus, BridgeEnvs } from '../app-status';
+import { L2Account, L2WalletState } from '../events-payloads';
+import { selectL2Account, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
+import { handleL2WalletStateUpdate } from '@app/store/actions/l2WalletStoreActions.ts';
 import {
     AccountData,
     BridgeTxDetails,
+    OotleAccountData,
+    OotleBalance,
     SendOneSidedRequest,
+    SendOotleStealthRequest,
     TappletSignerParams,
     TappletWalletBalance,
+    WaitOotleTransactionRequest,
     WindowSize,
 } from './tapplet.types';
 import {
@@ -31,11 +38,62 @@ export type TappletCallableMethod =
     | 'getTariBalance'
     | 'removeOngoingBridgeTx'
     | 'setOngoingBridgeTx'
-    | 'sendOneSided';
+    | 'sendOneSided'
+    | 'getOotleAccount'
+    | 'getOotleBalance'
+    | 'sendOotleStealth'
+    | 'waitOotleTransaction';
+
+/** Returned by the Ootle methods when L2 is off this network, not enabled, or locked. */
+export const L2_UNAVAILABLE = { error: 'l2_unavailable' };
+const PAY_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** At most 10^15 - 1: the PIN prompt shows the amount as a JS number divided by 10^6, exact only below about 2^52. */
+const MICRO_AMOUNT_RE = /^[1-9][0-9]{0,14}$/;
+/**
+ * After a denied PIN prompt, tapplet sends are refused this long, doubling per denial up to the max.
+ * A success, or no denial for the max after a cooldown ends, starts it over.
+ */
+const DENIAL_COOLDOWN_MS = 10_000;
+const MAX_DENIAL_COOLDOWN_MS = 5 * 60_000;
+/** After a send that failed for any other reason. */
+const FAILURE_COOLDOWN_MS = 3_000;
+const MAX_WAIT_SECS = 600;
+const MAX_OOTLE_WAITS = 4;
+/** The backend's errors for a cancelled or timed-out PIN prompt, a wrong PIN, a lockout or a denied dialog. */
+const PIN_DENIED_RE = /PIN entry cancelled|Wrong PIN entered|Pin is locked out|Transaction denied by user/;
+/** The backend's tapplet rate limiter refusing a send. */
+const RATE_LIMITED_RE = /Transaction rate limit exceeded/;
+/** The backend refusing the destination before any prompt. */
+const INVALID_ADDRESS_RE = /Invalid L2 address/;
+/** Transaction statuses that won't change any more; anything else keeps the wait polling. */
+const FINAL_TX_STATUSES = ['Accepted', 'Rejected', 'InvalidTransaction', 'OnlyFeeAccepted'];
 
 function invalidArgsResult(method: string): { error: string } {
     console.warn(`Blocked tapplet signer call to "${method}" with invalid arguments`);
     return { error: `Invalid arguments for tapplet signer method: ${method}` };
+}
+
+/** The signer refusing a call (bad arguments, 'busy'). The tapplet gets a `resultError`, the user no toast. */
+export class TappletSignerRejection extends Error {}
+
+/** For the Ootle methods: bad arguments throw, so the tapplet gets a `resultError` reply. */
+function invalidArgsError(method: string): Error {
+    console.warn(`Blocked tapplet signer call to "${method}" with invalid arguments`);
+    return new TappletSignerRejection(`Invalid arguments for tapplet signer method: ${method}`);
+}
+
+type SendOutcome = 'sent' | 'denied' | 'failed' | 'none';
+
+/**
+ * Backend error text stays local: the tapplet gets only 'busy', 'denied' or 'failed'.
+ * Only 'failed' is toasted; the user just turned down 'denied' themselves.
+ */
+function backendError(method: string, error: unknown): Error {
+    console.error(`Tapplet signer method "${method}" failed: ${error}`);
+    if (RATE_LIMITED_RE.test(`${error}`)) return new TappletSignerRejection('busy');
+    if (PIN_DENIED_RE.test(`${error}`)) return new TappletSignerRejection('denied');
+    if (INVALID_ADDRESS_RE.test(`${error}`)) return invalidArgsError(method);
+    return new Error('failed');
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -50,6 +108,36 @@ function isSendOneSidedRequest(value: unknown): value is SendOneSidedRequest {
         isNonEmptyString(req.address) &&
         (req.paymentId === undefined || req.paymentId === null || typeof req.paymentId === 'string')
     );
+}
+
+function isSendOotleStealthRequest(value: unknown): value is SendOotleStealthRequest {
+    if (!value || typeof value !== 'object') return false;
+    const req = value as Record<string, unknown>;
+    return (
+        typeof req.amount === 'string' &&
+        MICRO_AMOUNT_RE.test(req.amount) &&
+        isNonEmptyString(req.address) &&
+        typeof req.payRef === 'string' &&
+        PAY_REF_RE.test(req.payRef)
+    );
+}
+
+function isWaitOotleTransactionRequest(value: unknown): value is WaitOotleTransactionRequest {
+    if (!value || typeof value !== 'object') return false;
+    const req = value as Record<string, unknown>;
+    return (
+        isNonEmptyString(req.transactionId) &&
+        Number.isInteger(req.timeoutSecs) &&
+        (req.timeoutSecs as number) > 0 &&
+        (req.timeoutSecs as number) <= MAX_WAIT_SECS
+    );
+}
+
+/** `l2_send` takes XTR, the tapplet sends micro XTR. */
+function microToXtr(micro: string): string {
+    const value = BigInt(micro);
+    const million = BigInt(1_000_000);
+    return `${value / million}.${(value % million).toString().padStart(6, '0')}`;
 }
 
 function isBridgeTxDetails(value: unknown): value is BridgeTxDetails {
@@ -67,6 +155,16 @@ export class TappletSigner {
     public providerName = 'TappletSigner';
     id: string;
     params: TappletSignerParams;
+    /** One tapplet send (L1 or L2) at a time, so queued sends can't take over the user's PIN prompts. */
+    private sendInFlight = false;
+    private sendCooldownUntil = 0;
+    /** Denials since the last successful send; each one doubles the cooldown. */
+    private denials = 0;
+    private denialCooldownUntil = 0;
+    /** Ids sendOotleStealth returned; the only ones waitOotleTransaction will wait on. */
+    private ootleSentIds = new Set<string>();
+    /** One pending wait per transaction id, shared by every call for it. */
+    private ootleWaits = new Map<string, Promise<{ status: string } | { error: string }>>();
 
     private constructor(
         params: TappletSignerParams,
@@ -133,6 +231,20 @@ export class TappletSigner {
                 if (!isSendOneSidedRequest(req)) return invalidArgsResult(method);
                 return this.sendOneSided(req);
             }
+            case 'getOotleAccount':
+                return this.getOotleAccount();
+            case 'getOotleBalance':
+                return this.getOotleBalance();
+            case 'sendOotleStealth': {
+                const req = callArgs[0];
+                if (!isSendOotleStealthRequest(req)) throw invalidArgsError(method);
+                return this.sendOotleStealth(req);
+            }
+            case 'waitOotleTransaction': {
+                const req = callArgs[0];
+                if (!isWaitOotleTransactionRequest(req)) throw invalidArgsError(method);
+                return this.waitOotleTransaction(req);
+            }
             default:
                 console.warn(`Blocked tapplet signer call to unsupported method "${String(method)}"`);
                 return { error: `Unsupported tapplet signer method: ${String(method)}` };
@@ -164,18 +276,162 @@ export class TappletSigner {
         return bridgeTx;
     }
 
+    /**
+     * The open L2 wallet's default account, or undefined when L2 can't be used right now. Taken from
+     * the L2 store the wallet events keep current, so a tapplet polling these methods doesn't make the
+     * wallet rebuild its state each time. Only when the store has no open wallet does it ask
+     * `l2_get_state`, which answers without touching the wallet when it is locked, off or not on L2,
+     * and fills the store with the answer, unless a wallet event updated the store while the call was in
+     * flight: that state is newer, so it wins.
+     */
+    private async defaultOotleAccount(): Promise<L2Account | undefined> {
+        let state: L2WalletState = useL2WalletStore.getState();
+        if (!state.enabled || state.locked || state.accounts.length === 0) {
+            // Every wallet state update writes a fresh `accounts` array, so an unchanged reference means none landed.
+            const accountsBefore = state.accounts;
+            try {
+                state = await invoke<L2WalletState>('l2_get_state');
+            } catch {
+                return undefined;
+            }
+            const current = useL2WalletStore.getState();
+            if (current.accounts === accountsBefore) handleL2WalletStateUpdate(state);
+            else state = current;
+            if (!state.enabled || state.locked) return undefined;
+        }
+        return selectL2Account(state);
+    }
+
+    /** Throws 'busy' while another tapplet send runs or a denial cooldown is on, else claims the slot. */
+    private startTappletSend(): void {
+        if (this.sendInFlight || Date.now() < this.sendCooldownUntil) throw new TappletSignerRejection('busy');
+        this.sendInFlight = true;
+    }
+
+    private finishTappletSend(outcome: SendOutcome): void {
+        this.sendInFlight = false;
+        if (outcome === 'sent') this.denials = 0;
+        if (outcome === 'denied') {
+            if (Date.now() >= this.denialCooldownUntil + MAX_DENIAL_COOLDOWN_MS) this.denials = 0;
+            const cooldown = Math.min(DENIAL_COOLDOWN_MS * 2 ** this.denials, MAX_DENIAL_COOLDOWN_MS);
+            this.denialCooldownUntil = Date.now() + cooldown;
+            this.sendCooldownUntil = this.denialCooldownUntil;
+            this.denials += 1;
+        }
+        if (outcome === 'failed') this.sendCooldownUntil = Date.now() + FAILURE_COOLDOWN_MS;
+    }
+
     public async sendOneSided(req: SendOneSidedRequest): Promise<boolean> {
+        this.startTappletSend();
+        let outcome: SendOutcome = 'none';
         try {
-            await invoke('send_one_sided_to_stealth_address', {
+            await invoke('send_one_sided_from_tapplet', {
                 amount: req.amount,
                 destination: req.address,
                 paymentId: req.paymentId,
             });
+            outcome = 'sent';
             return true;
         } catch (error) {
+            outcome = PIN_DENIED_RE.test(`${error}`) ? 'denied' : 'failed';
             setStoreError(`Error sending transaction: ${error}`);
             return false;
+        } finally {
+            this.finishTappletSend(outcome);
         }
+    }
+
+    public async getOotleAccount(): Promise<OotleAccountData | { error: string }> {
+        const account = await this.defaultOotleAccount();
+        if (!account) return L2_UNAVAILABLE;
+        try {
+            const network = await invoke('get_network');
+            return { address: account.address, network: network as string };
+        } catch (error) {
+            throw backendError('getOotleAccount', error);
+        }
+    }
+
+    /** The L2 state has no pending balance, so `pending` is always 0. */
+    public async getOotleBalance(): Promise<OotleBalance | { error: string }> {
+        const account = await this.defaultOotleAccount();
+        if (!account) return L2_UNAVAILABLE;
+        return { available: account.balance.total, pending: '0' };
+    }
+
+    /**
+     * Sends from the default L2 account behind the PIN prompt, labelled as a tapplet send.
+     * Throws 'busy' while another send is in flight or after a denial, 'denied' or 'failed' when
+     * the backend refuses.
+     */
+    public async sendOotleStealth(
+        req: SendOotleStealthRequest
+    ): Promise<{ transactionId: string } | { error: string }> {
+        this.startTappletSend();
+        let outcome: SendOutcome = 'none';
+        try {
+            const account = await this.defaultOotleAccount();
+            if (!account) return L2_UNAVAILABLE;
+            try {
+                const transactionId = await invoke<string>('l2_send_from_tapplet', {
+                    account: account.component_address,
+                    destination: req.address,
+                    amount: microToXtr(req.amount),
+                    payRef: req.payRef,
+                });
+                this.ootleSentIds.add(transactionId);
+                outcome = 'sent';
+                return { transactionId };
+            } catch (error) {
+                const code = backendError('sendOotleStealth', error);
+                outcome = code.message === 'denied' ? 'denied' : 'failed';
+                throw code;
+            }
+        } finally {
+            this.finishTappletSend(outcome);
+        }
+    }
+
+    /**
+     * Watches the L2 store (kept current by the wallet events) until the transaction reaches a
+     * final status, or the timeout runs out. Only for ids sendOotleStealth returned. A repeated wait
+     * for an id joins the pending one, under the first call's timeout; 'busy' past four ids.
+     */
+    public async waitOotleTransaction(
+        req: WaitOotleTransactionRequest
+    ): Promise<{ status: string } | { error: string }> {
+        if (!this.ootleSentIds.has(req.transactionId)) throw invalidArgsError('waitOotleTransaction');
+        const pending = this.ootleWaits.get(req.transactionId);
+        if (pending) return pending;
+        if (this.ootleWaits.size >= MAX_OOTLE_WAITS) throw new TappletSignerRejection('busy');
+        const wait = this.watchOotleTransaction(req).finally(() => this.ootleWaits.delete(req.transactionId));
+        this.ootleWaits.set(req.transactionId, wait);
+        return wait;
+    }
+
+    private async watchOotleTransaction(
+        req: WaitOotleTransactionRequest
+    ): Promise<{ status: string } | { error: string }> {
+        if (!(await this.defaultOotleAccount())) return L2_UNAVAILABLE;
+        return new Promise((resolve) => {
+            let status = 'Pending';
+            const finish = (result: { status: string } | { error: string }) => {
+                clearTimeout(timer);
+                unsubscribe();
+                resolve(result);
+            };
+            const check = (state: L2WalletState) => {
+                if (!state.enabled || state.locked) return finish(L2_UNAVAILABLE);
+                for (const account of state.accounts) {
+                    const tx = account.transactions.find((t) => t.id === req.transactionId);
+                    if (tx) status = tx.status;
+                }
+                if (FINAL_TX_STATUSES.includes(status)) finish({ status });
+            };
+            const timer = setTimeout(() => finish({ status }), req.timeoutSecs * 1000);
+            const unsubscribe = useL2WalletStore.subscribe(check);
+            check(useL2WalletStore.getState());
+        });
     }
 
     public async getBaseNodeStatus(): Promise<BaseNodeStatus> {

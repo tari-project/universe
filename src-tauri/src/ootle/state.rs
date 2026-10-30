@@ -69,11 +69,14 @@ pub struct L2Account {
     pub transactions: Vec<L2Transaction>,
 }
 
-/// XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs.
+/// Spendable XTR in micro units: funds held by a pending transaction's lock are left out of both.
+/// Revealed sits in the account vault, confidential in stealth UTXOs.
+/// `total` is their sum as a decimal string, exact past JavaScript's 2^53.
 #[derive(Clone, Debug, Serialize)]
 pub struct L2Balance {
     pub revealed: u64,
     pub confidential: u64,
+    pub total: String,
 }
 
 /// A settled XTR movement on the account, incoming or outgoing.
@@ -126,7 +129,7 @@ fn build_account(sdk: &OotleSdk, account: Account) -> Result<L2Account, anyhow::
     let revealed = accounts_api
         .get_vault_by_resource(&component, &STEALTH_TARI_RESOURCE_ADDRESS)
         .optional()?
-        .map(|vault| vault.revealed_balance)
+        .map(|vault| vault.available_revealed_balance())
         .unwrap_or_default();
     let confidential = sdk
         .stealth_outputs_api()
@@ -160,13 +163,18 @@ fn build_account(sdk: &OotleSdk, account: Account) -> Result<L2Account, anyhow::
         public_key: hex::encode(account.owner_public_key().as_slice()),
         name: account.name,
         is_default: account.is_default,
-        balance: L2Balance {
-            revealed: micro(revealed),
-            confidential: micro(confidential),
-        },
+        balance: balance(micro(revealed), micro(confidential)),
         history,
         transactions,
     })
+}
+
+fn balance(revealed: u64, confidential: u64) -> L2Balance {
+    L2Balance {
+        revealed,
+        confidential,
+        total: (u128::from(revealed) + u128::from(confidential)).to_string(),
+    }
 }
 
 fn micro(amount: Amount) -> u64 {
@@ -237,5 +245,13 @@ mod tests {
         assert_eq!(account.public_key.len(), 64);
         assert_eq!(account.balance.revealed + account.balance.confidential, 0);
         assert!(account.history.is_empty() && account.transactions.is_empty());
+    }
+
+    #[test]
+    fn balance_total_is_exact_past_javascripts_safe_integers() {
+        let json = serde_json::to_value(balance(u64::MAX, 1)).expect("json");
+        assert_eq!(json["total"], "18446744073709551616");
+        assert_eq!(json["revealed"], u64::MAX);
+        assert_eq!(json["confidential"], 1);
     }
 }

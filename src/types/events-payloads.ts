@@ -127,8 +127,8 @@ export interface GpuMiner {
     last_error?: string;
 }
 
-/** Which caller asked for a transaction: the in-app/tapplet bridge path, or the MCP tool. */
-export type TransactionOrigin = 'app' | 'mcp';
+/** Which caller asked for a transaction: the in-app UI, the MCP tool or the tapplet signer. */
+export type TransactionOrigin = 'app' | 'mcp' | 'tapplet';
 
 /**
  * Optional context attached to the `EnterPin` event, so the PIN dialog can tell the user
@@ -139,6 +139,7 @@ export interface SendPinPromptContext {
     amount_micro_minotari: number;
     destination: string;
     payment_id?: string | null;
+    origin: TransactionOrigin;
 }
 
 /** The wallet details were missing from the config and are being rebuilt from the stored seed. */
@@ -170,6 +171,9 @@ export interface L2SendPinPromptContext {
     amount_micro_minotari: number;
     destination: string;
     account: string;
+    pay_ref: string | null;
+    /** Who asked for the send: the in-app UI or the bridge tapplet. */
+    origin: 'app' | 'tapplet';
     fee_micro_minotari: number | null;
 }
 
@@ -202,6 +206,8 @@ export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim';
 export interface L2Balance {
     revealed: number;
     confidential: number;
+    /** revealed + confidential as a decimal string, exact past 2^53. */
+    total: string;
 }
 
 /** A settled XTR movement on an L2 account. `amount` is signed micro XTR. */
