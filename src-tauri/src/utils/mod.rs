@@ -38,4 +38,6 @@ pub mod rand_utils;
 mod speed_test_utils;
 pub mod system_status;
 #[cfg(windows)]
+pub mod processor_groups;
+#[cfg(windows)]
 pub mod windows_setup_utils;
