@@ -59,6 +59,7 @@ use minotari_wallet::{
     TransactionHistoryService,
     db::{
         AccountBalance, AccountRow, DbBurnProof, get_account_by_name,
+        get_displayed_transactions_excluding_reorged,
         get_displayed_transactions_needing_confirmation_update,
         get_latest_scanned_tip_block_by_account, get_pending_burn_proofs,
         mark_completed_transaction_as_broadcasted, mark_completed_transaction_as_rejected,
@@ -67,6 +68,7 @@ use minotari_wallet::{
     get_balance,
     http::WalletHttpClient,
     init_db,
+    models::OutputStatus,
     tasks::{burn_proof_worker::BurnProofWorker, unlocker::TransactionUnlocker},
     transactions::{
         TransactionDisplayStatus, TransactionSource,
@@ -92,7 +94,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
-use tari_common_types::transaction::TxId;
+use tari_common_types::{transaction::TxId, types::FixedHash};
 use tari_transaction_components::rpc::models::TxSubmissionResponse;
 use tari_transaction_components::tari_amount::MicroMinotari as WalletMicroMinotari;
 use tauri::{AppHandle, Manager};
@@ -289,6 +291,7 @@ impl MinotariWalletManager {
 
         // Emit to frontend immediately so user sees the pending transaction
         EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
+        Self::refresh_displayed_transaction_output_statuses().await;
 
         info!("One-sided transaction sent successfully.");
         Ok(displayed_transaction)
@@ -389,6 +392,7 @@ impl MinotariWalletManager {
         BalanceTracker::current()
             .update_from_transactions(Self::get_latest_account_balance().await)
             .await;
+        Self::refresh_displayed_transaction_output_statuses().await;
         info!(target: LOG_TARGET, "Burn transaction broadcast.");
 
         Ok(BurnReceipt {
@@ -604,6 +608,14 @@ impl MinotariWalletManager {
     pub async fn get_transaction_history() -> Result<Vec<DisplayedTransaction>, anyhow::Error> {
         let account_id = Self::owner_account_id().await?;
         let db_pool = INSTANCE.database_manager.get_pool().await?;
+        if let Ok(conn) = db_pool.get()
+            && let Err(e) = sync_displayed_transaction_output_statuses(&conn, account_id)
+        {
+            error!(
+                target: LOG_TARGET,
+                "Could not sync displayed transaction output statuses: {e:?}"
+            );
+        }
         let history_service = TransactionHistoryService::new(db_pool);
         history_service
             .load_transactions_excluding_reorged(account_id)
@@ -755,6 +767,7 @@ impl MinotariWalletManager {
                     // event, so the balance is re-read once per cycle regardless.
                     if generation == INSTANCE.scan_generation.load(Ordering::SeqCst) {
                         Self::refresh_transaction_confirmations().await;
+                        Self::refresh_displayed_transaction_output_statuses().await;
                         BalanceTracker::current()
                             .update_from_transactions(Self::get_latest_account_balance().await)
                             .await;
@@ -856,6 +869,35 @@ impl MinotariWalletManager {
         }
     }
 
+    /// Synchronizes embedded output statuses inside `displayed_transactions` with the
+    /// canonical `outputs` table and notifies the frontend of any updated transactions.
+    ///
+    /// `minotari-wallet` writes `OutputStatus::Unspent` into `details.outputs[*].status`
+    /// when a `DisplayedTransaction` is first stored, and later updates `outputs.status`
+    /// in the `outputs` table when an output is locked or spent without rewriting the
+    /// earlier `displayed_transactions` row.
+    async fn refresh_displayed_transaction_output_statuses() {
+        let updated: Result<Vec<DisplayedTransaction>, anyhow::Error> = async {
+            let account_id = Self::owner_account_id().await?;
+            let conn = Self::get_db_connection().await?;
+            sync_displayed_transaction_output_statuses(&conn, account_id)
+        }
+        .await;
+        match updated {
+            Ok(transactions) => {
+                for tx in transactions {
+                    EventsEmitter::emit_wallet_transaction_updated(tx).await;
+                }
+            }
+            Err(e) => {
+                error!(
+                    target: LOG_TARGET,
+                    "Could not refresh displayed transaction output statuses: {e:?}"
+                );
+            }
+        }
+    }
+
     async fn process_scan_events(
         mut rx: tokio::sync::mpsc::UnboundedReceiver<ProcessingEvent>,
         generation: u64,
@@ -922,6 +964,8 @@ impl MinotariWalletManager {
 
                         // Emit all transactions to frontend
                         EventsEmitter::emit_wallet_transactions_found(transactions_to_emit).await;
+
+                        Self::refresh_displayed_transaction_output_statuses().await;
                     }
                 }
                 ProcessingEvent::ReorgDetected(reorg_event) => {
@@ -936,6 +980,8 @@ impl MinotariWalletManager {
                     for tx in reorg_event.reorganized_displayed_transactions {
                         EventsEmitter::emit_wallet_transaction_updated(tx).await;
                     }
+
+                    Self::refresh_displayed_transaction_output_statuses().await;
 
                     BalanceTracker::current()
                         .update_from_transactions(Self::get_latest_account_balance().await)
@@ -1422,13 +1468,79 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
     }
 }
 
+/// Reconciles `details.outputs[*].status` in mined `displayed_transactions` rows with
+/// the canonical status in the `outputs` table, persisting and returning any rows whose
+/// embedded output statuses changed.
+fn sync_displayed_transaction_output_statuses(
+    conn: &Connection,
+    account_id: i64,
+) -> Result<Vec<DisplayedTransaction>, anyhow::Error> {
+    let mut stmt = conn.prepare(
+        "SELECT output_hash, status FROM outputs WHERE account_id = ?1 AND deleted_at IS NULL",
+    )?;
+    let rows = stmt.query_map([account_id], |row| {
+        Ok((row.get::<_, Vec<u8>>(0)?, row.get::<_, String>(1)?))
+    })?;
+    let mut output_statuses: HashMap<FixedHash, OutputStatus> = HashMap::new();
+    for row in rows {
+        let (hash_bytes, status_str) = row?;
+        let Ok(hash) = FixedHash::try_from(hash_bytes.as_slice()) else {
+            continue;
+        };
+        let Ok(status) = status_str.parse::<OutputStatus>() else {
+            continue;
+        };
+        if matches!(
+            status,
+            OutputStatus::Unspent
+                | OutputStatus::Locked
+                | OutputStatus::Spent
+                | OutputStatus::SpentUnconfirmed
+        ) {
+            output_statuses.insert(hash, status);
+        }
+    }
+
+    let mut updated = Vec::new();
+    for mut tx in get_displayed_transactions_excluding_reorged(conn, account_id)? {
+        if tx.blockchain.block_height == 0 {
+            continue;
+        }
+        let mut changed = false;
+        for output in &mut tx.details.outputs {
+            if let Some(actual_status) = output_statuses.get(&output.hash)
+                && &output.status != actual_status
+            {
+                output.status = actual_status.clone();
+                changed = true;
+            }
+        }
+        if changed {
+            update_displayed_transaction_confirmations(conn, &tx)?;
+            updated.push(tx);
+        }
+    }
+    Ok(updated)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
         blocks_to_report, burn_times, confirmation_status, move_legacy_burn_proofs, pending_burns,
         pending_burns_guard, record_burn_broadcast, scan_progress_percent,
+        sync_displayed_transaction_output_statuses,
     };
-    use minotari_wallet::transactions::TransactionDisplayStatus;
+    use minotari_wallet::{
+        DisplayedTransaction,
+        db::{get_displayed_transactions_excluding_reorged, insert_displayed_transaction},
+        models::OutputStatus,
+        transactions::{
+            BlockchainInfo, TransactionDetails, TransactionDirection, TransactionDisplayStatus,
+            TransactionOutput, TransactionSource,
+        },
+    };
+    use tari_common_types::{transaction::TxId, types::FixedHash};
+    use tari_transaction_components::{MicroMinotari, transaction_components::OutputType};
 
     #[test]
     fn burn_proofs_move_out_of_the_wallet_folder_once() {
@@ -1602,5 +1714,91 @@ mod tests {
     fn progress_is_zero_without_a_usable_tip() {
         // No node status yet.
         assert_eq!(scan_progress_percent(350_000, 0), 0.0);
+    }
+
+    #[test]
+    fn displayed_transaction_outputs_sync_with_canonical_output_status() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let pool = minotari_wallet::db::init_db(dir.path().join("wallet.db")).expect("db");
+        let conn = pool.get().expect("connection");
+        conn.execute_batch("PRAGMA foreign_keys = OFF")
+            .expect("pragma");
+
+        let output_hash = FixedHash::from([7u8; 32]);
+        let block_hash = FixedHash::from([8u8; 32]);
+
+        conn.execute(
+            "INSERT INTO outputs (account_id, tx_id, output_hash, mined_in_block_hash, mined_in_block_height,
+               value, wallet_output_json, mined_timestamp, status)
+             VALUES (1, 42, ?1, ?2, 100, 5000, '{}', '2026-09-24 12:00:00', 'UNSPENT')",
+            (output_hash.as_slice(), block_hash.as_slice()),
+        )
+        .expect("insert output");
+
+        let tx = DisplayedTransaction {
+            id: TxId::from(42u64),
+            direction: TransactionDirection::Incoming,
+            source: TransactionSource::Coinbase,
+            status: TransactionDisplayStatus::Confirmed,
+            amount: MicroMinotari::from(5000),
+            message: None,
+            counterparty: None,
+            blockchain: BlockchainInfo {
+                block_height: 100,
+                timestamp: chrono::NaiveDateTime::default(),
+                confirmations: 10,
+                block_hash,
+            },
+            fee: None,
+            details: TransactionDetails {
+                account_id: 1,
+                total_credit: MicroMinotari::from(5000),
+                total_debit: MicroMinotari::from(0),
+                inputs: vec![],
+                outputs: vec![TransactionOutput {
+                    hash: output_hash,
+                    amount: MicroMinotari::from(5000),
+                    status: OutputStatus::Unspent,
+                    mined_in_block_height: 100,
+                    mined_in_block_hash: block_hash,
+                    output_type: OutputType::Coinbase,
+                    is_change: false,
+                }],
+                output_type: Some(OutputType::Coinbase),
+                coinbase_extra: None,
+                memo_hex: None,
+                sent_output_hashes: vec![],
+                sent_payrefs: vec![],
+            },
+            lock_height: 0,
+        };
+        insert_displayed_transaction(&conn, &tx).expect("insert displayed transaction");
+
+        // No change when canonical status is still UNSPENT.
+        let updated = sync_displayed_transaction_output_statuses(&conn, 1).expect("sync");
+        assert!(updated.is_empty());
+
+        // When locked for a pending send/burn, the displayed transaction reflects Locked.
+        conn.execute("UPDATE outputs SET status = 'LOCKED'", [])
+            .expect("lock output");
+        let updated = sync_displayed_transaction_output_statuses(&conn, 1).expect("sync locked");
+        assert_eq!(updated.len(), 1);
+        assert_eq!(updated[0].details.outputs[0].status, OutputStatus::Locked);
+
+        // When spent in a later block, the displayed transaction reflects Spent in DB.
+        conn.execute("UPDATE outputs SET status = 'SPENT'", [])
+            .expect("spend output");
+        let updated = sync_displayed_transaction_output_statuses(&conn, 1).expect("sync spent");
+        assert_eq!(updated.len(), 1);
+        assert_eq!(updated[0].details.outputs[0].status, OutputStatus::Spent);
+
+        // Second sync is a no-op because the stored JSON is already updated.
+        let updated_again =
+            sync_displayed_transaction_output_statuses(&conn, 1).expect("sync idempotent");
+        assert!(updated_again.is_empty());
+
+        let persisted = get_displayed_transactions_excluding_reorged(&conn, 1).expect("load");
+        assert_eq!(persisted.len(), 1);
+        assert_eq!(persisted[0].details.outputs[0].status, OutputStatus::Spent);
     }
 }
