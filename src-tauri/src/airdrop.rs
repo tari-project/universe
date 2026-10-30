@@ -30,11 +30,13 @@ use ring_compat::pkcs8::SubjectPublicKeyInfo;
 use ring_compat::pkcs8::spki::AlgorithmIdentifier;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     UniverseAppState,
+    app_in_memory_config::AppInMemoryConfig,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     internal_wallet::InternalWallet,
     tasks_tracker::TasksTrackers,
@@ -174,4 +176,40 @@ pub fn get_der_encode_pub_key(key_pair: &Ed25519KeyPair) -> anyhow::Result<Strin
 
     let der_encoded = spki.to_der().map_err(|e| anyhow::anyhow!(e.to_string()))?;
     Ok(hex::encode(der_encoded))
+}
+
+/// Fire-and-forget report of a node-accepted burn so pre-launch burns can be counted; advisory, the backend verifies on chain.
+pub async fn report_burn(mut body: serde_json::Value) {
+    TasksTrackers::current()
+        .wallet_phase
+        .get_task_tracker()
+        .await
+        .spawn(async move {
+            let config = ConfigCore::content().await;
+            if !*config.allow_telemetry() {
+                return;
+            }
+            body["appId"] = config.anon_id().clone().into();
+            body["version"] = env!("CARGO_PKG_VERSION").into();
+            body["network"] = Network::get_current_or_user_setting_or_default()
+                .as_key_str()
+                .into();
+            let url = format!(
+                "{}/miner/burns",
+                AppInMemoryConfig::default().airdrop_api_url
+            );
+            let mut request = reqwest::Client::new()
+                .post(url)
+                .timeout(std::time::Duration::from_secs(10))
+                .json(&body);
+            if let Some(token) =
+                validate_jwt(config.airdrop_tokens().clone().map(|t| t.token)).await
+            {
+                request = request.bearer_auth(token);
+            }
+            match request.send().await.and_then(|r| r.error_for_status()) {
+                Ok(_) => info!(target: LOG_TARGET_APP_LOGIC, "Burn reported"),
+                Err(e) => warn!(target: LOG_TARGET_APP_LOGIC, "Burn report failed: {e}"),
+            }
+        });
 }
