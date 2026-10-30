@@ -69,7 +69,8 @@ pub struct L2Account {
     pub transactions: Vec<L2Transaction>,
 }
 
-/// XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs.
+/// Spendable XTR in micro units: funds held by a pending transaction's lock are left out of both.
+/// Revealed sits in the account vault, confidential in stealth UTXOs.
 /// `total` is their sum as a decimal string, exact past JavaScript's 2^53.
 #[derive(Clone, Debug, Serialize)]
 pub struct L2Balance {
@@ -128,7 +129,7 @@ fn build_account(sdk: &OotleSdk, account: Account) -> Result<L2Account, anyhow::
     let revealed = accounts_api
         .get_vault_by_resource(&component, &STEALTH_TARI_RESOURCE_ADDRESS)
         .optional()?
-        .map(|vault| vault.revealed_balance)
+        .map(|vault| vault.available_revealed_balance())
         .unwrap_or_default();
     let confidential = sdk
         .stealth_outputs_api()
