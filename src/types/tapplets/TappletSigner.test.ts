@@ -223,6 +223,22 @@ describe('TappletSigner.runOne', () => {
                 }
                 expect(invoke).not.toHaveBeenCalledWith('l2_get_state');
             });
+
+            it('does not overwrite a wallet event that lands while l2_get_state is in flight', async () => {
+                let answer: (state: L2WalletState) => void = () => undefined;
+                vi.mocked(invoke).mockImplementation(
+                    (() => new Promise<unknown>((resolve) => (answer = resolve))) as typeof invoke
+                );
+
+                const balance = signer.runOne('getOotleBalance', []);
+                await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_get_state'));
+                const fromEvent = l2State({ locked: true, accounts: [] });
+                useL2WalletStore.setState(fromEvent);
+                answer(l2State());
+
+                await expect(balance).resolves.toEqual(L2_UNAVAILABLE);
+                expect(useL2WalletStore.getState()).toMatchObject(fromEvent);
+            });
         });
 
         describe('sendOotleStealth', () => {

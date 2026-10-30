@@ -281,17 +281,22 @@ export class TappletSigner {
      * the L2 store the wallet events keep current, so a tapplet polling these methods doesn't make the
      * wallet rebuild its state each time. Only when the store has no open wallet does it ask
      * `l2_get_state`, which answers without touching the wallet when it is locked, off or not on L2,
-     * and fills the store with the answer.
+     * and fills the store with the answer, unless a wallet event updated the store while the call was in
+     * flight: that state is newer, so it wins.
      */
     private async defaultOotleAccount(): Promise<L2Account | undefined> {
         let state: L2WalletState = useL2WalletStore.getState();
         if (!state.enabled || state.locked || state.accounts.length === 0) {
+            // Every wallet state update writes a fresh `accounts` array, so an unchanged reference means none landed.
+            const accountsBefore = state.accounts;
             try {
                 state = await invoke<L2WalletState>('l2_get_state');
             } catch {
                 return undefined;
             }
-            handleL2WalletStateUpdate(state);
+            const current = useL2WalletStore.getState();
+            if (current.accounts === accountsBefore) handleL2WalletStateUpdate(state);
+            else state = current;
             if (!state.enabled || state.locked) return undefined;
         }
         return selectL2Account(state);
