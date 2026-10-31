@@ -10,8 +10,6 @@ import { t } from 'i18next';
 import { startMining, stopMining } from './miningStoreActions';
 import { useMiningStore } from '../useMiningStore';
 
-import { queryClient } from '@app/App/queryClient.ts';
-import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
 import { mergeTransactions } from '@app/store/actions/helpers.ts';
@@ -83,7 +81,6 @@ export const setWalletBalance = async (account_balance: AccountBalance) => {
     if (isEqual) return;
 
     useWalletStore.setState({ account_balance });
-    await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
 };
 
 export const setIsSwapping = (isSwapping: boolean) => {
