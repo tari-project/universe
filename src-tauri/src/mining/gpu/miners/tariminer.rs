@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use std::{
-    collections::HashMap,
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex, RwLock,
@@ -40,6 +39,7 @@ use crate::utils::windows_setup_utils::add_firewall_rule;
 
 use crate::{
     APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
+    binaries::{Binaries, BinaryResolver},
     configs::{
         config_mining::{ConfigMining, ConfigMiningContent},
         trait_config::ConfigImpl,
@@ -95,30 +95,41 @@ const MAX_BARREN_RESTARTS: u32 = 3;
 const UNHEALTHY_FALLBACK_AFTER: Duration = Duration::from_secs(3 * 60);
 /// Sub folder of the extracted release archive that holds the per architecture backends.
 const BACKENDS_FOLDER: &str = "bin";
-/// How long `nvidia-smi` gets to enumerate the GPUs before we give up on it.
-/// Device detection runs inside the GPU setup phase with the `GpuManager` write lock held, so a
-/// wedged NVIDIA driver hanging here would park every other caller of that lock for the session.
+/// How long a backend binary gets to enumerate the GPUs with `--list-devices` before we give up on
+/// it. Device detection runs inside the GPU setup phase with the `GpuManager` write lock held, so a
+/// wedged GPU driver hanging here would park every other caller of that lock for the session.
 const DEVICE_DETECTION_TIMEOUT: Duration = Duration::from_secs(15);
 
-/// The CUDA backend that TARI.Miner ships one binary for per supported compute capability.
-/// The upstream starter script picks the backend the same way, from `nvidia-smi --query-gpu=compute_cap`.
+/// The GPU backend that TARI.Miner ships one binary for per supported target architecture.
+/// Selected from the architecture column of `<backend> --list-devices`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TariMinerBackend {
-    /// RTX 30 series
+    /// NVIDIA RTX 30 series (CUDA)
     #[default]
     Sm86,
-    /// RTX 40 series
+    /// NVIDIA RTX 40 series (CUDA)
     Sm89,
-    /// RTX 50 series
+    /// NVIDIA RTX 50 series (CUDA)
     Sm120,
+    /// AMD RDNA2, RDNA3 and RDNA4 series (HIP, Linux)
+    Amd,
 }
 
 impl TariMinerBackend {
-    fn from_compute_capability(compute_capability: &str) -> Option<Self> {
-        match compute_capability.trim() {
-            "8.6" => Some(TariMinerBackend::Sm86),
-            "8.9" => Some(TariMinerBackend::Sm89),
-            "12.0" => Some(TariMinerBackend::Sm120),
+    const ALL: [Self; 4] = [Self::Sm86, Self::Sm89, Self::Sm120, Self::Amd];
+
+    /// Resolves the backend from the architecture token printed by `--list-devices`
+    /// (`sm_86`/`sm_89`/`sm_120` on CUDA, `gfx1030`..`gfx1201` on HIP).
+    /// HIP target strings may carry feature flags after `:` (such as `gfx1030:xnack-`), which are
+    /// stripped before matching, mirroring upstream `start-c29.sh`.
+    fn from_arch(arch: &str) -> Option<Self> {
+        let base_arch = arch.trim().split(':').next().unwrap_or_default().trim();
+        match base_arch {
+            "sm_86" => Some(TariMinerBackend::Sm86),
+            "sm_89" => Some(TariMinerBackend::Sm89),
+            "sm_120" => Some(TariMinerBackend::Sm120),
+            "gfx1030" | "gfx1031" | "gfx1032" | "gfx1100" | "gfx1101" | "gfx1102" | "gfx1200"
+            | "gfx1201" => Some(TariMinerBackend::Amd),
             _ => None,
         }
     }
@@ -128,6 +139,16 @@ impl TariMinerBackend {
             TariMinerBackend::Sm86 => "tari_c29_pool_miner_sm_86",
             TariMinerBackend::Sm89 => "tari_c29_pool_miner_sm_89",
             TariMinerBackend::Sm120 => "tari_c29_pool_miner_sm_120",
+            TariMinerBackend::Amd => "tari_c29_pool_miner_amd",
+        }
+    }
+
+    fn vendor(self) -> &'static str {
+        match self {
+            TariMinerBackend::Sm86 | TariMinerBackend::Sm89 | TariMinerBackend::Sm120 => {
+                NVIDIA_VENDOR
+            }
+            TariMinerBackend::Amd => AMD_VENDOR,
         }
     }
 
@@ -137,14 +158,23 @@ impl TariMinerBackend {
     }
 }
 
+/// Resolves the sibling path of `backend` inside the same extracted archive as `resolved_binary`.
+fn backend_binary_path(resolved_binary: &Path, backend: TariMinerBackend) -> PathBuf {
+    let mut path = resolved_binary.with_file_name(backend.file_stem());
+    if let Some(extension) = resolved_binary.extension() {
+        path.set_extension(extension);
+    }
+    path
+}
+
 /// The archive ships every backend, but the binary resolver and the process watcher both need a
 /// single path. Device detection publishes the backend that matches the GPU we are going to mine
 /// with here so that both agree on which one to resolve, set permissions on and spawn.
 static SELECTED_BACKEND: RwLock<TariMinerBackend> = RwLock::new(TariMinerBackend::Sm86);
 
 /// Returns the backend that matches the GPU TARI.Miner will be started on.
-/// Falls back to the default backend before any device was detected; every backend is present in
-/// the archive, so resolving the binary path stays valid either way.
+/// Falls back to the default backend before any device was detected; the default backend is
+/// present in every archive, so resolving the binary path stays valid either way.
 pub fn selected_backend() -> TariMinerBackend {
     SELECTED_BACKEND
         .read()
@@ -161,26 +191,25 @@ fn publish_selected_backend(backend: TariMinerBackend) {
     }
 }
 
-/// `nvidia-smi` only enumerates NVIDIA devices, so every device found here shares this vendor.
 const NVIDIA_VENDOR: &str = "NVIDIA";
+const AMD_VENDOR: &str = "AMD";
 
-/// An NVIDIA device that TARI.Miner has a backend for.
+/// A GPU device that TARI.Miner has a backend for.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TariMinerDevice {
     pub common: GpuCommonInformation,
     pub backend: TariMinerBackend,
 }
 
-/// Parses `nvidia-smi --query-gpu=index,compute_cap,name --format=csv,noheader,nounits`.
-/// Devices with a compute capability that has no backend in the release archive are dropped,
+/// Parses `<backend> --list-devices` output (`index\tname\tarch\tbus`).
+/// Devices with an architecture that has no backend in the release archive are dropped,
 /// mirroring what the upstream starter script does.
-fn parse_nvidia_smi_devices(output: &str) -> Vec<TariMinerDevice> {
+fn parse_device_list(output: &str) -> Vec<TariMinerDevice> {
     let mut devices = vec![];
 
     for line in output.lines() {
-        let mut fields = line.split(',');
-        let (Some(index), Some(compute_capability), Some(name)) =
-            (fields.next(), fields.next(), fields.next())
+        let mut fields = line.split('\t');
+        let (Some(index), Some(name), Some(arch)) = (fields.next(), fields.next(), fields.next())
         else {
             continue;
         };
@@ -189,11 +218,11 @@ fn parse_nvidia_smi_devices(output: &str) -> Vec<TariMinerDevice> {
             continue;
         };
 
-        let Some(backend) = TariMinerBackend::from_compute_capability(compute_capability) else {
+        let Some(backend) = TariMinerBackend::from_arch(arch) else {
             info!(
                 target: LOG_TARGET_APP_LOGIC,
-                "Skipping GPU {device_id}: compute capability {} is not supported by TARI.Miner",
-                compute_capability.trim()
+                "Skipping GPU {device_id}: architecture {} is not supported by TARI.Miner",
+                arch.trim()
             );
             continue;
         };
@@ -202,7 +231,7 @@ fn parse_nvidia_smi_devices(output: &str) -> Vec<TariMinerDevice> {
             common: GpuCommonInformation {
                 name: name.trim().to_string(),
                 device_id,
-                vendor: NVIDIA_VENDOR.to_string(),
+                vendor: backend.vendor().to_string(),
                 memory_mb: None,
                 is_mineable: None,
                 unsupported_reason: None,
@@ -212,6 +241,83 @@ fn parse_nvidia_smi_devices(output: &str) -> Vec<TariMinerDevice> {
     }
 
     devices
+}
+
+/// Runs `--list-devices` against each backend binary in the archive and returns the devices from
+/// the first backend that reports at least one supported GPU.
+async fn detect_devices_from_backends(
+    resolved_binary: &Path,
+    config_dir: &Path,
+) -> Result<Vec<TariMinerDevice>, anyhow::Error> {
+    let args = vec!["--list-devices".to_string()];
+
+    for backend in TariMinerBackend::ALL {
+        let binary_path = backend_binary_path(resolved_binary, backend);
+        if !binary_path.exists() {
+            continue;
+        }
+
+        if let Err(error) = crate::download_utils::set_permissions(&binary_path).await {
+            warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Could not set permissions on {}: {error}",
+                binary_path.display()
+            );
+            continue;
+        }
+
+        let child = match launch_child_process(&binary_path, config_dir, None, &args, true) {
+            Ok(child) => child,
+            Err(error) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Could not run {} --list-devices: {error}",
+                    binary_path.display()
+                );
+                continue;
+            }
+        };
+
+        let output =
+            match tokio::time::timeout(DEVICE_DETECTION_TIMEOUT, child.wait_with_output()).await {
+                Ok(Ok(output)) => output,
+                Ok(Err(error)) => {
+                    warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "{} --list-devices failed: {error}",
+                        binary_path.display()
+                    );
+                    continue;
+                }
+                Err(_) => {
+                    warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "{} --list-devices did not respond within {}s",
+                        binary_path.display(),
+                        DEVICE_DETECTION_TIMEOUT.as_secs()
+                    );
+                    continue;
+                }
+            };
+
+        if !output.status.success() {
+            warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "{} --list-devices exited with {}: {}",
+                binary_path.display(),
+                output.status,
+                String::from_utf8_lossy(&output.stderr).trim()
+            );
+            continue;
+        }
+
+        let detected = parse_device_list(&String::from_utf8_lossy(&output.stdout));
+        if !detected.is_empty() {
+            return Ok(detected);
+        }
+    }
+
+    Err(anyhow::anyhow!("No supported GPU devices found"))
 }
 
 /// TARI.Miner drives a single GPU per process, so we mine with the first device the user did not
@@ -417,44 +523,19 @@ impl GpuMinerInterfaceTrait for TariMinerGpuMiner {
         Ok(())
     }
 
-    /// TARI.Miner has no device listing of its own, it enumerates NVIDIA GPUs with `nvidia-smi`.
+    /// Probes each backend binary in the archive with `--list-devices` and takes the first one
+    /// that reports supported GPUs.
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
         let config_path =
             dirs::config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
 
         let config_dir = config_path.join(APPLICATION_FOLDER_ID);
 
-        let args = vec![
-            "--query-gpu=index,compute_cap,name".to_string(),
-            "--format=csv,noheader,nounits".to_string(),
-        ];
+        let resolved_binary = BinaryResolver::current()
+            .get_binary_path(Binaries::TariMiner)
+            .await?;
 
-        let result = launch_child_process(Path::new("nvidia-smi"), &config_dir, None, &args, true)
-            .map_err(|e| {
-                anyhow::anyhow!("Could not run nvidia-smi to enumerate NVIDIA GPUs: {e}")
-            })?;
-
-        let output = tokio::time::timeout(DEVICE_DETECTION_TIMEOUT, result.wait_with_output())
-            .await
-            .map_err(|_| {
-                anyhow::anyhow!(
-                    "nvidia-smi did not respond within {}s",
-                    DEVICE_DETECTION_TIMEOUT.as_secs()
-                )
-            })??;
-        if !output.status.success() {
-            return Err(anyhow::anyhow!(
-                "nvidia-smi could not enumerate NVIDIA GPUs: {}",
-                String::from_utf8_lossy(&output.stderr).trim()
-            ));
-        }
-
-        let gpu_devices = parse_nvidia_smi_devices(&String::from_utf8_lossy(&output.stdout));
-        if gpu_devices.is_empty() {
-            return Err(anyhow::anyhow!(
-                "No TARI.Miner compatible GPU devices found"
-            ));
-        }
+        let gpu_devices = detect_devices_from_backends(&resolved_binary, &config_dir).await?;
 
         for device in &gpu_devices {
             info!(
@@ -567,13 +648,10 @@ impl ProcessAdapter for TariMinerGpuMiner {
             binary_version_path.clone(),
         )?;
 
-        // `--device` is passed straight to `cudaSetDevice`, so it is a CUDA ordinal, while the id
-        // we detected is the nvidia-smi index. CUDA orders by speed unless told otherwise, so on a
-        // mixed rig the two disagree and we would mine on a card the user excluded, with the wrong
-        // architecture's backend. nvidia-smi indexes by PCI bus id, so ask CUDA for the same order.
-        // This pins the ordering, it cannot recover an index: a CUDA_VISIBLE_DEVICES already set in
-        // the user's environment hides devices from the child, and the two would disagree again.
-        let envs = HashMap::from([("CUDA_DEVICE_ORDER".to_string(), "PCI_BUS_ID".to_string())]);
+        // `--device` is passed straight to `cudaSetDevice` / `hipSetDevice`. Because device
+        // detection enumerates GPUs through the miner's own `--list-devices` flag
+        // (`cudaGetDeviceCount` / `hipGetDeviceCount`), the `device_id` we pass back is already the
+        // runtime's own ordinal, sidestepping any `nvidia-smi`-vs-CUDA ordering mismatch.
 
         let speed_tracker = TariMinerSpeedTracker::default();
         let output_sink = {
@@ -586,7 +664,7 @@ impl ProcessAdapter for TariMinerGpuMiner {
                 shutdown: inner_shutdown.clone(),
                 startup_spec: ProcessStartupSpec {
                     file_path: binary_version_path,
-                    envs: Some(envs),
+                    envs: None,
                     args,
                     data_dir: base_folder,
                     pid_file_name: self.pid_file_name().to_string(),
@@ -722,7 +800,7 @@ mod tests {
             common: GpuCommonInformation {
                 name: format!("GPU {device_id}"),
                 device_id,
-                vendor: NVIDIA_VENDOR.to_string(),
+                vendor: backend.vendor().to_string(),
                 memory_mb: None,
                 is_mineable: None,
                 unsupported_reason: None,
@@ -732,41 +810,82 @@ mod tests {
     }
 
     #[test]
-    fn backend_is_resolved_from_the_compute_capability() {
+    fn backend_is_resolved_from_the_device_architecture() {
         assert_eq!(
-            TariMinerBackend::from_compute_capability("8.6"),
+            TariMinerBackend::from_arch("sm_86"),
             Some(TariMinerBackend::Sm86)
         );
         assert_eq!(
-            TariMinerBackend::from_compute_capability(" 8.9 "),
+            TariMinerBackend::from_arch(" sm_89 "),
             Some(TariMinerBackend::Sm89)
         );
         assert_eq!(
-            TariMinerBackend::from_compute_capability("12.0"),
+            TariMinerBackend::from_arch("sm_120"),
             Some(TariMinerBackend::Sm120)
         );
-        assert_eq!(TariMinerBackend::from_compute_capability("7.5"), None);
+        for arch in [
+            "gfx1030",
+            "gfx1031",
+            "gfx1032",
+            "gfx1100",
+            "gfx1101",
+            "gfx1102",
+            "gfx1200",
+            "gfx1201",
+            "gfx1030:xnack-",
+        ] {
+            assert_eq!(
+                TariMinerBackend::from_arch(arch),
+                Some(TariMinerBackend::Amd),
+                "expected AMD backend for {arch}"
+            );
+        }
+        assert_eq!(TariMinerBackend::from_arch("sm_75"), None);
+        assert_eq!(TariMinerBackend::from_arch("gfx1036"), None);
+        assert_eq!(TariMinerBackend::from_arch("gfx900"), None);
     }
 
     #[test]
-    fn nvidia_smi_output_is_parsed_and_unsupported_devices_are_dropped() {
-        let output = "0, 8.9, NVIDIA GeForce RTX 4090\n1, 7.5, NVIDIA GeForce GTX 1660\n2, 12.0, NVIDIA GeForce RTX 5090\n";
+    fn list_devices_output_is_parsed_for_nvidia_and_amd_and_unsupported_devices_are_dropped() {
+        let nvidia_output = "0\tNVIDIA GeForce RTX 4090\tsm_89\t01\n1\tNVIDIA GeForce GTX 1660\tsm_75\t02\n2\tNVIDIA GeForce RTX 5090\tsm_120\t03\n";
 
-        let devices = parse_nvidia_smi_devices(output);
+        let nvidia_devices = parse_device_list(nvidia_output);
 
-        assert_eq!(devices.len(), 2);
-        assert_eq!(devices[0].common.device_id, 0);
-        assert_eq!(devices[0].common.name, "NVIDIA GeForce RTX 4090");
-        assert_eq!(devices[0].backend, TariMinerBackend::Sm89);
-        assert_eq!(devices[1].common.device_id, 2);
-        assert_eq!(devices[1].backend, TariMinerBackend::Sm120);
+        assert_eq!(nvidia_devices.len(), 2);
+        assert_eq!(nvidia_devices[0].common.device_id, 0);
+        assert_eq!(nvidia_devices[0].common.name, "NVIDIA GeForce RTX 4090");
+        assert_eq!(nvidia_devices[0].common.vendor, NVIDIA_VENDOR);
+        assert_eq!(nvidia_devices[0].backend, TariMinerBackend::Sm89);
+        assert_eq!(nvidia_devices[1].common.device_id, 2);
+        assert_eq!(nvidia_devices[1].common.vendor, NVIDIA_VENDOR);
+        assert_eq!(nvidia_devices[1].backend, TariMinerBackend::Sm120);
+
+        let amd_output =
+            "0\tAMD Radeon AI PRO R9700\tgfx1201\t03\n1\tAMD Radeon Graphics\tgfx1036\t0c\n";
+
+        let amd_devices = parse_device_list(amd_output);
+
+        assert_eq!(
+            amd_devices,
+            vec![TariMinerDevice {
+                common: GpuCommonInformation {
+                    name: "AMD Radeon AI PRO R9700".to_string(),
+                    device_id: 0,
+                    vendor: AMD_VENDOR.to_string(),
+                    memory_mb: None,
+                    is_mineable: None,
+                    unsupported_reason: None,
+                },
+                backend: TariMinerBackend::Amd,
+            }]
+        );
     }
 
     #[test]
-    fn malformed_nvidia_smi_lines_are_ignored() {
-        let output = "\nnot a device row\n0, 8.6, NVIDIA GeForce RTX 3080\nx, 8.6, Broken index\n";
+    fn malformed_list_devices_lines_are_ignored() {
+        let output = "\nnot a device row\n0\tNVIDIA GeForce RTX 3080\tsm_86\t01\nx\tBroken index\tsm_86\t02\n";
 
-        let devices = parse_nvidia_smi_devices(output);
+        let devices = parse_device_list(output);
 
         assert_eq!(
             devices,
@@ -1019,6 +1138,74 @@ mod tests {
         assert_eq!(
             TariMinerBackend::Sm120.relative_binary_path(),
             PathBuf::from("bin").join("tari_c29_pool_miner_sm_120")
+        );
+        assert_eq!(
+            TariMinerBackend::Amd.relative_binary_path(),
+            PathBuf::from("bin").join("tari_c29_pool_miner_amd")
+        );
+        assert_eq!(
+            backend_binary_path(
+                Path::new("/cache/tariminer/1.1.8/bin/tari_c29_pool_miner_sm_86"),
+                TariMinerBackend::Amd
+            ),
+            PathBuf::from("/cache/tariminer/1.1.8/bin/tari_c29_pool_miner_amd")
+        );
+        assert_eq!(
+            backend_binary_path(
+                Path::new("C:\\tariminer\\1.1.8\\bin\\tari_c29_pool_miner_sm_86.exe"),
+                TariMinerBackend::Sm89
+            ),
+            PathBuf::from("C:\\tariminer\\1.1.8\\bin\\tari_c29_pool_miner_sm_89.exe")
+        );
+    }
+
+    #[tokio::test]
+    async fn detect_devices_from_backends_reports_no_supported_gpu_when_nothing_answers() {
+        let temp_dir = tempfile::tempdir().expect("tempdir");
+        let resolved_binary = temp_dir.path().join("tari_c29_pool_miner_sm_86");
+
+        let error = detect_devices_from_backends(&resolved_binary, temp_dir.path())
+            .await
+            .expect_err("no backends present");
+
+        assert_eq!(error.to_string(), "No supported GPU devices found");
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn detect_devices_from_backends_falls_through_silent_cuda_backends_to_amd() {
+        let temp_dir = tempfile::tempdir().expect("tempdir");
+        let sm86 = temp_dir.path().join("tari_c29_pool_miner_sm_86");
+        let amd = temp_dir.path().join("tari_c29_pool_miner_amd");
+
+        std::fs::write(
+            &sm86,
+            "#!/bin/sh\necho 'no CUDA GPU devices found' >&2\nexit 0\n",
+        )
+        .expect("write sm_86 stub");
+        std::fs::write(
+            &amd,
+            "#!/bin/sh\nprintf '0\\tAMD Radeon AI PRO R9700\\tgfx1201\\t03\\n'\n",
+        )
+        .expect("write amd stub");
+
+        let devices = detect_devices_from_backends(&sm86, temp_dir.path())
+            .await
+            .expect("AMD backend should answer");
+
+        assert_eq!(
+            devices,
+            vec![TariMinerDevice {
+                common: GpuCommonInformation {
+                    name: "AMD Radeon AI PRO R9700".to_string(),
+                    device_id: 0,
+                    vendor: AMD_VENDOR.to_string(),
+                    memory_mb: None,
+                    is_mineable: None,
+                    unsupported_reason: None,
+                },
+                backend: TariMinerBackend::Amd,
+            }]
         );
     }
 }
