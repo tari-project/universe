@@ -237,6 +237,7 @@ impl SpendKind {
                 destination: destination.clone(),
                 payment_id,
                 origin: origin.as_str().to_string(),
+                fee_micro_minotari: None,
             },
             SpendKind::Burn { claim_public_key } => PinPromptContext::Burn {
                 amount_micro_minotari,
@@ -651,6 +652,18 @@ async fn pass_gates(
             origin.as_str()
         );
 
+        let fee_micro_minotari = if matches!(kind, SpendKind::Send { .. }) {
+            MinotariWalletManager::estimate_one_sided_fee(
+                destination,
+                amount_u64,
+                payment_id.clone(),
+            )
+            .await
+            .ok()
+        } else {
+            None
+        };
+
         EventsEmitter::emit_mcp_transaction_confirmation(McpTransactionConfirmationPayload {
             request_id,
             kind: kind.as_str().to_string(),
@@ -659,6 +672,7 @@ async fn pass_gates(
             amount_display,
             origin: origin.as_str().to_string(),
             payment_id: payment_id.clone(),
+            fee_micro_minotari,
         })
         .await;
 
@@ -801,9 +815,10 @@ mod tests {
         assert_eq!(send.counterparty(), "addr");
         assert_eq!(burn.counterparty(), "claimkey");
         assert!(matches!(
-            send.pin_context(SendOrigin::App, 1, None),
+            send.pin_context(SendOrigin::App, 1, None).with_fee(25),
             PinPromptContext::Send {
                 amount_micro_minotari: 1,
+                fee_micro_minotari: Some(25),
                 ..
             }
         ));

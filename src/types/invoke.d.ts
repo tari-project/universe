@@ -24,7 +24,10 @@ declare module '@tauri-apps/api/core' {
         param: 'send_one_sided_from_tapplet',
         payload: { amount: string; destination: string; paymentId?: string }
     ): Promise<void>;
-
+    function invoke(
+        param: 'estimate_l1_send_fee',
+        payload: { destination: string; amount: string; paymentId?: string }
+    ): Promise<number>;
     function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }

@@ -1714,6 +1714,19 @@ pub async fn send_one_sided_from_tapplet(
     .map_err(|e| e.to_string())
 }
 
+/// Estimate the L1 network fee (in µT) for a one-sided send before the user approves it.
+#[tauri::command]
+pub async fn estimate_l1_send_fee(
+    destination: String,
+    amount: String,
+    payment_id: Option<String>,
+) -> Result<u64, String> {
+    let amount_u64 = crate::wallet::send_gate::parse_amount(&amount).map_err(|e| e.to_string())?;
+    MinotariWalletManager::estimate_one_sided_fee(&destination, amount_u64, payment_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Burn funds for L2. Refused without a PIN; with one, the PIN prompt is the gate.
 #[tauri::command]
 pub async fn burn_to_l2(

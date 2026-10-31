@@ -89,6 +89,7 @@ export default function EnterPinDialog() {
                             amountMicroMinotari={sendContext.amount_micro_minotari}
                             destination={sendContext.destination}
                             paymentId={sendContext.payment_id}
+                            feeMicroMinotari={sendContext.fee_micro_minotari}
                             subtitle={t('security.pin.approve-send-subtitle')}
                         />
                     )}

@@ -23,6 +23,7 @@ export interface McpPendingTransaction {
     /** Defaults to `mcp`; `app` or `tapplet` means that send command asked for approval. */
     origin?: TransactionOrigin;
     payment_id?: string | null;
+    fee_micro_minotari?: number | null;
 }
 
 export type McpTxStatus = 'reviewing' | 'processing' | 'completed';
