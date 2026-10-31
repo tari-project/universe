@@ -140,6 +140,7 @@ export interface SendPinPromptContext {
     destination: string;
     payment_id?: string | null;
     origin: TransactionOrigin;
+    fee_micro_minotari?: number | null;
 }
 
 /** The wallet details were missing from the config and are being rebuilt from the stored seed. */

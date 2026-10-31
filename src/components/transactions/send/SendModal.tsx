@@ -24,6 +24,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const { t } = useTranslation('wallet');
     const [status, setStatus] = useState<SendStatus>('fields');
     const [isBack, setIsBack] = useState(false);
+    const [feeMicroMinotari, setFeeMicroMinotari] = useState<number | null>(null);
     // Without a PIN the backend's confirmation dialog is the review step.
     const hasReviewStep = useWalletStore((s) => s.is_pin_locked);
 
@@ -37,6 +38,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const resetForm = () => {
         reset();
         setIsBack(false);
+        setFeeMicroMinotari(null);
         setStatus('fields');
     };
 
@@ -55,6 +57,20 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
             if (status === 'fields' && hasReviewStep) {
+                if (data.amount) {
+                    try {
+                        const estimatedFee = await invoke('estimate_l1_send_fee', {
+                            destination: data.address,
+                            amount: data.amount.toString(),
+                            paymentId: data.message,
+                        });
+                        setFeeMicroMinotari(typeof estimatedFee === 'number' ? estimatedFee : null);
+                    } catch (error) {
+                        setFeeMicroMinotari(null);
+                        setError('amount', { message: `${error}` });
+                        return;
+                    }
+                }
                 setStatus('reviewing');
                 return;
             }
@@ -126,8 +142,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 amount={methods.getValues().amount}
                 address={methods.getValues().address}
                 message={methods.getValues().message}
-                networkFee={0.06}
-                feePercentage={0.02}
+                feeMicroMinotari={feeMicroMinotari}
                 handleClose={handleClose}
             />
         );

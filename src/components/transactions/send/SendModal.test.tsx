@@ -37,7 +37,7 @@ const sendCalls = () =>
 
 describe('SendModal', () => {
     beforeEach(() => {
-        vi.mocked(invoke).mockClear();
+        vi.mocked(invoke).mockReset();
     });
 
     it('sends on submit when there is no PIN', async () => {
@@ -65,5 +65,46 @@ describe('SendModal', () => {
 
         fireEvent.click(screen.getByTestId('send-confirm-button'));
         await waitFor(() => expect(sendCalls()).toHaveLength(1));
+    });
+
+    it('estimates and displays the network fee on the review screen', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'estimate_l1_send_fee') return 1_250;
+        }) as typeof invoke);
+
+        render(<SendModal section="send" setSection={vi.fn()} />);
+        fireEvent.click(await screen.findByTestId('send-review-button'));
+
+        expect(await screen.findByText('send.review-title')).toBeInTheDocument();
+        expect(invoke).toHaveBeenCalledWith('estimate_l1_send_fee', {
+            destination: 'f4destination',
+            amount: '2',
+            paymentId: undefined,
+        });
+        expect(screen.getByText('send.network-fee')).toBeInTheDocument();
+        expect(screen.getByText('0.001250 XTM')).toBeInTheDocument();
+    });
+
+    it('stays on the form when fee estimation fails', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'estimate_l1_send_fee') {
+                throw new Error('Insufficient funds to cover transaction fee');
+            }
+        }) as typeof invoke);
+
+        render(<SendModal section="send" setSection={vi.fn()} />);
+        fireEvent.click(await screen.findByTestId('send-review-button'));
+
+        await waitFor(() =>
+            expect(invoke).toHaveBeenCalledWith('estimate_l1_send_fee', {
+                destination: 'f4destination',
+                amount: '2',
+                paymentId: undefined,
+            })
+        );
+        expect(screen.queryByText('send.review-title')).not.toBeInTheDocument();
+        expect(sendCalls()).toHaveLength(0);
     });
 });

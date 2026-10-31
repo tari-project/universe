@@ -523,6 +523,7 @@ fn main() {
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::send_one_sided_from_tapplet,
+            commands::estimate_l1_send_fee,
             commands::burn_to_l2,
             commands::enable_l2_wallet,
             commands::unlock_l2_wallet,
