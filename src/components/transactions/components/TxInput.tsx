@@ -58,6 +58,7 @@ export function TxInput({
     truncateText,
     isValid,
     disabled = false,
+    maxLength = 240,
     ...rest
 }: TxInputProps) {
     const [isFocused, setIsFocused] = useState(false);
@@ -107,7 +108,7 @@ export function TxInput({
                     aria-errormessage={errorMessage}
                     $isSecondary={isSecondary}
                     $hasValidityIcon={isValid}
-                    maxLength={240}
+                    maxLength={maxLength}
                 />
 
                 {isValid && (

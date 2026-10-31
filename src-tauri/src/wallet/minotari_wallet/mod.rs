@@ -92,9 +92,12 @@ use std::{
     time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
-use tari_common_types::transaction::TxId;
-use tari_transaction_components::rpc::models::TxSubmissionResponse;
-use tari_transaction_components::tari_amount::MicroMinotari as WalletMicroMinotari;
+use tari_common_types::{tari_address::TariAddress, transaction::TxId, types::FixedHash};
+use tari_transaction_components::{
+    rpc::models::TxSubmissionResponse,
+    tari_amount::MicroMinotari as WalletMicroMinotari,
+    transaction_components::memo_field::{MemoField, TxType},
+};
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -310,6 +313,8 @@ impl MinotariWalletManager {
         }
         let claim_key = parse_claimable_public_key_hex(&claim_public_key)
             .map_err(|e| anyhow::anyhow!("Invalid L2 claim public key: {e}"))?;
+        let payment_id = payment_id.filter(|id| !id.is_empty());
+        validate_burn_payment_id(payment_id.as_deref())?;
         info!(target: LOG_TARGET, "Burning funds to L2.");
 
         // PIN prompt first, before anything locks UTXOs (same ordering as a send).
@@ -1431,11 +1436,35 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
     }
 }
 
+/// Checks that a burn's `payment_id` fits in both the burn output's open memo and the
+/// change output's `TransactionInfo` memo before the PIN prompt or `create_burn_tx`
+/// runs (`create_burn_tx` locks UTXOs before building the change output, and silently
+/// drops payment IDs past 254 bytes).
+fn validate_burn_payment_id(payment_id: Option<&str>) -> Result<(), anyhow::Error> {
+    let Some(payment_id) = payment_id else {
+        return Ok(());
+    };
+    MemoField::new_open_from_string(payment_id, TxType::Burn)
+        .map_err(|e| anyhow::anyhow!("Payment id does not fit in the burn output's memo: {e}"))?;
+    MemoField::new_transaction_info(
+        TariAddress::default(),
+        WalletMicroMinotari::from(0),
+        WalletMicroMinotari::from(0),
+        true,
+        TxType::Burn,
+        vec![FixedHash::zero()],
+        payment_id.as_bytes().to_vec(),
+    )
+    .map_err(|e| anyhow::anyhow!("Payment id does not fit in the change output's memo: {e}"))?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
         blocks_to_report, burn_times, confirmation_status, move_legacy_burn_proofs, pending_burns,
         pending_burns_guard, record_burn_broadcast, scan_progress_percent,
+        validate_burn_payment_id,
     };
     use minotari_wallet::transactions::TransactionDisplayStatus;
 
@@ -1611,5 +1640,27 @@ mod tests {
     fn progress_is_zero_without_a_usable_tip() {
         // No node status yet.
         assert_eq!(scan_progress_percent(350_000, 0), 0.0);
+    }
+
+    #[test]
+    fn burn_payment_id_rejects_lengths_exceeding_change_memo_limit() {
+        assert!(validate_burn_payment_id(None).is_ok());
+        assert!(validate_burn_payment_id(Some(&"a".repeat(140))).is_ok());
+
+        let err_141 = validate_burn_payment_id(Some(&"a".repeat(141))).expect_err("141 bytes");
+        assert!(
+            err_141
+                .to_string()
+                .contains("Payment id does not fit in the change output's memo"),
+            "{err_141}"
+        );
+
+        let err_300 = validate_burn_payment_id(Some(&"a".repeat(300))).expect_err("300 bytes");
+        assert!(
+            err_300
+                .to_string()
+                .contains("Payment id does not fit in the burn output's memo"),
+            "{err_300}"
+        );
     }
 }

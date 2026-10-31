@@ -5,7 +5,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import { render, screen, waitFor, fireEvent } from '@app/test/test-utils';
 import { useWalletStore } from '@app/store/useWalletStore';
+import { FormProvider, useForm } from 'react-hook-form';
 import SendModal from './SendModal';
+import { FormField, MAX_PAYMENT_ID_BYTES, truncateToUtf8Bytes } from './FormField.tsx';
+import { SendInputs } from './types.ts';
 
 vi.mock('@tauri-apps/api/window', () => ({
     getCurrentWindow: vi.fn(() => ({ onCloseRequested: vi.fn(), listen: vi.fn() })),
@@ -65,5 +68,41 @@ describe('SendModal', () => {
 
         fireEvent.click(screen.getByTestId('send-confirm-button'));
         await waitFor(() => expect(sendCalls()).toHaveLength(1));
+    });
+});
+
+describe('FormField payment ID byte limit', () => {
+    function MessageFormHarness({ onValue }: { onValue: (val: string) => void }) {
+        const methods = useForm<SendInputs>({ defaultValues: { message: '' } });
+        return (
+            <FormProvider {...methods}>
+                <FormField
+                    control={methods.control}
+                    name="message"
+                    handleChange={(e) => {
+                        methods.setValue('message', e.target.value);
+                        onValue(e.target.value);
+                    }}
+                />
+            </FormProvider>
+        );
+    }
+
+    it('sets maxLength=140 on the message input and clamps UTF-8 bytes to 140', () => {
+        let latest = '';
+        render(<MessageFormHarness onValue={(val) => (latest = val)} />);
+
+        const input = screen.getByTestId('send-input-message') as HTMLInputElement;
+        expect(input.maxLength).toBe(MAX_PAYMENT_ID_BYTES);
+
+        const overLimitAscii = 'a'.repeat(200);
+        fireEvent.change(input, { target: { value: overLimitAscii } });
+        expect(latest).toHaveLength(MAX_PAYMENT_ID_BYTES);
+
+        // 40 4-byte emojis = 160 UTF-8 bytes; must truncate to 35 emojis (140 bytes)
+        const emojis = '🔥'.repeat(40);
+        fireEvent.change(input, { target: { value: emojis } });
+        expect(new TextEncoder().encode(latest).byteLength).toBe(MAX_PAYMENT_ID_BYTES);
+        expect(truncateToUtf8Bytes(emojis, MAX_PAYMENT_ID_BYTES)).toBe('🔥'.repeat(35));
     });
 });
