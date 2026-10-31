@@ -22,14 +22,16 @@ export const useUiMiningStateMachine = () => {
 
     const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
-    function clearStopTimeout() {
-        if (timeoutIdRef.current) {
+    const clearStopTimeout = useCallback(() => {
+        if (timeoutIdRef.current !== null) {
             clearTimeout(timeoutIdRef.current);
             timeoutIdRef.current = null;
         }
-    }
+    }, []);
 
     const forceAnimationStop = useCallback(() => {
+        clearStopTimeout();
+
         let retryCount = 0;
         const maxRetries = 15;
         const interval = 1000;
@@ -37,6 +39,7 @@ export const useUiMiningStateMachine = () => {
         if (shouldStart) return;
 
         const attemptStop = () => {
+            timeoutIdRef.current = null;
             const animationStatus = getCurrentAnimationState();
             if (animationStatus === 'NOT_STARTED') {
                 console.info(getTowerLogPrefix('info'), `Animation stopped: status=${animationStatus}`);
@@ -62,35 +65,35 @@ export const useUiMiningStateMachine = () => {
         timeoutIdRef.current = setTimeout(() => {
             attemptStop();
         }, interval);
-
-        return () => {
-            clearStopTimeout();
-        };
-    }, [shouldStart]);
+    }, [clearStopTimeout, shouldStart]);
 
     useEffect(() => {
         const state = getCurrentAnimationState();
         const notStarted = state === 'NOT_STARTED';
         if (isMining) {
             setShouldStart(isMining && notStarted);
+            setShouldStop(false);
         } else {
+            setShouldStart(false);
             setShouldStop(!notStarted && !preventStop);
         }
     }, [isMining, preventStop]);
 
     useEffect(() => {
-        if (noVisualMode || !towerInitalized) return;
+        if (noVisualMode || !towerInitalized) {
+            clearStopTimeout();
+            return;
+        }
 
         if (shouldStop) {
             forceAnimationStop();
-            return;
-        }
-        if (shouldStart) {
+        } else if (shouldStart) {
+            clearStopTimeout();
             setAnimationState('start');
         }
 
         return () => {
             clearStopTimeout();
         };
-    }, [towerInitalized, forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
+    }, [towerInitalized, forceAnimationStop, clearStopTimeout, noVisualMode, shouldStart, shouldStop]);
 };

@@ -89,7 +89,6 @@ import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbac
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
 const useTauriEventsListener = () => {
-    const initializationRef = useRef(false);
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
     function handleLogUpdate(newEvent: BackendStateUpdateEvent) {
         if (LOG_EVENT_TYPES.includes(newEvent.event_type)) {
@@ -101,11 +100,12 @@ const useTauriEventsListener = () => {
         }
     }
 
-    const setupListener = useCallback(async () => {
+    const setupListener = useCallback(async (isCancelled: () => boolean) => {
         // Set up the event listener
         const unlisten = await listen(
             BACKEND_STATE_UPDATE,
             async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
+                if (isCancelled()) return;
                 handleLogUpdate(event);
                 switch (event.event_type) {
                     case 'UpdateAppModuleStatus':
@@ -327,6 +327,11 @@ const useTauriEventsListener = () => {
             }
         );
 
+        if (isCancelled()) {
+            unlisten();
+            return null;
+        }
+
         try {
             await invoke('frontend_ready');
             console.info('Successfully called frontend_ready');
@@ -334,21 +339,31 @@ const useTauriEventsListener = () => {
             console.error('Failed to call frontend_ready: ', e);
         }
 
+        if (isCancelled()) {
+            unlisten();
+            return null;
+        }
+
         return unlisten;
     }, []);
 
     useEffect(() => {
         console.info('Setting up Tauri event listener for backend state updates');
-        if (initializationRef.current) return;
-        initializationRef.current = true;
-
+        let cancelled = false;
         let unlistenFunction: (() => void) | null = null;
-        setupListener().then((unlisten) => {
+
+        setupListener(() => cancelled).then((unlisten) => {
+            if (cancelled) {
+                unlisten?.();
+                return;
+            }
             unlistenFunction = unlisten;
         });
 
         return () => {
+            cancelled = true;
             unlistenFunction?.();
+            unlistenFunction = null;
         };
     }, [setupListener]);
 };

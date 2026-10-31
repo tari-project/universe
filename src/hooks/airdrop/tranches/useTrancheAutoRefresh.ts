@@ -7,6 +7,15 @@ import { handleTrancheRefresh } from '@app/hooks/airdrop/stateHelpers/useAirdrop
 import { KEY_TRANCHE_STATUS } from './useTrancheStatus';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 
+const FOCUS_REFRESH_COOLDOWN_MS = 1000;
+let inFlightTrancheRefresh: Promise<boolean> | null = null;
+let lastFocusRefreshTimestamp = 0;
+
+export function resetTrancheAutoRefreshStateForTests() {
+    inFlightTrancheRefresh = null;
+    lastFocusRefreshTimestamp = 0;
+}
+
 interface TrancheAutoRefreshOptions {
     enabled?: boolean;
     notifyOnNewTranches?: boolean;
@@ -29,23 +38,35 @@ export function useTrancheAutoRefresh({
     const refreshDisabled = !enabled || !isLoggedIn;
 
     const refreshTranches = useCallback(async () => {
-        try {
-            const success = await handleTrancheRefresh();
-
-            if (success) {
-                // Invalidate React Query cache to trigger re-fetch
-                await queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
-                onRefreshSuccess?.();
-                return true;
-            } else {
-                console.error('Failed to refresh tranche status');
-            }
-        } catch (error) {
-            const errorObj = error instanceof Error ? error : new Error('Unknown error in TrancheAutoRefresh');
-            onRefreshError?.(errorObj);
-            console.error('Tranche auto-refresh failed:', errorObj);
-            return false;
+        if (inFlightTrancheRefresh) {
+            return inFlightTrancheRefresh;
         }
+
+        const runRefresh = (async () => {
+            try {
+                const success = await handleTrancheRefresh();
+
+                if (success) {
+                    // Invalidate React Query cache to trigger re-fetch
+                    await queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
+                    onRefreshSuccess?.();
+                    return true;
+                } else {
+                    console.error('Failed to refresh tranche status');
+                    return false;
+                }
+            } catch (error) {
+                const errorObj = error instanceof Error ? error : new Error('Unknown error in TrancheAutoRefresh');
+                onRefreshError?.(errorObj);
+                console.error('Tranche auto-refresh failed:', errorObj);
+                return false;
+            } finally {
+                inFlightTrancheRefresh = null;
+            }
+        })();
+
+        inFlightTrancheRefresh = runRefresh;
+        return runRefresh;
     }, [queryClient, onRefreshSuccess, onRefreshError]);
 
     useEffect(() => {
@@ -72,22 +93,30 @@ export function useTrancheAutoRefresh({
         lastAvailableCountRef.current = currentAvailableCount;
     }, [notifyOnNewTranches, trancheStatus, t]);
 
-    // Refresh on app focus
+    // Refresh on app focus, coalescing back-to-back focus and visibilitychange events across mounted hooks
     useEffect(() => {
         if (refreshDisabled) return;
 
-        const handleFocus = () => refreshTranches();
+        const triggerFocusRefresh = () => {
+            const now = Date.now();
+            if (now - lastFocusRefreshTimestamp < FOCUS_REFRESH_COOLDOWN_MS) {
+                return;
+            }
+            lastFocusRefreshTimestamp = now;
+            void refreshTranches();
+        };
+
         const handleVisibilityChange = () => {
             if (!document.hidden) {
-                void handleFocus();
+                triggerFocusRefresh();
             }
         };
 
-        window.addEventListener('focus', handleFocus);
+        window.addEventListener('focus', triggerFocusRefresh);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
-            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('focus', triggerFocusRefresh);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [refreshDisabled, refreshTranches]);
