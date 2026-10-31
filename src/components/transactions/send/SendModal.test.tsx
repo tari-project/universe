@@ -107,4 +107,30 @@ describe('SendModal', () => {
         expect(screen.queryByText('send.review-title')).not.toBeInTheDocument();
         expect(sendCalls()).toHaveLength(0);
     });
+
+    it('ignores stale fee estimation results that resolve after the modal is closed', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        let resolveEstimate!: (value: number) => void;
+        vi.mocked(invoke).mockImplementation(((cmd: string) => {
+            if (cmd === 'estimate_l1_send_fee') {
+                return new Promise<number>((resolve) => {
+                    resolveEstimate = resolve;
+                });
+            }
+            return Promise.resolve();
+        }) as typeof invoke);
+
+        const { rerender } = render(<SendModal section="send" setSection={vi.fn()} />);
+        fireEvent.click(await screen.findByTestId('send-review-button'));
+
+        await waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
+
+        // Close the modal before the estimate resolves, then reopen it
+        rerender(<SendModal section="history" setSection={vi.fn()} />);
+        resolveEstimate(1_250);
+        rerender(<SendModal section="send" setSection={vi.fn()} />);
+
+        await waitFor(() => expect(screen.getByTestId('send-review-button')).toBeInTheDocument());
+        expect(screen.queryByText('send.review-title')).not.toBeInTheDocument();
+    });
 });

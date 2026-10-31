@@ -1,7 +1,7 @@
 import { FormProvider, useForm } from 'react-hook-form';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import type { SendInputs } from '@app/components/transactions/send/types.ts';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SendForm } from './SendForm.tsx';
 import { SendReview } from './SendReview/SendReview.tsx';
@@ -34,8 +34,16 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     });
 
     const { reset } = methods;
+    const estimateRequestIdRef = useRef(0);
+
+    useEffect(() => {
+        if (section !== 'send') {
+            estimateRequestIdRef.current += 1;
+        }
+    }, [section]);
 
     const resetForm = () => {
+        estimateRequestIdRef.current += 1;
         reset();
         setIsBack(false);
         setFeeMicroMinotari(null);
@@ -48,6 +56,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     }
 
     function handleBack() {
+        estimateRequestIdRef.current += 1;
         setStatus('fields');
         setIsBack(true);
     }
@@ -57,6 +66,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
             if (status === 'fields' && hasReviewStep) {
+                const requestId = ++estimateRequestIdRef.current;
                 if (data.amount) {
                     try {
                         const estimatedFee = await invoke('estimate_l1_send_fee', {
@@ -64,8 +74,14 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                             amount: data.amount.toString(),
                             paymentId: data.message,
                         });
+                        if (estimateRequestIdRef.current !== requestId) {
+                            return;
+                        }
                         setFeeMicroMinotari(typeof estimatedFee === 'number' ? estimatedFee : null);
                     } catch (error) {
+                        if (estimateRequestIdRef.current !== requestId) {
+                            return;
+                        }
                         setFeeMicroMinotari(null);
                         setError('amount', { message: `${error}` });
                         return;
