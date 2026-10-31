@@ -13,7 +13,9 @@ import SwapUI from '@app/components/wallet/sidebarWallet/swap.tsx';
 
 export default function WalletSidebarContent() {
     const { t } = useTranslation('wallet');
-    const selectedTransaction = useWalletStore((s) => s.selectedTransaction());
+    const selectedTransaction = useWalletStore((s) =>
+        s.selectedTransactionId ? (s.wallet_transactions.find((tx) => tx.id === s.selectedTransactionId) ?? null) : null
+    );
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const [section, setSection] = useState('history');
     return (

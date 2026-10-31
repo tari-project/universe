@@ -22,21 +22,6 @@ import { AnimatePresence } from 'motion/react';
 import { useCrewRewardsStore } from '@app/store/useCrewRewardsStore';
 import { useUIStore } from '@app/store';
 
-/*
-
-// testing data for xspace event banner
-
-const testingXSpaceEvent = {
-    text: 'test',
-    visibilityStart: '2025-08-20T12:00:00Z',
-    visibilityEnd: '2025-08-20T12:00:00Z',
-    goingLive: '2025-08-20T12:00:00Z',
-    link: 'https://x.com/test',
-    type: XSpaceEventType.event,
-};
-
-*/
-
 const XSpaceEventBanner = () => {
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
     const showTapplet = useUIStore((s) => s.showTapplet);
@@ -73,13 +58,15 @@ const XSpaceEventBanner = () => {
     }, [latestXSpaceEvent]);
 
     useEffect(() => {
-        const isTextTooLong = (latestXSpaceEvent?.text.length || 0) > 25;
-        setIsTextTooLong(isTextTooLong);
-        if (isTextTooLong && titleRef.current && containerRef.current) {
+        const textTooLong = (latestXSpaceEvent?.text.length || 0) > 25;
+        setIsTextTooLong(textTooLong);
+        if (textTooLong && titleRef.current && containerRef.current) {
             const titleWidth = titleRef.current.scrollWidth || 0;
             setTransitionPixelWidth(titleWidth / 2);
+        } else {
+            setTransitionPixelWidth(0);
         }
-    }, [latestXSpaceEvent]); // Re-run the effect when the event changes
+    }, [latestXSpaceEvent, isVisible, showTapplet]);
 
     const displayedDate = useMemo(() => {
         try {
@@ -140,27 +127,7 @@ const XSpaceEventBanner = () => {
                             )}
 
                             <TitleContainer ref={containerRef} $hasTextOverflow={isTextTooLong}>
-                                <Title
-                                    ref={titleRef}
-                                    animate={
-                                        isTextTooLong
-                                            ? {
-                                                  x: ['0px', `-${transitionPixelWidth}px`],
-                                              }
-                                            : { x: '0%' }
-                                    }
-                                    transition={
-                                        isTextTooLong
-                                            ? {
-                                                  repeat: Infinity,
-                                                  repeatType: 'loop',
-                                                  duration: 10,
-                                                  delay: 1,
-                                                  ease: 'linear',
-                                              }
-                                            : {}
-                                    }
-                                >
+                                <Title ref={titleRef} $marqueeOffsetPx={isTextTooLong ? transitionPixelWidth : 0}>
                                     {`${latestXSpaceEvent.text} ${isTextTooLong ? latestXSpaceEvent.text : ''}`}
                                 </Title>
                             </TitleContainer>

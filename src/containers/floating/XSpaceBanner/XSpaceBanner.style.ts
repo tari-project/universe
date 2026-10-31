@@ -1,5 +1,14 @@
 import * as m from 'motion/react-m';
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
+
+const marqueeScroll = keyframes`
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(var(--marquee-offset, -50%));
+    }
+`;
 
 export const BannerContent = styled(m.div)<{
     $crewRewardsActive: boolean;
@@ -117,7 +126,8 @@ export const TitleContainer = styled(m.div)<{ $hasTextOverflow: boolean }>`
         `}
 `;
 
-export const Title = styled(m.span)`
+export const Title = styled(m.span)<{ $marqueeOffsetPx?: number }>`
+    display: inline-block;
     white-space: nowrap;
     max-width: 168px;
     min-width: 100px;
@@ -127,6 +137,13 @@ export const Title = styled(m.span)`
     font-size: 12px;
     line-height: 17px;
     letter-spacing: 1%;
+    ${({ $marqueeOffsetPx }) =>
+        $marqueeOffsetPx && $marqueeOffsetPx > 0
+            ? css`
+                  --marquee-offset: -${$marqueeOffsetPx}px;
+                  animation: ${marqueeScroll} 10s linear 1s infinite;
+              `
+            : ''}
 `;
 
 export const LiveBadgeWrapper = styled(m.div)`
@@ -160,12 +177,10 @@ export const JoinSpaceWrapper = styled(m.div)`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    border-radius: 30px;
-    border: 1px solid #ffffff33;
-    padding: 0 5px;
-    font-weight: 600;
-    font-size: 10px;
+    font-family: Poppins, sans-serif;
+    font-weight: 500;
+    font-size: 11px;
     line-height: 17px;
     letter-spacing: 1%;
+    color: #fff;
 `;

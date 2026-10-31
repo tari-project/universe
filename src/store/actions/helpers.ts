@@ -1,7 +1,18 @@
 import { DisplayedTransaction } from '@app/types/app-status.ts';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
-const sortTransactions = (txs: DisplayedTransaction[]): DisplayedTransaction[] =>
-    txs.sort((a, b) => new Date(b.blockchain.timestamp).getTime() - new Date(a.blockchain.timestamp).getTime());
+const parseTimestampMs = (timestamp: string | number): number => {
+    if (typeof timestamp === 'number') return timestamp;
+    const parsed = Date.parse(timestamp);
+    return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const sortTransactions = (txs: DisplayedTransaction[]): DisplayedTransaction[] => {
+    if (txs.length <= 1) return txs;
+    const decorated = txs.map((tx) => ({ tx, ts: parseTimestampMs(tx.blockchain.timestamp) }));
+    decorated.sort((a, b) => b.ts - a.ts);
+    return decorated.map((entry) => entry.tx);
+};
 
 export const mergeTransactions = (
     currentList: DisplayedTransaction[],
@@ -20,6 +31,7 @@ export const mergeTransactions = (
 
     const addedItems: DisplayedTransaction[] = [];
     let hasChanges = false;
+    let needsResort = false;
 
     incomingList.forEach((newTx) => {
         const matchIndex = indexById.get(newTx.id);
@@ -32,16 +44,22 @@ export const mergeTransactions = (
             if (existing.bridge_transaction_details && !updatedTransaction.bridge_transaction_details) {
                 updatedTransaction.bridge_transaction_details = existing.bridge_transaction_details;
             }
-            updatedList[matchIndex] = updatedTransaction;
-
-            hasChanges = true;
+            if (!deepEqual(existing, updatedTransaction)) {
+                if (existing.blockchain?.timestamp !== updatedTransaction.blockchain?.timestamp) {
+                    needsResort = true;
+                }
+                updatedList[matchIndex] = updatedTransaction;
+                hasChanges = true;
+            }
         } else if (upsert) {
             addedItems.push(newTx);
             hasChanges = true;
+            needsResort = true;
         }
     });
 
     if (!hasChanges) return currentList;
+    if (!needsResort) return updatedList;
 
     return sortTransactions([...addedItems, ...updatedList]);
 };
