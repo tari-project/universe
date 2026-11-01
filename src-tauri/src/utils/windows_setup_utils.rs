@@ -20,47 +20,76 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{error, info};
+use log::{error, info, warn};
 use std::io::{self, Write};
 use std::os::windows::process::CommandExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::consts::PROCESS_CREATION_NO_WINDOW;
 
-fn check_netsh_rule_exists(rule_name: String) -> bool {
-    let output = Command::new("netsh")
-        .arg("advfirewall")
-        .arg("firewall")
-        .arg("show")
-        .arg("rule")
-        .arg(format!("name={}", rule_name))
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::piped())
-        .creation_flags(PROCESS_CREATION_NO_WINDOW)
-        .output()
-        .expect("Failed to execute netsh command");
-
-    if output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let lines: Vec<&str> = stdout.split('\n').collect();
-        for line in lines {
-            if line.contains("Action:") {
-                let action = line.split(':').nth(1).unwrap_or("").trim();
-                if action == "Allow" {
-                    return true;
-                }
-            }
+fn parse_netsh_allow_rule(stdout: &str) -> bool {
+    for line in stdout.lines() {
+        if let Some((_, value)) = line.split_once(':')
+            && line.trim_start().starts_with("Action")
+            && value.trim().eq_ignore_ascii_case("Allow")
+        {
+            return true;
         }
     }
     false
 }
 
+fn format_program_arg(binary_path: &Path) -> io::Result<String> {
+    let path_str = binary_path.to_str().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Binary path contains invalid UTF-8",
+        )
+    })?;
+    let has_exe_ext = binary_path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("exe"));
+    if has_exe_ext {
+        Ok(format!("program={path_str}"))
+    } else {
+        Ok(format!("program={path_str}.exe"))
+    }
+}
+
+fn check_netsh_rule_exists(rule_name: &str) -> bool {
+    let output = match Command::new("netsh")
+        .arg("advfirewall")
+        .arg("firewall")
+        .arg("show")
+        .arg("rule")
+        .arg(format!("name={rule_name}"))
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .creation_flags(PROCESS_CREATION_NO_WINDOW)
+        .output()
+    {
+        Ok(output) => output,
+        Err(e) => {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to execute netsh command: {e}");
+            return false;
+        }
+    };
+
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return parse_netsh_allow_rule(&stdout);
+    }
+    false
+}
+
 pub fn add_firewall_rule(binary_name: String, binary_path: PathBuf) -> io::Result<()> {
-    if check_netsh_rule_exists(binary_name.clone()) {
+    if check_netsh_rule_exists(&binary_name) {
         info!(target: LOG_TARGET_APP_LOGIC, "Firewall rule already exists.");
     } else {
+        let program_arg = format_program_arg(&binary_path)?;
         // Add a firewall rule to allow inbound connections
         let output = Command::new("netsh")
             .args([
@@ -68,13 +97,10 @@ pub fn add_firewall_rule(binary_name: String, binary_path: PathBuf) -> io::Resul
                 "firewall",
                 "add",
                 "rule",
-                &format!("name={}", binary_name),
+                &format!("name={binary_name}"),
                 "dir=in",
                 "action=allow",
-                &format!(
-                    "program={}.exe",
-                    &binary_path.to_str().expect("Could not get binary path")
-                ),
+                &program_arg,
                 "profile=public",
             ])
             .stdout(std::process::Stdio::null())
@@ -91,4 +117,32 @@ pub fn add_firewall_rule(binary_name: String, binary_path: PathBuf) -> io::Resul
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{format_program_arg, parse_netsh_allow_rule};
+    use std::path::Path;
+
+    #[test]
+    fn parses_netsh_allow_output_and_rejects_block_or_empty() {
+        let sample_allow = "Rule Name:                            minotari_node\r\n                            Enabled:                              Yes\r\n                            Direction:                            In\r\n                            Profiles:                             Public\r\n                            Action:                               Allow\r\n";
+        assert!(parse_netsh_allow_rule(sample_allow));
+
+        let sample_block = "Rule Name:                            minotari_node\r\n                            Action:                               Block\r\n";
+        assert!(!parse_netsh_allow_rule(sample_block));
+        assert!(!parse_netsh_allow_rule(""));
+    }
+
+    #[test]
+    fn format_program_arg_does_not_duplicate_exe_suffix() {
+        assert_eq!(
+            format_program_arg(Path::new(r"C:\Tari\minotari_node.exe")).unwrap(),
+            r"program=C:\Tari\minotari_node.exe"
+        );
+        assert_eq!(
+            format_program_arg(Path::new(r"C:\Tari\minotari_node")).unwrap(),
+            r"program=C:\Tari\minotari_node.exe"
+        );
+    }
 }
