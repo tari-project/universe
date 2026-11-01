@@ -528,10 +528,18 @@ pub async fn set_external_tari_address(
 }
 
 #[tauri::command]
-pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError> {
+pub async fn confirm_exchange_address(
+    address: String,
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
+
+    // Validate PIN if pin locked
+    let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
 
     InternalWallet::initialize_seedless(Some(new_external_tari_address))
         .await
@@ -667,6 +675,9 @@ pub async fn import_seed_words(
         }
         Err(e) => {
             error!(target: LOG_TARGET_APP_LOGIC, "Error importing seed words by internal wallet: {e:?}");
+            SetupManager::get_instance()
+                .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+                .await;
             return Err(InvokeError::from_anyhow(e));
         }
     }

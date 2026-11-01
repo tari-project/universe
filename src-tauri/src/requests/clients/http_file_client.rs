@@ -142,7 +142,7 @@ impl HttpFileClient {
         }
     }
 
-    pub async fn execute(&self) -> Result<PathBuf, anyhow::Error> {
+    pub async fn download(&self) -> Result<PathBuf, anyhow::Error> {
         if self.config.should_check_cloudflare_cache {
             CloudFlareCache::check_if_cache_hits(&self.url).await?;
         }
@@ -153,11 +153,17 @@ impl HttpFileClient {
             self.handle_default_flow().await?;
         }
 
+        Ok(self.get_destination().join(&self.file_name))
+    }
+
+    pub async fn execute(&self) -> Result<PathBuf, anyhow::Error> {
+        let downloaded_path = self.download().await?;
+
         if self.config.should_extract {
             self.extract().await?;
         }
 
-        Ok(self.get_destination().join(&self.file_name))
+        Ok(downloaded_path)
     }
 
     pub async fn handle_default_flow(&self) -> Result<(), anyhow::Error> {

@@ -212,6 +212,7 @@ impl BinaryManager {
 
         // Debug: Check if the file actually exists before attempting validation
         if !in_progress_file_zip.exists() {
+            std::fs::remove_dir_all(destination_dir.clone()).ok();
             error!(target: LOG_TARGET_APP_LOGIC, "Archive file does not exist at path: {in_progress_file_zip:?}");
             return Err(anyhow!(
                 "Archive file not found at path: {:?}",
@@ -404,41 +405,43 @@ impl BinaryManager {
             .await
             .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-        let main_file_download_result = HttpFileClient::builder()
+        let main_client = HttpFileClient::builder()
             .with_cloudflare_cache_check()
             .with_file_extract()
             .with_progress_status_sender(chunk_progress_sender.clone())
             .with_download_resume()
-            .build(download_url.clone(), destination_dir.clone())?
-            .execute()
-            .await;
+            .build(download_url.clone(), destination_dir.clone())?;
 
-        let archive_destination_path: PathBuf = if main_file_download_result.is_err() {
-            info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
-            if let Some(mut progress_sender_shutdown) = main_progress_sender_shutdown {
-                progress_sender_shutdown.trigger();
-            }
+        let main_file_download_result = main_client.download().await;
 
-            let (chunk_progress_sender, fallback_progress_sender_shutdown) = self
-                .resolve_progress_channel(progress_channel.clone())
-                .await
-                .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
+        let (active_client, archive_destination_path): (HttpFileClient, PathBuf) =
+            if main_file_download_result.is_err() {
+                info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
+                if let Some(mut progress_sender_shutdown) = main_progress_sender_shutdown {
+                    progress_sender_shutdown.trigger();
+                }
 
-            HttpFileClient::builder()
-                .with_file_extract()
-                .with_progress_status_sender(chunk_progress_sender.clone())
-                .with_download_resume()
-                .build(fallback_url.clone(), destination_dir.clone())?
-                .execute()
-                .await
-                .inspect_err(|_| {
+                let (chunk_progress_sender, fallback_progress_sender_shutdown) = self
+                    .resolve_progress_channel(progress_channel.clone())
+                    .await
+                    .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
+
+                let fallback_client = HttpFileClient::builder()
+                    .with_file_extract()
+                    .with_progress_status_sender(chunk_progress_sender.clone())
+                    .with_download_resume()
+                    .build(fallback_url.clone(), destination_dir.clone())?;
+
+                let path = fallback_client.download().await.inspect_err(|_| {
                     if let Some(mut progress_sender_shutdown) = fallback_progress_sender_shutdown {
                         progress_sender_shutdown.trigger();
                     }
-                })?
-        } else {
-            main_file_download_result?
-        };
+                })?;
+
+                (fallback_client, path)
+            } else {
+                (main_client, main_file_download_result?)
+            };
 
         if self.should_validate_checksum {
             self.validate_checksum(
@@ -448,6 +451,10 @@ impl BinaryManager {
             )
             .await?;
         }
+
+        active_client.extract().await.inspect_err(|_| {
+            std::fs::remove_dir_all(destination_dir.clone()).ok();
+        })?;
 
         Ok(())
     }

@@ -127,7 +127,21 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn set_mcp_max_transaction_amount(amount: Option<u64>) -> Result<(), String> {
+pub async fn set_mcp_max_transaction_amount(
+    amount: Option<u64>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    let current_limit = *ConfigMcp::content().await.max_transaction_amount();
+    let relaxes_limit = match (current_limit, amount) {
+        (Some(_), None) => true,
+        (Some(current), Some(next)) => next > current,
+        (None, _) => false,
+    };
+    if relaxes_limit {
+        let _unused = crate::pin::PinManager::get_validated_pin_if_defined(&app_handle, None)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
     ConfigMcp::update_field(ConfigMcpContent::set_max_transaction_amount, amount)
         .await
         .map_err(|e| e.to_string())?;
