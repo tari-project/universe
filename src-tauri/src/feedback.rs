@@ -241,7 +241,15 @@ fn zip_create_from_directories(
 
             for entry in directory_entry_iterator {
                 let entry_path = entry?.path();
-                let entry_metadata = std::fs::metadata(entry_path.clone())?;
+                let entry_metadata = std::fs::symlink_metadata(&entry_path)?;
+                if entry_metadata.file_type().is_symlink() {
+                    info!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Skipping symlink {:?} during support archive creation",
+                        entry_path
+                    );
+                    continue;
+                }
                 let entry_file_name_as_str = entry_path
                     .file_name()
                     .and_then(|name| name.to_str())
@@ -318,19 +326,27 @@ impl Feedback {
         let upload_zip_path = if include_logs {
             let diagnostics = SupportDiagnostics::collect().await;
             let (archive_file, zip_filename) = create_support_archive(&app_log_dir, &diagnostics)?;
-            let metadata = std::fs::metadata(&archive_file)?;
-            let file_size = metadata.len();
-            info!(target: LOG_TARGET_APP_LOGIC, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
-            let mut file = File::open(&archive_file)?;
-            let mut file_contents = Vec::new();
-            file.read_to_end(&mut file_contents)?;
-            form = form.part(
-                "logs",
-                multipart::Part::bytes(file_contents)
+            let read_res: Result<multipart::Part> = (|| {
+                let metadata = std::fs::metadata(&archive_file)?;
+                let file_size = metadata.len();
+                info!(target: LOG_TARGET_APP_LOGIC, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
+                let mut file = File::open(&archive_file)?;
+                let mut file_contents = Vec::new();
+                file.read_to_end(&mut file_contents)?;
+                Ok(multipart::Part::bytes(file_contents)
                     .file_name(zip_filename.clone())
-                    .mime_str("application/x-compressed")?,
-            );
-            Some(archive_file)
+                    .mime_str("application/x-compressed")?)
+            })();
+            match read_res {
+                Ok(part) => {
+                    form = form.part("logs", part);
+                    Some(archive_file)
+                }
+                Err(err) => {
+                    let _unused = std::fs::remove_file(&archive_file);
+                    return Err(err);
+                }
+            }
         } else {
             None
         };
@@ -343,12 +359,14 @@ impl Feedback {
         if let Some(jwt) = jwt {
             req = req.header("Authorization", format!("Bearer {jwt}"));
         }
-        let response = req.send().await?;
+        let send_result = req.send().await;
 
-        // Delete the ZIP file
+        // Always delete the temporary ZIP file regardless of upload outcome
         if let Some(archive_file) = upload_zip_path {
-            std::fs::remove_file(archive_file)?;
+            let _unused = std::fs::remove_file(archive_file);
         }
+
+        let response = send_result?;
         if response.status().is_success() {
             info!(target: LOG_TARGET_APP_LOGIC, "Feedback sent successfully");
             Ok(response.text().await?)

@@ -30,14 +30,28 @@ use crate::{
 
 use axum::Router;
 use log::{error, info};
-use std::{net::SocketAddr, path::PathBuf};
-use tokio::select;
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::LazyLock};
+use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 use tower_http::services::ServeDir;
 
+static ACTIVE_TAPPLET_SERVERS: LazyLock<Mutex<HashMap<PathBuf, CancellationToken>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
 pub async fn start_tapplet(tapplet_path: PathBuf) -> Result<(String, CancellationToken), Error> {
     info!(target: LOG_TARGET_APP_LOGIC, "Start tapplet path {:?}", &tapplet_path);
-    serve(using_serve_dir(tapplet_path), 0).await
+    let key = tapplet_path
+        .canonicalize()
+        .unwrap_or_else(|_| tapplet_path.clone());
+    if let Some(prev_token) = ACTIVE_TAPPLET_SERVERS.lock().await.remove(&key) {
+        prev_token.cancel();
+    }
+    let (address, cancel_token) = serve(using_serve_dir(tapplet_path), 0).await?;
+    ACTIVE_TAPPLET_SERVERS
+        .lock()
+        .await
+        .insert(key, cancel_token.clone());
+    Ok((address, cancel_token))
 }
 
 pub fn using_serve_dir(tapplet_path: PathBuf) -> Router {

@@ -185,6 +185,7 @@ impl McpServerManager {
         }
 
         if let Some(handle) = handle {
+            let abort_handle = handle.abort_handle();
             let timeout = tokio::time::timeout(
                 std::time::Duration::from_secs(SHUTDOWN_TIMEOUT_SECS),
                 handle,
@@ -197,7 +198,8 @@ impl McpServerManager {
                     error!(target: LOG_TARGET_APP_LOGIC, "MCP server task panicked: {e:?}");
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "MCP server shutdown timed out after {SHUTDOWN_TIMEOUT_SECS}s");
+                    warn!(target: LOG_TARGET_APP_LOGIC, "MCP server shutdown timed out after {SHUTDOWN_TIMEOUT_SECS}s; aborting task");
+                    abort_handle.abort();
                 }
             }
         }
