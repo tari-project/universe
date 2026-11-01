@@ -27,19 +27,21 @@ use ring::{
 };
 use sha2::{Digest, Sha256};
 use tari_utilities::SafePassword;
+use zeroize::{Zeroize, Zeroizing};
 
-fn derive_key(passphrase: &SafePassword) -> [u8; 32] {
+fn derive_key(passphrase: &SafePassword) -> Zeroizing<[u8; 32]> {
     let mut hasher = Sha256::new();
     hasher.update(passphrase.reveal());
-    let result = hasher.finalize();
-    let mut key = [0u8; 32];
+    let mut result = hasher.finalize();
+    let mut key = Zeroizing::new([0u8; 32]);
     key.copy_from_slice(&result[..32]);
+    result.zeroize();
     key
 }
 
 pub fn encrypt(data: &[u8], passphrase: &SafePassword) -> Result<Vec<u8>, anyhow::Error> {
     let key_bytes = derive_key(passphrase);
-    let unbound_key = aead::UnboundKey::new(&aead::AES_256_GCM, &key_bytes)
+    let unbound_key = aead::UnboundKey::new(&aead::AES_256_GCM, &*key_bytes)
         .map_err(|_| anyhow!("Failed to create unbound key"))?;
     let key = aead::LessSafeKey::new(unbound_key);
 
@@ -52,11 +54,14 @@ pub fn encrypt(data: &[u8], passphrase: &SafePassword) -> Result<Vec<u8>, anyhow
     let aad = aead::Aad::from(b"additional data");
 
     let mut in_out = data.to_vec(); // Do NOT resize here!
-    key.seal_in_place_append_tag(nonce, aad, &mut in_out)
-        .map_err(|_| anyhow!("Encryption failed"))?;
+    if let Err(_) = key.seal_in_place_append_tag(nonce, aad, &mut in_out) {
+        in_out.zeroize();
+        return Err(anyhow!("Encryption failed"));
+    }
 
     let mut result = nonce_bytes.to_vec();
     result.extend_from_slice(&in_out); // in_out is now ciphertext + tag
+    in_out.zeroize();
     Ok(result)
 }
 
@@ -65,7 +70,7 @@ pub fn decrypt(encrypted_data: &[u8], passphrase: &SafePassword) -> Result<Vec<u
         return Err(anyhow!("Invalid encrypted data length"));
     }
     let key_bytes = derive_key(passphrase);
-    let unbound_key = aead::UnboundKey::new(&aead::AES_256_GCM, &key_bytes)
+    let unbound_key = aead::UnboundKey::new(&aead::AES_256_GCM, &*key_bytes)
         .map_err(|_| anyhow!("Failed to create unbound key"))?;
     let key = aead::LessSafeKey::new(unbound_key);
 
@@ -74,7 +79,7 @@ pub fn decrypt(encrypted_data: &[u8], passphrase: &SafePassword) -> Result<Vec<u
         .map_err(|_| anyhow!("Invalid nonce"))?;
     let aad = aead::Aad::from(b"additional data");
 
-    let mut in_out = ciphertext_and_tag.to_vec();
+    let mut in_out = Zeroizing::new(ciphertext_and_tag.to_vec());
     let plaintext = key
         .open_in_place(nonce, aad, &mut in_out)
         .map_err(|_| anyhow!("Decryption failed"))?;
