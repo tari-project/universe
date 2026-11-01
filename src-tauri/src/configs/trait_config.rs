@@ -64,6 +64,11 @@ pub fn build_config_update_field_event(config_name: &str, field: &str) -> serde_
 pub(crate) fn atomic_write(path: &Path, contents: &[u8]) -> Result<(), Error> {
     let temp_path = path.with_extension("json.tmp");
     let mut temp_file = fs::File::create(&temp_path)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        temp_file.set_permissions(fs::Permissions::from_mode(0o600))?;
+    }
     temp_file.write_all(contents)?;
     temp_file.sync_all()?;
     drop(temp_file);

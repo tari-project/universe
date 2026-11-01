@@ -48,21 +48,32 @@ pub async fn get_mcp_token(pin: Option<String>) -> Result<Option<String>, String
 }
 
 #[tauri::command]
-pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
+pub async fn set_mcp_enabled(enabled: bool, pin: Option<String>) -> Result<(), String> {
+    let needs_pin_validation = enabled && *ConfigMcp::content().await.transactions_enabled();
+    let pin_validated = if needs_pin_validation {
+        if let Some(pin_str) = pin {
+            if !crate::pin::PinManager::pin_locked().await {
+                return Err(
+                    "Cannot enable MCP with transactions active without a PIN configured."
+                        .to_string(),
+                );
+            }
+            let pin_password = tari_utilities::SafePassword::from(pin_str);
+            crate::pin::PinManager::validate_pin(pin_password)
+                .await
+                .map_err(|e| e.to_string())?;
+            true
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
     {
         let mut config = ConfigMcp::current().write().await;
         let content = config._get_content_mut();
-        if enabled && content.bearer_token().is_none() {
-            let token = ConfigMcpContent::generate_token();
-            let now = SystemTime::now();
-            let expiry_days = *content.token_expiry_days();
-            let expiry =
-                now + std::time::Duration::from_secs(u64::from(expiry_days) * SECONDS_PER_DAY);
-            content.set_bearer_token(Some(token));
-            content.set_token_created_at(Some(now));
-            content.set_token_expires_at(Some(expiry));
-        }
-        content.set_enabled(enabled);
+        apply_mcp_enable_state(content, enabled, pin_validated);
         ConfigMcp::_save_config(content.clone()).map_err(|e| e.to_string())?;
     }
 
@@ -96,10 +107,7 @@ pub async fn revoke_mcp_token() -> Result<(), String> {
     {
         let mut config = ConfigMcp::current().write().await;
         let content = config._get_content_mut();
-        content.set_bearer_token(None::<String>);
-        content.set_token_created_at(None::<SystemTime>);
-        content.set_token_expires_at(None::<SystemTime>);
-        content.set_enabled(false);
+        apply_mcp_token_revocation(content);
         ConfigMcp::_save_config(content.clone()).map_err(|e| e.to_string())?;
     }
 
@@ -127,7 +135,36 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn set_mcp_max_transaction_amount(amount: Option<u64>) -> Result<(), String> {
+pub async fn set_mcp_max_transaction_amount(
+    amount: Option<u64>,
+    pin: Option<String>,
+) -> Result<(), String> {
+    let current = ConfigMcp::content().await;
+    if is_loosening_max_transaction_amount(*current.max_transaction_amount(), amount)
+        || *current.transactions_enabled()
+    {
+        if crate::pin::PinManager::pin_locked().await {
+            if let Some(pin_str) = pin {
+                let pin_password = tari_utilities::SafePassword::from(pin_str);
+                crate::pin::PinManager::validate_pin(pin_password)
+                    .await
+                    .map_err(|e| e.to_string())?;
+            } else if *current.transactions_enabled() {
+                return Err(
+                    "PIN is required to change the MCP transaction limit while transactions are enabled"
+                        .to_string(),
+                );
+            }
+        } else if *current.transactions_enabled() {
+            ConfigMcp::update_field(ConfigMcpContent::set_transactions_enabled, false)
+                .await
+                .map_err(|e| e.to_string())?;
+            return Err(
+                "Cannot change MCP transaction limit without a PIN configured. Please set up a PIN first."
+                    .to_string(),
+            );
+        }
+    }
     ConfigMcp::update_field(ConfigMcpContent::set_max_transaction_amount, amount)
         .await
         .map_err(|e| e.to_string())?;
@@ -191,4 +228,80 @@ pub async fn mcp_transaction_dialog_response(
     approved: bool,
 ) -> Result<(), String> {
     crate::wallet::send_gate::respond_to_transaction(request_id, approved).await
+}
+
+fn apply_mcp_enable_state(content: &mut ConfigMcpContent, enabled: bool, pin_validated: bool) {
+    if enabled {
+        if *content.transactions_enabled() && !pin_validated {
+            content.set_transactions_enabled(false);
+        }
+        if content.bearer_token().is_none() {
+            let token = ConfigMcpContent::generate_token();
+            let now = SystemTime::now();
+            let expiry_days = *content.token_expiry_days();
+            let expiry =
+                now + std::time::Duration::from_secs(u64::from(expiry_days) * SECONDS_PER_DAY);
+            content.set_bearer_token(Some(token));
+            content.set_token_created_at(Some(now));
+            content.set_token_expires_at(Some(expiry));
+        }
+    }
+    content.set_enabled(enabled);
+}
+
+fn apply_mcp_token_revocation(content: &mut ConfigMcpContent) {
+    content.set_bearer_token(None::<String>);
+    content.set_token_created_at(None::<SystemTime>);
+    content.set_token_expires_at(None::<SystemTime>);
+    content.set_enabled(false);
+    content.set_transactions_enabled(false);
+}
+
+fn is_loosening_max_transaction_amount(current: Option<u64>, requested: Option<u64>) -> bool {
+    match (current, requested) {
+        (Some(_), None) => true,
+        (Some(curr), Some(next)) => next > curr,
+        (None, _) => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn revoking_token_disables_transactions_and_reenabling_without_pin_keeps_them_off() {
+        let mut content = ConfigMcpContent::default();
+        content.set_enabled(true);
+        content.set_bearer_token(Some("tu_old_token".to_string()));
+        content.set_transactions_enabled(true);
+
+        apply_mcp_token_revocation(&mut content);
+        assert!(!*content.enabled());
+        assert!(content.bearer_token().is_none());
+        assert!(!*content.transactions_enabled());
+
+        // Even if transactions_enabled was left true before enabling without PIN validation,
+        // enabling MCP without a validated PIN resets transactions_enabled to false.
+        content.set_transactions_enabled(true);
+        apply_mcp_enable_state(&mut content, true, false);
+        assert!(*content.enabled());
+        assert!(content.bearer_token().is_some());
+        assert!(!*content.transactions_enabled());
+    }
+
+    #[test]
+    fn loosening_max_transaction_amount_is_detected() {
+        assert!(is_loosening_max_transaction_amount(Some(1_000), None));
+        assert!(is_loosening_max_transaction_amount(
+            Some(1_000),
+            Some(2_000)
+        ));
+        assert!(!is_loosening_max_transaction_amount(
+            Some(1_000),
+            Some(1_000)
+        ));
+        assert!(!is_loosening_max_transaction_amount(Some(1_000), Some(500)));
+        assert!(!is_loosening_max_transaction_amount(None, Some(1_000)));
+    }
 }
