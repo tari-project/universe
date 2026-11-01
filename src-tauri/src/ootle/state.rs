@@ -182,16 +182,29 @@ fn micro(amount: Amount) -> u64 {
 }
 
 fn balance_change(change: &BalanceChange) -> L2BalanceChange {
-    let before = change.revealed_before.to_u128() + change.confidential_before.to_u128();
-    let after = change.revealed_after.to_u128() + change.confidential_after.to_u128();
-    let amount =
-        i64::try_from(after).unwrap_or(i64::MAX) - i64::try_from(before).unwrap_or(i64::MAX);
+    let before = change
+        .revealed_before
+        .to_u128()
+        .saturating_add(change.confidential_before.to_u128());
+    let after = change
+        .revealed_after
+        .to_u128()
+        .saturating_add(change.confidential_after.to_u128());
+    let amount = signed_balance_delta(before, after);
     L2BalanceChange {
         id: change.id,
         transaction_id: change.transaction_id.map(|id| id.to_string()),
         amount,
         source: change.source.as_key_str(),
         timestamp: change.created_at.assume_utc().unix_timestamp(),
+    }
+}
+
+fn signed_balance_delta(before: u128, after: u128) -> i64 {
+    if after >= before {
+        i64::try_from(after - before).unwrap_or(i64::MAX)
+    } else {
+        i64::try_from(before - after).map_or(i64::MIN, |delta| -delta)
     }
 }
 
@@ -253,5 +266,14 @@ mod tests {
         assert_eq!(json["total"], "18446744073709551616");
         assert_eq!(json["revealed"], u64::MAX);
         assert_eq!(json["confidential"], 1);
+    }
+
+    #[test]
+    fn signed_balance_delta_preserves_deltas_above_i64_max() {
+        let base = u128::from(u64::MAX);
+        assert_eq!(signed_balance_delta(base, base + 2_500), 2_500);
+        assert_eq!(signed_balance_delta(base + 2_500, base), -2_500);
+        assert_eq!(signed_balance_delta(0, u128::MAX), i64::MAX);
+        assert_eq!(signed_balance_delta(u128::MAX, 0), i64::MIN);
     }
 }

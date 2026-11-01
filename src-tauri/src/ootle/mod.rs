@@ -1064,23 +1064,36 @@ async fn start_services(
     spawn_service(&tracker, &signal, "network poller", poll);
 
     let notify = INSTANCE.notify.clone();
-    let events = emit_state_on_events(sdk.clone(), notify.subscribe());
-    spawn_service(&tracker, &signal, "state events", events);
+    let state_events_rx = notify.subscribe();
     let (transactions, handle) =
         TransactionService::new(notify.clone(), sdk.clone(), signal.clone());
-    spawn_service(&tracker, &signal, "transaction service", transactions.run());
     *INSTANCE.transactions.lock().await = Some(handle);
 
     let (scanner, scanner_handle) =
         StealthUtxoScannerWorker::new(sdk.clone(), notify.clone()).spawn();
+    let scanner_abort = scanner.abort_handle();
+    let mut abort_signal = signal.clone();
+    tracker.spawn(async move {
+        abort_signal.wait().await;
+        scanner_abort.abort();
+    });
     spawn_service(&tracker, &signal, "utxo scanner", async { scanner.await? });
-    let recovery = UtxoRecovery::new(sdk.clone()).with_notify(notify.clone());
+
+    let (monitor, monitor_handle) = AccountMonitor::new(
+        notify.clone(),
+        sdk.clone(),
+        scanner_handle.clone(),
+        signal.clone(),
+    );
+    spawn_service(&tracker, &signal, "account monitor", monitor.run());
+    spawn_service(&tracker, &signal, "transaction service", transactions.run());
+
+    let recovery = UtxoRecovery::new(sdk.clone()).with_notify(notify);
     let waker = scanner_handle.subscribe_notifications();
     spawn_service(&tracker, &signal, "utxo recovery", recovery.run(waker));
 
-    let (monitor, monitor_handle) =
-        AccountMonitor::new(notify, sdk.clone(), scanner_handle.clone(), signal.clone());
-    spawn_service(&tracker, &signal, "account monitor", monitor.run());
+    let events = emit_state_on_events(sdk.clone(), state_events_rx);
+    spawn_service(&tracker, &signal, "state events", events);
 
     if needs_recovery {
         let birthday = sdk.key_manager_api().get_cipher_seed_birthday_epoch()?;
@@ -1131,6 +1144,14 @@ async fn emit_state_on_events(
             // A claim's proof file moves before the state goes out, so the panel's burn
             // list refreshes with it gone.
             Ok(event) => {
+                if matches!(
+                    event,
+                    WalletEvent::UtxoRecovered(_)
+                        | WalletEvent::UtxoSpent(_)
+                        | WalletEvent::UtxoBurnt(_)
+                ) {
+                    tokio::task::yield_now().await;
+                }
                 let result = claim::track_claim(&proof_dir, &event);
                 emit_state(&sdk).await;
                 emit_results(result).await;
