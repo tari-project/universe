@@ -353,7 +353,7 @@ mod tests {
     fn test_load_pinned_content_unlisted_or_changed_file_rejects() {
         let root = tempfile::tempdir().expect("valid integrity test fixture");
         let path = root.path().join("xmrig-1.0");
-        std::fs::create_dir(&path).expect("valid integrity test fixture");
+        std::fs::create_dir_all(&path).expect("valid integrity test fixture");
         std::fs::write(path.join("xmrig"), b"abc").expect("valid integrity test fixture");
         assert_eq!(
             load_pinned_content(
