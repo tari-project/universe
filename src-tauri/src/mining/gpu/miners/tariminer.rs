@@ -250,6 +250,17 @@ async fn detect_devices_from_backends(
     resolved_binary: &Path,
     config_dir: &Path,
 ) -> Result<Vec<TariMinerDevice>, anyhow::Error> {
+    detect_devices_from_backends_with_launcher(resolved_binary, config_dir, |binary, dir, args| {
+        launch_child_process(binary, dir, None, args, true)
+    })
+    .await
+}
+
+async fn detect_devices_from_backends_with_launcher(
+    resolved_binary: &Path,
+    config_dir: &Path,
+    launch: impl Fn(&Path, &Path, &[String]) -> Result<tokio::process::Child, anyhow::Error>,
+) -> Result<Vec<TariMinerDevice>, anyhow::Error> {
     let args = vec!["--list-devices".to_string()];
     let mut cuda_listed = false;
 
@@ -271,7 +282,7 @@ async fn detect_devices_from_backends(
             continue;
         }
 
-        let child = match launch_child_process(&binary_path, config_dir, None, &args, true) {
+        let child = match launch(&binary_path, config_dir, &args) {
             Ok(child) => child,
             Err(error) => {
                 warn!(
@@ -1215,9 +1226,21 @@ mod tests {
         )
         .expect("write amd stub");
 
-        let devices = detect_devices_from_backends(&sm86, temp_dir.path())
-            .await
-            .expect("AMD backend should answer");
+        let devices = detect_devices_from_backends_with_launcher(
+            &sm86,
+            temp_dir.path(),
+            |binary, dir, args| {
+                Ok(tokio::process::Command::new(binary)
+                    .args(args)
+                    .current_dir(dir)
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::piped())
+                    .kill_on_drop(true)
+                    .spawn()?)
+            },
+        )
+        .await
+        .expect("AMD backend should answer");
 
         assert!(
             !sm89_probed.exists(),

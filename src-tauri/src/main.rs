@@ -93,6 +93,7 @@ mod event_scheduler_test;
 mod events;
 mod events_emitter;
 mod events_manager;
+mod executable_integrity;
 mod feedback;
 #[cfg(test)]
 mod feedback_test;
@@ -114,6 +115,7 @@ mod node;
 mod ootle;
 mod pin;
 mod port_allocator;
+mod private_directory;
 mod process_adapter;
 mod process_killer;
 mod process_stats_collector;

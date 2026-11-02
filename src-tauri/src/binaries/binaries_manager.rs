@@ -56,7 +56,6 @@ pub(crate) struct BinaryManager {
     binary_subfolder: Option<String>,
     selected_version: String,
     selected_hash: Option<String>,
-    should_validate_checksum: bool,
     adapter: Box<dyn LatestVersionApiAdapter>,
 }
 
@@ -65,7 +64,6 @@ impl BinaryManager {
         binary_name: String,
         binary_subfolder: Option<String>,
         adapter: Box<dyn LatestVersionApiAdapter>,
-        should_validate_checksum: bool,
     ) -> Self {
         let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => {
@@ -93,7 +91,6 @@ impl BinaryManager {
         Self {
             binary_name: binary_name.clone(),
             binary_subfolder,
-            should_validate_checksum,
             selected_version,
             selected_hash,
             adapter,
@@ -176,71 +173,18 @@ impl BinaryManager {
         }
     }
 
-    async fn validate_checksum(
+    async fn expected_checksum(
         &self,
         download_info: BinaryDownloadInfo,
-        destination_dir: PathBuf,
-        in_progress_file_zip: PathBuf,
-    ) -> Result<(), Error> {
-        let selected_version = self.selected_version.clone();
-        info!(target: LOG_TARGET_APP_LOGIC, "Validating checksum for binary: {} with version: {:?}", self.binary_name, selected_version);
-
+        staging: PathBuf,
+    ) -> Result<String, Error> {
         let checksum_file = self
             .adapter
-            .download_and_get_checksum_path(destination_dir.clone(), download_info.clone())
+            .download_and_get_checksum_path(staging, download_info.clone())
+            .await?;
+        self.adapter
+            .get_expected_checksum(checksum_file, &download_info.name)
             .await
-            .map_err(|e| {
-                std::fs::remove_dir_all(destination_dir.clone()).ok();
-                anyhow!(
-                    "Error downloading checksum file for version: {:?}. Error: {:?}",
-                    selected_version,
-                    e
-                )
-            })?;
-
-        let expected_checksum = self
-            .adapter
-            .get_expected_checksum(checksum_file.clone(), &download_info.name)
-            .await
-            .inspect_err(|_| {
-                // Same cleanup as the mismatch branch below: leaving the half downloaded archive
-                // behind would have the next run treat it as already present.
-                std::fs::remove_dir_all(destination_dir.clone()).ok();
-            })?;
-
-        info!(target: LOG_TARGET_APP_LOGIC, "In-progress file zip path: {in_progress_file_zip:?}");
-
-        // Debug: Check if the file actually exists before attempting validation
-        if !in_progress_file_zip.exists() {
-            std::fs::remove_dir_all(destination_dir.clone()).ok();
-            error!(target: LOG_TARGET_APP_LOGIC, "Archive file does not exist at path: {in_progress_file_zip:?}");
-            return Err(anyhow!(
-                "Archive file not found at path: {:?}",
-                in_progress_file_zip
-            ));
-        }
-
-        match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
-            Ok(is_valid_checksum) => {
-                if is_valid_checksum {
-                    info!(target: LOG_TARGET_APP_LOGIC, "Checksum validation succeeded for binary: {} with version: {:?}", self.binary_name, selected_version);
-                    Ok(())
-                } else {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Checksum invalid for binary: {} with version: {:?}", self.binary_name, selected_version);
-                    std::fs::remove_dir_all(destination_dir.clone()).ok();
-                    Err(anyhow!("Checksums mismatched!"))
-                }
-            }
-            Err(e) => {
-                std::fs::remove_dir_all(destination_dir.clone()).ok();
-                error!(target: LOG_TARGET_APP_LOGIC, "Checksum validation failed for binary: {} with version: {:?}. Error: {:?}", self.binary_name, selected_version, e);
-                Err(anyhow!(
-                    "Checksum validation failed for version: {:?}. Error: {:?}",
-                    selected_version,
-                    e
-                ))
-            }
-        }
     }
 
     pub fn check_if_files_for_version_exist(&self) -> bool {
@@ -336,14 +280,6 @@ impl BinaryManager {
         &self,
         progress_channel: Option<IncrementalProgressTracker>,
     ) -> Result<(), Error> {
-        #[cfg(target_os = "windows")]
-        {
-            // Add Windows Defender exclusions before download to prevent interference
-            if let Err(e) = self.add_windows_defender_exclusions().await {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
-            }
-        }
-
         let mut last_error: Option<anyhow::Error> = None;
         for retry in 0..3 {
             match self
@@ -393,7 +329,11 @@ impl BinaryManager {
             .get_binary_folder()
             .map_err(|e| anyhow!("Error getting binary folder: {:?}", e))?;
 
+        crate::private_directory::restrict_directory(&binary_folder)?;
         let destination_dir = binary_folder.join(&version);
+        // Archives stay outside the final cache location and any Defender exclusion.
+        let staging = crate::private_directory::create_private_dir(&binary_folder)?;
+        let staging_dir = staging.path().to_path_buf();
 
         let download_url = download_info.main_url.clone();
         let fallback_url = download_info.fallback_url.clone();
@@ -407,54 +347,49 @@ impl BinaryManager {
 
         let main_client = HttpFileClient::builder()
             .with_cloudflare_cache_check()
-            .with_file_extract()
-            .with_progress_status_sender(chunk_progress_sender.clone())
+            .with_progress_status_sender(chunk_progress_sender)
             .with_download_resume()
-            .build(download_url.clone(), destination_dir.clone())?;
-
+            .build(download_url, staging_dir.clone())?;
         let main_file_download_result = main_client.download().await;
 
-        let (active_client, archive_destination_path): (HttpFileClient, PathBuf) =
-            if main_file_download_result.is_err() {
-                info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
-                if let Some(progress_sender_shutdown) = main_progress_sender_shutdown {
+        let archive_destination_path = if let Ok(path) = main_file_download_result {
+            path
+        } else {
+            info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
+            if let Some(progress_sender_shutdown) = main_progress_sender_shutdown {
+                progress_sender_shutdown.trigger();
+            }
+            let (fallback_progress_sender, fallback_progress_sender_shutdown) = self
+                .resolve_progress_channel(progress_channel)
+                .await
+                .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
+            let fallback_client = HttpFileClient::builder()
+                .with_progress_status_sender(fallback_progress_sender)
+                .with_download_resume()
+                .build(fallback_url, staging_dir.clone())?;
+            fallback_client.download().await.inspect_err(|_| {
+                if let Some(progress_sender_shutdown) = fallback_progress_sender_shutdown {
                     progress_sender_shutdown.trigger();
                 }
+            })?
+        };
 
-                let (chunk_progress_sender, fallback_progress_sender_shutdown) = self
-                    .resolve_progress_channel(progress_channel.clone())
-                    .await
-                    .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
-
-                let fallback_client = HttpFileClient::builder()
-                    .with_file_extract()
-                    .with_progress_status_sender(chunk_progress_sender.clone())
-                    .with_download_resume()
-                    .build(fallback_url.clone(), destination_dir.clone())?;
-
-                let path = fallback_client.download().await.inspect_err(|_| {
-                    if let Some(progress_sender_shutdown) = fallback_progress_sender_shutdown {
-                        progress_sender_shutdown.trigger();
-                    }
-                })?;
-
-                (fallback_client, path)
-            } else {
-                (main_client, main_file_download_result?)
-            };
-
-        if self.should_validate_checksum {
-            self.validate_checksum(
-                download_info,
-                destination_dir.clone(),
-                archive_destination_path,
-            )
+        let expected = self
+            .expected_checksum(download_info, staging_dir.clone())
             .await?;
+        let extracted = staging_dir.join("extracted");
+        extract_verified_archive(&archive_destination_path, &extracted, &expected).await?;
+        crate::private_directory::restrict_directory(&extracted)?;
+        // Staging and the final directory share a filesystem so publication is a rename.
+        if destination_dir.exists() {
+            fs::remove_dir_all(&destination_dir)?;
         }
+        fs::rename(&extracted, &destination_dir)?;
 
-        active_client.extract().await.inspect_err(|_| {
-            std::fs::remove_dir_all(destination_dir.clone()).ok();
-        })?;
+        #[cfg(target_os = "windows")]
+        if let Err(error) = self.add_windows_defender_exclusions().await {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to add verified binary exclusion: {error}");
+        }
 
         Ok(())
     }
@@ -501,6 +436,9 @@ impl BinaryManager {
         }
 
         let binary_from_name = Binaries::from_name(&self.binary_name);
+        if binary_from_name == Binaries::BridgeTapplet {
+            return Ok(());
+        }
         let base_dir = self.get_base_dir()?;
         let binary_path = if let Some(sub_folder) = self.binary_subfolder() {
             base_dir
@@ -510,12 +448,37 @@ impl BinaryManager {
             base_dir.join(binary_from_name.binary_file_name(self.selected_version.clone()))
         };
 
-        // Add comprehensive exclusions (both file and directory)
-        WindowsDefenderExclusions::add_comprehensive_exclusions(&binary_path)?;
+        WindowsDefenderExclusions::add_verified_binary_exclusion(&binary_path)?;
 
         info!(target: LOG_TARGET_APP_LOGIC, "Added Windows Defender exclusions for binary: {} at path: {}", self.binary_name, binary_path.display());
         Ok(())
     }
+}
+
+async fn extract_verified_archive(
+    archive: &Path,
+    destination: &Path,
+    expected: &str,
+) -> Result<(), Error> {
+    if expected.len() != 64 || !expected.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(anyhow!("Missing or malformed archive checksum"));
+    }
+    if !validate_checksum(archive.to_path_buf(), expected.to_ascii_lowercase()).await? {
+        return Err(anyhow!("Archive checksum mismatch, refusing extraction"));
+    }
+    crate::download_utils::extract(archive, destination)
+        .await
+        .map_err(|error| {
+            if error.chain().any(|cause| {
+                cause
+                    .downcast_ref::<std::io::Error>()
+                    .is_some_and(|cause| cause.kind() == std::io::ErrorKind::PermissionDenied)
+            }) {
+                BinaryDownloadError::FileAccessDenied(format!("Extraction failed: {error}")).into()
+            } else {
+                BinaryDownloadError::CorruptDownload(format!("Extraction failed: {error}")).into()
+            }
+        })
 }
 
 fn check_binary_exists(path: &std::path::Path) -> bool {
@@ -715,17 +678,14 @@ mod tests {
                 binary_folder: dir.path().to_path_buf(),
                 saw_extracted_file: saw_extracted_file.clone(),
             }),
-            true,
         );
 
         let result = manager.download_selected_version(None).await;
         server.abort();
+        let error = result.unwrap_err();
         assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("Checksums mismatched!"),
-            "the download must reach checksum validation and reject the wrong checksum"
+            error.to_string().contains("Archive checksum mismatch"),
+            "the download must reach checksum validation and reject the wrong checksum: {error:#}"
         );
         assert!(
             !saw_extracted_file.load(Ordering::SeqCst),
@@ -735,6 +695,90 @@ mod tests {
             !dir.path().join(manager.get_selected_version()).exists(),
             "a checksum mismatch must remove the downloaded version"
         );
+    }
+
+    #[tokio::test]
+    async fn test_archive_valid_checksum_extracts_fixture() {
+        use super::*;
+        use sha2::{Digest, Sha256};
+        let temp = tempdir().expect("test fixture succeeds");
+        let archive = temp.path().join("archive.tar.gz");
+        let encoder = flate2::write::GzEncoder::new(
+            std::fs::File::create(&archive).expect("test fixture succeeds"),
+            flate2::Compression::default(),
+        );
+        let mut tar = tar::Builder::new(encoder);
+        let mut header = tar::Header::new_gnu();
+        header.set_size(7);
+        header.set_mode(0o700);
+        header.set_cksum();
+        tar.append_data(&mut header, "executable", &b"fixture"[..])
+            .expect("test fixture succeeds");
+        tar.into_inner()
+            .expect("test fixture succeeds")
+            .finish()
+            .expect("test fixture succeeds");
+        let expected = format!(
+            "{:x}",
+            Sha256::digest(std::fs::read(&archive).expect("test fixture succeeds"))
+        );
+        let extracted = temp.path().join("extracted");
+        extract_verified_archive(&archive, &extracted, &expected)
+            .await
+            .expect("test fixture succeeds");
+        assert_eq!(
+            std::fs::read(extracted.join("executable")).expect("test fixture succeeds"),
+            b"fixture"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_archive_corrupt_verified_payload_reports_download_error() {
+        use super::*;
+        use sha2::{Digest, Sha256};
+        let temp = tempdir().expect("create fixture directory");
+        let archive = temp.path().join("archive.tar.gz");
+        std::fs::write(&archive, b"not an archive").expect("write corrupt archive fixture");
+        let expected = format!("{:x}", Sha256::digest(b"not an archive"));
+        let error = extract_verified_archive(&archive, &temp.path().join("extracted"), &expected)
+            .await
+            .expect_err("corrupt verified payload must fail extraction");
+        assert!(matches!(
+            error.downcast_ref::<BinaryDownloadError>(),
+            Some(BinaryDownloadError::CorruptDownload(_))
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_archive_mismatch_prevents_extraction_and_publication() {
+        use super::*;
+        let temp = tempdir().expect("test fixture succeeds");
+        let archive = temp.path().join("archive.tar.gz");
+        std::fs::write(&archive, b"not even an archive").expect("test fixture succeeds");
+        let extracted = temp.path().join("extracted");
+        let error = extract_verified_archive(&archive, &extracted, &"a".repeat(64))
+            .await
+            .expect_err("invalid archive must fail");
+        assert!(error.to_string().contains("checksum"));
+        assert!(
+            !extracted.exists(),
+            "no archive entry may be extracted before verification"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_archive_missing_checksum_prevents_extraction() {
+        use super::*;
+        let temp = tempdir().expect("test fixture succeeds");
+        let archive = temp.path().join("archive.tar.gz");
+        std::fs::write(&archive, b"not even an archive").expect("test fixture succeeds");
+        let extracted = temp.path().join("extracted");
+        assert!(
+            extract_verified_archive(&archive, &extracted, "")
+                .await
+                .is_err()
+        );
+        assert!(!extracted.exists());
     }
 
     #[test]

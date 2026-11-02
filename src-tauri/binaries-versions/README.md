@@ -1,0 +1,11 @@
+# Downloaded executable pins
+
+Each version record has a `hashes` entry for the same exact version string. File hashes select the platform and extracted archive path; Tari suite records also select the published network. TARI.Miner pins include every backend and solver, and Bridge pins include every served file. `build.rs` rejects missing or stale version/hash records. Runtime checks run again before launches and before serving Bridge content.
+
+When updating a version, download its release artifacts and validate their archive checksums against the publisher source first. Compute SHA-256 for the extracted executable files, update the matching version and file pins together, and update `artifact_hash_provenance.json`. Never derive pins from an unverified cache. LolMiner uses the exact GitHub release asset digest. Tor uses the version-specific `sha256sums-signed-build.txt`, and XMRig uses its `SHA256SUMS` manifest. These download checks remain separate from the checked-in file pins.
+
+Run `cargo test -p process-wrapper` for the shared pin, content and launch guard fixtures. The application binary adapter tests run with `cargo test -p tari-universe binaries::`.
+
+The selected Tari v6.3.0-pre.2 release publishes only `mainnet` and `esme` suite archives. Existing NextNet/StageNet selections ask for `nextnet`, and Igor asks for `testnet`; those archives do not exist in that release and have no pins. They fail closed rather than substituting another network. The exact eight absent archive names, release API URL, published archive inventory, and HTTP 404 results for each configured CDN archive and checksum sidecar are recorded in `artifact_hash_provenance.json`. Resolving those existing unavailable selections requires an upstream release or a separate network/version decision.
+
+Windows installers retain the vendor HTTPS trust model. Each attempt creates a private directory with a current-user-only ACL, creates a new installer file exclusively, hashes the completed download, and checks that hash immediately before execution. Native launches retain the same-user check-to-launch race tracked in upstream issue #3471. The Tauri updater continues to use its existing mandatory signature verification.

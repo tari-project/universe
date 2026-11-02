@@ -22,7 +22,7 @@
 
 //! Process wrapper sidecar for orphan prevention.
 //!
-//! Usage: process-wrapper <parent_pid> <binary> [binary_args...]
+//! Usage: process-wrapper <parent_pid> <network> <binary> [binary_args...]
 //!
 //! Monitors the parent PID and terminates the child process if the parent dies.
 //! Also handles SIGTERM/SIGINT signals by propagating them to the child.
@@ -33,8 +33,14 @@
 //! Signal Safety: Signal handlers only set atomic flags. All termination logic
 //! runs in the main thread to avoid async-signal-safety issues.
 
+#[path = "../../src-tauri/src/executable_integrity.rs"]
+mod executable_integrity;
+#[cfg(test)]
+#[path = "../../src-tauri/src/private_directory.rs"]
+mod private_directory;
+
 use std::env;
-use std::process::{exit, Child, Command};
+use std::process::{Child, Command, exit};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
@@ -47,8 +53,11 @@ static SHOULD_TERMINATE: AtomicBool = AtomicBool::new(false);
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() < 3 {
-        eprintln!("Usage: {} <parent_pid> <binary> [binary_args...]", args[0]);
+    if args.len() < 4 {
+        eprintln!(
+            "Usage: {} <parent_pid> <network> <binary> [binary_args...]",
+            args[0]
+        );
         exit(1);
     }
 
@@ -60,10 +69,11 @@ fn main() {
         }
     };
 
-    let binary = &args[2];
-    let binary_args = &args[3..];
+    let network = &args[2];
+    let binary = &args[3];
+    let binary_args = &args[4..];
 
-    let mut child = match spawn_child(binary, binary_args) {
+    let mut child = match spawn_child(binary, binary_args, network) {
         Ok(child) => child,
         Err(e) => {
             eprintln!("Failed to spawn child process: {}", e);
@@ -108,8 +118,10 @@ fn main() {
 }
 
 #[cfg(unix)]
-fn spawn_child(binary: &str, args: &[String]) -> Result<Child, std::io::Error> {
+fn spawn_child(binary: &str, args: &[String], network: &str) -> Result<Child, std::io::Error> {
     use std::os::unix::process::CommandExt;
+
+    executable_integrity::verify_launch_path(std::path::Path::new(binary), network)?;
 
     unsafe {
         Command::new(binary)
@@ -123,7 +135,8 @@ fn spawn_child(binary: &str, args: &[String]) -> Result<Child, std::io::Error> {
 }
 
 #[cfg(windows)]
-fn spawn_child(binary: &str, args: &[String]) -> Result<Child, std::io::Error> {
+fn spawn_child(binary: &str, args: &[String], network: &str) -> Result<Child, std::io::Error> {
+    executable_integrity::verify_launch_path(std::path::Path::new(binary), network)?;
     Command::new(binary).args(args).spawn()
 }
 
@@ -180,7 +193,7 @@ fn terminate_child(child: &mut Child) {
 
 #[cfg(windows)]
 fn setup_signal_handlers() {
-    use windows_sys::Win32::System::Console::{SetConsoleCtrlHandler, CTRL_C_EVENT};
+    use windows_sys::Win32::System::Console::{CTRL_C_EVENT, SetConsoleCtrlHandler};
 
     unsafe extern "system" fn console_handler(_ctrl_type: u32) -> i32 {
         SHOULD_TERMINATE.store(true, Ordering::SeqCst);
@@ -222,4 +235,16 @@ fn terminate_child(child: &mut Child) {
         .output();
 
     drop(child.wait());
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    #[test]
+    fn test_spawn_child_unpinned_executable_blocks_before_execution() {
+        let result = super::spawn_child("/bin/true", &[], "mainnet");
+        assert!(
+            result.is_err(),
+            "wrapper must fail closed for an unpinned child"
+        );
+    }
 }
