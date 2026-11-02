@@ -1695,6 +1695,25 @@ pub async fn send_one_sided_to_stealth_address(
     Ok(())
 }
 
+/// [`send_one_sided_to_stealth_address`] for the tapplet signer only, so the send gate
+/// rate-limits it and the PIN prompt shows the bridge tapplet asked for it.
+#[tauri::command]
+pub async fn send_one_sided_from_tapplet(
+    amount: String,
+    destination: String,
+    payment_id: Option<String>,
+) -> Result<(), String> {
+    gated_send(GatedSendRequest {
+        origin: SendOrigin::Tapplet,
+        request_id: SendOrigin::Tapplet.new_request_id(),
+        amount,
+        destination,
+        payment_id,
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
 /// Burn funds for L2. Refused without a PIN; with one, the PIN prompt is the gate.
 #[tauri::command]
 pub async fn burn_to_l2(
@@ -1758,13 +1777,37 @@ pub async fn l2_send(
     destination: String,
     amount: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {destination:?}, amount: {amount:?})");
     gated_l2_send(GatedL2SendRequest {
+        origin: SendOrigin::App,
         app_handle,
         request_id: SendOrigin::App.new_request_id(),
         amount,
         destination,
         account,
+        pay_ref: None,
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// [`l2_send`] for the tapplet signer only, so the send gate and the PIN prompt show the
+/// bridge tapplet asked for it. The in-app UI never calls this.
+#[tauri::command]
+pub async fn l2_send_from_tapplet(
+    app_handle: tauri::AppHandle,
+    account: String,
+    destination: String,
+    amount: String,
+    pay_ref: String,
+) -> Result<String, String> {
+    gated_l2_send(GatedL2SendRequest {
+        origin: SendOrigin::Tapplet,
+        app_handle,
+        request_id: SendOrigin::Tapplet.new_request_id(),
+        amount,
+        destination,
+        account,
+        pay_ref: Some(pay_ref),
     })
     .await
     .map_err(|e| e.to_string())
