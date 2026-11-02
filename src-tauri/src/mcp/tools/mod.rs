@@ -676,7 +676,12 @@ impl TariMcpHandler {
             return Err("Transaction tier is disabled".to_string());
         }
         let start = Instant::now();
-        info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction called (destination={}, amount={})", params.destination, params.amount);
+        // Destination, amount and payment ID stay out of this line: it ships in support bundles.
+        info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "MCP: send_transaction called (payment_id_present={})",
+            params.payment_id.as_ref().is_some_and(|id| !id.is_empty())
+        );
         self.audit_tool_call(
             "send_transaction",
             "transaction",

@@ -96,7 +96,12 @@ pub async fn send_transaction(
     let amount_display = format!("{} XTM", amount);
     let request_id = SendOrigin::Mcp.new_request_id();
 
-    info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction requested (destination={}, amount={})", destination, amount_display);
+    // Destination and amount stay out of this line: it ships in support bundles.
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "MCP: send_transaction requested (payment_id_present={})",
+        payment_id.as_ref().is_some_and(|id| !id.is_empty())
+    );
 
     // 4. Rate limit, confirmation dialog, PIN and the actual send
     let result = gated_send(GatedSendRequest {

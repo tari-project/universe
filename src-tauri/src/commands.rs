@@ -1678,7 +1678,12 @@ pub async fn send_one_sided_to_stealth_address(
     payment_id: Option<String>,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
+    // Amount, destination and payment ID stay out of this line: it ships in support bundles.
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "[send_one_sided_to_stealth_address] called (payment_id_present={})",
+        payment_id.as_ref().is_some_and(|id| !id.is_empty())
+    );
     gated_send(GatedSendRequest {
         origin: SendOrigin::App,
         request_id: SendOrigin::App.new_request_id(),
@@ -1735,7 +1740,12 @@ pub async fn burn_to_l2(
     payment_id: Option<String>,
 ) -> Result<BurnReceipt, String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET_APP_LOGIC, "[burn_to_l2] called with args: (amount: {amount:?}, claim_public_key: {claim_public_key:?}, payment_id: {payment_id:?})");
+    // Amount, L2 claim key and payment ID stay out of this line: it ships in support bundles.
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "[burn_to_l2] called (payment_id_present={})",
+        payment_id.as_ref().is_some_and(|id| !id.is_empty())
+    );
     let receipt = gated_burn(GatedBurnRequest {
         request_id: SendOrigin::App.new_request_id(),
         amount,
@@ -1906,7 +1916,8 @@ pub async fn l2_claim_burn(
     app_handle: tauri::AppHandle,
     commitment: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[l2_claim_burn] called with args: (commitment: {commitment:?})");
+    // The commitment identifies the burn being claimed, so it stays out of the log.
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_claim_burn] called");
     gated_l2_claim(app_handle, SendOrigin::App.new_request_id(), commitment)
         .await
         .map_err(|e| e.to_string())
@@ -2470,7 +2481,8 @@ pub async fn encode_payment_id_to_address(
     payment_id: String,
     tari_address: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "encode_payment_id_to_address called with payment_id: {payment_id:?}, tari_address: {tari_address:?}");
+    // The payment ID and both addresses (the result embeds the payment ID) stay out of the log.
+    info!(target: LOG_TARGET_APP_LOGIC, "encode_payment_id_to_address called");
     let mut address_with_memo_field =
         DualAddress::from_base58(tari_address.as_str()).map_err(|e| {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to parse Tari address: {e}");
@@ -2483,7 +2495,7 @@ pub async fn encode_payment_id_to_address(
             e.to_string()
         })?;
     let address_base58 = address_with_memo_field.to_base58();
-    info!(target: LOG_TARGET_APP_LOGIC, "Encoded Tari address with payment ID: {address_base58:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "Encoded payment ID into Tari address");
 
     Ok(address_base58)
 }

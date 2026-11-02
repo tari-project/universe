@@ -268,11 +268,7 @@ impl MinotariWalletManager {
             payment_id,
         };
 
-        log::debug!(
-            target: LOG_TARGET,
-            "Creating one-sided transaction from {} to {} for amount {}",
-            tari_address, address, amount
-        );
+        log::debug!(target: LOG_TARGET, "Creating one-sided transaction");
         let unsigned_one_sided_transaction = transaction_manager
             .create_one_sided_transaction(recipient)
             .await?;

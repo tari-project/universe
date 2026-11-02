@@ -404,11 +404,8 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
     )
     .await?;
 
-    info!(
-        target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing burn (claim_public_key={}, amount={amount})",
-        kind.counterparty()
-    );
+    // Claim key and amount stay out of this line: app logs go out in feedback bundles.
+    info!(target: LOG_TARGET_APP_LOGIC, "send gate: executing burn");
     let SpendKind::Burn { claim_public_key } = kind else {
         unreachable!("gated_burn builds a Burn kind")
     };
@@ -565,11 +562,8 @@ pub async fn gated_l2_claim(
     )
     .await?;
 
-    info!(
-        target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing L2 claim (commitment={}, amount={amount})",
-        kind.counterparty()
-    );
+    // Commitment and amount stay out of this line: app logs go out in feedback bundles.
+    info!(target: LOG_TARGET_APP_LOGIC, "send gate: executing L2 claim");
     OotleWalletManager::claim_burn(&app_handle, file_name, proof, pass.pin_context).await
 }
 
