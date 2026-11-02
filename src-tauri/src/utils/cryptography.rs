@@ -54,7 +54,10 @@ pub fn encrypt(data: &[u8], passphrase: &SafePassword) -> Result<Vec<u8>, anyhow
     let aad = aead::Aad::from(b"additional data");
 
     let mut in_out = data.to_vec(); // Do NOT resize here!
-    if let Err(_) = key.seal_in_place_append_tag(nonce, aad, &mut in_out) {
+    if key
+        .seal_in_place_append_tag(nonce, aad, &mut in_out)
+        .is_err()
+    {
         in_out.zeroize();
         return Err(anyhow!("Encryption failed"));
     }
