@@ -28,18 +28,32 @@ use crate::{
     },
 };
 
-use axum::Router;
+use axum::{
+    Router,
+    extract::State,
+    http::{Request, StatusCode, header},
+    response::IntoResponse,
+    routing::get,
+};
 use log::{error, info};
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::LazyLock};
 use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
-use tower_http::services::ServeDir;
 
 static ACTIVE_TAPPLET_SERVERS: LazyLock<Mutex<HashMap<PathBuf, CancellationToken>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
 pub async fn start_tapplet(tapplet_path: PathBuf) -> Result<(String, CancellationToken), Error> {
     info!(target: LOG_TARGET_APP_LOGIC, "Start tapplet path {:?}", &tapplet_path);
+    crate::executable_integrity::verify_bridge_directory(&tapplet_path)
+        .map_err(Error::IntegrityError)?;
+    start_serving(tapplet_path.clone(), verified_routes(tapplet_path)).await
+}
+
+async fn start_serving(
+    tapplet_path: PathBuf,
+    routes: Router,
+) -> Result<(String, CancellationToken), Error> {
     let key = tapplet_path
         .canonicalize()
         .unwrap_or_else(|_| tapplet_path.clone());
@@ -49,14 +63,51 @@ pub async fn start_tapplet(tapplet_path: PathBuf) -> Result<(String, Cancellatio
     if let Some(prev_token) = active_servers.remove(&key) {
         prev_token.cancel();
     }
-    let (address, cancel_token) = serve(using_serve_dir(tapplet_path), 0).await?;
+    let (address, cancel_token) = serve(routes, 0).await?;
     active_servers.insert(key, cancel_token.clone());
     Ok((address, cancel_token))
 }
 
-pub fn using_serve_dir(tapplet_path: PathBuf) -> Router {
-    let serve_dir = ServeDir::new(tapplet_path);
-    Router::new().nest_service("/", serve_dir)
+fn verified_routes(tapplet_path: PathBuf) -> Router {
+    Router::new()
+        .fallback(get(serve_verified_file))
+        .with_state(tapplet_path)
+}
+
+async fn serve_verified_file(
+    State(root): State<PathBuf>,
+    request: Request<axum::body::Body>,
+) -> axum::response::Response {
+    let decoded = match urlencoding::decode(request.uri().path()) {
+        Ok(path) => path.into_owned(),
+        Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+    };
+    let relative = decoded.trim_start_matches('/');
+    let relative = if relative.is_empty() || relative.ends_with('/') {
+        format!("{relative}index.html")
+    } else {
+        relative.to_owned()
+    };
+    match crate::executable_integrity::load_bridge_content(&root, &relative) {
+        Ok(bytes) => {
+            // Hash and serve the same bytes, including on requests after startup.
+            let content_type = mime_guess::from_path(&relative)
+                .first_or_octet_stream()
+                .to_string();
+            (
+                [
+                    (header::CONTENT_TYPE, content_type),
+                    (header::X_CONTENT_TYPE_OPTIONS, "nosniff".to_string()),
+                ],
+                bytes,
+            )
+                .into_response()
+        }
+        Err(error) => {
+            error!(target: LOG_TARGET_APP_LOGIC, "Bridge content verification failed: {error}");
+            StatusCode::FORBIDDEN.into_response()
+        }
+    }
 }
 
 pub async fn serve(app: Router, port: u16) -> Result<(String, CancellationToken), Error> {
@@ -111,8 +162,10 @@ mod tests {
     async fn concurrent_starts_leave_only_one_server_active_for_a_path() {
         let directory = tempfile::tempdir().expect("temporary tapplet directory");
         let path = directory.path().to_path_buf();
-        let (first, second) =
-            tokio::join!(start_tapplet(path.clone()), start_tapplet(path.clone()));
+        let (first, second) = tokio::join!(
+            start_serving(path.clone(), Router::new()),
+            start_serving(path.clone(), Router::new())
+        );
         let (_, first_token) = first.expect("first server starts");
         let (_, second_token) = second.expect("second server starts");
 

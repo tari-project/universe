@@ -4137,12 +4137,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21dec9db110f5f872ed9699c3ecf50cf16f423502706ba5c72462e28d3157573"
 
 [[package]]
-name = "http-range-header"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9171a2ea8a68358193d15dd5d70c1c10a2afc3e7e4c5bc92bc9f025cebd7359c"
-
-[[package]]
 name = "httparse"
 version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7552,6 +7546,9 @@ name = "process-wrapper"
 version = "1.6.20"
 dependencies = [
  "libc",
+ "serde_json",
+ "sha2",
+ "tempfile",
  "windows-sys 0.59.0",
 ]
 
@@ -10158,6 +10155,7 @@ dependencies = [
  "libsqlite3-sys",
  "log",
  "log4rs",
+ "mime_guess",
  "minotari",
  "minotari_node_grpc_client",
  "minotari_node_wallet_client",
@@ -10231,7 +10229,6 @@ dependencies = [
  "tokio-tungstenite 0.26.2",
  "tokio-util",
  "tonic 0.13.1",
- "tower-http",
  "tungstenite 0.26.2",
  "url",
  "urlencoding",
@@ -12375,19 +12372,13 @@ dependencies = [
  "http",
  "http-body",
  "http-body-util",
- "http-range-header",
- "httpdate",
  "iri-string",
- "mime",
- "mime_guess",
- "percent-encoding",
  "pin-project-lite",
  "tokio",
  "tokio-util",
  "tower 0.5.3",
  "tower-layer",
  "tower-service",
- "tracing",
 ]
 
 [[package]]

@@ -1,10 +1,19 @@
 [package]
 name = "process-wrapper"
 version = "1.6.20"
-edition = "2021"
+edition = "2024"
 publish = false
 
+# Both crates are used by the shared executable_integrity.rs module outside this package directory.
+[package.metadata.cargo-machete]
+ignored = ["serde_json", "sha2"]
+
 [dependencies]
+serde_json = "1"
+sha2 = "0.10.8"
+
+[dev-dependencies]
+tempfile = "3.10"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -12,6 +21,9 @@ libc = "0.2"
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = [
   "Win32_Foundation",
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  "Win32_Storage_FileSystem",
   "Win32_System_Threading",
   "Win32_System_Console",
 ] }
