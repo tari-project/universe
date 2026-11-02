@@ -6,7 +6,7 @@
         "mmproxy": "6.3.0-pre.2 | e5635bf",
         "sha-p2pool": "1.0.3 | cff9241",
         "tariminer": "1.1.8",
-        "tor": "15.0.5",
+        "tor": "16.0",
         "wallet": "6.3.0-pre.2 | e5635bf",
         "xmrig": "6.26.0"
     }

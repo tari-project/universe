@@ -788,4 +788,36 @@ mod tests {
         assert!(!is_binary_version_folder_name("2026-backup"));
         assert!(!is_binary_version_folder_name("latest"));
     }
+
+    #[test]
+    fn bundled_tor_is_new_enough_for_the_tor_network() {
+        // Since 2026-10-28 the Tor directory authorities require Desc=3 and Microdesc=3, which
+        // Tor 0.4.8 (shipped up to Tor Browser 15.x) does not support, so a 15.x expert bundle
+        // exits during bootstrap. Tor Browser 16.0 ships Tor 0.4.9.
+        for (network, data) in [
+            (
+                "mainnet",
+                include_str!("../../binaries-versions/binaries_versions_mainnet.json"),
+            ),
+            (
+                "nextnet",
+                include_str!("../../binaries-versions/binaries_versions_nextnet.json"),
+            ),
+            (
+                "testnets",
+                include_str!("../../binaries-versions/binaries_versions_testnets.json"),
+            ),
+        ] {
+            let (version, _) = BinaryManager::read_version_from_file("tor".to_string(), data);
+            let major: u32 = version
+                .split('.')
+                .next()
+                .and_then(|major| major.parse().ok())
+                .unwrap_or_else(|| panic!("{network}: unparsable tor version {version:?}"));
+            assert!(
+                major >= 16,
+                "{network}: tor {version} bundles Tor 0.4.8, which the network rejects"
+            );
+        }
+    }
 }
