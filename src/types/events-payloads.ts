@@ -153,6 +153,11 @@ export interface SeedNeedsPinPromptContext {
     kind: 'seed_needs_pin';
 }
 
+/** One-time startup ask: the stored Monero seed needs the PIN to move to the current encryption. */
+export interface SecurityUpgradePinPromptContext {
+    kind: 'security_upgrade';
+}
+
 /** Unlocking (or first enabling) the L2 wallet, revealing, importing or resetting its seed. */
 export interface L2SeedPinPromptContext {
     kind: 'l2_unlock' | 'l2_seed_export' | 'l2_seed_import' | 'l2_seed_reset';
@@ -193,6 +198,7 @@ export type PinPromptContext =
     | L2ClaimPinPromptContext
     | RestoreWalletDetailsPinPromptContext
     | SeedNeedsPinPromptContext
+    | SecurityUpgradePinPromptContext
     | L2SeedPinPromptContext;
 
 /** Payload of `CreatePin` and `EnterPin`. `id` goes back in the `pin-dialog-response`. */
