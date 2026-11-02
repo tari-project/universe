@@ -53,7 +53,7 @@ pub struct GithubReleasesAdapter {
 }
 
 /// Swaps the asset at the end of a release download url for another file in the same release.
-fn sibling_release_file(asset_url: &str, file_name: &str) -> String {
+pub(super) fn sibling_release_file(asset_url: &str, file_name: &str) -> String {
     match asset_url.rsplit_once('/') {
         Some((release_url, _)) => format!("{release_url}/{file_name}"),
         None => file_name.to_string(),
@@ -67,7 +67,7 @@ fn sibling_release_file(asset_url: &str, file_name: &str) -> String {
 /// shared manifest lists every asset in the release, so an unanchored pattern also matches a
 /// sibling entry like `<asset>.sig` - and taking the wrong hash fails validation for everyone,
 /// with no way to fix it except shipping a new build.
-fn parse_expected_checksum(contents: &str, asset_name: &str) -> Result<String, Error> {
+pub(super) fn parse_expected_checksum(contents: &str, asset_name: &str) -> Result<String, Error> {
     let regex = Regex::new(&format!(
         r"^([a-f0-9]{{64}})\s+\*?{}$",
         regex::escape(asset_name)
