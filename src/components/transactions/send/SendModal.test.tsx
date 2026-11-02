@@ -208,6 +208,30 @@ describe('SendModal', () => {
         });
     });
 
+    it('shows the address payment id after sending without a PIN', async () => {
+        useWalletStore.setState({ is_pin_locked: false });
+        const invokeMock = vi.mocked(invoke) as unknown as Mock<(command: string) => Promise<unknown>>;
+        invokeMock.mockImplementation(async (command) => {
+            if (command === 'effective_l1_payment_id') {
+                return { payment_id: 'embedded-id', payment_id_overridden: true };
+            }
+            if (command === 'send_one_sided_to_stealth_address') {
+                return { accepted_by_node: true };
+            }
+        });
+        render(<SendModal section="send" setSection={vi.fn()} />);
+
+        fireEvent.click(await screen.findByTestId('send-review-button'));
+
+        expect(await screen.findByText('send.completed-title')).toBeInTheDocument();
+        expect(screen.getByText('embedded-id')).toBeInTheDocument();
+        expect(invoke).toHaveBeenCalledWith('effective_l1_payment_id', {
+            destination: 'f4destination',
+            paymentId: undefined,
+        });
+        invokeMock.mockResolvedValue([]);
+    });
+
     it('stays on the form when fee estimation fails', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         vi.mocked(invoke).mockImplementation((async (cmd: string) => {
@@ -245,7 +269,7 @@ describe('SendModal', () => {
         const { rerender } = render(<SendModal section="send" setSection={vi.fn()} />);
         fireEvent.click(await screen.findByTestId('send-review-button'));
 
-        await waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('estimate_l1_send_fee', expect.anything()));
 
         // Close the modal before the estimate resolves, then reopen it
         rerender(<SendModal section="history" setSection={vi.fn()} />);

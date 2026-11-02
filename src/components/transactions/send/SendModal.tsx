@@ -15,15 +15,6 @@ import { queryClient } from '@app/App/queryClient.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import type { EffectiveL1PaymentId } from '@app/types/events-payloads.ts';
 
-function isEffectiveL1PaymentId(value: unknown): value is EffectiveL1PaymentId {
-    if (!value || typeof value !== 'object') return false;
-    const record = value as Record<string, unknown>;
-    return (
-        typeof record.payment_id_overridden === 'boolean' &&
-        (record.payment_id === null || typeof record.payment_id === 'string')
-    );
-}
-
 interface SendModalProps {
     section: string;
     setSection: (section: string) => void;
@@ -85,52 +76,50 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
+            const effectivePaymentId = () =>
+                invoke('effective_l1_payment_id', { destination: data.address, paymentId: data.message });
+
             if (status === 'fields' && hasReviewStep) {
                 const requestId = ++estimateRequestIdRef.current;
-                if (data.amount) {
-                    try {
-                        const estimatedFee = await invoke('estimate_l1_send_fee', {
-                            destination: data.address,
-                            amount: data.amount.toString(),
-                            paymentId: data.message,
-                        });
-                        if (estimateRequestIdRef.current !== requestId) {
-                            return;
-                        }
-                        setFeeMicroMinotari(typeof estimatedFee === 'number' ? estimatedFee : null);
-                    } catch (error) {
-                        if (estimateRequestIdRef.current !== requestId) {
-                            return;
-                        }
-                        setFeeMicroMinotari(null);
-                        setError('amount', { message: `${error}` });
-                        return;
-                    }
+                const [fee, effective] = await Promise.allSettled([
+                    data.amount
+                        ? invoke('estimate_l1_send_fee', {
+                              destination: data.address,
+                              amount: data.amount.toString(),
+                              paymentId: data.message,
+                          })
+                        : Promise.resolve(null),
+                    effectivePaymentId(),
+                ]);
+                if (estimateRequestIdRef.current !== requestId) {
+                    return;
                 }
+                if (fee.status === 'rejected') {
+                    setFeeMicroMinotari(null);
+                    setError('amount', { message: `${fee.reason}` });
+                    return;
+                }
+                if (effective.status === 'rejected') {
+                    setResolvedPaymentId(null);
+                    setError('address', { message: `${effective.reason}` });
+                    return;
+                }
+                setFeeMicroMinotari(typeof fee.value === 'number' ? fee.value : null);
+                setResolvedPaymentId(effective.value);
+                setStatus('reviewing');
+                return;
+            }
+
+            // No PIN: the backend dialog is the review, but the status screens below still
+            // show the payment id that is sent, not the typed Message.
+            if (!hasReviewStep) {
                 try {
-                    const effective = await invoke('effective_l1_payment_id', {
-                        destination: data.address,
-                        paymentId: data.message,
-                    });
-                    if (estimateRequestIdRef.current !== requestId) {
-                        return;
-                    }
-                    if (!isEffectiveL1PaymentId(effective)) {
-                        setResolvedPaymentId(null);
-                        setError('address', { message: t('send.error-invalid-address') });
-                        return;
-                    }
-                    setResolvedPaymentId(effective);
+                    setResolvedPaymentId(await effectivePaymentId());
                 } catch (error) {
-                    if (estimateRequestIdRef.current !== requestId) {
-                        return;
-                    }
                     setResolvedPaymentId(null);
                     setError('address', { message: `${error}` });
                     return;
                 }
-                setStatus('reviewing');
-                return;
             }
 
             setStatus('processing');
