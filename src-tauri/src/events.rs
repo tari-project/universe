@@ -239,6 +239,7 @@ pub struct McpTransactionConfirmationPayload {
     /// anything reaching the Tauri command) or `"mcp"` (MCP transaction tool).
     pub origin: String,
     pub payment_id: Option<String>,
+    pub fee_micro_minotari: Option<u64>,
 }
 
 /// Optional context attached to the `EnterPin` event so the PIN dialog can tell the
@@ -252,6 +253,7 @@ pub enum PinPromptContext {
         destination: String,
         payment_id: Option<String>,
         origin: String,
+        fee_micro_minotari: Option<u64>,
     },
     /// Burning L1 funds to be claimed on L2 by `claim_public_key`.
     Burn {
@@ -292,9 +294,12 @@ pub enum PinPromptContext {
 }
 
 impl PinPromptContext {
-    /// Sets the fee an L2 send or claim will pay. Other contexts are left as they are.
+    /// Sets the fee a send or L2 claim will pay. Other contexts are left as they are.
     pub fn with_fee(mut self, fee: u64) -> Self {
-        if let Self::L2Send {
+        if let Self::Send {
+            fee_micro_minotari, ..
+        }
+        | Self::L2Send {
             fee_micro_minotari, ..
         }
         | Self::L2Claim {

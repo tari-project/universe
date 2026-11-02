@@ -130,6 +130,7 @@ export default function McpTransactionDialog() {
                                 amountMicroMinotari={pending.amount_micro_minotari}
                                 destination={pending.destination}
                                 paymentId={pending.payment_id}
+                                feeMicroMinotari={pending.fee_micro_minotari}
                                 subtitle={t('wallet:send.confirm-subtitle')}
                             />
                             <Button
@@ -149,6 +150,8 @@ export default function McpTransactionDialog() {
                             setStatus={noop}
                             amount={amountXtm}
                             address={pending.destination}
+                            message={pending.payment_id ?? undefined}
+                            feeMicroMinotari={pending.fee_micro_minotari}
                             handleClose={handleClose}
                         />
                     )}

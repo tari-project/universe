@@ -127,6 +127,40 @@ describe('EnterPinDialog', () => {
         closePinPrompt(7);
         expect(useSecurityStore.getState().modal).toBeNull();
     });
+
+    it('renders the network fee in the L1 send PIN prompt summary', () => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 9,
+            pinContext: {
+                kind: 'send',
+                amount_micro_minotari: 2_000_000,
+                destination: 'f4destination',
+                payment_id: 'invoice-1',
+                origin: 'app',
+                fee_micro_minotari: 1_250,
+            },
+        });
+        const { unmount } = render(<EnterPinDialog />);
+        expect(screen.getByText('send.network-fee')).toBeInTheDocument();
+        expect(screen.getByText('0.001250 XTM')).toBeInTheDocument();
+        unmount();
+
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 10,
+            pinContext: {
+                kind: 'send',
+                amount_micro_minotari: 2_000_000,
+                destination: 'f4destination',
+                payment_id: 'invoice-1',
+                origin: 'app',
+            },
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText('send.network-fee')).toBeInTheDocument();
+        expect(screen.getByText('send.fee-unavailable')).toBeInTheDocument();
+    });
 });
 
 describe('ForgotPinDialog', () => {

@@ -17,8 +17,7 @@ interface Props {
     amount?: number;
     address: string;
     message?: string;
-    networkFee?: number;
-    feePercentage?: number;
+    feeMicroMinotari?: number | null;
     handleClose: () => void;
 }
 
@@ -28,14 +27,17 @@ export function SendReview({
     amount,
     address,
     message,
-    //networkFee,
-    //feePercentage,
+    feeMicroMinotari,
     handleClose,
 }: Props) {
     const { t } = useTranslation('wallet');
 
     const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.XTM_COMPACT);
     const formattedAddress = truncateMiddle(address, 5);
+    const formattedFee =
+        feeMicroMinotari != null
+            ? `${formatNumber(feeMicroMinotari, FormatPreset.XTM_DECIMALS)} XTM`
+            : t('send.fee-unavailable');
 
     const reviewEntries: StatusListEntry[] = [
         {
@@ -45,6 +47,10 @@ export function SendReview({
         {
             label: t('send.transaction-description'),
             value: message,
+        },
+        {
+            label: t('send.network-fee'),
+            value: formattedFee,
         },
     ];
 
