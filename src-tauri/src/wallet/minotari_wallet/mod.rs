@@ -1125,18 +1125,20 @@ impl MinotariWalletManager {
         }
     }
 
-    /// Get the current chain tip height from node status
-    fn get_chain_tip_height() -> u64 {
+    /// Get the current chain tip height from node status. Height zero is a real
+    /// tip on a fresh localnet once the node is ready.
+    fn get_chain_tip_height() -> Option<u64> {
         let app_handle = match INSTANCE.app_handle.try_read() {
             Ok(guard) => match guard.as_ref() {
                 Some(h) => h.clone(),
-                None => return 0,
+                None => return None,
             },
-            Err(_) => return 0,
+            Err(_) => return None,
         };
 
         let app_state: tauri::State<'_, UniverseAppState> = app_handle.state::<UniverseAppState>();
-        app_state.node_status_watch_rx.borrow().block_height
+        let status = *app_state.node_status_watch_rx.borrow();
+        known_chain_tip_height(status.block_height, status.readiness_status.is_ready())
     }
 
     /// Records a scanned block height and, at most once per
@@ -1158,7 +1160,7 @@ impl MinotariWalletManager {
         }
         *INSTANCE.last_progress_emit_time.write().await = Instant::now();
 
-        let tip_height = Self::get_chain_tip_height();
+        let tip_height = Self::get_chain_tip_height().unwrap_or(0);
         let progress = scan_progress_percent(current_height, tip_height);
 
         // Continuous mode keeps reporting blocks after the first Completed (every
@@ -1209,7 +1211,7 @@ impl MinotariWalletManager {
                 if !scan_reached_tip(final_height, tip_height) {
                     warn!(
                         target: LOG_TARGET_STATUSES,
-                        "Scan stopped at height {final_height}, short of the node tip {tip_height}; still syncing"
+                        "Scan stopped at height {final_height}, node tip {tip_height:?} not reached; still syncing"
                     );
                     return;
                 }
@@ -1217,11 +1219,7 @@ impl MinotariWalletManager {
 
                 EventsEmitter::emit_wallet_scanning_progress_update(
                     final_height,
-                    if tip_height > 0 {
-                        tip_height
-                    } else {
-                        final_height
-                    },
+                    tip_height.unwrap_or(final_height),
                     100.0,
                     true, // is_initial_scan_complete
                 )
@@ -1247,7 +1245,7 @@ impl MinotariWalletManager {
                 reason: PauseReason::MaxBlocksReached { limit },
                 ..
             } => {
-                let tip_height = Self::get_chain_tip_height();
+                let tip_height = Self::get_chain_tip_height().unwrap_or(0);
                 info!(
                     target: LOG_TARGET_STATUSES,
                     "Scan cycle of {limit} blocks done at height {last_scanned_height} of {tip_height}, starting the next cycle"
@@ -1467,10 +1465,20 @@ fn newly_reorged(known: &mut HashSet<TxId>, current: impl Iterator<Item = TxId>)
     fresh
 }
 
-/// Whether a scan that ended at `final_height` reached the node tip, allowing for blocks
-/// mined since it finished. An unknown tip (0) proves nothing.
-fn scan_reached_tip(final_height: u64, tip_height: u64) -> bool {
-    tip_height > 0 && final_height.saturating_add(REQUIRED_CONFIRMATIONS) >= tip_height
+/// A height-zero tip is known only after the node reports ready; otherwise its
+/// default status has the same height and cannot prove the scan caught up.
+fn known_chain_tip_height(block_height: u64, node_ready: bool) -> Option<u64> {
+    (block_height > 0 || node_ready).then_some(block_height)
+}
+
+/// Whether a scan that ended at `final_height` reached a known node tip,
+/// allowing for blocks mined since it finished.
+fn scan_reached_tip(final_height: u64, tip_height: Option<u64>) -> bool {
+    match tip_height {
+        Some(0) => final_height == 0,
+        Some(tip_height) => final_height.saturating_add(REQUIRED_CONFIRMATIONS) >= tip_height,
+        None => false,
+    }
 }
 
 /// The largest amount a one-sided send whose outputs are `output_size` can carry: the spendable
@@ -1775,8 +1783,9 @@ pub(crate) fn estimate_one_sided_fee_for_account(
 mod tests {
     use super::{
         StalledTransaction, abandon_send, blocks_to_report, burn_times, discard_wallet_dir,
-        max_sendable, move_legacy_burn_proofs, newly_reorged, pending_burns, pending_burns_guard,
-        scan_progress_percent, scan_reached_tip, stalled_transactions, validate_burn_payment_id,
+        known_chain_tip_height, max_sendable, move_legacy_burn_proofs, newly_reorged,
+        pending_burns, pending_burns_guard, scan_progress_percent, scan_reached_tip,
+        stalled_transactions, validate_burn_payment_id,
     };
     use crate::wallet::minotari_wallet::transaction::{CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM};
     use chrono::Utc;
@@ -2002,12 +2011,21 @@ mod tests {
 
     #[test]
     fn only_a_scan_that_reached_the_tip_counts_as_synced() {
-        assert!(scan_reached_tip(1000, 1000));
-        assert!(scan_reached_tip(997, 1000));
-        assert!(!scan_reached_tip(996, 1000));
+        assert!(scan_reached_tip(1000, Some(1000)));
+        assert!(scan_reached_tip(997, Some(1000)));
+        assert!(!scan_reached_tip(996, Some(1000)));
         // The library reports Completed at the start height when the tip query fails.
-        assert!(!scan_reached_tip(12, 380_000));
-        assert!(!scan_reached_tip(1000, 0));
+        assert!(!scan_reached_tip(12, Some(380_000)));
+        assert!(!scan_reached_tip(1000, Some(0)));
+        assert!(!scan_reached_tip(0, None));
+        assert!(scan_reached_tip(0, Some(0)));
+    }
+
+    #[test]
+    fn a_ready_genesis_node_has_a_known_tip() {
+        assert_eq!(known_chain_tip_height(0, true), Some(0));
+        assert_eq!(known_chain_tip_height(0, false), None);
+        assert_eq!(known_chain_tip_height(123, false), Some(123));
     }
 
     #[test]
