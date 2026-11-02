@@ -1129,10 +1129,7 @@ impl MinotariWalletManager {
     /// tip on a fresh localnet once the node is ready.
     fn get_chain_tip_height() -> Option<u64> {
         let app_handle = match INSTANCE.app_handle.try_read() {
-            Ok(guard) => match guard.as_ref() {
-                Some(h) => h.clone(),
-                None => return None,
-            },
+            Ok(guard) => guard.as_ref()?.clone(),
             Err(_) => return None,
         };
 
