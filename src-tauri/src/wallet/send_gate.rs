@@ -51,8 +51,7 @@ use std::time::Duration;
 
 use log::{info, warn};
 use minotari_wallet::transactions::{
-    abandon::AbandonSendError, input_selector::UtxoSelectionError,
-    one_sided_transaction::Recipient,
+    abandon::AbandonSendError, input_selector::UtxoSelectionError, one_sided_transaction::Recipient,
 };
 use serde::Serialize;
 use tari_common::configuration::Network;
@@ -374,7 +373,7 @@ impl SpendKind {
 ///
 /// Since minotari 0.3.0 an address with the payment-id feature replaces the caller's
 /// Message: [`Recipient::payment_id_bytes`] sends the address's bytes as they are, text
-/// or not. Text is shown as text. Anything else is hex, so a binary exchange reference
+/// or not. Text is shown as text. Anything else is `0x` hex, so a binary exchange reference
 /// is visible instead of the Message the caller typed.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct EffectivePaymentId {
@@ -396,22 +395,30 @@ pub fn effective_payment_id(
         amount: MicroMinotari(0),
         payment_id: typed.map(str::to_string),
     };
-    let payment_id = recipient
+    let bytes = recipient
         .payment_id_bytes()
-        .filter(|bytes| !bytes.is_empty())
-        .map(display_payment_id_bytes);
+        .filter(|bytes| !bytes.is_empty());
     let embedded = address.features().contains(TariAddressFeatures::PAYMENT_ID);
     EffectivePaymentId {
-        payment_id_overridden: embedded && payment_id.as_deref() != typed,
-        payment_id,
+        // Bytes, not display strings: typing the hex of a binary id is not sending it.
+        payment_id_overridden: embedded && bytes.as_deref() != typed.map(str::as_bytes),
+        payment_id: bytes.map(display_payment_id_bytes),
     }
 }
 
+/// Text when it is UTF-8 with no control or bidi characters, so the address can't make
+/// the review line read as something else. Anything else is `0x` hex.
 fn display_payment_id_bytes(bytes: Vec<u8>) -> String {
     match String::from_utf8(bytes) {
-        Ok(text) => text,
-        Err(err) => hex::encode(err.into_bytes()),
+        Ok(text) if !text.chars().any(is_deceptive_char) => text,
+        Ok(text) => format!("0x{}", hex::encode(text.into_bytes())),
+        Err(err) => format!("0x{}", hex::encode(err.into_bytes())),
     }
+}
+
+fn is_deceptive_char(c: char) -> bool {
+    c.is_control()
+        || matches!(c, '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
 }
 
 /// [`effective_payment_id`] for a destination string, parsed the same way the send is.
@@ -1420,7 +1427,7 @@ mod tests {
             destination: destination.clone(),
         };
         let consent = consent_payment_id(&kind, Some("typed")).unwrap();
-        let expected = hex::encode(&bytes);
+        let expected = format!("0x{}", hex::encode(&bytes));
         assert_eq!(consent.payment_id.as_deref(), Some(expected.as_str()));
         assert!(consent.payment_id_overridden);
 
@@ -1436,12 +1443,57 @@ mod tests {
     }
 
     #[test]
+    fn typing_the_hex_of_a_binary_payment_id_still_flags_the_override() {
+        let bytes = vec![0xde, 0xad, 0xbe, 0xef];
+        let kind = SpendKind::Send {
+            destination: address_with_payment_id(&bytes),
+        };
+        let consent = consent_payment_id(&kind, Some("0xdeadbeef")).unwrap();
+        assert_eq!(consent.payment_id.as_deref(), Some("0xdeadbeef"));
+        assert!(consent.payment_id_overridden);
+    }
+
+    #[test]
+    fn a_text_payment_id_that_reads_as_hex_is_shown_as_text() {
+        // UTF-8 "deadbeef" must not look like the binary bytes de ad be ef.
+        let kind = SpendKind::Send {
+            destination: address_with_payment_id(b"deadbeef"),
+        };
+        let consent = consent_payment_id(&kind, Some("deadbeef")).unwrap();
+        assert_eq!(consent.payment_id.as_deref(), Some("deadbeef"));
+        assert!(!consent.payment_id_overridden);
+    }
+
+    #[test]
+    fn payment_id_text_with_control_or_bidi_characters_is_shown_as_hex() {
+        for text in ["PW\u{202E}321", "PW\u{2066}ID", "PW\nID", "PW\u{200F}ID"] {
+            let kind = SpendKind::Send {
+                destination: address_with_payment_id(text.as_bytes()),
+            };
+            let consent = consent_payment_id(&kind, None).unwrap();
+            let expected = format!("0x{}", hex::encode(text.as_bytes()));
+            assert_eq!(
+                consent.payment_id.as_deref(),
+                Some(expected.as_str()),
+                "{text:?}"
+            );
+            assert!(consent.payment_id_overridden);
+        }
+        // Non-ASCII text without those characters stays readable.
+        let kind = SpendKind::Send {
+            destination: address_with_payment_id("café".as_bytes()),
+        };
+        let consent = consent_payment_id(&kind, None).unwrap();
+        assert_eq!(consent.payment_id.as_deref(), Some("café"));
+    }
+
+    #[test]
     fn a_real_exchange_address_payment_id_is_what_consent_shows() {
         let mexc = TariAddress::from_str(MAINNET_MEXC_DEPOSIT_ADDRESS).unwrap();
         let embedded = mexc.get_memo_field_payment_id_bytes();
         assert_eq!(embedded.len(), 32);
         let effective = effective_payment_id(&mexc, Some("typed message"));
-        let expected = hex::encode(&embedded);
+        let expected = format!("0x{}", hex::encode(&embedded));
         assert_eq!(effective.payment_id.as_deref(), Some(expected.as_str()));
         assert!(effective.payment_id_overridden);
 

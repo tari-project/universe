@@ -240,7 +240,7 @@ pub struct McpTransactionConfirmationPayload {
     pub origin: String,
     /// Payment id the transaction will carry. For an L1 send this is the address's
     /// embedded id when it has one, otherwise the caller's Message. Text is shown as
-    /// text; binary ids are hex.
+    /// text; binary ids, or text with control or bidi characters, are `0x` hex.
     pub payment_id: Option<String>,
     /// The destination address replaced the caller's Message with its own payment id.
     pub payment_id_overridden: bool,
@@ -263,7 +263,7 @@ pub enum PinPromptContext {
         amount_micro_minotari: u64,
         destination: String,
         /// Payment id the send will carry: the address's embedded id when it has one,
-        /// otherwise the caller's Message. Text is shown as text; binary ids are hex.
+        /// otherwise the caller's Message. Text is shown as text; anything else is `0x` hex.
         payment_id: Option<String>,
         /// The destination address replaced the caller's Message with its own payment id.
         payment_id_overridden: bool,
