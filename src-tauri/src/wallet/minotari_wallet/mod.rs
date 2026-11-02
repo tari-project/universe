@@ -49,7 +49,7 @@ use crate::{
         database_manager::MinotariWalletDatabaseManager,
         transaction::{
             CONFIRMATION_WINDOW, TransactionManager, UTXO_LOCK_DURATION_SECS,
-            parse_destination_address, resolve_payment_id,
+            parse_destination_address,
         },
     },
 };
@@ -226,7 +226,9 @@ impl MinotariWalletManager {
         info!(target: LOG_TARGET, "Sending a one-sided transaction.");
         let tari_address = Self::get_owner_address().await?;
         let destination_address = parse_destination_address(&address)?;
-        let payment_id = resolve_payment_id(&destination_address, payment_id)?;
+        // An ID embedded in the address replaces the Message: the wallet library sends the
+        // address's bytes as they are, text or not, as the console wallet does.
+        let payment_id = payment_id.filter(|id| !id.is_empty());
 
         // Build the key manager (and so raise the PIN prompt) before anything locks
         // UTXOs: a cancelled, mistyped or timed-out PIN returns from here having locked
@@ -376,6 +378,7 @@ impl MinotariWalletManager {
             transaction,
             output_hash,
             tx_id,
+            new_burn_proof,
             ..
         } = result;
 
@@ -383,6 +386,14 @@ impl MinotariWalletManager {
         let submitted = client.submit_transaction(transaction).await;
         record_burn_broadcast(&conn, tx_id, submitted)?;
         drop(conn);
+        crate::airdrop::report_burn(serde_json::json!({
+            "txId": tx_id.to_string(),
+            "commitment": hex::encode(&new_burn_proof.commitment),
+            "excessSigNonce": hex::encode(&new_burn_proof.kernel_excess_nonce),
+            "excessSig": hex::encode(&new_burn_proof.kernel_excess_sig),
+            "amountMicroMinotari": amount,
+        }))
+        .await;
 
         BalanceTracker::current()
             .update_from_transactions(Self::get_latest_account_balance().await)

@@ -279,11 +279,6 @@ impl InternalWallet {
     }
 
     pub async fn initialize_with_seed(app_handle: &tauri::AppHandle) -> Result<(), anyhow::Error> {
-        ConfigWallet::update_field(
-            ConfigWalletContent::set_selected_external_tari_address,
-            None,
-        )
-        .await?;
         let mut wallet_config = ConfigWallet::content().await;
         // An unreadable config was moved aside and replaced with defaults. Rebuild it from the
         // moved-aside file before concluding that no wallet exists here.

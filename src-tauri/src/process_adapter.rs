@@ -24,13 +24,13 @@ use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 #[cfg(test)]
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 use sysinfo::{Pid, ProcessesToUpdate, System};
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -48,6 +48,47 @@ use crate::events_emitter::EventsEmitter;
 use crate::process_killer::kill_process;
 use crate::process_utils::{graceful_kill, launch_child_process, write_pid_file};
 use crate::process_wrapper;
+
+static REPORTED_PERMISSION_ERRORS: LazyLock<Mutex<HashSet<(String, PathBuf)>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
+
+fn format_permission_error(name: &str, path: &Path, err: &impl std::fmt::Display) -> String {
+    format!(
+        "Could not set permissions on {name} binary at {}: {err}",
+        path.display()
+    )
+}
+
+/// Sentry gets the binary name and the OS error only: the path sits under the
+/// user's home directory, which would leak the username and split the issue per install.
+fn sentry_permission_error(name: &str, err: &anyhow::Error) -> String {
+    match err.downcast_ref::<std::io::Error>() {
+        Some(io) => format!("Could not set permissions on {name} binary: {io}"),
+        None => format!("Could not set permissions on {name} binary"),
+    }
+}
+
+fn should_report_permission_error(name: &str, path: &Path) -> bool {
+    REPORTED_PERMISSION_ERRORS
+        .lock()
+        .map(|mut seen| seen.insert((name.to_string(), path.to_path_buf())))
+        .unwrap_or(true)
+}
+
+/// Makes `path` executable, logging the full path locally and reporting to Sentry
+/// once per binary per session.
+pub(crate) async fn ensure_binary_permissions(name: &str, path: &Path) -> Result<(), Error> {
+    if let Err(e) = set_permissions(path).await {
+        error!(target: LOG_TARGET_APP_LOGIC, "{}", format_permission_error(name, path, &e));
+        // Callers (e.g. the miner managers) forward this error to Sentry, so it must not carry the path.
+        let msg = sentry_permission_error(name, &e);
+        if should_report_permission_error(name, path) {
+            sentry::capture_message(&msg, sentry::Level::Error);
+        }
+        return Err(e.context(msg));
+    }
+    Ok(())
+}
 
 const SPACE_ERROR_MESSAGE: &str = "No space left on device";
 
@@ -474,14 +515,11 @@ impl ProcessInstanceTrait for ProcessInstance {
             return Ok(());
         };
 
+        ensure_binary_permissions(&spec.name, &spec.file_path).await?;
+
         let output_task_tracker = task_tracker.clone();
         let output_shutdown_signal = self.shutdown.to_signal();
         self.handle = Some(task_tracker.spawn(async move {
-            if let Err(e) = set_permissions(&spec.file_path).await {
-                error!(target: LOG_TARGET_APP_LOGIC, "{e}");
-                sentry::capture_message(&e.to_string(), sentry::Level::Error);
-                return Err(e);
-            }
             // start
             info!(target: LOG_TARGET_APP_LOGIC, "Launching process for: {}", spec.name);
             let mut child = launch_child_process(
@@ -716,5 +754,40 @@ mod tests {
         let (pid, start) = <TestAdapter as ProcessAdapter>::parse_pid_file("not-a-pid");
         assert_eq!(pid, None);
         assert_eq!(start, None);
+    }
+
+    #[test]
+    fn permission_error_message_includes_process_name_and_path() {
+        let path = Path::new("/tmp/missing/xmrig");
+        let msg = format_permission_error("xmrig", path, &"No such file or directory (os error 2)");
+        assert_eq!(
+            msg,
+            "Could not set permissions on xmrig binary at /tmp/missing/xmrig: No such file or directory (os error 2)"
+        );
+    }
+
+    #[test]
+    fn permission_error_is_reported_at_most_once_per_binary() {
+        let path = Path::new("/tmp/missing/minotari_node");
+        assert!(should_report_permission_error("minotari_node", path));
+        assert!(!should_report_permission_error("minotari_node", path));
+    }
+
+    #[test]
+    fn sentry_permission_error_omits_path() {
+        let err = anyhow::Error::from(std::io::Error::from(std::io::ErrorKind::NotFound));
+        let msg = sentry_permission_error("xmrig", &err.context("/home/alice/xmrig"));
+        assert!(msg.starts_with("Could not set permissions on xmrig binary"));
+        assert!(!msg.contains("alice"));
+    }
+
+    #[tokio::test]
+    async fn ensure_binary_permissions_error_omits_path() {
+        let path = Path::new("/home/alice/missing/xmrig");
+        let err = ensure_binary_permissions("xmrig", path)
+            .await
+            .expect_err("missing binary");
+        assert!(!format!("{err}").contains("alice"));
+        assert!(!format!("{err:#}").contains("alice"));
     }
 }

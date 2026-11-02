@@ -55,7 +55,11 @@ impl SyncProgressInfo {
                 );
             }
             x if x == SyncState::Header as i32 => {
-                percentage = sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                percentage = if sync_progress.tip_height == 0 {
+                    0.0
+                } else {
+                    sync_progress.local_height as f64 / sync_progress.tip_height as f64
+                };
                 progress_params.insert("step".to_string(), "Header".to_string());
                 progress_params.insert(
                     "local_header_height".to_string(),
@@ -81,7 +85,11 @@ impl SyncProgressInfo {
                 );
             }
             x if x == SyncState::Block as i32 => {
-                percentage = sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                percentage = if sync_progress.tip_height == 0 {
+                    0.0
+                } else {
+                    sync_progress.local_height as f64 / sync_progress.tip_height as f64
+                };
                 progress_params.insert("step".to_string(), "Block".to_string());
                 progress_params.insert(
                     "local_header_height".to_string(),
@@ -110,6 +118,7 @@ impl SyncProgressInfo {
                 );
             }
             x if x == SyncState::Done as i32 => {
+                percentage = 1.0;
                 progress_params.insert("step".to_string(), "Done".to_string());
             }
             _ => {}
@@ -118,6 +127,43 @@ impl SyncProgressInfo {
         Self {
             progress_params,
             percentage,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn done_state_reports_full_sync_percentage() {
+        let response = SyncProgressResponse {
+            tip_height: 100,
+            local_height: 100,
+            state: SyncState::Done as i32,
+            short_desc: String::new(),
+            initial_connected_peers: 1,
+        };
+        let info = SyncProgressInfo::from_sync_progress(&response, 3);
+        assert_eq!(info.percentage, 1.0);
+        assert_eq!(
+            info.progress_params.get("step").map(String::as_str),
+            Some("Done")
+        );
+    }
+
+    #[test]
+    fn zero_tip_height_reports_zero_percentage_instead_of_nan() {
+        for state in [SyncState::Header as i32, SyncState::Block as i32] {
+            let response = SyncProgressResponse {
+                tip_height: 0,
+                local_height: 0,
+                state,
+                short_desc: String::new(),
+                initial_connected_peers: 0,
+            };
+            let info = SyncProgressInfo::from_sync_progress(&response, 3);
+            assert_eq!(info.percentage, 0.0);
         }
     }
 }
