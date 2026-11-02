@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::sync::Arc;
-use std::thread::sleep;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -326,7 +325,7 @@ impl WebsocketEventsManager {
             info!(target: LOG_TARGET_APP_LOGIC, "websocket_connect retry {} in {}ms - websocket manager not ready yet", retry_count, delay_ms);
 
             // Sleep with exponential backoff
-            sleep(Duration::from_millis(delay_ms));
+            time::sleep(Duration::from_millis(delay_ms)).await;
             delay_ms = (delay_ms * 2).min(2000); // Cap at 2 seconds
         }
     }

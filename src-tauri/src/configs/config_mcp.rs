@@ -28,45 +28,59 @@ use log::info;
 use ring::rand::{SecureRandom, SystemRandom};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 pub const MCP_CONFIG_VERSION: u32 = 0;
 pub(crate) const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
+const MIN_TOKEN_EXPIRY_DAYS: u32 = 1;
+const MAX_TOKEN_EXPIRY_DAYS: u32 = 3650;
 static INSTANCE: LazyLock<RwLock<ConfigMcp>> = LazyLock::new(|| RwLock::new(ConfigMcp::new()));
 
 pub(crate) mod token_cipher {
+    use crate::LOG_TARGET_APP_LOGIC;
     use base64::prelude::*;
+    use log::warn;
     use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
     use ring::digest;
-    use std::sync::OnceLock;
+    use std::sync::RwLock;
 
     const NONCE_LEN: usize = 12;
 
-    static ANON_ID: OnceLock<String> = OnceLock::new();
+    static ANON_ID: RwLock<Option<String>> = RwLock::new(None);
 
-    /// Must be called before ConfigMcp's LazyLock is first accessed.
-    /// setup_manager calls ConfigCore::initialize before ConfigMcp::initialize,
-    /// so the anon_id is available in memory by then.
+    /// Sets or updates the `anon_id` used to derive the MCP bearer token cipher key.
     pub fn set_anon_id(anon_id: String) {
-        let existing = ANON_ID.get_or_init(|| anon_id.clone());
-        assert_eq!(
-            existing, &anon_id,
-            "token_cipher: anon_id already set to a different value"
-        );
+        match ANON_ID.write() {
+            Ok(mut guard) => {
+                if let Some(existing) = guard.as_ref()
+                    && existing != &anon_id
+                {
+                    warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "token_cipher: updating anon_id key material"
+                    );
+                }
+                *guard = Some(anon_id);
+            }
+            Err(poisoned) => {
+                *poisoned.into_inner() = Some(anon_id);
+            }
+        }
     }
 
-    fn derive_key() -> LessSafeKey {
-        let anon_id = ANON_ID
-            .get()
-            .expect("token_cipher: anon_id not set — call set_anon_id before loading ConfigMcp");
+    fn derive_key() -> Result<LessSafeKey, &'static str> {
+        let guard = ANON_ID.read().map_err(|_| "token_cipher lock poisoned")?;
+        let anon_id = guard
+            .as_deref()
+            .ok_or("token_cipher: anon_id not set — call set_anon_id before loading ConfigMcp")?;
         let material = format!("tari-universe-mcp-token-v1:{anon_id}");
         let hash1 = digest::digest(&digest::SHA256, material.as_bytes());
         let hash2 = digest::digest(&digest::SHA256, hash1.as_ref());
         let unbound =
-            UnboundKey::new(&AES_256_GCM, &hash2.as_ref()[..32]).expect("AES key creation failed");
-        LessSafeKey::new(unbound)
+            UnboundKey::new(&AES_256_GCM, &hash2.as_ref()[..32]).map_err(|_| "AES key error")?;
+        Ok(LessSafeKey::new(unbound))
     }
 
     pub fn decrypt(encoded: &str) -> Result<String, &'static str> {
@@ -79,7 +93,7 @@ pub(crate) mod token_cipher {
 
         let (nonce_bytes, ciphertext_and_tag) = data.split_at(NONCE_LEN);
         let nonce = Nonce::try_assume_unique_for_key(nonce_bytes).map_err(|_| "invalid nonce")?;
-        let key = derive_key();
+        let key = derive_key()?;
 
         let mut buf = ciphertext_and_tag.to_vec();
         let plaintext = key
@@ -88,8 +102,8 @@ pub(crate) mod token_cipher {
         String::from_utf8(plaintext.to_vec()).map_err(|_| "invalid utf8")
     }
 
-    pub fn encrypt_deterministic(plaintext: &str) -> String {
-        let key = derive_key();
+    pub fn encrypt_deterministic(plaintext: &str) -> Result<String, &'static str> {
+        let key = derive_key()?;
         let hash = digest::digest(&digest::SHA256, plaintext.as_bytes());
         let mut nonce_bytes = [0u8; NONCE_LEN];
         nonce_bytes.copy_from_slice(&hash.as_ref()[..NONCE_LEN]);
@@ -97,12 +111,12 @@ pub(crate) mod token_cipher {
         let mut in_out = plaintext.as_bytes().to_vec();
         let nonce = Nonce::assume_unique_for_key(nonce_bytes);
         key.seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out)
-            .expect("AES-GCM seal failed");
+            .map_err(|_| "AES-GCM seal failed")?;
 
         let mut result = Vec::with_capacity(NONCE_LEN + in_out.len());
         result.extend_from_slice(&nonce_bytes);
         result.extend_from_slice(&in_out);
-        BASE64_URL_SAFE_NO_PAD.encode(&result)
+        Ok(BASE64_URL_SAFE_NO_PAD.encode(&result))
     }
 
     pub fn serialize_token<S>(value: &Option<String>, serializer: S) -> Result<S::Ok, S::Error>
@@ -110,7 +124,11 @@ pub(crate) mod token_cipher {
         S: serde::Serializer,
     {
         match value {
-            Some(plaintext) => serializer.serialize_some(&encrypt_deterministic(plaintext)),
+            Some(plaintext) => {
+                let encrypted =
+                    encrypt_deterministic(plaintext).map_err(serde::ser::Error::custom)?;
+                serializer.serialize_some(&encrypted)
+            }
             None => serializer.serialize_none(),
         }
     }
@@ -124,9 +142,13 @@ pub(crate) mod token_cipher {
         match opt {
             Some(encoded) => match decrypt(&encoded) {
                 Ok(plaintext) => Ok(Some(plaintext)),
-                Err(e) => Err(serde::de::Error::custom(format!(
-                    "failed to decrypt MCP token: {e}"
-                ))),
+                Err(e) => {
+                    warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Failed to decrypt stored MCP bearer token ({e}); clearing stale token while preserving MCP config"
+                    );
+                    Ok(None)
+                }
             },
             None => Ok(None),
         }
@@ -181,6 +203,13 @@ impl Default for ConfigMcpContent {
 
 impl ConfigContentImpl for ConfigMcpContent {}
 
+fn compute_token_expiry(now: SystemTime, token_expiry_days: u32) -> SystemTime {
+    let clamped_days = token_expiry_days.clamp(MIN_TOKEN_EXPIRY_DAYS, MAX_TOKEN_EXPIRY_DAYS);
+    let secs = u64::from(clamped_days).saturating_mul(SECONDS_PER_DAY);
+    now.checked_add(Duration::from_secs(secs))
+        .unwrap_or_else(|| now + Duration::from_secs(30 * SECONDS_PER_DAY))
+}
+
 // TODO: Remove allow(dead_code) when Phase 2 (MCP server) consumes these methods
 #[allow(dead_code)]
 impl ConfigMcpContent {
@@ -196,10 +225,7 @@ impl ConfigMcpContent {
         if self.bearer_token.is_none() {
             let token = Self::generate_token();
             let now = SystemTime::now();
-            let expiry = now
-                + std::time::Duration::from_secs(
-                    u64::from(self.token_expiry_days) * SECONDS_PER_DAY,
-                );
+            let expiry = compute_token_expiry(now, self.token_expiry_days);
             self.bearer_token = Some(token);
             self.token_created_at = Some(now);
             self.token_expires_at = Some(expiry);
@@ -218,10 +244,7 @@ impl ConfigMcpContent {
     pub fn refresh_token_expiry(&mut self) {
         if self.bearer_token.is_some() {
             let now = SystemTime::now();
-            let expiry = now
-                + std::time::Duration::from_secs(
-                    u64::from(self.token_expiry_days) * SECONDS_PER_DAY,
-                );
+            let expiry = compute_token_expiry(now, self.token_expiry_days);
             self.token_expires_at = Some(expiry);
         }
     }
@@ -331,5 +354,47 @@ impl ConfigImpl for ConfigMcp {
 
     async fn load_app_handle(&mut self, app_handle: AppHandle) {
         *self.app_handle.write().await = Some(app_handle);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ensure_and_refresh_token_clamp_extreme_expiry_days_without_panic() {
+        token_cipher::set_anon_id("test-anon-id-1".to_string());
+        let mut cfg = ConfigMcpContent {
+            token_expiry_days: u32::MAX,
+            ..Default::default()
+        };
+        let tok = cfg.ensure_token().to_string();
+        assert!(tok.starts_with("tu_"));
+        assert!(!cfg.is_token_expired());
+
+        cfg.set_token_expiry_days(0);
+        cfg.refresh_token_expiry();
+        assert!(!cfg.is_token_expired());
+    }
+
+    #[test]
+    fn undecryptable_bearer_token_clears_only_token_and_preserves_settings() {
+        token_cipher::set_anon_id("anon-id-old".to_string());
+        let mut cfg = ConfigMcpContent::default();
+        cfg.set_port(23456);
+        cfg.set_max_transaction_amount(Some(500_000));
+        cfg.set_rate_limit_transaction(12);
+        cfg.ensure_token();
+
+        let serialized = serde_json::to_string(&cfg).expect("serialize");
+
+        // Rotate anon_id so the previously encrypted token cannot be decrypted
+        token_cipher::set_anon_id("anon-id-new".to_string());
+        let loaded: ConfigMcpContent =
+            serde_json::from_str(&serialized).expect("deserialize should preserve settings");
+        assert!(loaded.bearer_token().is_none());
+        assert_eq!(*loaded.port(), 23456);
+        assert_eq!(*loaded.max_transaction_amount(), Some(500_000));
+        assert_eq!(*loaded.rate_limit_transaction(), 12);
     }
 }
