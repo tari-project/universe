@@ -327,10 +327,10 @@ impl ConfigImpl for ConfigMcp {
 
     fn new() -> Self {
         let mut content = ConfigMcp::_load_or_create();
-        if content.disable_if_token_missing() {
-            if let Err(error) = ConfigMcp::_save_config(content.clone()) {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to persist disabled MCP config after missing token: {error}");
-            }
+        if content.disable_if_token_missing()
+            && let Err(error) = ConfigMcp::_save_config(content.clone())
+        {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to persist disabled MCP config after missing token: {error}");
         }
         Self {
             content,

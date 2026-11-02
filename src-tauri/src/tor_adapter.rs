@@ -421,7 +421,7 @@ mod tests {
 
         let temp = tempfile::tempdir().expect("tempdir");
         let stale_dir = temp.path().join("tor-data");
-        std::fs::create_dir(&stale_dir).expect("create stale dir");
+        std::fs::create_dir_all(&stale_dir).expect("create stale dir");
         let stale_file = stale_dir.join("stale_state");
         std::fs::write(&stale_file, b"old").expect("write stale file");
         std::fs::set_permissions(temp.path(), std::fs::Permissions::from_mode(0o555))
