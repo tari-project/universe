@@ -483,13 +483,14 @@ pub async fn confirm_exchange_address(
     app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    let new_external_tari_address =
-        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
-    // Validate PIN if pin locked
+    // Validate PIN if pin locked, before any side effect
     let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(InvokeError::from_anyhow)?;
+
+    let new_external_tari_address =
+        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
     InternalWallet::initialize_seedless(Some(new_external_tari_address))
         .await
@@ -660,6 +661,11 @@ pub async fn revert_to_internal_wallet(
     app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
+
+    // Validate PIN if pin locked, before any side effect
+    let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
@@ -1171,8 +1177,17 @@ pub async fn update_custom_mining_mode(
 }
 
 #[tauri::command]
-pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeError> {
+pub async fn set_monero_address(
+    app_handle: tauri::AppHandle,
+    monero_address: String,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
+
+    // Validate PIN if pin locked, before any side effect
+    let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
     SetupManager::get_instance()
         .add_phases_to_restart_queue(vec![SetupPhase::CpuMining])
         .await;
@@ -2780,5 +2795,70 @@ mod tests {
     #[test]
     fn unparseable_input_is_rejected() {
         assert!(canonicalise_remote_base_node_address("not a valid url at all").is_err());
+    }
+}
+
+/// These commands take a `tauri::AppHandle<Wry>` and reach global singletons
+/// (ConfigWallet, InternalWallet, SetupManager), so they can't run headless in a unit
+/// test. Instead this pins their shape in source: each one takes an AppHandle, runs the
+/// PIN check, and does so before any side effect, so a wrong or cancelled PIN changes
+/// nothing. Calling them for real needs a mock-runtime seam we don't have yet.
+#[cfg(test)]
+mod pin_gate_tests {
+    const SOURCE: &str = include_str!("commands.rs");
+    const PIN_CHECK: &str = "PinManager::get_validated_pin_if_defined(&app_handle, None)\n        .await\n        .map_err(InvokeError::from_anyhow)?;";
+    const SIDE_EFFECTS: [&str; 7] = [
+        "SetupManager::",
+        "InternalWallet::",
+        "ConfigWallet::",
+        "ConfigCore::",
+        "EventsEmitter::",
+        "shutdown_phases",
+        "add_phases_to_restart_queue",
+    ];
+
+    /// The text of command `name`, from its signature to the next command attribute.
+    fn command(name: &str) -> &'static str {
+        let start = SOURCE
+            .find(&format!("pub async fn {name}("))
+            .unwrap_or_else(|| panic!("command {name} not found"));
+        let rest = &SOURCE[start..];
+        let end = rest.find("#[tauri::command]").unwrap_or(rest.len());
+        &rest[..end]
+    }
+
+    fn assert_pin_gated_before_side_effects(name: &str) {
+        let body = command(name);
+        let signature = &body[..body.find('{').expect("function body")];
+        assert!(
+            signature.contains("app_handle: tauri::AppHandle"),
+            "{name} must take app_handle: tauri::AppHandle"
+        );
+        let pin_at = body
+            .find(PIN_CHECK)
+            .unwrap_or_else(|| panic!("{name} must call {PIN_CHECK}"));
+        for effect in SIDE_EFFECTS {
+            if let Some(effect_at) = body.find(effect) {
+                assert!(
+                    pin_at < effect_at,
+                    "{name}: {effect} runs before the PIN check"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_confirm_exchange_address_pin_checked_before_side_effects() {
+        assert_pin_gated_before_side_effects("confirm_exchange_address");
+    }
+
+    #[test]
+    fn test_set_monero_address_pin_checked_before_side_effects() {
+        assert_pin_gated_before_side_effects("set_monero_address");
+    }
+
+    #[test]
+    fn test_revert_to_internal_wallet_pin_checked_before_side_effects() {
+        assert_pin_gated_before_side_effects("revert_to_internal_wallet");
     }
 }
