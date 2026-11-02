@@ -212,6 +212,7 @@ impl BinaryManager {
 
         // Debug: Check if the file actually exists before attempting validation
         if !in_progress_file_zip.exists() {
+            std::fs::remove_dir_all(destination_dir.clone()).ok();
             error!(target: LOG_TARGET_APP_LOGIC, "Archive file does not exist at path: {in_progress_file_zip:?}");
             return Err(anyhow!(
                 "Archive file not found at path: {:?}",
@@ -404,41 +405,43 @@ impl BinaryManager {
             .await
             .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-        let main_file_download_result = HttpFileClient::builder()
+        let main_client = HttpFileClient::builder()
             .with_cloudflare_cache_check()
             .with_file_extract()
             .with_progress_status_sender(chunk_progress_sender.clone())
             .with_download_resume()
-            .build(download_url.clone(), destination_dir.clone())?
-            .execute()
-            .await;
+            .build(download_url.clone(), destination_dir.clone())?;
 
-        let archive_destination_path: PathBuf = if main_file_download_result.is_err() {
-            info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
-            if let Some(progress_sender_shutdown) = main_progress_sender_shutdown {
-                progress_sender_shutdown.trigger();
-            }
+        let main_file_download_result = main_client.download().await;
 
-            let (chunk_progress_sender, fallback_progress_sender_shutdown) = self
-                .resolve_progress_channel(progress_channel.clone())
-                .await
-                .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
+        let (active_client, archive_destination_path): (HttpFileClient, PathBuf) =
+            if main_file_download_result.is_err() {
+                info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
+                if let Some(progress_sender_shutdown) = main_progress_sender_shutdown {
+                    progress_sender_shutdown.trigger();
+                }
 
-            HttpFileClient::builder()
-                .with_file_extract()
-                .with_progress_status_sender(chunk_progress_sender.clone())
-                .with_download_resume()
-                .build(fallback_url.clone(), destination_dir.clone())?
-                .execute()
-                .await
-                .inspect_err(|_| {
+                let (chunk_progress_sender, fallback_progress_sender_shutdown) = self
+                    .resolve_progress_channel(progress_channel.clone())
+                    .await
+                    .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
+
+                let fallback_client = HttpFileClient::builder()
+                    .with_file_extract()
+                    .with_progress_status_sender(chunk_progress_sender.clone())
+                    .with_download_resume()
+                    .build(fallback_url.clone(), destination_dir.clone())?;
+
+                let path = fallback_client.download().await.inspect_err(|_| {
                     if let Some(progress_sender_shutdown) = fallback_progress_sender_shutdown {
                         progress_sender_shutdown.trigger();
                     }
-                })?
-        } else {
-            main_file_download_result?
-        };
+                })?;
+
+                (fallback_client, path)
+            } else {
+                (main_client, main_file_download_result?)
+            };
 
         if self.should_validate_checksum {
             self.validate_checksum(
@@ -448,6 +451,10 @@ impl BinaryManager {
             )
             .await?;
         }
+
+        active_client.extract().await.inspect_err(|_| {
+            std::fs::remove_dir_all(destination_dir.clone()).ok();
+        })?;
 
         Ok(())
     }
@@ -604,8 +611,131 @@ fn is_binary_version_folder_name(folder_name: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{cleanup_old_binary_versions, is_binary_version_folder_name};
+    use super::{BinaryManager, cleanup_old_binary_versions, is_binary_version_folder_name};
+    use crate::binaries::{
+        binaries_list::Binaries,
+        binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter},
+    };
+    use anyhow::Error;
+    use async_trait::async_trait;
+    use std::{
+        io::{Cursor, Write},
+        path::PathBuf,
+        sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+        },
+    };
     use tempfile::tempdir;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    struct ChecksumOrderAdapter {
+        base_url: String,
+        binary_folder: PathBuf,
+        saw_extracted_file: Arc<AtomicBool>,
+    }
+
+    #[async_trait]
+    impl LatestVersionApiAdapter for ChecksumOrderAdapter {
+        async fn get_expected_checksum(
+            &self,
+            _checksum_path: PathBuf,
+            _asset_name: &str,
+        ) -> Result<String, Error> {
+            Ok("0".repeat(64))
+        }
+
+        async fn download_and_get_checksum_path(
+            &self,
+            directory: PathBuf,
+            _download_info: BinaryDownloadInfo,
+        ) -> Result<PathBuf, Error> {
+            self.saw_extracted_file
+                .store(directory.join("marker.txt").exists(), Ordering::SeqCst);
+            let checksum_path = directory.join("checksum.txt");
+            std::fs::write(&checksum_path, "0".repeat(64))?;
+            Ok(checksum_path)
+        }
+
+        fn get_binary_folder(&self) -> Result<PathBuf, Error> {
+            Ok(self.binary_folder.clone())
+        }
+
+        fn get_base_main_download_url(&self, _version: &str) -> String {
+            self.base_url.clone()
+        }
+
+        fn get_base_fallback_download_url(&self, _version: &str) -> String {
+            self.base_url.clone()
+        }
+    }
+
+    #[tokio::test]
+    async fn checksum_is_checked_before_archive_contents_are_extracted() {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        writer
+            .start_file("marker.txt", zip::write::SimpleFileOptions::default())
+            .expect("start zip entry");
+        writer.write_all(b"unverified").expect("write zip entry");
+        let archive = writer.finish().expect("finish zip").into_inner();
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind test server");
+        let base_url = format!("http://{}", listener.local_addr().expect("server address"));
+        let server = tokio::spawn(async move {
+            loop {
+                let Ok((mut socket, _)) = listener.accept().await else {
+                    break;
+                };
+                let mut request = [0u8; 4096];
+                let size = socket.read(&mut request).await.expect("read request");
+                let is_head = request[..size].starts_with(b"HEAD ");
+                let headers = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\ncf-cache-status: HIT\r\nConnection: close\r\n\r\n",
+                    archive.len()
+                );
+                socket
+                    .write_all(headers.as_bytes())
+                    .await
+                    .expect("write headers");
+                if !is_head {
+                    socket.write_all(&archive).await.expect("write archive");
+                }
+            }
+        });
+
+        let dir = tempdir().expect("temporary directory");
+        let saw_extracted_file = Arc::new(AtomicBool::new(false));
+        let manager = BinaryManager::new(
+            Binaries::BridgeTapplet.name().to_string(),
+            None,
+            Box::new(ChecksumOrderAdapter {
+                base_url,
+                binary_folder: dir.path().to_path_buf(),
+                saw_extracted_file: saw_extracted_file.clone(),
+            }),
+            true,
+        );
+
+        let result = manager.download_selected_version(None).await;
+        server.abort();
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Checksums mismatched!"),
+            "the download must reach checksum validation and reject the wrong checksum"
+        );
+        assert!(
+            !saw_extracted_file.load(Ordering::SeqCst),
+            "archive contents must not exist when checksum lookup begins"
+        );
+        assert!(
+            !dir.path().join(manager.get_selected_version()).exists(),
+            "a checksum mismatch must remove the downloaded version"
+        );
+    }
 
     #[test]
     fn cleanup_old_binary_versions_keeps_retained_versions() {
