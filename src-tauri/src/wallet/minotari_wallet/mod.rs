@@ -261,6 +261,7 @@ impl MinotariWalletManager {
         amount: u64,
         payment_id: Option<String>,
         pin_context: Option<PinPromptContext>,
+        request_cancel: Option<tokio_util::sync::CancellationToken>,
     ) -> Result<SendReceipt, anyhow::Error> {
         if amount == 0 {
             return Err(anyhow::anyhow!(
@@ -295,7 +296,18 @@ impl MinotariWalletManager {
             .await
             .clone()
             .ok_or_else(|| anyhow::anyhow!("App handle not set"))?;
-        let key_manager = InternalWallet::get_key_manager(&app_handle, pin_context).await?;
+        let key_manager = InternalWallet::get_key_manager(&app_handle, pin_context);
+        let key_manager = if let Some(cancel) = request_cancel {
+            tokio::select! {
+                biased;
+                _ = cancel.cancelled() => anyhow::bail!("MCP server stopped"),
+                result = key_manager => result?,
+            }
+        } else {
+            key_manager.await?
+        };
+        // From here, finish signing and broadcasting even during MCP shutdown so locked
+        // inputs and a broadcast transaction can't be left without their local record.
 
         let mut transaction_manager = TransactionManager::new(
             INSTANCE.database_manager.get_pool().await?,

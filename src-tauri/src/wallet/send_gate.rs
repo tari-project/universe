@@ -429,6 +429,13 @@ fn micro_to_decimal(amount: u64) -> String {
 /// whether the node accepted it; emitting result events / balance refreshes is left to
 /// the caller.
 pub async fn gated_send(request: GatedSendRequest) -> Result<SendReceipt, TransactionError> {
+    gated_send_with_cancel(request, None).await
+}
+
+pub async fn gated_send_with_cancel(
+    request: GatedSendRequest,
+    request_cancel: Option<tokio_util::sync::CancellationToken>,
+) -> Result<SendReceipt, TransactionError> {
     let GatedSendRequest {
         origin,
         request_id,
@@ -439,7 +446,16 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<SendReceipt, Transa
 
     let amount_u64 = parse_amount(&amount)?;
     let kind = SpendKind::Send { destination };
-    let pass = pass_gates(origin, request_id, &amount, amount_u64, &kind, &payment_id).await?;
+    let gates = pass_gates(origin, request_id, &amount, amount_u64, &kind, &payment_id);
+    let pass = if let Some(cancel) = &request_cancel {
+        tokio::select! {
+            biased;
+            _ = cancel.cancelled() => return Err(TransactionError::Denied("MCP server stopped".to_string())),
+            result = gates => result?,
+        }
+    } else {
+        gates.await?
+    };
 
     // The PIN dialog (when a PIN is configured) is raised from here on, before the
     // minotari transaction is created, and carries the amount/destination.
@@ -456,6 +472,7 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<SendReceipt, Transa
         amount_u64,
         payment_id,
         Some(pass.pin_context),
+        request_cancel,
     )
     .await
     .map_err(|e| wallet_failure("Transaction failed", e))
@@ -811,14 +828,17 @@ async fn pass_gates(
 
     if needs_confirmation {
         let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
-        {
+        let _cleanup_guard = {
             let mut inflight = INFLIGHT.lock().await;
             *inflight = Some(InFlightTxn {
                 origin,
                 request_id: request_id.clone(),
                 tx,
             });
-        }
+            InFlightCleanupGuard {
+                request_id: request_id.clone(),
+            }
+        };
 
         let amount_display = format!("{amount} {}", kind.currency());
         info!(
@@ -828,19 +848,21 @@ async fn pass_gates(
         );
 
         let fee_micro_minotari = if matches!(kind, SpendKind::Send { .. }) {
-            MinotariWalletManager::estimate_one_sided_fee(
-                destination,
-                amount_u64,
-                payment_id.clone(),
+            Some(
+                MinotariWalletManager::estimate_one_sided_fee(
+                    destination,
+                    amount_u64,
+                    payment_id.clone(),
+                )
+                .await
+                .map_err(|err| TransactionError::InternalError(err.to_string()))?,
             )
-            .await
-            .ok()
         } else {
             None
         };
 
         EventsEmitter::emit_mcp_transaction_confirmation(McpTransactionConfirmationPayload {
-            request_id,
+            request_id: request_id.clone(),
             kind: kind.as_str().to_string(),
             destination: destination.to_string(),
             amount_micro_minotari: amount_u64,
@@ -869,6 +891,38 @@ async fn pass_gates(
         _permit: permit,
         pin_context: kind.pin_context(origin, amount_u64, payment_id.clone()),
     })
+}
+
+struct InFlightCleanupGuard {
+    request_id: String,
+}
+
+impl Drop for InFlightCleanupGuard {
+    fn drop(&mut self) {
+        let request_id = std::mem::take(&mut self.request_id);
+        if let Ok(mut guard) = INFLIGHT.try_lock() {
+            if guard
+                .as_ref()
+                .is_some_and(|txn| txn.request_id == request_id)
+                && let Some(txn) = guard.take()
+            {
+                deny_and_log(txn);
+            }
+        } else if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(async move {
+                let mut guard = INFLIGHT.lock().await;
+                if guard
+                    .as_ref()
+                    .is_some_and(|txn| txn.request_id == request_id)
+                    && let Some(txn) = guard.take()
+                {
+                    deny_and_log(txn);
+                }
+            });
+        } else {
+            warn!(target: LOG_TARGET_APP_LOGIC, "send gate: in-flight transaction left uncleared, lock busy and no runtime");
+        }
+    }
 }
 
 async fn await_confirmation(
@@ -908,7 +962,12 @@ pub async fn respond_to_transaction(request_id: String, approved: bool) -> Resul
                 *inflight = Some(txn);
                 return Err("Request ID mismatch — stale or invalid response".to_string());
             }
-            drop(txn.tx.send(TxnDialogResponse { approved }));
+            if txn.tx.send(TxnDialogResponse { approved }).is_err() {
+                return Err(
+                    "Transaction confirmation channel closed — request is no longer active"
+                        .to_string(),
+                );
+            }
             Ok(())
         }
         None => Err("No transaction awaiting confirmation".to_string()),
@@ -1421,6 +1480,65 @@ mod tests {
 
         let err = await_confirmation(rx).await.expect_err("denied");
         assert!(matches!(err, TransactionError::Denied(_)));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn stopped_mcp_send_does_not_wait_for_consent_gate() {
+        let permit = TXN_DIALOG_GATE.acquire().await.expect("gate open");
+        let cancel = tokio_util::sync::CancellationToken::new();
+        cancel.cancel();
+        let result = tokio::time::timeout(
+            Duration::from_secs(1),
+            gated_send_with_cancel(
+                GatedSendRequest {
+                    origin: SendOrigin::Mcp,
+                    request_id: "stopped_request".to_string(),
+                    amount: "1".to_string(),
+                    destination: "unused".to_string(),
+                    payment_id: None,
+                },
+                Some(cancel),
+            ),
+        )
+        .await
+        .expect("cancelled sends don't wait for the gate");
+        assert!(matches!(result, Err(TransactionError::Denied(_))));
+        drop(permit);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn cancelled_confirmation_clears_matching_dialog() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
+        {
+            let mut inflight = INFLIGHT.lock().await;
+            *inflight = Some(InFlightTxn {
+                origin: SendOrigin::Mcp,
+                request_id: "cancelled_request".to_string(),
+                tx,
+            });
+        }
+
+        let cleanup_guard = InFlightCleanupGuard {
+            request_id: "cancelled_request".to_string(),
+        };
+        let future = await_confirmation(rx);
+        let mut future = Box::pin(future);
+        assert!(
+            tokio::time::timeout(Duration::from_millis(20), future.as_mut())
+                .await
+                .is_err()
+        );
+        drop(future);
+        drop(cleanup_guard);
+
+        assert!(INFLIGHT.lock().await.is_none());
+        assert!(
+            respond_to_transaction("cancelled_request".to_string(), true)
+                .await
+                .is_err()
+        );
     }
 
     #[tokio::test]

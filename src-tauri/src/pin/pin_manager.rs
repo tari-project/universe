@@ -27,7 +27,7 @@ use std::{
 
 use serde::Deserialize;
 use tari_utilities::SafePassword;
-use tauri::{AppHandle, Listener};
+use tauri::{AppHandle, Emitter, Listener};
 use tokio::sync::oneshot;
 
 use crate::{
@@ -218,10 +218,12 @@ where
             let _unused = tx.send(pin);
         }
     });
+    // MCP shutdown can drop this future while it waits for a PIN.
+    let mut listener_guard = PinDialogListener(app_handle, listener, Some(id));
     emit_fn(id).await;
 
     let response = tokio::time::timeout(PIN_PROMPT_TIMEOUT, rx).await;
-    app_handle.unlisten(listener);
+    listener_guard.2 = None;
     match response {
         Ok(Ok(Some(pin))) => Ok(pin),
         Err(_elapsed) => {
@@ -232,6 +234,23 @@ where
         Ok(_) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "PIN entry cancelled");
             Err(PinCancelled.into())
+        }
+    }
+}
+
+struct PinDialogListener<'a>(&'a AppHandle, tauri::EventId, Option<u64>);
+
+impl Drop for PinDialogListener<'_> {
+    fn drop(&mut self) {
+        self.0.unlisten(self.1);
+        if let Some(id) = self.2 {
+            let event = crate::events::Event {
+                event_type: crate::events::EventType::ClosePinDialog,
+                payload: id,
+            };
+            if let Err(err) = self.0.emit("backend_state_update", event) {
+                log::error!(target: LOG_TARGET_APP_LOGIC, "Failed to close cancelled PIN dialog: {err}");
+            }
         }
     }
 }

@@ -27,7 +27,7 @@ use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::pin::PinManager;
-use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
+use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send_with_cancel};
 use log::info;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
@@ -75,6 +75,7 @@ pub async fn send_transaction(
     destination: String,
     amount: String,
     payment_id: Option<String>,
+    request_cancel: tokio_util::sync::CancellationToken,
 ) -> Result<String, TransactionError> {
     // MCP-specific policy. The user-consent gates (confirmation dialog, rate limiter and
     // the PIN prompt raised while signing) live in `wallet::send_gate::gated_send`, which
@@ -101,16 +102,20 @@ pub async fn send_transaction(
     let amount_display = format!("{} XTM", amount);
     let request_id = SendOrigin::Mcp.new_request_id();
 
-    info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction requested (destination={}, amount={})", destination, amount_display);
+    // No amount or destination in app logs: log bundles are included in support feedback archives.
+    info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction requested (request_id={request_id})");
 
     // 4. Rate limit, confirmation dialog, PIN and the actual send
-    let result = gated_send(GatedSendRequest {
-        origin: SendOrigin::Mcp,
-        request_id: request_id.clone(),
-        amount,
-        destination: destination.clone(),
-        payment_id,
-    })
+    let result = gated_send_with_cancel(
+        GatedSendRequest {
+            origin: SendOrigin::Mcp,
+            request_id: request_id.clone(),
+            amount,
+            destination: destination.clone(),
+            payment_id,
+        },
+        Some(request_cancel),
+    )
     .await;
 
     match result {
