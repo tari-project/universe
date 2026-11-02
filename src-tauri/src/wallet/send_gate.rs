@@ -734,6 +734,8 @@ impl Drop for InFlightCleanupGuard {
                     deny_and_log(txn);
                 }
             });
+        } else {
+            warn!(target: LOG_TARGET_APP_LOGIC, "send gate: in-flight transaction left uncleared, lock busy and no runtime");
         }
     }
 }

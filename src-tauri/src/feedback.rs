@@ -374,7 +374,7 @@ mod tests {
     fn support_archive_skips_symlinks_to_files_outside_log_directory() {
         let temporary = tempfile::tempdir().expect("temporary directory");
         let logs = temporary.path().join("logs");
-        std::fs::create_dir(&logs).expect("logs directory");
+        std::fs::create_dir_all(&logs).expect("logs directory");
         let secret = temporary.path().join("outside.log");
         std::fs::write(&secret, "outside secret").expect("outside file");
         std::fs::write(logs.join("inside.log"), "safe log").expect("inside file");
