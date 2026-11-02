@@ -132,6 +132,7 @@ export default function McpTransactionDialog() {
                                 paymentId={pending.payment_id}
                                 feeMicroMinotari={pending.fee_micro_minotari}
                                 subtitle={t('wallet:send.confirm-subtitle')}
+                                abandon={pending}
                             />
                             <Button
                                 type="submit"

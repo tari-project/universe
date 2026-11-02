@@ -41,7 +41,7 @@ use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEven
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::internal_wallet::{InternalWallet, PaperWalletConfig, mnemonic_to_tari_cipher_seed};
+use crate::internal_wallet::{InternalWallet, mnemonic_to_tari_cipher_seed};
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::consts::GpuMinerType;
 use crate::mining::gpu::manager::GpuManager;
@@ -64,11 +64,11 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
+use crate::wallet::minotari_wallet::{BurnReceipt, SendReceipt, StalledTransaction};
 use crate::wallet::send_gate::{
-    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
-    gated_l2_send, gated_send,
+    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_abandon, gated_burn,
+    gated_l2_claim, gated_l2_send, gated_send,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -91,15 +91,11 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
-use tari_common_types::seeds::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_common_types::tari_address::dual_address::DualAddress;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
-use tari_utilities::SafePassword;
-use tari_utilities::encoding::MBase58;
 use tauri::Manager;
 use tauri::ipc::InvokeError;
-use urlencoding::encode;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET_WEB: &str = "tari::universe::web";
@@ -427,52 +423,6 @@ pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<S
 }
 
 #[tauri::command]
-pub async fn get_paper_wallet_details(
-    auth_uuid: Option<String>,
-    app_handle: tauri::AppHandle,
-) -> Result<PaperWalletConfig, InvokeError> {
-    let timer = Instant::now();
-
-    let wallet_balance = BalanceTracker::current().get_account_balance().await.total;
-
-    warn!(target: LOG_TARGET_APP_LOGIC, "auth_uuid {auth_uuid:?}");
-    let anon_id = ConfigCore::content().await.anon_id().clone();
-
-    let tari_cipher_seed = InternalWallet::get_tari_seed_with_prompt(&app_handle, None)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
-    let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
-    let seed_file = tari_cipher_seed
-        .encipher(Some(SafePassword::from(&raw_passphrase)))
-        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())))?;
-    let seed_words_encrypted_base58 = seed_file.to_monero_base58();
-    let network = Network::get_current_or_user_setting_or_default()
-        .to_string()
-        .trim()
-        .to_lowercase();
-
-    let mut link = format!(
-        "tari://{}/paper_wallet?private_key={}&anon_id={}",
-        network,
-        seed_words_encrypted_base58,
-        encode(&anon_id),
-    );
-    link.push_str(&format!("&balance={}", encode(&wallet_balance.to_string())));
-    // Add auth_uuid as a query parameter if it exists
-    if let Some(uuid) = &auth_uuid {
-        link.push_str(&format!("&tt={}", encode(uuid)));
-    }
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET_APP_LOGIC, "get_paper_wallet_details took too long: {:?}", timer.elapsed());
-    };
-    Ok(PaperWalletConfig {
-        qr_link: link,
-        password: raw_passphrase,
-    })
-}
-
-#[tauri::command]
 pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
@@ -528,10 +478,18 @@ pub async fn set_external_tari_address(
 }
 
 #[tauri::command]
-pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError> {
+pub async fn confirm_exchange_address(
+    address: String,
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
+
+    // Validate PIN if pin locked
+    let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
 
     InternalWallet::initialize_seedless(Some(new_external_tari_address))
         .await
@@ -667,6 +625,9 @@ pub async fn import_seed_words(
         }
         Err(e) => {
             error!(target: LOG_TARGET_APP_LOGIC, "Error importing seed words by internal wallet: {e:?}");
+            SetupManager::get_instance()
+                .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+                .await;
             return Err(InvokeError::from_anyhow(e));
         }
     }
@@ -790,7 +751,17 @@ pub async fn reset_settings(
     reset_wallet: bool,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
+    // Held until the app restarts, so no burn can record a proof between the checks and
+    // the deletion. Only Tauri commands and MCP handlers take it, never a task that
+    // stop_all_processes waits on, and spends hold it across their own PIN prompt too.
+    let _gate = if reset_wallet {
+        Some(crate::wallet::send_gate::try_exclusive_permit().map_err(|e| e.to_string())?)
+    } else {
+        None
+    };
     if reset_wallet {
+        // Resetting the wallet deletes its folder, and an unmined burn's proof lives in it.
+        MinotariWalletManager::ensure_no_pending_burns().map_err(|e| e.to_string())?;
         // Validate PIN if pin locked
         let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
             .await
@@ -834,6 +805,8 @@ pub async fn reset_settings(
 
     let mut files_block_list = Vec::new();
     if reset_wallet {
+        // Re-checked with the wallet stopped and the gate still held, right before deletion.
+        MinotariWalletManager::ensure_no_pending_burns().map_err(|e| e.to_string())?;
         debug!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Clearing all wallets");
         InternalWallet::clear_all_wallets()
             .await
@@ -1676,10 +1649,10 @@ pub async fn send_one_sided_to_stealth_address(
     amount: String,
     destination: String,
     payment_id: Option<String>,
-) -> Result<(), String> {
+) -> Result<SendReceipt, String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-    gated_send(GatedSendRequest {
+    info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called");
+    let receipt = gated_send(GatedSendRequest {
         origin: SendOrigin::App,
         request_id: SendOrigin::App.new_request_id(),
         amount,
@@ -1687,12 +1660,12 @@ pub async fn send_one_sided_to_stealth_address(
         payment_id,
     })
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_command_error())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
-    Ok(())
+    Ok(receipt)
 }
 
 /// [`send_one_sided_to_stealth_address`] for the tapplet signer only, so the send gate
@@ -1702,7 +1675,7 @@ pub async fn send_one_sided_from_tapplet(
     amount: String,
     destination: String,
     payment_id: Option<String>,
-) -> Result<(), String> {
+) -> Result<SendReceipt, String> {
     gated_send(GatedSendRequest {
         origin: SendOrigin::Tapplet,
         request_id: SendOrigin::Tapplet.new_request_id(),
@@ -1711,7 +1684,7 @@ pub async fn send_one_sided_from_tapplet(
         payment_id,
     })
     .await
-    .map_err(|e| e.to_string())
+    .map_err(|e| e.to_command_error())
 }
 
 /// Estimate the L1 network fee (in µT) for a one-sided send before the user approves it.
@@ -1735,7 +1708,7 @@ pub async fn burn_to_l2(
     payment_id: Option<String>,
 ) -> Result<BurnReceipt, String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET_APP_LOGIC, "[burn_to_l2] called with args: (amount: {amount:?}, claim_public_key: {claim_public_key:?}, payment_id: {payment_id:?})");
+    info!(target: LOG_TARGET_APP_LOGIC, "[burn_to_l2] called");
     let receipt = gated_burn(GatedBurnRequest {
         request_id: SendOrigin::App.new_request_id(),
         amount,
@@ -1743,12 +1716,36 @@ pub async fn burn_to_l2(
         payment_id,
     })
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_command_error())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "burn_to_l2 took too long: {:?}", timer.elapsed());
     }
     Ok(receipt)
+}
+
+/// The sends and burns the node keeps refusing, which the user may abandon.
+#[tauri::command]
+pub async fn get_stalled_transactions() -> Result<Vec<StalledTransaction>, InvokeError> {
+    MinotariWalletManager::stalled_transactions()
+        .await
+        .map_err(|e| InvokeError::from(e.to_string()))
+}
+
+/// Give up a stalled send or burn and release its inputs, behind the send gates.
+#[tauri::command]
+pub async fn abandon_stalled_transaction(
+    tx_id: String,
+    accept_unreconcilable: bool,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[abandon_stalled_transaction] called with args: (tx_id: {tx_id:?}, accept_unreconcilable: {accept_unreconcilable})");
+    gated_abandon(
+        SendOrigin::App.new_request_id(),
+        tx_id,
+        accept_unreconcilable,
+    )
+    .await
+    .map_err(|e| e.to_command_error())
 }
 
 /// Turn the L2 wallet on. Refused without a PIN; the PIN prompt unlocks the L1 seed the
@@ -1790,6 +1787,7 @@ pub async fn l2_send(
     destination: String,
     amount: String,
 ) -> Result<String, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called");
     gated_l2_send(GatedL2SendRequest {
         origin: SendOrigin::App,
         app_handle,
@@ -1938,6 +1936,18 @@ pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError>
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
     }
+}
+
+/// The largest amount, in µT, a send to `address` with `payment_id` can carry once it
+/// pays its fee and keeps the change output every send must have.
+#[tauri::command]
+pub async fn get_max_sendable_amount(
+    address: String,
+    payment_id: Option<String>,
+) -> Result<u64, InvokeError> {
+    MinotariWalletManager::max_sendable_amount(&address, payment_id)
+        .await
+        .map_err(|e| InvokeError::from(e.to_string()))
 }
 
 #[tauri::command]
@@ -2426,6 +2436,15 @@ pub async fn resume_scheduler_event(event_id: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn get_wallet_transaction_history() -> Result<Vec<DisplayedTransaction>, String> {
     MinotariWalletManager::get_transaction_history()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_wallet_output_statuses(
+    hashes: Vec<tari_common_types::types::FixedHash>,
+) -> Result<Vec<Option<minotari_wallet::models::OutputStatus>>, String> {
+    MinotariWalletManager::get_output_statuses(hashes)
         .await
         .map_err(|e| e.to_string())
 }

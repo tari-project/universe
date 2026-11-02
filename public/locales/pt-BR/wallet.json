@@ -6,7 +6,6 @@
     "available-balance": "Disponível",
     "label-rewards": "Minhas recompensas",
     "my-balance": "Meu Saldo",
-    "sync-with-phone": "Sincronizar com o Telefone",
     "transaction-details": "Detalhes da Transação",
     "view-details": "Ver detalhes"
   },
@@ -62,6 +61,9 @@
     "error-invalid-address": "O endereço é inválido",
     "error-invalid-amount": "O valor é inválido",
     "error-message": "Erro ao enviar transação: ",
+    "error-change-not-affordable": "Não sobra o suficiente para pagar a taxa e manter o troco que toda transação precisa. Tente um valor menor ou toque em Máx.",
+    "error-max-unavailable": "Não foi possível calcular o valor máximo. Tente novamente em instantes.",
+    "not-accepted-yet": "Sua transação foi registrada, mas a rede ainda não a aceitou. A carteira continuará enviando automaticamente, então não envie de novo.",
     "estimated-completion-time": "Tempo estimado de conclusão",
     "field-address": "endereço",
     "field-amount": "valor",
@@ -172,5 +174,24 @@
     "mine-directly-to-exchange": "{{exchangeName}}",
     "mining-here": "Minerando aqui",
     "or": "ou"
+  },
+  "abandon": {
+    "stalled": "Seu nó base continua recusando esta transação. A carteira continua tentando reenviá-la, e os fundos ficam bloqueados até ela ser minerada ou você abandoná-la. Antes de abandoná-la, tente novamente mais tarde ou troque de nó base.",
+    "cta": "Abandonar transação",
+    "note": "A transação é abandonada e seus fundos são liberados. Se algum nó ainda a tiver, ela ainda pode ser minerada: a carteira então a mostrará como minerada, e uma transação feita nesse meio-tempo com os fundos liberados pode falhar.",
+    "unreconcilable-note": "ATENÇÃO: esta transação não tem saída de troco. Se algum nó ainda a tiver e ela for minerada, a carteira NÃO a mostrará como minerada: ela continuará abandonada enquanto seus fundos aparecem como gastos, e uma transação feita nesse meio-tempo com os fundos liberados pode falhar.",
+    "confirm": "Abandonar",
+    "confirm-anyway": "Abandonar mesmo assim",
+    "review-label": "Você está abandonando",
+    "approve": "Aprovar abandono",
+    "done": "Transação abandonada. Seus fundos estão disponíveis novamente.",
+    "error-message": "Não foi possível abandonar a transação: ",
+    "error-not-pending": "Esta transação não pode mais ser abandonada: ela foi minerada ou rejeitada.",
+    "error-input-spent": "Seus fundos já foram gastos na cadeia. A carteira vai resolver isso sozinha.",
+    "error-change-in-use": "O troco dela está sendo usado por outra transação. Abandone ou resolva aquela primeiro.",
+    "error-change-already-mined": "Parece que ela foi minerada. Aguarde a carteira resolvê-la.",
+    "chip": "Travada",
+    "burn-note": "A queima é abandonada e seus fundos são liberados. Se algum nó ainda a tiver, ela ainda pode ser minerada, então não redefina nem reimporte a carteira até ela ser resolvida: a carteira guarda a única prova necessária para resgatá-la. Uma transação feita nesse meio-tempo com os fundos liberados pode falhar.",
+    "error-burn-unreconcilable": "Esta queima não tem saída de troco, então não pode ser abandonada com segurança: se ela for minerada, a carteira não saberia. Ela continua pendente até ser resolvida."
   }
 }

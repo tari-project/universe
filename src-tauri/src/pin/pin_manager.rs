@@ -39,6 +39,18 @@ use crate::{
     pin::pin_locker::PinLocker,
 };
 
+/// The user closed the PIN prompt or let it time out. Typed so callers can tell it apart
+/// from a failure without reading the message.
+#[derive(Debug)]
+pub struct PinCancelled;
+
+impl std::fmt::Display for PinCancelled {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("PIN entry cancelled")
+    }
+}
+impl std::error::Error for PinCancelled {}
+
 pub struct PinManager {}
 
 impl PinManager {
@@ -123,6 +135,13 @@ impl PinManager {
         }
 
         pin_locker.reset_pin_attempts().await?;
+
+        // A verified PIN is the one moment a legacy-enciphered Monero seed can be rewritten.
+        // Failing here must not fail the unlock: the legacy blob still reads, and the next
+        // validation tries again.
+        if let Err(e) = InternalWallet::upgrade_monero_seed_cipher(&pin_password).await {
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "Monero seed cipher upgrade failed: {e}");
+        }
         Ok(())
     }
 
@@ -132,6 +151,7 @@ impl PinManager {
     }
 
     pub async fn set_pin_locked() -> Result<(), anyhow::Error> {
+        let _guard = PIN_VALIDATION_LOCK.lock().await;
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         let mut pin_locker = PinLocker::new(pin_locker_state);
         pin_locker.set_pin_locked(true).await
@@ -209,11 +229,11 @@ where
         Err(_elapsed) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "PIN entry timed out");
             EventsEmitter::emit_close_pin_dialog(id).await;
-            Err(anyhow::anyhow!("PIN entry cancelled"))
+            Err(PinCancelled.into())
         }
         Ok(_) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "PIN entry cancelled");
-            Err(anyhow::anyhow!("PIN entry cancelled"))
+            Err(PinCancelled.into())
         }
     }
 }

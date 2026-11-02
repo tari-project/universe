@@ -5,8 +5,10 @@ import {
     TariAddressVariants,
     BaseNodeStatus,
     DisplayedTransaction,
+    FixedHash,
+    OutputStatus,
 } from './app-status';
-import { PaperWalletDetails } from './app-status.ts';
+import { StalledTransaction } from './app-status.ts';
 import { LocalBlockStats } from './mining/blocks.ts';
 import { displayMode } from '../store/types.ts';
 import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './configs.ts';
@@ -19,11 +21,12 @@ declare module '@tauri-apps/api/core' {
     function invoke(
         param: 'send_one_sided_to_stealth_address',
         payload: { amount: string; destination: string; paymentId?: string }
-    ): Promise<void>;
+    ): Promise<{ tx_id: string; accepted_by_node: boolean }>;
     function invoke(
         param: 'send_one_sided_from_tapplet',
         payload: { amount: string; destination: string; paymentId?: string }
-    ): Promise<void>;
+    ): Promise<{ tx_id: string; accepted_by_node: boolean }>;
+
     function invoke(
         param: 'estimate_l1_send_fee',
         payload: { destination: string; amount: string; paymentId?: string }
@@ -38,7 +41,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
     function invoke(param: 'frontend_ready'): Promise<void>;
     function invoke(param: 'download_and_start_installer', payload: { id: string }): Promise<void>;
-    function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'start_cpu_mining'): Promise<void>;
@@ -113,6 +115,15 @@ declare module '@tauri-apps/api/core' {
         payload: { address: string; sendingMethod?: number }
     ): Promise<void>;
     function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
+    function invoke(
+        param: 'get_max_sendable_amount',
+        payload: { address: string; paymentId?: string }
+    ): Promise<number>;
+    function invoke(param: 'get_stalled_transactions'): Promise<StalledTransaction[]>;
+    function invoke(
+        param: 'abandon_stalled_transaction',
+        payload: { txId: string; acceptUnreconcilable: boolean }
+    ): Promise<void>;
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
     function invoke(param: 'set_external_tari_address', payload: { address: string }): Promise<void>;
@@ -127,6 +138,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
     function invoke(param: 'get_wallet_transaction_history'): Promise<DisplayedTransaction[]>;
+    function invoke(
+        param: 'get_wallet_output_statuses',
+        payload: { hashes: FixedHash[] }
+    ): Promise<(OutputStatus | null)[]>;
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
     function invoke(param: 'get_local_block_stats', payload: { limit: number }): Promise<LocalBlockStats[]>;
     function invoke(param: 'create_pin'): Promise<void>;

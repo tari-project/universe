@@ -65,6 +65,8 @@ export enum OutputStatus {
     Locked = 'Locked',
     Spent = 'Spent',
     SpentUnconfirmed = 'SpentUnconfirmed',
+    Unconfirmed = 'Unconfirmed',
+    Rejected = 'Rejected',
 }
 
 /** Rust `FixedHash` is `#[serde(transparent)]` over `[u8; 32]`, so it arrives as a byte array. */
@@ -116,6 +118,15 @@ export interface TransactionDetails {
     sent_output_hashes: FixedHash[];
     /** Hex encoded by a serde helper on the Rust side, unlike every other hash here. */
     sent_payrefs: string[];
+}
+
+/** A send or burn the network keeps refusing, which the user may abandon. */
+export interface StalledTransaction {
+    /** A string: a u64 doesn't always fit a JavaScript number. */
+    tx_id: string;
+    amount: number;
+    /** Hex commitment when it is a burn: burns are listed by it, not by transaction id. */
+    burn_commitment: string | null;
 }
 
 export interface DisplayedTransaction {
@@ -209,11 +220,6 @@ export interface ApplicationsVersions {
     minotari_node: ApplicationsInformation;
     mm_proxy: ApplicationsInformation;
     bridge: ApplicationsInformation;
-}
-
-export interface PaperWalletDetails {
-    qr_link: string;
-    password: string;
 }
 
 export interface NetworkStatus {

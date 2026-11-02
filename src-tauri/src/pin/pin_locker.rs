@@ -86,6 +86,7 @@ impl PinLocker {
 
     pub async fn set_pin_locked(&mut self, locked: bool) -> Result<(), anyhow::Error> {
         self.state.pin_locked = locked;
+        self.state.reset_pin_attempts();
         ConfigWallet::update_field(
             ConfigWalletContent::set_pin_locker_state,
             self.state.clone(),
