@@ -135,6 +135,13 @@ impl PinManager {
         }
 
         pin_locker.reset_pin_attempts().await?;
+
+        // A verified PIN is the one moment a legacy-enciphered Monero seed can be rewritten.
+        // Failing here must not fail the unlock: the legacy blob still reads, and the next
+        // validation tries again.
+        if let Err(e) = InternalWallet::upgrade_monero_seed_cipher(&pin_password).await {
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "Monero seed cipher upgrade failed: {e}");
+        }
         Ok(())
     }
 

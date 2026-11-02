@@ -29,6 +29,7 @@ use std::fmt::Write as _;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
 use tari_common_types::seeds::mnemonic::Mnemonic;
@@ -125,6 +126,13 @@ pub struct TariWalletDetails {
     pub view_private_key_hex: ViewPrivateKeyHex,
     pub spend_public_key_hex: String,
 }
+
+/// Held across every read-then-write of the Monero credential, so the cipher upgrade can't
+/// write an old blob over one a PIN recovery or wallet change has just replaced.
+static MONERO_CREDENTIAL_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+/// Set once the Monero credential is known not to need `upgrade_monero_seed_cipher`, which
+/// keeps later PIN entries off the keyring.
+static MONERO_CIPHER_CURRENT: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Clone)]
 pub struct InternalWallet {
@@ -479,6 +487,7 @@ impl InternalWallet {
 
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet");
+        let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
         let cm = CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()));
         // A generated seed must never overwrite the Monero credential already in the keyring.
         if monero_credential_exists().await {
@@ -523,6 +532,7 @@ impl InternalWallet {
 
         let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
         {
+            let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
             // The old Monero blob is enciphered with the forgotten PIN, so it is replaced here:
             // either with the seed the caller proved derives the recorded address, or, when the
             // user asked for that, with a new Monero wallet.
@@ -606,6 +616,7 @@ impl InternalWallet {
 
         let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
         {
+            let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
             // Encrypt Monero Seed with PIN. An earlier run can have written this credential and
             // then failed, so a blob that already decrypts with this PIN is kept as it is:
             // encrypting it again would bury the seed.
@@ -862,6 +873,7 @@ impl InternalWallet {
             .and_then(|cred| cred.monero_seed)
             .map(|seed| seed.to_vec());
         if let Some(ref monero_seed) = monero_seed_binary {
+            let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
             let credentials = Credential {
                 encrypted_seed: monero_seed.clone(),
             };
@@ -1204,6 +1216,84 @@ impl InternalWallet {
         }
     }
 
+    /// Re-enciphers a Monero seed still on the legacy SHA-256 PIN key (GHSA-gr4c-r43w-8pp9)
+    /// under the current Argon2id one. Only call with a PIN that has just been validated.
+    ///
+    /// Reads the keyring, never the in-memory copy: a recovery that failed half-way can leave
+    /// the cache holding the old seed, and writing that back would bury the replacement.
+    /// Runs whatever the payout address: switching to an external address keeps the old
+    /// credential, which would otherwise stay a cheap way to guess the shared PIN.
+    pub async fn upgrade_monero_seed_cipher(
+        pin_password: &SafePassword,
+    ) -> Result<(), anyhow::Error> {
+        if MONERO_CIPHER_CURRENT.load(Ordering::Acquire) {
+            return Ok(());
+        }
+        let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
+        let cm = CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()));
+        let stored = match cm.get_credentials().await {
+            Ok(credential) => credential.encrypted_seed,
+            Err(CredentialError::NoEntry(_)) => {
+                MONERO_CIPHER_CURRENT.store(true, Ordering::Release);
+                return Ok(());
+            }
+            Err(e) => return Err(e.into()),
+        };
+        match cryptography::upgrade(&stored, pin_password)? {
+            Some(upgraded) => {
+                cm.set_credentials(&Credential {
+                    encrypted_seed: upgraded.clone(),
+                })
+                .await?;
+                if InternalWallet::is_initialized() {
+                    InternalWallet::current()?
+                        .write()
+                        .await
+                        .encrypted_monero_seed = Hidden::hide(Some(upgraded));
+                }
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Monero seed moved to the Argon2id PIN cipher");
+            }
+            // A legacy blob this PIN can't open (the Tari and Monero credentials were restored
+            // with different PINs): leave the flag clear so a later PIN entry retries.
+            None if cryptography::is_legacy_seed_blob(&stored) => {
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Monero seed is on the legacy PIN cipher but this PIN doesn't open it; will retry on the next PIN entry");
+                return Ok(());
+            }
+            None => {}
+        }
+        // Every writer now produces plain or current blobs, so one check per session is enough.
+        MONERO_CIPHER_CURRENT.store(true, Ordering::Release);
+        Ok(())
+    }
+
+    /// Asks for the PIN once per launch while the stored Monero seed is still on the legacy
+    /// cipher, so users who never otherwise enter their PIN (mining only) still get the
+    /// upgrade. Validating the PIN runs `upgrade_monero_seed_cipher`. Cancelling is fine: the
+    /// next PIN entry, or the next launch, tries again.
+    pub async fn ask_for_monero_seed_cipher_upgrade(app_handle: &AppHandle) {
+        if MONERO_CIPHER_CURRENT.load(Ordering::Acquire) || !PinManager::pin_locked().await {
+            return;
+        }
+        let stored =
+            match CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()))
+                .get_credentials()
+                .await
+            {
+                Ok(credential) => credential.encrypted_seed,
+                // Missing or unreadable: nothing to upgrade here, and other paths report failures.
+                Err(_) => return,
+            };
+        if !cryptography::is_legacy_seed_blob(&stored) {
+            MONERO_CIPHER_CURRENT.store(true, Ordering::Release);
+            return;
+        }
+        if let Err(e) =
+            PinManager::get_validated_pin(app_handle, Some(PinPromptContext::SecurityUpgrade)).await
+        {
+            log::info!(target: LOG_TARGET_APP_LOGIC, "Security upgrade PIN prompt not completed: {e}");
+        }
+    }
+
     /** Method safe to use before init - fallbacks to the credential manager */
     pub async fn get_monero_seed(
         pin_password: Option<SafePassword>,
@@ -1226,7 +1316,9 @@ impl InternalWallet {
             if let Some(monero_seed) = state_result {
                 monero_seed
             } else {
-                // Fallback to credentials manager
+                // Fallback to credentials manager. Held across the read and the cache write so a
+                // PIN recovery or wallet replacement in between can't leave a stale blob cached.
+                let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
                 match CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()))
                     .get_credentials()
                     .await
@@ -1258,7 +1350,7 @@ impl InternalWallet {
                 .map_err(|_| anyhow!("Wrong PIN entered!"))
         } else {
             // Seed not yet encrypted with PIN
-            Ok(encrypted_monero_seed)
+            Ok(Zeroizing::new(encrypted_monero_seed))
         }?;
         let decrypted_monero_seed_bytes: [u8; 32] =
             match decrypted_monero_seed.as_slice().try_into() {
@@ -1291,6 +1383,7 @@ impl InternalWallet {
         for wallet_id in wallet_config.tari_wallets() {
             InternalWallet::remove_tari_wallet(wallet_id.clone())?
         }
+        let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
         InternalWallet::remove_monero_wallet()?;
         Ok(())
     }

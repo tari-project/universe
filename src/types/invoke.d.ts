@@ -5,6 +5,8 @@ import {
     TariAddressVariants,
     BaseNodeStatus,
     DisplayedTransaction,
+    FixedHash,
+    OutputStatus,
 } from './app-status';
 import { StalledTransaction } from './app-status.ts';
 import { LocalBlockStats } from './mining/blocks.ts';
@@ -136,6 +138,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
     function invoke(param: 'get_wallet_transaction_history'): Promise<DisplayedTransaction[]>;
+    function invoke(
+        param: 'get_wallet_output_statuses',
+        payload: { hashes: FixedHash[] }
+    ): Promise<(OutputStatus | null)[]>;
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
     function invoke(param: 'get_local_block_stats', payload: { limit: number }): Promise<LocalBlockStats[]>;
     function invoke(param: 'create_pin'): Promise<void>;
