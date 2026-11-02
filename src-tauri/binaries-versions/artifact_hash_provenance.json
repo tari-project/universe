@@ -1,0 +1,178 @@
+{
+    "TARI.Miner-v1.1.8-linux.tar.gz": {
+        "url": "https://github.com/tari-project/TARI.Miner/releases/download/v1.1.8/TARI.Miner-v1.1.8-linux.tar.gz",
+        "archive_sha256": "16cf8f0da817904fb14b7514542d0afbeacdd23a8ea00f468b5b30520ed78663",
+        "checksum_source": "https://github.com/tari-project/TARI.Miner/releases/download/v1.1.8/SHA256SUMS.txt"
+    },
+    "TARI.Miner-v1.1.8-windows.zip": {
+        "url": "https://github.com/tari-project/TARI.Miner/releases/download/v1.1.8/TARI.Miner-v1.1.8-windows.zip",
+        "archive_sha256": "dbacf2dffc6532b7e82674caca12520030638fdf724323dd454f516dd3b8abfc",
+        "checksum_source": "https://github.com/tari-project/TARI.Miner/releases/download/v1.1.8/SHA256SUMS.txt"
+    },
+    "bridge-v0.4.2.zip": {
+        "url": "https://github.com/tari-project/wxtm-bridge-frontend/releases/download/v0.4.2/bridge-v0.4.2.zip",
+        "archive_sha256": "8d33b2e49eb7ca91684fe358db1aac1b07e4e3a87d0cae993c6f48b6a1aee97b",
+        "checksum_source": "https://github.com/tari-project/wxtm-bridge-frontend/releases/download/v0.4.2/bridge-v0.4.2.zip.sha256"
+    },
+    "lolMiner_v1.98a_Lin64.tar.gz": {
+        "url": "https://github.com/Lolliedieb/lolMiner-releases/releases/download/1.98a/lolMiner_v1.98a_Lin64.tar.gz",
+        "archive_sha256": "0b8078299654a12846e4967f1db3506409cfb8b1031687a910965d1a99c6f270",
+        "checksum_source": "https://api.github.com/repos/Lolliedieb/lolMiner-releases/releases/tags/1.98a"
+    },
+    "lolMiner_v1.98a_Win64.zip": {
+        "url": "https://github.com/Lolliedieb/lolMiner-releases/releases/download/1.98a/lolMiner_v1.98a_Win64.zip",
+        "archive_sha256": "f2bbda2d2255155d50935967b8c55105b9aeefbd27cda3e8d01beaf535a16762",
+        "checksum_source": "https://api.github.com/repos/Lolliedieb/lolMiner-releases/releases/tags/1.98a"
+    },
+    "tari_suite-6.3.0-pre.2-esme-e5635bf-linux-x86_64.zip": {
+        "url": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-esme-e5635bf-linux-x86_64.zip",
+        "archive_sha256": "9b32d42382a138781f71567b2e4339b2ee904389df0f136359bf272c08cb2822",
+        "checksum_source": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-esme-e5635bf-linux-x86_64.zip.sha256"
+    },
+    "tari_suite-6.3.0-pre.2-esme-e5635bf-macos-arm64.zip": {
+        "url": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-esme-e5635bf-macos-arm64.zip",
+        "archive_sha256": "752315d7e493421ee945075fb3dc788730834becbc87a9282ba6072e84bcce42",
+        "checksum_source": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-esme-e5635bf-macos-arm64.zip.sha256"
+    },
+    "tari_suite-6.3.0-pre.2-esme-e5635bf-macos-x86_64.zip": {
+        "url": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-esme-e5635bf-macos-x86_64.zip",
+        "archive_sha256": "f7881b1ad577f6f5122b68c57a8379ba40de3f9c85ced8a100c6f1c9600b0aad",
+        "checksum_source": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-esme-e5635bf-macos-x86_64.zip.sha256"
+    },
+    "tari_suite-6.3.0-pre.2-esme-e5635bf-windows-x64.exe.zip": {
+        "url": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-esme-e5635bf-windows-x64.exe.zip",
+        "archive_sha256": "ebbb9e4045c980c53bb1d0ca7ba1702f4150751e974e75b624dfeca62384c6e3",
+        "checksum_source": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-esme-e5635bf-windows-x64.exe.zip.sha256"
+    },
+    "tari_suite-6.3.0-pre.2-mainnet-e5635bf-linux-x86_64.zip": {
+        "url": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-mainnet-e5635bf-linux-x86_64.zip",
+        "archive_sha256": "88b0308a224cf10608139175a03f91d64188cd87ec1ecb59b4662438b532c941",
+        "checksum_source": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-mainnet-e5635bf-linux-x86_64.zip.sha256"
+    },
+    "tari_suite-6.3.0-pre.2-mainnet-e5635bf-macos-arm64.zip": {
+        "url": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-mainnet-e5635bf-macos-arm64.zip",
+        "archive_sha256": "3989304c8f4689d0df5bb1585162d1390f19bd4d53693ba2c64c4aba603c1c9e",
+        "checksum_source": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-mainnet-e5635bf-macos-arm64.zip.sha256"
+    },
+    "tari_suite-6.3.0-pre.2-mainnet-e5635bf-macos-x86_64.zip": {
+        "url": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-mainnet-e5635bf-macos-x86_64.zip",
+        "archive_sha256": "79cb6b6529e7c2ba9062d0f4c149b4f4f92194c514edc0fabc23c412289be325",
+        "checksum_source": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-mainnet-e5635bf-macos-x86_64.zip.sha256"
+    },
+    "tari_suite-6.3.0-pre.2-mainnet-e5635bf-windows-x64.exe.zip": {
+        "url": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-mainnet-e5635bf-windows-x64.exe.zip",
+        "archive_sha256": "b819d17aa7016263c3bf1a1b3e7eab3f3fee4badca33777c98b73cfae7eab056",
+        "checksum_source": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-mainnet-e5635bf-windows-x64.exe.zip.sha256"
+    },
+    "tor-expert-bundle-linux-x86_64-15.0.5.tar.gz": {
+        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/tor-expert-bundle-linux-x86_64-15.0.5.tar.gz",
+        "archive_sha256": "df5d4850779d9648160c54df1a82733ea54f3430c46b3cc3ed2a22b579f8758e",
+        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/sha256sums-signed-build.txt"
+    },
+    "tor-expert-bundle-macos-aarch64-15.0.5.tar.gz": {
+        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/tor-expert-bundle-macos-aarch64-15.0.5.tar.gz",
+        "archive_sha256": "147be0997f4538c6f20f3a113f6220f7a1c711acc3410f534f0a3cf62b7a06dd",
+        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/sha256sums-signed-build.txt"
+    },
+    "tor-expert-bundle-macos-x86_64-15.0.5.tar.gz": {
+        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/tor-expert-bundle-macos-x86_64-15.0.5.tar.gz",
+        "archive_sha256": "38a62c81c93eee88a273a14b8669e7d5a72583adef1c37c28e1cd98ee5ea2ade",
+        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/sha256sums-signed-build.txt"
+    },
+    "tor-expert-bundle-windows-x86_64-15.0.5.tar.gz": {
+        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/tor-expert-bundle-windows-x86_64-15.0.5.tar.gz",
+        "archive_sha256": "49aabfe2958c8084e9fba1f78d85049e16a657e1f679b75102bbf9518497607f",
+        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/sha256sums-signed-build.txt"
+    },
+    "xmrig-6.26.0-linux-static-x64.tar.gz": {
+        "url": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-linux-static-x64.tar.gz",
+        "archive_sha256": "fc6f8ae5f64e4f17481f7e3be29a1c56949f216a998414188003eae1db20c9e5",
+        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/SHA256SUMS"
+    },
+    "xmrig-6.26.0-macos-arm64.tar.gz": {
+        "url": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-macos-arm64.tar.gz",
+        "archive_sha256": "6ae4eb4216e99a201ae9a3d2c3a7c275207c5165cfc25da1f3d735d6c4829c18",
+        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/SHA256SUMS"
+    },
+    "xmrig-6.26.0-macos-x64.tar.gz": {
+        "url": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-macos-x64.tar.gz",
+        "archive_sha256": "1da924b358c0089e361540c4a9e6f8b09538b29efeafa2379590e0f6db358ff4",
+        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/SHA256SUMS"
+    },
+    "xmrig-6.26.0-windows-x64.zip": {
+        "url": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-windows-x64.zip",
+        "archive_sha256": "bba8097cb37d9b458a1cb1137876b27cde6740d17fe4ccbc086ba07d87d9e147",
+        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/SHA256SUMS"
+    },
+    "_unavailable_network_artifacts": {
+        "release_api": "https://api.github.com/repos/tari-project/tari/releases/tags/v6.3.0-pre.2",
+        "checked_at": "2026-11-02",
+        "published_suite_archives": [
+            "tari_suite-6.3.0-pre.2-esme-e5635bf-linux-arm64.zip",
+            "tari_suite-6.3.0-pre.2-esme-e5635bf-linux-riscv64.zip",
+            "tari_suite-6.3.0-pre.2-esme-e5635bf-linux-x86_64.zip",
+            "tari_suite-6.3.0-pre.2-esme-e5635bf-macos-arm64.zip",
+            "tari_suite-6.3.0-pre.2-esme-e5635bf-macos-x86_64.zip",
+            "tari_suite-6.3.0-pre.2-esme-e5635bf-windows-x64.exe.zip",
+            "tari_suite-6.3.0-pre.2-mainnet-e5635bf-linux-arm64.zip",
+            "tari_suite-6.3.0-pre.2-mainnet-e5635bf-linux-riscv64.zip",
+            "tari_suite-6.3.0-pre.2-mainnet-e5635bf-linux-x86_64.zip",
+            "tari_suite-6.3.0-pre.2-mainnet-e5635bf-macos-arm64.zip",
+            "tari_suite-6.3.0-pre.2-mainnet-e5635bf-macos-x86_64.zip",
+            "tari_suite-6.3.0-pre.2-mainnet-e5635bf-windows-x64.exe.zip"
+        ],
+        "absent_selected_archives": [
+            "tari_suite-6.3.0-pre.2-nextnet-e5635bf-linux-x86_64.zip",
+            "tari_suite-6.3.0-pre.2-nextnet-e5635bf-windows-x64.exe.zip",
+            "tari_suite-6.3.0-pre.2-nextnet-e5635bf-macos-x86_64.zip",
+            "tari_suite-6.3.0-pre.2-nextnet-e5635bf-macos-arm64.zip",
+            "tari_suite-6.3.0-pre.2-testnet-e5635bf-linux-x86_64.zip",
+            "tari_suite-6.3.0-pre.2-testnet-e5635bf-windows-x64.exe.zip",
+            "tari_suite-6.3.0-pre.2-testnet-e5635bf-macos-x86_64.zip",
+            "tari_suite-6.3.0-pre.2-testnet-e5635bf-macos-arm64.zip"
+        ],
+        "mirror_base_url": "https://cdn-universe.tari.com/tari-project/tari/releases/download/v6.3.0-pre.2/",
+        "mirror_checks": [
+            {
+                "archive": "tari_suite-6.3.0-pre.2-nextnet-e5635bf-linux-x86_64.zip",
+                "archive_status": 404,
+                "checksum_status": 404
+            },
+            {
+                "archive": "tari_suite-6.3.0-pre.2-nextnet-e5635bf-windows-x64.exe.zip",
+                "archive_status": 404,
+                "checksum_status": 404
+            },
+            {
+                "archive": "tari_suite-6.3.0-pre.2-nextnet-e5635bf-macos-x86_64.zip",
+                "archive_status": 404,
+                "checksum_status": 404
+            },
+            {
+                "archive": "tari_suite-6.3.0-pre.2-nextnet-e5635bf-macos-arm64.zip",
+                "archive_status": 404,
+                "checksum_status": 404
+            },
+            {
+                "archive": "tari_suite-6.3.0-pre.2-testnet-e5635bf-linux-x86_64.zip",
+                "archive_status": 404,
+                "checksum_status": 404
+            },
+            {
+                "archive": "tari_suite-6.3.0-pre.2-testnet-e5635bf-windows-x64.exe.zip",
+                "archive_status": 404,
+                "checksum_status": 404
+            },
+            {
+                "archive": "tari_suite-6.3.0-pre.2-testnet-e5635bf-macos-x86_64.zip",
+                "archive_status": 404,
+                "checksum_status": 404
+            },
+            {
+                "archive": "tari_suite-6.3.0-pre.2-testnet-e5635bf-macos-arm64.zip",
+                "archive_status": 404,
+                "checksum_status": 404
+            }
+        ]
+    }
+}

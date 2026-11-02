@@ -24,7 +24,7 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{error, info};
+use log::info;
 use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
@@ -98,11 +98,8 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
                     .to_lowercase(),
             );
 
-        if !binary_folder_path.exists() {
-            std::fs::create_dir_all(&binary_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET_APP_LOGIC, "Failed to create directory: {e}");
-            });
-        };
+        std::fs::create_dir_all(&binary_folder_path)?;
+        crate::private_directory::restrict_directory(&binary_folder_path)?;
 
         Ok(binary_folder_path)
     }
@@ -114,5 +111,32 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
     fn get_base_fallback_download_url(&self, version: &str) -> String {
         let base_url = get_gh_download_url("xmrig", "xmrig");
         format!("{base_url}/v{version}")
+    }
+}
+
+#[cfg(test)]
+mod checksum_security_tests {
+    use super::*;
+    use std::io::Write;
+
+    #[tokio::test]
+    async fn test_checksum_spoofed_or_malformed_xmrig_entry_rejected() {
+        let asset = "xmrig-6.26.0-linux-static-x64.tar.gz";
+        for entry in [
+            format!("{}  {asset}.sig", "a".repeat(64)),
+            format!("bad  {asset}"),
+            format!("<html>error {asset}</html>"),
+        ] {
+            let mut file = tempfile::NamedTempFile::new().expect("test fixture succeeds");
+            file.write_all(entry.as_bytes())
+                .expect("test fixture succeeds");
+            assert!(
+                XmrigVersionApiAdapter {}
+                    .get_expected_checksum(file.path().to_path_buf(), asset)
+                    .await
+                    .is_err(),
+                "accepted {entry}"
+            );
+        }
     }
 }

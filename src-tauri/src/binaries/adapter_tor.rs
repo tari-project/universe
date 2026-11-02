@@ -25,7 +25,7 @@ use crate::requests::clients::http_file_client::HttpFileClient;
 use crate::{APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC};
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{error, info};
+use log::info;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tokio::fs::File;
@@ -97,11 +97,8 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
                     .to_lowercase(),
             );
 
-        if !binary_folder_path.exists() {
-            std::fs::create_dir_all(&binary_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET_APP_LOGIC, "Failed to create directory: {e}");
-            });
-        };
+        std::fs::create_dir_all(&binary_folder_path)?;
+        crate::private_directory::restrict_directory(&binary_folder_path)?;
 
         Ok(binary_folder_path)
     }
@@ -119,6 +116,18 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn checksum_manifest_uses_version_directory() {
+        assert_eq!(
+            sibling_release_file(
+                "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/tor-expert-bundle-linux-x86_64-15.0.5.tar.gz",
+                "sha256sums-signed-build.txt"
+            ),
+            "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/sha256sums-signed-build.txt"
+        );
+    }
 
     #[tokio::test]
     async fn checksum_manifest_uses_the_exact_asset_entry() {
@@ -133,11 +142,31 @@ mod tests {
             ),
         )
         .expect("write manifest");
-
         let checksum = TorReleaseAdapter {}
             .get_expected_checksum(manifest, "tor.zip")
             .await
             .expect("checksum");
         assert_eq!(checksum, "1".repeat(64));
+    }
+
+    #[tokio::test]
+    async fn spoofed_or_malformed_tor_entry_rejected() {
+        let asset = "tor-expert-bundle-linux-x86_64-15.0.5.tar.gz";
+        for entry in [
+            format!("{}  {asset}.asc", "a".repeat(64)),
+            format!("bad  {asset}"),
+            format!("<html>error {asset}</html>"),
+        ] {
+            let mut file = tempfile::NamedTempFile::new().expect("test fixture succeeds");
+            file.write_all(entry.as_bytes())
+                .expect("test fixture succeeds");
+            assert!(
+                TorReleaseAdapter {}
+                    .get_expected_checksum(file.path().to_path_buf(), asset)
+                    .await
+                    .is_err(),
+                "accepted {entry}"
+            );
+        }
     }
 }

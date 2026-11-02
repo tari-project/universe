@@ -30,8 +30,7 @@ use crate::{
 };
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
-use log::{error, info};
-use regex::Regex;
+use log::info;
 use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
@@ -54,35 +53,9 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
         file_sha256.read_to_end(&mut buffer_sha256).await?;
         let contents = String::from_utf8(buffer_sha256)
             .map_err(|e| anyhow!("Checksum file is not valid UTF-8: {}", e))?;
-        let mut expected_hash = "";
-        let escaped_asset_name = regex::escape(asset_name);
-        let regex = Regex::new(&format!(r"([a-fA-F0-9]{{64}})\s+\*?{escaped_asset_name}$"))
-            .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
-
-        for line in contents.lines() {
-            if let Some(caps) = regex.captures(line.trim()) {
-                expected_hash = caps
-                    .get(1)
-                    .map(|hash| hash.as_str())
-                    .ok_or_else(|| anyhow!("Failed to extract hash from line: {}", line))?;
-            }
-        }
-
-        // Fail closed: an empty expected hash would otherwise be compared against the
-        // real digest and produce a confusing "checksums mismatched" error, and any
-        // future change that treats an empty expectation as "skip" would silently serve
-        // unverified tapplet content into the wallet-connected iframe.
-        if expected_hash.is_empty() {
-            error!(target: LOG_TARGET_APP_LOGIC, "No checksum entry for asset {asset_name} in {checksum_path:?}");
-            return Err(anyhow!(
-                "Checksum file does not contain an entry for asset '{}'",
-                asset_name
-            ));
-        }
-
-        // `validate_checksum` compares against a lowercase `{:x}` digest byte for byte, so
-        // an uppercase entry (accepted by the regex above) has to be folded first.
-        Ok(expected_hash.to_ascii_lowercase())
+        super::adapter_github::parse_expected_checksum(&contents, asset_name).map_err(|error| {
+            anyhow!("Checksum file does not contain an entry for asset '{asset_name}': {error}")
+        })
     }
     async fn download_and_get_checksum_path(
         &self,
@@ -123,11 +96,8 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
                     .to_lowercase(),
             );
 
-        if !tapplet_folder_path.exists() {
-            std::fs::create_dir_all(&tapplet_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET_APP_LOGIC, "Failed to create directory: {e}");
-            });
-        };
+        std::fs::create_dir_all(&tapplet_folder_path)?;
+        crate::private_directory::restrict_directory(&tapplet_folder_path)?;
 
         Ok(tapplet_folder_path)
     }
