@@ -26,6 +26,10 @@ declare module '@tauri-apps/api/core' {
     ): Promise<{ tx_id: string; accepted_by_node: boolean }>;
 
     function invoke(
+        param: 'estimate_l1_send_fee',
+        payload: { destination: string; amount: string; paymentId?: string }
+    ): Promise<number>;
+    function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
     ): Promise<void>;

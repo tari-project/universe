@@ -68,7 +68,9 @@ export function TransactionContextSummary({
             value:
                 feeMicroMinotari != null
                     ? `${formatNumber(feeMicroMinotari, FormatPreset.XTM_DECIMALS)} ${isL2 ? 'XTR' : 'XTM'}`
-                    : null,
+                    : kind === 'send'
+                      ? t('send.fee-unavailable')
+                      : null,
         },
     ];
 

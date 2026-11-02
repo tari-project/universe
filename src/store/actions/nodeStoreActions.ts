@@ -4,11 +4,16 @@ import { setAnimationState } from '@tari-project/tari-tower';
 import { useNodeStore } from '../useNodeStore.ts';
 import { useMiningStore } from '../useMiningStore.ts';
 import { isLocalNet } from '@app/utils/network.ts';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 export const handleBaseNodeStatusUpdate = (base_node_status: BaseNodeStatus) => {
     const wasNodeConnected = useNodeStore.getState().isNodeConnected;
     const isNodeConnected = base_node_status.num_connections > 0 || (base_node_status.is_synced && isLocalNet());
-    useNodeStore.setState((c) => ({ ...c, base_node_status, isNodeConnected }));
+    useNodeStore.setState((c) =>
+        c.isNodeConnected === isNodeConnected && deepEqual(c.base_node_status, base_node_status)
+            ? c
+            : { ...c, base_node_status, isNodeConnected }
+    );
 
     const miningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
