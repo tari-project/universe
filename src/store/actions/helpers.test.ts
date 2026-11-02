@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DisplayedTransaction } from '@app/types/app-status.ts';
+import { DisplayedTransaction, OutputStatus, TransactionDisplayStatus } from '@app/types/app-status.ts';
 import { mergeTransactions } from './helpers.ts';
 
 const tx = (id: number, timestamp: string, amount = 1000) =>
@@ -39,5 +39,41 @@ describe('mergeTransactions', () => {
         );
 
         expect(merged.map((t) => t.id)).toEqual([2, 3, 1]);
+    });
+
+    it('marks an earlier transaction output as Spent when a mined transaction spends its hash', () => {
+        const outputHash = Array.from({ length: 32 }, (_, i) => i + 1);
+        const incomingTx = {
+            ...tx(1, '2026-09-22T00:00:00', 5000),
+            status: TransactionDisplayStatus.Confirmed,
+            details: {
+                inputs: [],
+                outputs: [
+                    {
+                        hash: outputHash,
+                        amount: 5000,
+                        status: OutputStatus.Unspent,
+                    },
+                ],
+            },
+        } as unknown as DisplayedTransaction;
+
+        const spendingTx = {
+            ...tx(2, '2026-09-23T00:00:00', 2000),
+            status: TransactionDisplayStatus.Confirmed,
+            details: {
+                inputs: [
+                    {
+                        output_hash: outputHash,
+                        amount: 5000,
+                    },
+                ],
+                outputs: [],
+            },
+        } as unknown as DisplayedTransaction;
+
+        const merged = mergeTransactions([incomingTx], [spendingTx], true);
+        const updatedIncoming = merged.find((t) => t.id === 1);
+        expect(updatedIncoming?.details.outputs[0].status).toBe(OutputStatus.Spent);
     });
 });

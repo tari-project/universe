@@ -1,7 +1,54 @@
-import { DisplayedTransaction } from '@app/types/app-status.ts';
+import { DisplayedTransaction, FixedHash, OutputStatus, TransactionDisplayStatus } from '@app/types/app-status.ts';
 
 const sortTransactions = (txs: DisplayedTransaction[]): DisplayedTransaction[] =>
     txs.sort((a, b) => new Date(b.blockchain.timestamp).getTime() - new Date(a.blockchain.timestamp).getTime());
+
+const hashKey = (hash: FixedHash): string => hash.join(',');
+
+const isMinedSpendingStatus = (status?: TransactionDisplayStatus): boolean =>
+    status === TransactionDisplayStatus.Unconfirmed ||
+    status === TransactionDisplayStatus.Confirmed ||
+    status === TransactionDisplayStatus.Locked;
+
+const reconcileSpentOutputs = (
+    txs: DisplayedTransaction[]
+): { transactions: DisplayedTransaction[]; changed: boolean } => {
+    const spentHashes = new Set<string>();
+    for (const tx of txs) {
+        if (!isMinedSpendingStatus(tx.status) || !tx.details?.inputs) continue;
+        for (const input of tx.details.inputs) {
+            spentHashes.add(hashKey(input.output_hash));
+        }
+    }
+
+    if (spentHashes.size === 0) {
+        return { transactions: txs, changed: false };
+    }
+
+    let changed = false;
+    const transactions = txs.map((tx) => {
+        if (!tx.details?.outputs?.length) return tx;
+        let txChanged = false;
+        const outputs = tx.details.outputs.map((output) => {
+            if (output.status !== OutputStatus.Spent && spentHashes.has(hashKey(output.hash))) {
+                txChanged = true;
+                return { ...output, status: OutputStatus.Spent };
+            }
+            return output;
+        });
+        if (!txChanged) return tx;
+        changed = true;
+        return {
+            ...tx,
+            details: {
+                ...tx.details,
+                outputs,
+            },
+        };
+    });
+
+    return { transactions, changed };
+};
 
 export const mergeTransactions = (
     currentList: DisplayedTransaction[],
@@ -43,5 +90,7 @@ export const mergeTransactions = (
 
     if (!hasChanges) return currentList;
 
-    return sortTransactions([...addedItems, ...updatedList]);
+    const merged = [...addedItems, ...updatedList];
+    const { transactions } = reconcileSpentOutputs(merged);
+    return sortTransactions(transactions);
 };
