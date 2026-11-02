@@ -665,7 +665,7 @@ async fn pass_gates(
         };
 
         EventsEmitter::emit_mcp_transaction_confirmation(McpTransactionConfirmationPayload {
-            request_id,
+            request_id: request_id.clone(),
             kind: kind.as_str().to_string(),
             destination: destination.to_string(),
             amount_micro_minotari: amount_u64,
@@ -676,7 +676,7 @@ async fn pass_gates(
         })
         .await;
 
-        await_confirmation(rx).await?;
+        await_confirmation(&request_id, rx).await?;
         info!(target: LOG_TARGET_APP_LOGIC, "send gate: transaction approved by user (origin={})", origin.as_str());
     }
 
@@ -686,18 +686,64 @@ async fn pass_gates(
     })
 }
 
+struct InFlightCleanupGuard {
+    request_id: String,
+    disarmed: bool,
+}
+
+impl Drop for InFlightCleanupGuard {
+    fn drop(&mut self) {
+        if self.disarmed {
+            return;
+        }
+        let request_id = std::mem::take(&mut self.request_id);
+        if let Ok(mut guard) = INFLIGHT.try_lock() {
+            if guard
+                .as_ref()
+                .is_some_and(|txn| txn.request_id == request_id)
+            {
+                if let Some(txn) = guard.take() {
+                    deny_and_log(txn);
+                }
+            }
+        } else if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(async move {
+                let mut guard = INFLIGHT.lock().await;
+                if guard
+                    .as_ref()
+                    .is_some_and(|txn| txn.request_id == request_id)
+                    && let Some(txn) = guard.take()
+                {
+                    deny_and_log(txn);
+                }
+            });
+        }
+    }
+}
+
 async fn await_confirmation(
+    request_id: &str,
     rx: tokio::sync::oneshot::Receiver<TxnDialogResponse>,
 ) -> Result<(), TransactionError> {
+    let mut cleanup_guard = InFlightCleanupGuard {
+        request_id: request_id.to_string(),
+        disarmed: false,
+    };
+
     let response = match tokio::time::timeout(Duration::from_secs(DIALOG_TIMEOUT_SECS), rx).await {
-        Ok(Ok(response)) => response,
+        Ok(Ok(response)) => {
+            cleanup_guard.disarmed = true;
+            response
+        }
         Ok(Err(_)) => {
+            cleanup_guard.disarmed = true;
             clear_inflight().await;
             return Err(TransactionError::InternalError(
                 "Transaction confirmation channel closed unexpectedly".to_string(),
             ));
         }
         Err(_) => {
+            cleanup_guard.disarmed = true;
             clear_inflight().await;
             return Err(TransactionError::Timeout(
                 "Transaction timed out waiting for confirmation (120s)".to_string(),
@@ -723,7 +769,12 @@ pub async fn respond_to_transaction(request_id: String, approved: bool) -> Resul
                 *inflight = Some(txn);
                 return Err("Request ID mismatch — stale or invalid response".to_string());
             }
-            drop(txn.tx.send(TxnDialogResponse { approved }));
+            if txn.tx.send(TxnDialogResponse { approved }).is_err() {
+                return Err(
+                    "Transaction confirmation channel closed — request is no longer active"
+                        .to_string(),
+                );
+            }
             Ok(())
         }
         None => Err("No transaction awaiting confirmation".to_string()),
@@ -1163,7 +1214,9 @@ mod tests {
         let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
         drop(tx.send(TxnDialogResponse { approved: false }));
 
-        let err = await_confirmation(rx).await.expect_err("denied");
+        let err = await_confirmation("req_denied", rx)
+            .await
+            .expect_err("denied");
         assert!(matches!(err, TransactionError::Denied(_)));
     }
 
@@ -1173,7 +1226,9 @@ mod tests {
         let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
         drop(tx.send(TxnDialogResponse { approved: true }));
 
-        await_confirmation(rx).await.expect("approved");
+        await_confirmation("req_approved", rx)
+            .await
+            .expect("approved");
     }
 
     #[tokio::test]
@@ -1182,7 +1237,9 @@ mod tests {
         let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
         drop(tx);
 
-        let err = await_confirmation(rx).await.expect_err("channel closed");
+        let err = await_confirmation("req_dropped", rx)
+            .await
+            .expect_err("channel closed");
         assert!(matches!(err, TransactionError::InternalError(_)));
     }
 
@@ -1295,5 +1352,39 @@ mod tests {
             .expect("permit released")
             .expect("gate open");
         drop(reacquired);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn dropping_await_confirmation_clears_inflight_and_rejects_stale_response() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
+        {
+            let mut inflight = INFLIGHT.lock().await;
+            *inflight = Some(InFlightTxn {
+                origin: SendOrigin::Mcp,
+                request_id: "aborted_req".to_string(),
+                tx,
+            });
+        }
+
+        let fut = await_confirmation("aborted_req", rx);
+        let mut fut = Box::pin(fut);
+        assert!(
+            tokio::time::timeout(Duration::from_millis(20), fut.as_mut())
+                .await
+                .is_err()
+        );
+        drop(fut);
+
+        assert!(
+            INFLIGHT.lock().await.is_none(),
+            "Aborting await_confirmation must clear the matching INFLIGHT entry"
+        );
+        assert!(
+            respond_to_transaction("aborted_req".to_string(), true)
+                .await
+                .is_err(),
+            "Responding to a cancelled request must return an error"
+        );
     }
 }
