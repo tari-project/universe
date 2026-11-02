@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import Disconnected from '@app/containers/main/Reconnect/Disconnected.tsx';
 import DisconnectedSevere from '@app/containers/main/Reconnect/DisconnectedSevere.tsx';
 import { useUIStore } from '@app/store';
 
-import { listen } from '@tauri-apps/api/event';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { setConnectionStatus } from '@app/store/actions/uiStoreActions.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,18 @@ export default function DisconnectWrapper() {
     const [attempt, setAttempt] = React.useState(0);
     const [isReconnectOnCooldown, setIsReconnectOnCooldown] = React.useState(false);
     const { seconds, start: startCountdown, stop: stopCountdown } = useCountdown();
+    const attemptRef = useRef(attempt);
+    attemptRef.current = attempt;
+    const connectionStatusRef = useRef(connectionStatus);
+    connectionStatusRef.current = connectionStatus;
+    const cooldownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const clearCooldownTimeout = useCallback(() => {
+        if (cooldownTimeoutRef.current !== null) {
+            clearTimeout(cooldownTimeoutRef.current);
+            cooldownTimeoutRef.current = null;
+        }
+    }, []);
 
     useEffect(() => {
         if (connectionStatus === 'disconnected') {
@@ -33,51 +45,50 @@ export default function DisconnectWrapper() {
     }, [attempt, connectionStatus, startCountdown, stopCountdown]);
 
     useEffect(() => {
-        const reconnectingListener = listen(
-            BACKEND_STATE_UPDATE,
-            ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
-                if (event.event_type !== 'ConnectionStatus') return;
+        let cancelled = false;
+        let unlistenFn: UnlistenFn | null = null;
+
+        const handleReconnectFailure = () => {
+            stopCountdown();
+            const currentAttempt = Math.min(attemptRef.current + 1, retryBackoff.length);
+            if (connectionStatusRef.current === 'disconnected' && currentAttempt === retryBackoff.length) {
+                setConnectionStatus('disconnected-severe');
+                clearCooldownTimeout();
+                setIsReconnectOnCooldown(false);
+                startCountdown(300);
+                return;
+            }
+            setAttempt(currentAttempt);
+            startCountdown(retryBackoff[currentAttempt]);
+        };
+
+        listen(BACKEND_STATE_UPDATE, ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
+            if (cancelled) return;
+            if (event.event_type === 'ConnectionStatus') {
                 if (event.payload === 'Failed') {
-                    stopCountdown();
-                    const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
-                    if (connectionStatus === 'disconnected' && currentAttempt === retryBackoff.length) {
-                        setConnectionStatus('disconnected-severe');
-                        setIsReconnectOnCooldown(false);
-                        startCountdown(300);
-                        return;
-                    }
-                    setAttempt(currentAttempt);
-                    startCountdown(retryBackoff[currentAttempt]);
+                    handleReconnectFailure();
                 } else if (event.payload === 'Succeed') {
                     stopCountdown();
                 }
-            }
-        );
-
-        const criticalErrorListener = listen(
-            BACKEND_STATE_UPDATE,
-            ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
-                if (event.event_type !== 'CriticalProblem') return;
-                if (connectionStatus === 'connected') return;
+            } else if (event.event_type === 'CriticalProblem') {
+                if (connectionStatusRef.current === 'connected') return;
                 console.warn('Failed to reconnect');
-                stopCountdown();
-                const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
-                if (connectionStatus === 'disconnected' && currentAttempt === retryBackoff.length) {
-                    setConnectionStatus('disconnected-severe');
-                    setIsReconnectOnCooldown(false);
-                    startCountdown(300);
-                    return;
-                }
-                setAttempt(currentAttempt);
-                startCountdown(retryBackoff[currentAttempt]);
+                handleReconnectFailure();
             }
-        );
+        }).then((unlisten) => {
+            if (cancelled) {
+                unlisten();
+            } else {
+                unlistenFn = unlisten;
+            }
+        });
 
         return () => {
-            reconnectingListener.then((unlisten) => unlisten());
-            criticalErrorListener.then((unlisten) => unlisten());
+            cancelled = true;
+            unlistenFn?.();
+            clearCooldownTimeout();
         };
-    }, [attempt, connectionStatus, setAttempt, startCountdown, stopCountdown]);
+    }, [clearCooldownTimeout, startCountdown, stopCountdown]);
 
     const countdownText = formatSecondsToMmSs(seconds);
 
@@ -95,10 +106,12 @@ export default function DisconnectWrapper() {
     const reconnect = useCallback(() => {
         invoke('reconnect');
         setIsReconnectOnCooldown(true);
-        setTimeout(() => {
+        clearCooldownTimeout();
+        cooldownTimeoutRef.current = setTimeout(() => {
+            cooldownTimeoutRef.current = null;
             setIsReconnectOnCooldown(false);
         }, 1000 * 60);
-    }, []);
+    }, [clearCooldownTimeout]);
 
     return (
         <>
