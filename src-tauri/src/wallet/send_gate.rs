@@ -1106,7 +1106,6 @@ fn deny_and_log(txn: InFlightTxn) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use minotari_wallet::transactions::one_sided_transaction::Recipient;
     use serial_test::serial;
     use tari_transaction_components::tari_amount::MicroMinotari;
 

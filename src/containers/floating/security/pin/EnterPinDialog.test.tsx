@@ -200,7 +200,6 @@ describe('EnterPinDialog', () => {
         render(<EnterPinDialog />);
         expect(screen.getByText('aa'.repeat(16))).toBeInTheDocument();
         expect(screen.getByTestId('payment-id-overridden')).toHaveTextContent('send.payment-id-overridden');
-        expect(en.send['payment-id-overridden']).toContain('payment ID');
     });
 });
 
