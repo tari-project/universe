@@ -175,13 +175,6 @@
   "node-type": "प्रकार",
   "not-connected-to-tari": "Tari नेटवर्क से जुड़ा नहीं",
   "open-logs-directory": "लॉग्स निर्देशिका खोलें",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "अपने तारी यूनिवर्स वॉलेट को अपने फोन से कनेक्ट करें",
-    "do-not-share-this-code": "इस कोड को किसी के साथ साझा न करें",
-    "link-tari-aurora": "तारी ऑरोरा लिंक करें",
-    "load-qr-code": "QR कोड लोड करें",
-    "passphrase": "पासफ्रेज़"
-  },
   "pause-on-battery-mode": {
     "description": "Pause mining when device is disconnected from charging",
     "title": "Pause on Battery Mode"

@@ -175,6 +175,15 @@ Configuration files are stored at:
 
 ## Troubleshooting
 
+### MCP transaction requests
+
+Stopping or restarting the built-in MCP server cancels sends that are waiting
+for transaction confirmation or PIN entry. Once a send passes PIN entry and
+begins creating the transaction, it continues signing, broadcasting, and recording
+the result even if the MCP server stops. Disconnecting the MCP client also leaves
+the send running. If the client loses the response, check the wallet's transaction
+history before retrying to avoid sending twice.
+
 **Application won't start:**
 
 - Check that your system meets minimum requirements

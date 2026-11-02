@@ -948,7 +948,11 @@ impl EventScheduler {
         let task_handle =
             Self::create_scheduling_task(event_id.clone(), event_type, timing).await?;
         scheduled_event.task_handle = Some(task_handle);
-        events.insert(event_id.clone(), scheduled_event);
+        if let Some(mut previous) = events.insert(event_id.clone(), scheduled_event)
+            && let Some(prev_handle) = previous.task_handle.take()
+        {
+            prev_handle.abort();
+        }
         Self::save_persistent_events_to_config(events).await;
 
         Ok(event_id)
@@ -1190,9 +1194,15 @@ impl EventScheduler {
                 if let Ok(duration) = duration {
                     sleep(duration.to_std().unwrap_or_default()).await;
 
+                    let _unused =
+                        INSTANCE
+                            .message_sender
+                            .send(SchedulerMessage::TriggerEnterCallback {
+                                event_id: event_id.clone(),
+                            });
                     let _unused = INSTANCE
                         .message_sender
-                        .send(SchedulerMessage::TriggerEnterCallback { event_id });
+                        .send(SchedulerMessage::CleanupSchedule { event_id });
                 } else {
                     error!(target: LOG_TARGET_APP_LOGIC, "Failed to parse duration for 'In' event {:?}", event_id);
                 }
@@ -1210,48 +1220,51 @@ impl EventScheduler {
                             ))
                         })?;
 
-                let copied_cron_schedule = cron_schedule.clone();
-                let copied_event_id = event_id.clone();
-
                 tokio::spawn(async move {
-                    let cron_schedule = copied_cron_schedule.clone();
-                    let event_id = copied_event_id.clone();
-                    loop {
-                        let local_now = Local::now();
+                    let start_schedule = cron_schedule.clone();
+                    let start_event_id = event_id.clone();
+                    let enter_loop = async move {
+                        loop {
+                            let local_now = Local::now();
 
-                        if let Some(next_start_wait_time) =
-                            cron_schedule.find_next_start_wait_time(local_now)
-                        {
-                            sleep(next_start_wait_time).await;
-                        } else {
-                            warn!(target: LOG_TARGET_APP_LOGIC, "No next start time found for event with ID {:?}", event_id);
-                            break;
-                        }
+                            if let Some(next_start_wait_time) =
+                                start_schedule.find_next_start_wait_time(local_now)
+                            {
+                                sleep(next_start_wait_time).await;
+                            } else {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "No next start time found for event with ID {:?}", start_event_id);
+                                break;
+                            }
 
-                        let _unused =
-                            INSTANCE
-                                .message_sender
-                                .send(SchedulerMessage::TriggerEnterCallback {
-                                    event_id: event_id.clone(),
-                                });
-                    }
-                });
-                tokio::spawn(async move {
-                    let cron_schedule = cron_schedule.clone();
-                    loop {
-                        let local_now = Local::now();
-                        // Now wait until end time, eg. currently is 10AM and the range is 9AM - 11AM, then we wait until 11AM
-                        if let Some(next_end_wait_time) =
-                            cron_schedule.find_next_end_wait_time(local_now)
-                        {
-                            sleep(next_end_wait_time).await;
                             let _unused = INSTANCE.message_sender.send(
-                                SchedulerMessage::TriggerExitCallback {
-                                    event_id: event_id.clone(),
+                                SchedulerMessage::TriggerEnterCallback {
+                                    event_id: start_event_id.clone(),
                                 },
                             );
                         }
-                    }
+                    };
+
+                    let exit_loop = async move {
+                        loop {
+                            let local_now = Local::now();
+                            // Now wait until end time, eg. currently is 10AM and the range is 9AM - 11AM, then we wait until 11AM
+                            if let Some(next_end_wait_time) =
+                                cron_schedule.find_next_end_wait_time(local_now)
+                            {
+                                sleep(next_end_wait_time).await;
+                                let _unused = INSTANCE.message_sender.send(
+                                    SchedulerMessage::TriggerExitCallback {
+                                        event_id: event_id.clone(),
+                                    },
+                                );
+                            } else {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "No next end time found for event with ID {:?}", event_id);
+                                break;
+                            }
+                        }
+                    };
+
+                    tokio::join!(enter_loop, exit_loop);
                 })
             }
         };
