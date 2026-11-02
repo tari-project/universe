@@ -84,7 +84,45 @@ function getPoolsConfig() {
   };
 }
 
-function getCoreConfig() {
+/** Pick an RPC endpoint that can actually serve mining templates. The proxy's
+ * built-in probe accepts any HTTP response, including 503, and can pin a dead
+ * endpoint for the entire test run. Keep this selection confined to localnet
+ * Playwright; normal wallet endpoint settings are unaffected. */
+async function getWorkingMoneroNode(): Promise<string> {
+  const candidates = [
+    'https://xmr-01.tari.com',
+    'https://xmr-lim.tari.com',
+    'https://xmr-gra.tari.com',
+    'https://xmr-bhs.tari.com',
+    'https://node.monero.fail',
+    'https://rpc.monerosafe.com',
+  ];
+  for (const node of candidates) {
+    try {
+      const response = await fetch(`${node}/json_rpc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'playwright',
+          method: 'get_block_template',
+          params: { wallet_address: TEST_MONERO.address, reserve_size: 60 },
+        }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (!response.ok) continue;
+      const body = await response.json() as { result?: { blocktemplate_blob?: string } };
+      if (!body.result?.blocktemplate_blob) continue;
+      console.log(`Playwright Monero RPC: ${node}`);
+      return node;
+    } catch (error) {
+      console.warn(`Monero RPC probe failed for ${node}: ${(error as Error).message}`);
+    }
+  }
+  throw new Error('No Monero RPC endpoint can serve mining templates; Playwright cannot mine localnet blocks.');
+}
+
+function getCoreConfig(moneroNode: string) {
   return {
     version_counter: 2,
     use_tor: false,
@@ -97,6 +135,7 @@ function getCoreConfig() {
     // otherwise show() the blank.html window during e2e runs.
     show_window_on_startup: false,
     remote_base_node_address: 'http://127.0.0.1:18142',
+    mmproxy_monero_nodes: [moneroNode],
   };
 }
 
@@ -144,13 +183,13 @@ function getWalletConfig() {
   };
 }
 
-function preSeedConfig(configDir?: string): void {
+function preSeedConfig(moneroNode: string, configDir?: string): void {
   const targetDir = configDir ?? getConfigDir();
   fs.mkdirSync(targetDir, { recursive: true });
   console.log(`Pre-seeding config directory: ${targetDir}`);
 
   fs.writeFileSync(path.join(targetDir, 'config_pools.json'), JSON.stringify(getPoolsConfig()));
-  fs.writeFileSync(path.join(targetDir, 'config_core.json'), JSON.stringify(getCoreConfig()));
+  fs.writeFileSync(path.join(targetDir, 'config_core.json'), JSON.stringify(getCoreConfig(moneroNode)));
   fs.writeFileSync(path.join(targetDir, 'config_mining.json'), JSON.stringify(getMiningConfig()));
   fs.writeFileSync(path.join(targetDir, 'config_wallet.json'), JSON.stringify(getWalletConfig()));
   console.log('Config files written: config_pools.json, config_core.json, config_mining.json, config_wallet.json');
@@ -298,7 +337,7 @@ async function runGlobalSetup() {
     console.log('SKIP_BACKEND set: assuming backend is already running.');
   } else {
     wipeTestData();
-    preSeedConfig();
+    preSeedConfig(await getWorkingMoneroNode());
     preSeedCredentials();
 
     const binaryPath = process.env.TARI_UNIVERSE_BINARY || getBinaryPath(projectRoot);

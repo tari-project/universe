@@ -175,13 +175,6 @@
   "node-type": "类型",
   "not-connected-to-tari": "未连接到Tari网络",
   "open-logs-directory": "打开日志目录",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "将您的 Tari 宇宙钱包连接到手机",
-    "do-not-share-this-code": "不要与任何人分享此代码",
-    "link-tari-aurora": "链接 Tari Universe Mobile",
-    "load-qr-code": "加载二维码",
-    "passphrase": "密码短语"
-  },
   "pause-on-battery-mode": {
     "description": "Pause mining when device is disconnected from charging",
     "title": "Pause on Battery Mode"

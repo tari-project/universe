@@ -169,3 +169,11 @@ loggers:
       - minotari_cli
       - stdout
     additive: false
+
+  # The offline signer logs each payload summary (recipient and amount) at info; keep
+  # that out of the logs users send with feedback.
+  c::tx::offline_signing:
+    level: warn
+    appenders:
+      - other
+    additive: false

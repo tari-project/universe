@@ -46,9 +46,9 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
-use zeroize::Zeroizing;
 
 use tari_utilities::hex::Hex;
+use zeroize::Zeroizing;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_ui::ConfigUI;
@@ -66,6 +66,20 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::pin::{PinLockerState, PinManager};
 use crate::utils::{cryptography, rand_utils};
 use crate::wallet::minotari_wallet::MinotariWalletManager;
+
+/// The pinned monero-address-creator can reject random word triples when their
+/// decoded index does not fit in u32. Retry with fresh entropy before giving up.
+fn generate_monero_seed() -> Result<MoneroSeed, anyhow::Error> {
+    let mut attempts = 0;
+    loop {
+        attempts += 1;
+        match MoneroSeed::generate() {
+            Ok(seed) => return Ok(seed),
+            Err(e) if attempts == 8 => return Err(e.into()),
+            Err(_) => {}
+        }
+    }
+}
 
 /// The wallet's view private key, in hex.
 ///
@@ -208,7 +222,7 @@ impl InternalWallet {
         let monero_address = wallet_config.monero_address().clone();
         let mut monero_seed_binary = None;
         if monero_address.is_empty() {
-            let monero_seed = MoneroSeed::generate()?;
+            let monero_seed = generate_monero_seed()?;
             monero_seed_binary = Some(InternalWallet::add_monero_wallet(monero_seed).await?);
         };
 
@@ -339,7 +353,7 @@ impl InternalWallet {
 
                     let mut monero_seed_binary = None;
                     if monero_address.is_empty() {
-                        let monero_seed = MoneroSeed::generate()?;
+                        let monero_seed = generate_monero_seed()?;
                         monero_seed_binary =
                             Some(InternalWallet::add_monero_wallet(monero_seed).await?);
                     };
@@ -539,7 +553,7 @@ impl InternalWallet {
             let (monero_seed, new_monero_address) = match monero_seed {
                 Some(monero_seed) => (monero_seed, None),
                 None => {
-                    let monero_seed = MoneroSeed::generate()?;
+                    let monero_seed = generate_monero_seed()?;
                     let monero_address = monero_seed
                         .to_address::<Mainnet>()
                         .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
@@ -1411,12 +1425,6 @@ impl std::fmt::Display for TariAddressType {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct PaperWalletConfig {
-    pub qr_link: String,
-    pub password: String,
-}
-
 /// Enum-like tag for a credential failure, safe to log and to send as a Sentry tag.
 /// Carries the kind of failure only, never the error's contents.
 pub fn credential_error_tag(error: &CredentialError) -> &'static str {
@@ -1526,6 +1534,43 @@ pub(crate) fn decrypt_legacy_tari_seed(
         .into_iter()
         .find_map(|passphrase| CipherSeed::from_enciphered_bytes(enciphered_bytes, passphrase).ok())
         .ok_or_else(|| anyhow!("Failed to decrypt legacy Tari seed"))
+}
+
+/// Reads a seed stored without a PIN. Since tari 6.3 that is the seed enciphered under the
+/// default passphrase; before it, it was the bincode of the plain struct, which 6.3 still
+/// reads but only in its JSON form.
+pub(crate) fn decode_plain_seed(bytes: &[u8]) -> Result<CipherSeed, anyhow::Error> {
+    if let Ok(seed) = CipherSeed::from_binary(bytes) {
+        return Ok(seed);
+    }
+    // version (1), birthday (2, little endian), entropy (16), salt (5)
+    if bytes.len() != 24 {
+        return Err(anyhow!("Could not parse Tari Seed from binary"));
+    }
+    // Sized up front, so the buffer holding the entropy never reallocates and leaves a copy.
+    let mut json = Zeroizing::new(String::with_capacity(160));
+    let push_list = |json: &mut String, list: &[u8]| -> std::fmt::Result {
+        json.push('[');
+        for (i, byte) in list.iter().enumerate() {
+            if i > 0 {
+                json.push(',');
+            }
+            write!(json, "{byte}")?;
+        }
+        json.push(']');
+        Ok(())
+    };
+    write!(
+        json,
+        "{{\"version\":{},\"birthday\":{},\"entropy\":",
+        bytes[0],
+        u16::from_le_bytes([bytes[1], bytes[2]])
+    )?;
+    push_list(&mut json, &bytes[3..19])?;
+    json.push_str(",\"salt\":");
+    push_list(&mut json, &bytes[19..24])?;
+    json.push('}');
+    CipherSeed::from_json(&json).map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))
 }
 
 /// Derive the address from a decoded seed and compare it with the recorded one. `None` when
@@ -1967,39 +2012,4 @@ fn zero_fill(path: &Path, len: u64, chunk_len: usize) -> std::io::Result<()> {
         remaining -= chunk as u64;
     }
     file.sync_all()
-}
-
-/// Reads a seed stored without a PIN. Tari 6.3 changed the binary representation; older
-/// Universe wallets stored the version-2 fields directly, so rebuild that legacy seed via
-/// the current JSON decoder when the binary decoder rejects it.
-pub(crate) fn decode_plain_seed(bytes: &[u8]) -> Result<CipherSeed, anyhow::Error> {
-    if let Ok(seed) = CipherSeed::from_binary(bytes) {
-        return Ok(seed);
-    }
-    if bytes.len() != 24 {
-        return Err(anyhow!("Could not parse Tari Seed from binary"));
-    }
-    let mut json = Zeroizing::new(String::with_capacity(160));
-    let push_list = |json: &mut String, list: &[u8]| -> std::fmt::Result {
-        json.push('[');
-        for (index, byte) in list.iter().enumerate() {
-            if index > 0 {
-                json.push(',');
-            }
-            write!(json, "{byte}")?;
-        }
-        json.push(']');
-        Ok(())
-    };
-    write!(
-        json,
-        "{{\"version\":{},\"birthday\":{},\"entropy\":",
-        bytes[0],
-        u16::from_le_bytes([bytes[1], bytes[2]])
-    )?;
-    push_list(&mut json, &bytes[3..19])?;
-    json.push_str(",\"salt\":");
-    push_list(&mut json, &bytes[19..24])?;
-    json.push('}');
-    CipherSeed::from_json(&json).map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))
 }

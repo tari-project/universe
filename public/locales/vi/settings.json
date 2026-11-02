@@ -175,13 +175,6 @@
   "node-type": "Type",
   "not-connected-to-tari": "Not connected to the Tari Network",
   "open-logs-directory": "Open logs directory",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "Track your XTM balance on your phone",
-    "do-not-share-this-code": "Don&apos;t share this code with anyone",
-    "link-tari-aurora": "Link Tari Universe Mobile",
-    "load-qr-code": "Load QR code",
-    "passphrase": "Passphrase"
-  },
   "pause-on-battery-mode": {
     "description": "Pause mining when device is disconnected from charging",
     "title": "Pause on Battery Mode"

@@ -1,5 +1,8 @@
 import { BackendBridgeTransaction, setError as setStoreError, useConfigUIStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
+import { t } from 'i18next';
+import { addToast } from '@app/components/ToastStack/useToastStore';
+import { commandErrorMessage } from '@app/components/transactions/send/types';
 import { BaseNodeStatus, BridgeEnvs } from '../app-status';
 import { L2Account, L2WalletState } from '../events-payloads';
 import { selectL2Account, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
@@ -325,16 +328,20 @@ export class TappletSigner {
         this.startTappletSend();
         let outcome: SendOutcome = 'none';
         try {
-            await invoke('send_one_sided_from_tapplet', {
+            const receipt = await invoke('send_one_sided_from_tapplet', {
                 amount: req.amount,
                 destination: req.address,
                 paymentId: req.paymentId,
             });
+            // Recorded and retried automatically, so it still counts as sent.
+            if (receipt?.accepted_by_node === false) {
+                addToast({ title: t('send.not-accepted-yet', { ns: 'wallet' }), type: 'warning' });
+            }
             outcome = 'sent';
             return true;
         } catch (error) {
             outcome = PIN_DENIED_RE.test(`${error}`) ? 'denied' : 'failed';
-            setStoreError(`Error sending transaction: ${error}`);
+            setStoreError(`Error sending transaction: ${commandErrorMessage(error)}`);
             return false;
         } finally {
             this.finishTappletSend(outcome);

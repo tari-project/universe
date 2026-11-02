@@ -78,7 +78,6 @@ runs last** (file naming keeps it last; `workers: 1`, no shuffle).
 | Send gated by PIN (wrong PIN error → correct PIN proceeds) | automated |
 | Seed words reveal gated by PIN | automated |
 | Monero seed words gated by PIN | automated — `96-pin-recovery` (the fixture owns a generated Monero wallet) |
-| Sync with Phone gated by PIN | automated |
 
 ## §5b PIN recovery — automated, runs right after the PIN spec
 
@@ -126,7 +125,6 @@ reachable at all.
 | Exchange miner: switch, hidden balance, swap back, mining after | automated | `03-exchange-miner` |
 | Swaps UI (never execute) | manual | quote/wallet-connect services don't exist on localnet |
 | Bridging | manual | needs mainnet funds + MetaMask |
-| Sync with Phone (desktop side: QR + identification code) | automated | `08-receive-and-sync` |
 | Wallet Connect / Aurora | manual | needs mobile device |
 
 ## §8 Wallet Import — automated, runs second-to-last
