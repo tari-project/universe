@@ -27,6 +27,7 @@
     "source-transfer": "Transfer",
     "source-unknown": "Transaction",
     "status": "Status",
+    "status-unavailable": "Status unavailable",
     "status-cancelled": "Cancelled",
     "status-confirmed": "Confirmed",
     "status-locked": "Locked",

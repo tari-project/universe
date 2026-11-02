@@ -82,6 +82,7 @@ use minotari_wallet::{
     },
 };
 use r2d2::PooledConnection;
+use r2d2_sqlite::rusqlite::{OptionalExtension, params};
 use r2d2_sqlite::{SqliteConnectionManager, rusqlite::Connection};
 use serde::Serialize;
 use std::{
@@ -669,6 +670,33 @@ impl MinotariWalletManager {
         history_service
             .load_transactions_excluding_reorged(account_id)
             .map_err(|e| e.into())
+    }
+
+    /// Read only the selected transaction's output statuses from the active wallet
+    /// rows. Displayed transaction JSON is historical and must not be rewritten.
+    pub async fn get_output_statuses(
+        hashes: Vec<FixedHash>,
+    ) -> Result<Vec<Option<minotari_wallet::models::OutputStatus>>, anyhow::Error> {
+        if hashes.len() > 1000 {
+            return Err(anyhow::anyhow!("Too many output hashes"));
+        }
+        let account_id = Self::owner_account_id().await?;
+        let conn = Self::get_db_connection().await?;
+        let mut query = conn.prepare(
+            "SELECT status FROM outputs WHERE account_id = ?1 AND output_hash = ?2 \
+             AND deleted_at IS NULL ORDER BY id DESC LIMIT 1",
+        )?;
+        hashes
+            .into_iter()
+            .map(|hash| {
+                let status: Option<String> = query
+                    .query_row(params![account_id, hash.to_vec()], |row| row.get(0))
+                    .optional()?;
+                status
+                    .map(|value| value.parse().map_err(anyhow::Error::msg))
+                    .transpose()
+            })
+            .collect()
     }
 
     pub async fn initialize_wallet() -> Result<(), anyhow::Error> {
