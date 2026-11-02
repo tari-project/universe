@@ -67,6 +67,20 @@ use crate::pin::{PinLockerState, PinManager};
 use crate::utils::{cryptography, rand_utils};
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 
+/// The pinned monero-address-creator can reject random word triples when their
+/// decoded index does not fit in u32. Retry with fresh entropy before giving up.
+fn generate_monero_seed() -> Result<MoneroSeed, anyhow::Error> {
+    let mut attempts = 0;
+    loop {
+        attempts += 1;
+        match MoneroSeed::generate() {
+            Ok(seed) => return Ok(seed),
+            Err(e) if attempts == 8 => return Err(e.into()),
+            Err(_) => {}
+        }
+    }
+}
+
 /// The wallet's view private key, in hex.
 ///
 /// The key has to keep living in `config_wallet.json` as a plain hex string, so
@@ -208,7 +222,7 @@ impl InternalWallet {
         let monero_address = wallet_config.monero_address().clone();
         let mut monero_seed_binary = None;
         if monero_address.is_empty() {
-            let monero_seed = MoneroSeed::generate()?;
+            let monero_seed = generate_monero_seed()?;
             monero_seed_binary = Some(InternalWallet::add_monero_wallet(monero_seed).await?);
         };
 
@@ -339,7 +353,7 @@ impl InternalWallet {
 
                     let mut monero_seed_binary = None;
                     if monero_address.is_empty() {
-                        let monero_seed = MoneroSeed::generate()?;
+                        let monero_seed = generate_monero_seed()?;
                         monero_seed_binary =
                             Some(InternalWallet::add_monero_wallet(monero_seed).await?);
                     };
@@ -539,7 +553,7 @@ impl InternalWallet {
             let (monero_seed, new_monero_address) = match monero_seed {
                 Some(monero_seed) => (monero_seed, None),
                 None => {
-                    let monero_seed = MoneroSeed::generate()?;
+                    let monero_seed = generate_monero_seed()?;
                     let monero_address = monero_seed
                         .to_address::<Mainnet>()
                         .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
