@@ -34,7 +34,7 @@ use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::LOG_TARGET_APP_LOGIC;
-use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent, SECONDS_PER_DAY};
+use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent, compute_token_expiry};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::tools::TariMcpHandler;
@@ -269,12 +269,10 @@ async fn auth_middleware(
                 // so the token only expires after `token_expiry_days` of inactivity.
                 let _unused = ConfigMcp::update_field(
                     ConfigMcpContent::set_token_expires_at,
-                    Some(
-                        SystemTime::now()
-                            + std::time::Duration::from_secs(
-                                u64::from(*config.token_expiry_days()) * SECONDS_PER_DAY,
-                            ),
-                    ),
+                    Some(compute_token_expiry(
+                        SystemTime::now(),
+                        *config.token_expiry_days(),
+                    )),
                 )
                 .await;
                 Ok(next.run(req).await)
