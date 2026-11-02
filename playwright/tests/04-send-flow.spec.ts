@@ -219,8 +219,7 @@ test.describe('Send Transaction Flow', () => {
     await expect(page.getByText(/You're Done/i).first()).toBeVisible({ timeout: 60_000 });
     await page.locator(sel.send.doneButton).click();
 
-    // Sender history keeps its original record, whose memo_hex stays null.
-    // Match its sent output hash to the recipient output scanned on localnet.
+    // Match the sent output hash to the recipient output scanned on localnet.
     const balanceNow = await getWalletBalance(page);
     await mineUntilBalanceExceeds(page, Math.floor(balanceNow) + 1, 180_000);
     await page.locator(sel.wallet.historyFilter).click();

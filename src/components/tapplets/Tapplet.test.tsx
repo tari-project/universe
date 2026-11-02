@@ -22,6 +22,7 @@ import { open } from '@tauri-apps/plugin-shell';
 import { runTappletTransaction } from '@app/store/useTappletSignerStore.ts';
 import { render } from '@app/test/test-utils';
 import { Tapplet } from './Tapplet';
+import { useAppStateStore } from '@app/store/appStateStore';
 
 const TAPPLET_SOURCE = 'http://127.0.0.1:41234';
 const TAPPLET_ORIGIN = 'http://127.0.0.1:41234';
@@ -159,6 +160,15 @@ describe('Tapplet message handling', () => {
 
             expect(open).not.toHaveBeenCalled();
         });
+    });
+
+    it('labels toasts the tapplet raises as coming from it', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const { iframe } = renderTapplet();
+
+        postToApp({ type: 'ERROR', payload: { message: 'Order expired' } }, TAPPLET_ORIGIN, iframe.contentWindow);
+
+        expect(useAppStateStore.getState().error).toBe('Bridge tapplet: Order expired');
     });
 
     describe('GET_INIT_CONFIG', () => {

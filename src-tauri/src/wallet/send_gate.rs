@@ -51,6 +51,7 @@ use std::time::Duration;
 
 use log::{info, warn};
 use tari_common::configuration::Network;
+use tari_ootle_wallet_sdk::{OotleAddress, PayRef, crypto::memo::Memo};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
 use crate::LOG_TARGET_APP_LOGIC;
@@ -96,11 +97,13 @@ impl fmt::Display for TransactionError {
 /// Where a send request came from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SendOrigin {
-    /// The `send_one_sided_to_stealth_address` Tauri command: the in-app send UI, the
-    /// tapplet bridge, or anything else able to reach `invoke`.
+    /// The in-app send UI, or anything else able to reach `invoke`.
     App,
     /// The MCP `send_transaction` tool.
     Mcp,
+    /// The `send_one_sided_from_tapplet` and `l2_send_from_tapplet` Tauri commands, which
+    /// only the tapplet signer calls.
+    Tapplet,
 }
 
 impl SendOrigin {
@@ -108,6 +111,7 @@ impl SendOrigin {
         match self {
             SendOrigin::App => "app",
             SendOrigin::Mcp => "mcp",
+            SendOrigin::Tapplet => "tapplet",
         }
     }
 
@@ -115,6 +119,7 @@ impl SendOrigin {
         match self {
             SendOrigin::App => "app_tx",
             SendOrigin::Mcp => "mcp_tx",
+            SendOrigin::Tapplet => "tapplet_tx",
         }
     }
 
@@ -132,13 +137,14 @@ impl SendOrigin {
     fn requires_confirmation(self, pin_configured: bool) -> bool {
         match self {
             SendOrigin::Mcp => true,
-            SendOrigin::App => !pin_configured,
+            SendOrigin::App | SendOrigin::Tapplet => !pin_configured,
         }
     }
 
-    /// Whether the MCP transaction rate limiter applies.
+    /// Whether a transaction rate limiter applies. MCP and tapplet sends each have their own,
+    /// so one can't use up the other's quota.
     fn enforces_rate_limit(self) -> bool {
-        matches!(self, SendOrigin::Mcp)
+        matches!(self, SendOrigin::Mcp | SendOrigin::Tapplet)
     }
 }
 
@@ -162,9 +168,10 @@ pub struct GatedBurnRequest {
     pub payment_id: Option<String>,
 }
 
-/// An XTR send from one of the wallet's own L2 accounts. Only the in-app UI can ask
-/// for one, so the origin is always [`SendOrigin::App`].
+/// An XTR send from one of the wallet's own L2 accounts, asked for by the in-app UI
+/// ([`SendOrigin::App`]) or the tapplet signer ([`SendOrigin::Tapplet`]).
 pub struct GatedL2SendRequest {
+    pub origin: SendOrigin,
     pub app_handle: tauri::AppHandle,
     pub request_id: String,
     pub amount: String,
@@ -172,6 +179,8 @@ pub struct GatedL2SendRequest {
     pub destination: String,
     /// Component address of the L2 account paying.
     pub account: String,
+    /// Pay reference for the recipient, UTF-8, at most 64 bytes.
+    pub pay_ref: Option<String>,
 }
 
 /// What is being spent, in the terms the user has to approve it in.
@@ -186,6 +195,8 @@ pub enum SpendKind {
     L2Send {
         destination: String,
         account: String,
+        /// The pay reference the output carries, as text.
+        pay_ref: Option<String>,
     },
     L2Claim {
         commitment: String,
@@ -216,6 +227,7 @@ impl SpendKind {
 
     fn pin_context(
         &self,
+        origin: SendOrigin,
         amount_micro_minotari: u64,
         payment_id: Option<String>,
     ) -> PinPromptContext {
@@ -224,6 +236,7 @@ impl SpendKind {
                 amount_micro_minotari,
                 destination: destination.clone(),
                 payment_id,
+                origin: origin.as_str().to_string(),
             },
             SpendKind::Burn { claim_public_key } => PinPromptContext::Burn {
                 amount_micro_minotari,
@@ -233,10 +246,13 @@ impl SpendKind {
             SpendKind::L2Send {
                 destination,
                 account,
+                pay_ref,
             } => PinPromptContext::L2Send {
                 amount_micro_minotari,
                 destination: destination.clone(),
                 account: account.clone(),
+                pay_ref: pay_ref.clone(),
+                origin: origin.as_str().to_string(),
                 fee_micro_minotari: None,
             },
             SpendKind::L2Claim { commitment } => PinPromptContext::L2Claim {
@@ -271,6 +287,10 @@ static INFLIGHT: LazyLock<tokio::sync::Mutex<Option<InFlightTxn>>> =
 
 static TXN_RATE_LIMITER: LazyLock<tokio::sync::Mutex<TransactionRateLimiter>> =
     LazyLock::new(|| tokio::sync::Mutex::new(TransactionRateLimiter::new()));
+/// Tapplet sends, counted separately from MCP and not tied to the MCP config's limit.
+static TAPPLET_RATE_LIMITER: LazyLock<tokio::sync::Mutex<TransactionRateLimiter>> =
+    LazyLock::new(|| tokio::sync::Mutex::new(TransactionRateLimiter::new()));
+const TAPPLET_SENDS_PER_MINUTE: u32 = 5;
 
 struct InFlightTxn {
     origin: SendOrigin,
@@ -318,9 +338,8 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
     // minotari transaction is created, and carries the amount/destination.
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing send (origin={}, destination={}, amount={amount})",
-        origin.as_str(),
-        kind.counterparty()
+        "send gate: executing send (origin={})",
+        origin.as_str()
     );
     let SpendKind::Send { destination } = kind else {
         unreachable!("gated_send builds a Send kind")
@@ -407,11 +426,13 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
 /// permit. Returns the L2 transaction id.
 pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, TransactionError> {
     let GatedL2SendRequest {
+        origin,
         app_handle,
         request_id,
         amount,
         destination,
         account,
+        pay_ref,
     } = request;
 
     check_l2_allowed(
@@ -419,30 +440,102 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         PinManager::pin_locked().await,
     )?;
     let amount_u64 = parse_amount(&amount)?;
+    if origin == SendOrigin::Tapplet {
+        check_tapplet_pay_ref(pay_ref.as_deref())?;
+    }
     let address = OotleWalletManager::parse_address(&destination)?;
+    let (pay_ref, memo) = l2_send_memo(pay_ref.as_deref(), &address)?.unzip();
+    // The parsed form, so the PIN prompt never shows padding the parser trimmed away.
     let kind = SpendKind::L2Send {
-        destination,
+        destination: address.to_string(),
         account,
+        pay_ref,
     };
-    let pass = pass_gates(
-        SendOrigin::App,
-        request_id,
-        &amount,
-        amount_u64,
-        &kind,
-        &None,
-    )
-    .await?;
+    let pass = pass_gates(origin, request_id, &amount, amount_u64, &kind, &None).await?;
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing L2 send (destination={}, amount={amount})",
-        kind.counterparty()
+        "send gate: executing L2 send (origin={})",
+        origin.as_str()
     );
     let SpendKind::L2Send { account, .. } = kind else {
         unreachable!("gated_l2_send builds an L2Send kind")
     };
-    OotleWalletManager::send_xtr(&app_handle, &account, address, amount_u64, pass.pin_context).await
+    OotleWalletManager::send_xtr(
+        &app_handle,
+        &account,
+        address,
+        amount_u64,
+        memo,
+        pass.pin_context,
+    )
+    .await
+}
+
+/// The pay reference an L2 send carries, as text for the PIN prompt, and the output memo
+/// holding it. An explicit `pay_ref` must match the one embedded in the destination
+/// address, if there is one; without an explicit one the embedded one is used.
+fn l2_send_memo(
+    pay_ref: Option<&str>,
+    destination: &OotleAddress,
+) -> Result<Option<(String, Memo)>, TransactionError> {
+    let embedded = destination.pay_ref().map(|p| p.as_bytes());
+    let bytes = match (pay_ref.map(str::as_bytes), embedded) {
+        (Some(explicit), Some(embedded)) if explicit != embedded => {
+            return Err(TransactionError::InvalidAddress(
+                "Pay reference differs from the one in the destination address".to_string(),
+            ));
+        }
+        (Some(bytes), _) | (None, Some(bytes)) => bytes,
+        (None, None) => return Ok(None),
+    };
+    let memo = PayRef::new_checked(bytes)
+        .and_then(|_| Memo::new_pay_ref_and_message(bytes, ""))
+        .ok_or_else(|| {
+            TransactionError::InvalidAddress(format!(
+                "Pay reference must be 1 to {} bytes",
+                PayRef::MAX_LEN
+            ))
+        })?;
+    // Only printable ASCII is shown as text, so the PIN prompt can't show a lookalike of what is sent.
+    let shown = if bytes.iter().all(|b| b.is_ascii_graphic() || *b == b' ') {
+        String::from_utf8_lossy(bytes).into_owned()
+    } else {
+        format!("0x{}", hex::encode(bytes))
+    };
+    Ok(Some((shown, memo)))
+}
+
+/// The PIN prompt shows the amount as a JS number divided by 10^6. Above 2^52 micro units that
+/// quotient can round to a neighbouring micro unit, so what it shows could differ from what is
+/// signed. Below 10^15 the quotient is under 2^30 and always rounds back exactly. Only a
+/// tapplet chooses amounts that large unseen.
+const MAX_TAPPLET_AMOUNT: u64 = 999_999_999_999_999;
+
+fn check_tapplet_amount(amount_u64: u64) -> Result<(), TransactionError> {
+    if amount_u64 > MAX_TAPPLET_AMOUNT {
+        return Err(TransactionError::InvalidAmount(format!(
+            "Amount must be at most {MAX_TAPPLET_AMOUNT} micro units"
+        )));
+    }
+    Ok(())
+}
+
+/// A tapplet's pay ref is a bridge order id: a hyphenated UUID v4. The signer checks this too,
+/// but it runs in the webview.
+fn check_tapplet_pay_ref(pay_ref: Option<&str>) -> Result<(), TransactionError> {
+    let is_uuid_v4 = pay_ref.is_some_and(|p| {
+        p.len() == 36
+            && uuid::Uuid::try_parse(p).is_ok_and(|u| {
+                u.get_version_num() == 4 && u.get_variant() == uuid::Variant::RFC4122
+            })
+    });
+    if !is_uuid_v4 {
+        return Err(TransactionError::InvalidAddress(
+            "Pay reference must be a UUID v4".to_string(),
+        ));
+    }
+    Ok(())
 }
 
 /// Claim an L1 burn on L2 behind the same gates as [`gated_l2_send`]. Refused without a
@@ -490,13 +583,17 @@ async fn pass_gates(
     kind: &SpendKind,
     payment_id: &Option<String>,
 ) -> Result<GatePass, TransactionError> {
+    if origin == SendOrigin::Tapplet {
+        check_tapplet_amount(amount_u64)?;
+    }
     let pin_configured = PinManager::pin_locked().await;
     let needs_confirmation = origin.requires_confirmation(pin_configured);
     let destination = kind.counterparty();
 
+    // No amount or counterparty in these lines: app logs go out in feedback bundles.
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: kind={} origin={} amount={amount} destination={destination} pin_configured={pin_configured} confirmation_dialog={needs_confirmation}",
+        "send gate: kind={} origin={} pin_configured={pin_configured} confirmation_dialog={needs_confirmation}",
         kind.as_str(),
         origin.as_str()
     );
@@ -513,20 +610,30 @@ async fn pass_gates(
         .await
         .map_err(|_| TransactionError::InternalError("Transaction gate closed".to_string()))?;
 
-    if needs_confirmation {
-        // Rate limit check (after acquiring gate to avoid burning quota)
-        if origin.enforces_rate_limit()
-            && !TXN_RATE_LIMITER
+    // Rate limit check (after acquiring gate to avoid burning quota). Tapplet sends behind a
+    // PIN skip the confirmation dialog, so this sits outside it.
+    if origin.enforces_rate_limit() {
+        let allowed = match origin {
+            SendOrigin::Tapplet => TAPPLET_RATE_LIMITER
                 .lock()
                 .await
-                .check_transaction_allowed()
-                .await
-        {
+                .check_allowed(TAPPLET_SENDS_PER_MINUTE),
+            _ => {
+                TXN_RATE_LIMITER
+                    .lock()
+                    .await
+                    .check_transaction_allowed()
+                    .await
+            }
+        };
+        if !allowed {
             return Err(TransactionError::RateLimited(
                 "Transaction rate limit exceeded. Try again later.".to_string(),
             ));
         }
+    }
 
+    if needs_confirmation {
         let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
         {
             let mut inflight = INFLIGHT.lock().await;
@@ -540,7 +647,7 @@ async fn pass_gates(
         let amount_display = format!("{amount} {}", kind.currency());
         info!(
             target: LOG_TARGET_APP_LOGIC,
-            "send gate: confirmation dialog emitted (request_id={request_id}, origin={}, destination={destination}, amount={amount_display})",
+            "send gate: confirmation dialog emitted (request_id={request_id}, origin={})",
             origin.as_str()
         );
 
@@ -561,7 +668,7 @@ async fn pass_gates(
 
     Ok(GatePass {
         _permit: permit,
-        pin_context: kind.pin_context(amount_u64, payment_id.clone()),
+        pin_context: kind.pin_context(origin, amount_u64, payment_id.clone()),
     })
 }
 
@@ -669,9 +776,16 @@ mod tests {
     }
 
     #[test]
-    fn only_mcp_is_rate_limited() {
+    fn mcp_and_tapplet_sends_are_rate_limited() {
         assert!(SendOrigin::Mcp.enforces_rate_limit());
         assert!(!SendOrigin::App.enforces_rate_limit());
+        assert!(SendOrigin::Tapplet.enforces_rate_limit());
+    }
+
+    #[test]
+    fn tapplet_origin_confirms_like_the_app() {
+        assert!(SendOrigin::Tapplet.requires_confirmation(false));
+        assert!(!SendOrigin::Tapplet.requires_confirmation(true));
     }
 
     #[test]
@@ -687,14 +801,18 @@ mod tests {
         assert_eq!(send.counterparty(), "addr");
         assert_eq!(burn.counterparty(), "claimkey");
         assert!(matches!(
-            send.pin_context(1, None),
+            send.pin_context(SendOrigin::App, 1, None),
             PinPromptContext::Send {
                 amount_micro_minotari: 1,
                 ..
             }
         ));
         assert!(matches!(
-            burn.pin_context(2, Some("memo".to_string())),
+            send.pin_context(SendOrigin::Tapplet, 1, None),
+            PinPromptContext::Send { origin, .. } if origin == "tapplet"
+        ));
+        assert!(matches!(
+            burn.pin_context(SendOrigin::App, 2, Some("memo".to_string())),
             PinPromptContext::Burn { amount_micro_minotari: 2, ref claim_public_key, payment_id: Some(_) }
                 if claim_public_key == "claimkey"
         ));
@@ -705,6 +823,7 @@ mod tests {
         let send = SpendKind::L2Send {
             destination: "otl_esm_addr".to_string(),
             account: "component_abc".to_string(),
+            pay_ref: None,
         };
         assert_eq!(send.as_str(), "l2_send");
         assert_eq!(send.counterparty(), "otl_esm_addr");
@@ -717,9 +836,23 @@ mod tests {
             "XTM"
         );
         assert!(matches!(
-            send.pin_context(3, None),
-            PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account, fee_micro_minotari: None }
-                if destination == "otl_esm_addr" && account == "component_abc"
+            send.pin_context(SendOrigin::App, 3, None),
+            PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account, pay_ref: None, ref origin, fee_micro_minotari: None }
+                if destination == "otl_esm_addr" && account == "component_abc" && origin == "app"
+        ));
+    }
+
+    #[test]
+    fn l2_send_pin_prompt_shows_a_tapplet_origin_and_the_pay_ref() {
+        let send = SpendKind::L2Send {
+            destination: "otl_esm_addr".to_string(),
+            account: "component_abc".to_string(),
+            pay_ref: Some("bridge-ref".to_string()),
+        };
+        assert!(matches!(
+            send.pin_context(SendOrigin::Tapplet, 3, None),
+            PinPromptContext::L2Send { pay_ref: Some(ref pay_ref), ref origin, .. }
+                if pay_ref == "bridge-ref" && origin == "tapplet"
         ));
     }
 
@@ -732,7 +865,7 @@ mod tests {
         assert_eq!(claim.counterparty(), "dae29ac8");
         assert_eq!(claim.currency(), "XTR");
         assert!(matches!(
-            claim.pin_context(4, None).with_fee(7),
+            claim.pin_context(SendOrigin::App, 4, None).with_fee(7),
             PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment, fee_micro_minotari: Some(7) }
                 if commitment == "dae29ac8"
         ));
@@ -771,6 +904,12 @@ mod tests {
         assert_eq!(SendOrigin::Mcp.as_str(), "mcp");
         assert!(SendOrigin::App.new_request_id().starts_with("app_tx_"));
         assert!(SendOrigin::Mcp.new_request_id().starts_with("mcp_tx_"));
+        assert_eq!(SendOrigin::Tapplet.as_str(), "tapplet");
+        assert!(
+            SendOrigin::Tapplet
+                .new_request_id()
+                .starts_with("tapplet_tx_")
+        );
         assert_ne!(
             SendOrigin::Mcp.new_request_id(),
             SendOrigin::Mcp.new_request_id(),
@@ -808,6 +947,119 @@ mod tests {
     #[test]
     fn parse_amount_rejects_negative() {
         assert!(parse_amount("-1").is_err());
+    }
+
+    // =========================================================================
+    // L2 pay reference
+    // =========================================================================
+
+    fn ootle_address() -> OotleAddress {
+        let key =
+            tari_template_lib::prelude::RistrettoPublicKeyBytes::try_from([1u8; 32].as_slice())
+                .expect("key bytes");
+        OotleAddress::new(tari_ootle_wallet_sdk::Network::Esmeralda, key, key)
+    }
+
+    fn memo_pay_ref(memo: &Memo) -> Vec<u8> {
+        memo.as_pay_ref().expect("memo has a pay ref").to_vec()
+    }
+
+    #[test]
+    fn l2_send_memo_carries_an_explicit_pay_ref() {
+        let pay_ref = "0f8fad5b-d9cb-469f-a165-70867728950e";
+        let (shown, memo) = l2_send_memo(Some(pay_ref), &ootle_address())
+            .expect("valid pay ref")
+            .expect("a memo");
+        assert_eq!(shown, pay_ref);
+        assert_eq!(memo_pay_ref(&memo), pay_ref.as_bytes());
+    }
+
+    #[test]
+    fn l2_send_memo_falls_back_to_the_address_pay_ref() {
+        let embedded = PayRef::new_checked(b"from-address".as_slice()).expect("pay ref");
+        let address = ootle_address().with_pay_ref(embedded);
+
+        let (shown, memo) = l2_send_memo(None, &address)
+            .expect("no pay ref")
+            .expect("a memo");
+        assert_eq!(shown, "from-address");
+        assert_eq!(memo_pay_ref(&memo), b"from-address");
+
+        let (_, same) = l2_send_memo(Some("from-address"), &address)
+            .expect("same pay ref")
+            .expect("a memo");
+        assert_eq!(memo_pay_ref(&same), b"from-address");
+    }
+
+    #[test]
+    fn l2_send_memo_rejects_a_pay_ref_that_differs_from_the_address_one() {
+        let embedded = PayRef::new_checked(b"from-address".as_slice()).expect("pay ref");
+        let address = ootle_address().with_pay_ref(embedded);
+        let err = l2_send_memo(Some("explicit"), &address).expect_err("rejected");
+        assert!(matches!(err, TransactionError::InvalidAddress(_)));
+    }
+
+    #[test]
+    fn l2_send_memo_shows_a_pay_ref_that_is_not_printable_ascii_in_hex() {
+        for bytes in [
+            vec![0xff, 0xfe, b'a'],
+            "café".as_bytes().to_vec(),
+            "ref\u{200D}".as_bytes().to_vec(),
+            "line\nbreak".as_bytes().to_vec(),
+        ] {
+            let embedded = PayRef::new_checked(bytes.clone()).expect("pay ref");
+            let address = ootle_address().with_pay_ref(embedded);
+            let (shown, memo) = l2_send_memo(None, &address)
+                .expect("the recipient's bytes are sent")
+                .expect("a memo");
+            assert_eq!(memo_pay_ref(&memo), bytes.as_slice());
+            assert_eq!(shown, format!("0x{}", hex::encode(&bytes)), "{bytes:?}");
+        }
+    }
+
+    #[test]
+    fn tapplet_amounts_stay_within_what_the_pin_prompt_shows_exactly() {
+        assert!(check_tapplet_amount(MAX_TAPPLET_AMOUNT).is_ok());
+        let err =
+            check_tapplet_amount(MAX_TAPPLET_AMOUNT + 1).expect_err("too large for the prompt");
+        assert!(matches!(err, TransactionError::InvalidAmount(_)));
+    }
+
+    #[test]
+    fn tapplet_pay_refs_must_be_uuid_v4() {
+        let v4 = "3f2b8c1e-9a4d-4e6f-8b2a-1c3d5e7f9a0b";
+        assert!(check_tapplet_pay_ref(Some(v4)).is_ok());
+        assert!(check_tapplet_pay_ref(Some(&v4.to_uppercase())).is_ok());
+        for bad in [
+            None,
+            Some("not-a-uuid"),
+            Some("3f2b8c1e9a4d4e6f8b2a1c3d5e7f9a0b"),
+            Some("{3f2b8c1e-9a4d-4e6f-8b2a-1c3d5e7f9a0b}"),
+            Some("3f2b8c1e-9a4d-1e6f-8b2a-1c3d5e7f9a0b"),
+            Some("3f2b8c1e-9a4d-4e6f-cb2a-1c3d5e7f9a0b"),
+        ] {
+            let err = check_tapplet_pay_ref(bad).expect_err("refused");
+            assert!(
+                matches!(err, TransactionError::InvalidAddress(_)),
+                "{bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn l2_send_memo_is_empty_without_any_pay_ref() {
+        assert!(l2_send_memo(None, &ootle_address()).expect("ok").is_none());
+    }
+
+    #[test]
+    fn l2_send_memo_rejects_an_empty_or_oversized_pay_ref() {
+        let too_long = "a".repeat(PayRef::MAX_LEN + 1);
+        for pay_ref in ["", too_long.as_str()] {
+            let err = l2_send_memo(Some(pay_ref), &ootle_address()).expect_err("rejected");
+            assert!(matches!(err, TransactionError::InvalidAddress(_)));
+        }
+        let longest = "a".repeat(PayRef::MAX_LEN);
+        assert!(l2_send_memo(Some(&longest), &ootle_address()).is_ok());
     }
 
     // =========================================================================
