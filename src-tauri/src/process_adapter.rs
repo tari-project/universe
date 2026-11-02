@@ -79,10 +79,11 @@ fn should_report_permission_error(name: &str, path: &Path) -> bool {
 /// once per binary per session.
 pub(crate) async fn ensure_binary_permissions(name: &str, path: &Path) -> Result<(), Error> {
     if let Err(e) = set_permissions(path).await {
-        let msg = format_permission_error(name, path, &e);
-        error!(target: LOG_TARGET_APP_LOGIC, "{msg}");
+        error!(target: LOG_TARGET_APP_LOGIC, "{}", format_permission_error(name, path, &e));
+        // Callers (e.g. the miner managers) forward this error to Sentry, so it must not carry the path.
+        let msg = sentry_permission_error(name, &e);
         if should_report_permission_error(name, path) {
-            sentry::capture_message(&sentry_permission_error(name, &e), sentry::Level::Error);
+            sentry::capture_message(&msg, sentry::Level::Error);
         }
         return Err(e.context(msg));
     }
@@ -778,5 +779,15 @@ mod tests {
         let msg = sentry_permission_error("xmrig", &err.context("/home/alice/xmrig"));
         assert!(msg.starts_with("Could not set permissions on xmrig binary"));
         assert!(!msg.contains("alice"));
+    }
+
+    #[tokio::test]
+    async fn ensure_binary_permissions_error_omits_path() {
+        let path = Path::new("/home/alice/missing/xmrig");
+        let err = ensure_binary_permissions("xmrig", path)
+            .await
+            .expect_err("missing binary");
+        assert!(!format!("{err}").contains("alice"));
+        assert!(!format!("{err:#}").contains("alice"));
     }
 }

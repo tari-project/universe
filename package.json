@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "1.6.19",
+    "version": "1.6.20",
     "type": "module",
     "packageManager": "pnpm@11.9.0",
     "scripts": {
@@ -29,7 +29,7 @@
         "@tanstack/react-query": "^5.90.20",
         "@tari-project/tari-tower": "^0.2.1",
         "@tari-project/wxtm-bridge-backend-api": "^0.1.64",
-        "@tauri-apps/api": "2.11.1",
+        "@tauri-apps/api": "2.12.4",
         "@tauri-apps/plugin-clipboard-manager": "2.3.2",
         "@tauri-apps/plugin-dialog": "2.6.0",
         "@tauri-apps/plugin-os": "2.3.2",
@@ -39,7 +39,7 @@
         "hls.js": "^1.6.14",
         "i18next": "^25.8.0",
         "i18next-browser-languagedetector": "^8.2.0",
-        "i18next-http-backend": "^4.0.2",
+        "i18next-http-backend": "^4.0.6",
         "motion": "^12.29.2",
         "react": "^19.2.4",
         "react-countdown": "^2.3.6",
@@ -59,7 +59,7 @@
         "@eslint/js": "^9.39.1",
         "@nabla/vite-plugin-eslint": "^2.0.6",
         "@taplo/cli": "^0.7.0",
-        "@tauri-apps/cli": "^2.10.0",
+        "@tauri-apps/cli": "^2.12.4",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^24.10.9",
@@ -67,7 +67,7 @@
         "@types/react-dom": "^19.2.3",
         "@typescript-eslint/parser": "^8.46.4",
         "@vitejs/plugin-react": "^5.1.2",
-        "@vitest/coverage-v8": "^4.1.11",
+        "@vitest/coverage-v8": "^4.1.12",
         "babel-plugin-react-compiler": "19.1.0-rc.3",
         "babel-plugin-styled-components": "^2.1.4",
         "dotenv": "^17.2.3",
@@ -86,7 +86,7 @@
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.55.0",
         "vite": "^7.3.7",
-        "vitest": "^4.1.11"
+        "vitest": "^4.1.12"
     },
     "overrides": {
         "minimatch": ">=10.2.1"

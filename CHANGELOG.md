@@ -1,3 +1,14 @@
+🚀 TARI UNIVERSE v1.6.20: Deposit Reference Fix, Part Two
+
+_October 29, 2026_
+
+✨ WHAT'S FIXED
+
+- 💸 **Payment IDs that aren't text** – v1.6.19 read the payment ID in a deposit address as text, so some IDs failed with "Destination address contains a non-text payment ID". Tari Universe now sends the payment ID exactly as it is in the address.
+- 🔧 **Under the hood** – Updated the built-in wallet to minotari v0.5.2. It refuses a payment ID too large to send before reserving any funds, and your transaction history now shows the payment ID that was actually sent.
+
+---
+
 🚀 TARI UNIVERSE v1.6.19: Deposit Reference Fix
 
 _October 29, 2026_

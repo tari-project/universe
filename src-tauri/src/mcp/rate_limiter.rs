@@ -40,9 +40,12 @@ impl TransactionRateLimiter {
     /// Check if a transaction is allowed under the sliding window rate limit.
     /// Returns `true` if the transaction is within the configured limit per minute.
     pub async fn check_transaction_allowed(&mut self) -> bool {
-        let config = ConfigMcp::content().await;
-        let limit = *config.rate_limit_transaction();
+        let limit = *ConfigMcp::content().await.rate_limit_transaction();
+        self.check_allowed(limit)
+    }
 
+    /// Same sliding window, with a limit that doesn't come from the MCP config.
+    pub fn check_allowed(&mut self, limit: u32) -> bool {
         let now = Instant::now();
         let window = std::time::Duration::from_secs(60);
 
