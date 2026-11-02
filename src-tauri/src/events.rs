@@ -265,6 +265,9 @@ pub enum PinPromptContext {
     RestoreWalletDetails,
     /// The stored seed is PIN-protected although the config says no PIN is set.
     SeedNeedsPin,
+    /// One-time ask at startup: the Monero seed is still on the legacy PIN cipher and needs
+    /// the PIN to move to the current one.
+    SecurityUpgrade,
     /// Unlocking (or first enabling) the L2 wallet.
     L2Unlock,
     /// Revealing the L2 seed words.

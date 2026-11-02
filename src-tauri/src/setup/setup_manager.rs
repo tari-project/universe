@@ -493,6 +493,11 @@ impl SetupManager {
         // migration never loses its legacy recovery files.
         if wallet_initialized {
             InternalWallet::purge_legacy_credential_files(&app_handle).await;
+            // Waits on a PIN dialog, so it must not hold up setup.
+            let app_handle = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                InternalWallet::ask_for_monero_seed_cipher_upgrade(&app_handle).await;
+            });
         }
 
         // Trigger it here so we can update UI when new wallet is created

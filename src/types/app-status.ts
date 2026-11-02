@@ -65,6 +65,8 @@ export enum OutputStatus {
     Locked = 'Locked',
     Spent = 'Spent',
     SpentUnconfirmed = 'SpentUnconfirmed',
+    Unconfirmed = 'Unconfirmed',
+    Rejected = 'Rejected',
 }
 
 /** Rust `FixedHash` is `#[serde(transparent)]` over `[u8; 32]`, so it arrives as a byte array. */

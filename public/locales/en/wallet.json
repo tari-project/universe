@@ -27,6 +27,7 @@
     "source-transfer": "Transfer",
     "source-unknown": "Transaction",
     "status": "Status",
+    "status-unavailable": "Status unavailable",
     "status-cancelled": "Cancelled",
     "status-confirmed": "Confirmed",
     "status-locked": "Locked",
@@ -89,6 +90,8 @@
       "l2-seed-reset": "Enter your PIN to replace your Layer 2 wallet with one restored from your Tari seed. If you did not start this, close this dialog.",
       "restore-wallet-details": "Your wallet details were missing from the settings file. Enter your PIN to restore them from your wallet keys. Nothing else will change.",
       "seed-needs-pin": "Your wallet keys are protected by a PIN, but your settings say no PIN is set. Your seed is safe and nothing has been changed. Enter your PIN to continue.",
+      "security-upgrade-title": "Security upgrade",
+      "security-upgrade": "We've strengthened how your PIN protects your Monero wallet. Enter your PIN once to move your wallet to the new protection. Your PIN, seed words and funds stay the same. You can close this and we'll ask again next time.",
       "approve-burn": "Approve burn",
       "approve-burn-subtitle": "Enter your PIN to burn these funds. Burning cannot be undone; only the L2 claim key can recover them. If you did not start this, close this dialog."
     },

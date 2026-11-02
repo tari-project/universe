@@ -9,6 +9,7 @@ import { AccordionItem } from '@app/components/transactions/components/Accordion
 import { DisplayedTransaction, TransactionInput, TransactionOutput } from '@app/types/app-status.ts';
 import { getTransactionListEntries, getInputDetails, getOutputDetails } from './getTransactionListEntries.tsx';
 import { Wrapper, OperationsSection, OperationsTitle } from './styles.ts';
+import { useCurrentOutputStatuses } from './useCurrentOutputStatuses.ts';
 
 interface TransactionDetailsProps {
     transaction: DisplayedTransaction;
@@ -41,6 +42,7 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
     // Get inputs and outputs from details
     const inputs = transaction.details.inputs || [];
     const outputs = transaction.details.outputs || [];
+    const currentOutputStatuses = useCurrentOutputStatuses(outputs);
     const hasDetails = inputs.length > 0 || outputs.length > 0;
 
     return (
@@ -80,7 +82,7 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
 
                         {/* Render outputs */}
                         {outputs.map((output: TransactionOutput, index: number) => {
-                            const operationEntries = getOutputDetails(output);
+                            const operationEntries = getOutputDetails(output, currentOutputStatuses[index] ?? null);
                             const subtitle = `${t('details.amount-subtitle', { amount: output.amount })} • ${output.output_type}`;
                             const outputIndex = inputs.length + index;
 
