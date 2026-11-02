@@ -79,6 +79,7 @@ impl PinManager {
     }
 
     pub async fn validate_pin(pin_password: SafePassword) -> Result<(), anyhow::Error> {
+        let _guard = PIN_VALIDATION_LOCK.lock().await;
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         let mut pin_locker = PinLocker::new(pin_locker_state);
         if let Some(remaining_seconds) = pin_locker.locked_out_seconds().await {
@@ -116,10 +117,9 @@ impl PinManager {
             }
         } else {
             log::error!(target: LOG_TARGET_APP_LOGIC, "Neither Tari Seed nor Monero Seed available to validate against.");
-            panic!("Neither Tari Seed nor Monero Seed available to validate against.");
-            // Edge case, we can't actually validate the pin
-            // because we don't have neither a Tari wallet nor a Monero wallet
-            // to check against.
+            return Err(anyhow::anyhow!(
+                "Neither Tari Seed nor Monero Seed available to validate against."
+            ));
         }
 
         pin_locker.reset_pin_attempts().await?;
@@ -139,6 +139,10 @@ impl PinManager {
 }
 
 // Utils
+
+/// Serialises PIN validation and lockout state updates so concurrent callers
+/// cannot race on `PinLockerState` attempt counters.
+static PIN_VALIDATION_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 /// Only one PIN prompt at a time, so the user always knows which dialog they are
 /// answering. Held only for a single emit-and-wait, never across prompts, so a caller
