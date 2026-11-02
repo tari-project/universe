@@ -67,8 +67,8 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::send_gate::{
-    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
-    gated_l2_send, gated_send,
+    EffectivePaymentId, GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin,
+    gated_burn, gated_l2_claim, gated_l2_send, gated_send, resolve_effective_payment_id,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -1712,6 +1712,17 @@ pub async fn send_one_sided_from_tapplet(
     })
     .await
     .map_err(|e| e.to_string())
+}
+
+/// The payment id an L1 send will carry: the address's embedded id when it has one,
+/// otherwise the caller's Message. The in-app review screen asks for this before the
+/// send, which is when the PIN prompt or the confirmation dialog shows the same value.
+#[tauri::command]
+pub async fn effective_l1_payment_id(
+    destination: String,
+    payment_id: Option<String>,
+) -> Result<EffectivePaymentId, String> {
+    resolve_effective_payment_id(&destination, payment_id.as_deref()).map_err(|e| e.to_string())
 }
 
 /// Estimate the L1 network fee (in µT) for a one-sided send before the user approves it.

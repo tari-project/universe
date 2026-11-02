@@ -3,7 +3,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusList, StatusListEntry } from '../components/StatusList/StatusList';
 import TariPurpleLogo from './SendReview/icons/TariPurpleLogo';
-import { Amount, Currency, WhiteBox, WhiteBoxLabel, WhiteBoxValue, Wrapper } from './SendReview/styles';
+import { Amount, Currency, OverrideNotice, WhiteBox, WhiteBoxLabel, WhiteBoxValue, Wrapper } from './SendReview/styles';
 import type { SpendKind } from '@app/types/events-payloads.ts';
 
 interface Props {
@@ -11,6 +11,8 @@ interface Props {
     /** Recipient address for a send, L2 claim public key for a burn, Ootle address for an L2 send, burn commitment for an L2 claim. */
     destination: string;
     paymentId?: string | null;
+    /** The destination address replaced the typed message with its own payment id. */
+    paymentIdOverridden?: boolean;
     feeMicroMinotari?: number | null;
     subtitle?: string;
     kind?: SpendKind;
@@ -25,6 +27,7 @@ export function TransactionContextSummary({
     amountMicroMinotari,
     destination,
     paymentId,
+    paymentIdOverridden,
     feeMicroMinotari,
     subtitle,
     kind = 'send',
@@ -80,6 +83,9 @@ export function TransactionContextSummary({
                 </WhiteBoxValue>
             </WhiteBox>
             <StatusList entries={entries} />
+            {paymentIdOverridden && (
+                <OverrideNotice data-testid="payment-id-overridden">{t('send.payment-id-overridden')}</OverrideNotice>
+            )}
             {subtitle && (
                 <Typography variant="p" style={{ opacity: 0.5, fontSize: 12 }}>
                     {subtitle}

@@ -12,6 +12,16 @@ import { setError as setStoreError } from '@app/store';
 import { PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+import type { EffectiveL1PaymentId } from '@app/types/events-payloads.ts';
+
+function isEffectiveL1PaymentId(value: unknown): value is EffectiveL1PaymentId {
+    if (!value || typeof value !== 'object') return false;
+    const record = value as Record<string, unknown>;
+    return (
+        typeof record.payment_id_overridden === 'boolean' &&
+        (record.payment_id === null || typeof record.payment_id === 'string')
+    );
+}
 
 interface SendModalProps {
     section: string;
@@ -25,6 +35,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const [status, setStatus] = useState<SendStatus>('fields');
     const [isBack, setIsBack] = useState(false);
     const [feeMicroMinotari, setFeeMicroMinotari] = useState<number | null>(null);
+    const [resolvedPaymentId, setResolvedPaymentId] = useState<EffectiveL1PaymentId | null>(null);
     // Without a PIN the backend's confirmation dialog is the review step.
     const hasReviewStep = useWalletStore((s) => s.is_pin_locked);
 
@@ -47,6 +58,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         reset();
         setIsBack(false);
         setFeeMicroMinotari(null);
+        setResolvedPaymentId(null);
         setStatus('fields');
     };
 
@@ -57,6 +69,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     function handleBack() {
         estimateRequestIdRef.current += 1;
+        setResolvedPaymentId(null);
         setStatus('fields');
         setIsBack(true);
     }
@@ -86,6 +99,28 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                         setError('amount', { message: `${error}` });
                         return;
                     }
+                }
+                try {
+                    const effective = await invoke('effective_l1_payment_id', {
+                        destination: data.address,
+                        paymentId: data.message,
+                    });
+                    if (estimateRequestIdRef.current !== requestId) {
+                        return;
+                    }
+                    if (!isEffectiveL1PaymentId(effective)) {
+                        setResolvedPaymentId(null);
+                        setError('address', { message: t('send.error-invalid-address') });
+                        return;
+                    }
+                    setResolvedPaymentId(effective);
+                } catch (error) {
+                    if (estimateRequestIdRef.current !== requestId) {
+                        return;
+                    }
+                    setResolvedPaymentId(null);
+                    setError('address', { message: `${error}` });
+                    return;
                 }
                 setStatus('reviewing');
                 return;
@@ -157,7 +192,8 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 setStatus={setStatus}
                 amount={methods.getValues().amount}
                 address={methods.getValues().address}
-                message={methods.getValues().message}
+                message={resolvedPaymentId ? (resolvedPaymentId.payment_id ?? undefined) : methods.getValues().message}
+                paymentIdOverridden={resolvedPaymentId?.payment_id_overridden}
                 feeMicroMinotari={feeMicroMinotari}
                 handleClose={handleClose}
             />

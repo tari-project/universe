@@ -23,6 +23,8 @@ export interface McpPendingTransaction {
     /** Defaults to `mcp`; `app` or `tapplet` means that send command asked for approval. */
     origin?: TransactionOrigin;
     payment_id?: string | null;
+    /** The destination address replaced the typed message with its own payment id. */
+    payment_id_overridden?: boolean;
     fee_micro_minotari?: number | null;
 }
 

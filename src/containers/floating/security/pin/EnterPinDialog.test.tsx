@@ -161,6 +161,26 @@ describe('EnterPinDialog', () => {
         expect(screen.getByText('send.network-fee')).toBeInTheDocument();
         expect(screen.getByText('send.fee-unavailable')).toBeInTheDocument();
     });
+
+    it('shows the address payment id and warns when it replaces the message', () => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 11,
+            pinContext: {
+                kind: 'send',
+                amount_micro_minotari: 2_000_000,
+                destination: 'f4destination',
+                payment_id: 'aa'.repeat(16),
+                payment_id_overridden: true,
+                origin: 'app',
+                fee_micro_minotari: 1_250,
+            },
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText('aa'.repeat(16))).toBeInTheDocument();
+        expect(screen.getByTestId('payment-id-overridden')).toHaveTextContent('send.payment-id-overridden');
+        expect(en.send['payment-id-overridden']).toContain('payment ID');
+    });
 });
 
 describe('ForgotPinDialog', () => {

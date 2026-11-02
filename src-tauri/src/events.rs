@@ -238,7 +238,12 @@ pub struct McpTransactionConfirmationPayload {
     /// Which caller asked for the transaction: `"app"` (in-app UI, tapplet bridge,
     /// anything reaching the Tauri command) or `"mcp"` (MCP transaction tool).
     pub origin: String,
+    /// Payment id the transaction will carry. For an L1 send this is the address's
+    /// embedded id when it has one, otherwise the caller's Message. Text is shown as
+    /// text; binary ids are hex.
     pub payment_id: Option<String>,
+    /// The destination address replaced the caller's Message with its own payment id.
+    pub payment_id_overridden: bool,
     pub fee_micro_minotari: Option<u64>,
 }
 
@@ -251,7 +256,11 @@ pub enum PinPromptContext {
     Send {
         amount_micro_minotari: u64,
         destination: String,
+        /// Payment id the send will carry: the address's embedded id when it has one,
+        /// otherwise the caller's Message. Text is shown as text; binary ids are hex.
         payment_id: Option<String>,
+        /// The destination address replaced the caller's Message with its own payment id.
+        payment_id_overridden: bool,
         origin: String,
         fee_micro_minotari: Option<u64>,
     },

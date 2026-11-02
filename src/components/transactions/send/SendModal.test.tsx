@@ -41,6 +41,11 @@ const sendCalls = () =>
 describe('SendModal', () => {
     beforeEach(() => {
         vi.mocked(invoke).mockReset();
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'effective_l1_payment_id') {
+                return { payment_id: null, payment_id_overridden: false };
+            }
+        }) as typeof invoke);
     });
 
     it('sends on submit when there is no PIN', async () => {
@@ -74,6 +79,9 @@ describe('SendModal', () => {
         useWalletStore.setState({ is_pin_locked: true });
         vi.mocked(invoke).mockImplementation((async (cmd: string) => {
             if (cmd === 'estimate_l1_send_fee') return 1_250;
+            if (cmd === 'effective_l1_payment_id') {
+                return { payment_id: null, payment_id_overridden: false };
+            }
         }) as typeof invoke);
 
         render(<SendModal section="send" setSection={vi.fn()} />);
@@ -87,6 +95,27 @@ describe('SendModal', () => {
         });
         expect(screen.getByText('send.network-fee')).toBeInTheDocument();
         expect(screen.getByText('0.001250 XTM')).toBeInTheDocument();
+        expect(screen.queryByTestId('payment-id-overridden')).not.toBeInTheDocument();
+    });
+
+    it('shows the address payment id on review when it replaces the message', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'estimate_l1_send_fee') return 1_250;
+            if (cmd === 'effective_l1_payment_id') {
+                return { payment_id: 'embedded-id', payment_id_overridden: true };
+            }
+        }) as typeof invoke);
+
+        render(<SendModal section="send" setSection={vi.fn()} />);
+        fireEvent.click(await screen.findByTestId('send-review-button'));
+
+        expect(await screen.findByText('embedded-id')).toBeInTheDocument();
+        expect(screen.getByTestId('payment-id-overridden')).toHaveTextContent('send.payment-id-overridden');
+        expect(invoke).toHaveBeenCalledWith('effective_l1_payment_id', {
+            destination: 'f4destination',
+            paymentId: undefined,
+        });
     });
 
     it('stays on the form when fee estimation fails', async () => {

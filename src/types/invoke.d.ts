@@ -14,6 +14,7 @@ import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from './tapplets/tapplet.types';
 import { SchedulerEventTiming, SchedulerEventType } from './mining/schedule.ts';
 import { Language } from '../i18initializer.ts';
+import { EffectiveL1PaymentId } from './events-payloads.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -28,6 +29,10 @@ declare module '@tauri-apps/api/core' {
         param: 'estimate_l1_send_fee',
         payload: { destination: string; amount: string; paymentId?: string }
     ): Promise<number>;
+    function invoke(
+        param: 'effective_l1_payment_id',
+        payload: { destination: string; paymentId?: string }
+    ): Promise<EffectiveL1PaymentId>;
     function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }

@@ -50,7 +50,10 @@ use std::sync::LazyLock;
 use std::time::Duration;
 
 use log::{info, warn};
+use minotari_wallet::transactions::one_sided_transaction::Recipient;
+use serde::Serialize;
 use tari_common::configuration::Network;
+use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_ootle_wallet_sdk::{OotleAddress, PayRef, crypto::memo::Memo};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
@@ -61,6 +64,7 @@ use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::ootle::OotleWalletManager;
 use crate::pin::PinManager;
+use crate::wallet::minotari_wallet::transaction::parse_destination_address;
 use crate::wallet::minotari_wallet::{BurnReceipt, MinotariWalletManager};
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
@@ -230,12 +234,14 @@ impl SpendKind {
         origin: SendOrigin,
         amount_micro_minotari: u64,
         payment_id: Option<String>,
+        payment_id_overridden: bool,
     ) -> PinPromptContext {
         match self {
             SpendKind::Send { destination } => PinPromptContext::Send {
                 amount_micro_minotari,
                 destination: destination.clone(),
                 payment_id,
+                payment_id_overridden,
                 origin: origin.as_str().to_string(),
                 fee_micro_minotari: None,
             },
@@ -270,6 +276,79 @@ impl SpendKind {
             SpendKind::L2Send { .. } | SpendKind::L2Claim { .. } => "XTR",
             SpendKind::Send { .. } | SpendKind::Burn { .. } => "XTM",
         }
+    }
+}
+
+/// Payment id an L1 send will actually carry, in the form the consent screens show.
+///
+/// Since minotari 0.3.0 an address with the payment-id feature replaces the caller's
+/// Message: [`Recipient::payment_id_bytes`] sends the address's bytes as they are, text
+/// or not. Text is shown as text. Anything else is hex, so a binary exchange reference
+/// is visible instead of the Message the caller typed.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EffectivePaymentId {
+    /// `None` when the output carries no payment id.
+    pub payment_id: Option<String>,
+    /// The address's embedded id is what will be sent, and it is not the Message the
+    /// caller typed. An empty Message still differs from an embedded id.
+    pub payment_id_overridden: bool,
+}
+
+/// Decode the payment id [`Recipient::payment_id_bytes`] will put on chain.
+pub fn effective_payment_id(
+    address: &TariAddress,
+    typed_payment_id: Option<&str>,
+) -> EffectivePaymentId {
+    let typed = typed_payment_id.filter(|id| !id.is_empty());
+    let recipient = Recipient {
+        address: address.clone(),
+        amount: MicroMinotari(0),
+        payment_id: typed.map(str::to_string),
+    };
+    let payment_id = recipient
+        .payment_id_bytes()
+        .filter(|bytes| !bytes.is_empty())
+        .map(display_payment_id_bytes);
+    let embedded = address.features().contains(TariAddressFeatures::PAYMENT_ID);
+    EffectivePaymentId {
+        payment_id_overridden: embedded && payment_id.as_deref() != typed,
+        payment_id,
+    }
+}
+
+fn display_payment_id_bytes(bytes: Vec<u8>) -> String {
+    match String::from_utf8(bytes) {
+        Ok(text) => text,
+        Err(err) => hex::encode(err.into_bytes()),
+    }
+}
+
+/// [`effective_payment_id`] for a destination string, parsed the same way the send is.
+pub fn resolve_effective_payment_id(
+    destination: &str,
+    typed_payment_id: Option<&str>,
+) -> Result<EffectivePaymentId, TransactionError> {
+    let address = parse_destination_address(destination)
+        .map_err(|e| TransactionError::InvalidAddress(e.to_string()))?;
+    Ok(effective_payment_id(&address, typed_payment_id))
+}
+
+/// Payment id fields for the confirmation payload and the PIN prompt.
+///
+/// Only an L1 send can have an id embedded in the address. Burns and L2 spends show the
+/// caller's own reference.
+fn consent_payment_id(
+    kind: &SpendKind,
+    typed_payment_id: Option<&str>,
+) -> Result<EffectivePaymentId, TransactionError> {
+    match kind {
+        SpendKind::Send { destination } => {
+            resolve_effective_payment_id(destination, typed_payment_id)
+        }
+        _ => Ok(EffectivePaymentId {
+            payment_id: typed_payment_id.map(str::to_string),
+            payment_id_overridden: false,
+        }),
     }
 }
 
@@ -587,6 +666,9 @@ async fn pass_gates(
     if origin == SendOrigin::Tapplet {
         check_tapplet_amount(amount_u64)?;
     }
+    // Before any dialog: a bad address fails here, and the screens below show the id
+    // that will go on chain rather than the Message the caller typed.
+    let consent = consent_payment_id(kind, payment_id.as_deref())?;
     let pin_configured = PinManager::pin_locked().await;
     let needs_confirmation = origin.requires_confirmation(pin_configured);
     let destination = kind.counterparty();
@@ -653,6 +735,8 @@ async fn pass_gates(
         );
 
         let fee_micro_minotari = if matches!(kind, SpendKind::Send { .. }) {
+            // The caller's Message, not the display form. A binary embedded id is shown
+            // as hex, and the estimator resolves the bytes the output will carry itself.
             MinotariWalletManager::estimate_one_sided_fee(
                 destination,
                 amount_u64,
@@ -671,7 +755,8 @@ async fn pass_gates(
             amount_micro_minotari: amount_u64,
             amount_display,
             origin: origin.as_str().to_string(),
-            payment_id: payment_id.clone(),
+            payment_id: consent.payment_id.clone(),
+            payment_id_overridden: consent.payment_id_overridden,
             fee_micro_minotari,
         })
         .await;
@@ -682,7 +767,12 @@ async fn pass_gates(
 
     Ok(GatePass {
         _permit: permit,
-        pin_context: kind.pin_context(origin, amount_u64, payment_id.clone()),
+        pin_context: kind.pin_context(
+            origin,
+            amount_u64,
+            consent.payment_id,
+            consent.payment_id_overridden,
+        ),
     })
 }
 
@@ -765,7 +855,9 @@ fn deny_and_log(txn: InFlightTxn) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use minotari_wallet::transactions::one_sided_transaction::Recipient;
     use serial_test::serial;
+    use tari_common_types::tari_address::TariAddress;
 
     // =========================================================================
     // Gate policy
@@ -815,7 +907,8 @@ mod tests {
         assert_eq!(send.counterparty(), "addr");
         assert_eq!(burn.counterparty(), "claimkey");
         assert!(matches!(
-            send.pin_context(SendOrigin::App, 1, None).with_fee(25),
+            send.pin_context(SendOrigin::App, 1, None, false)
+                .with_fee(25),
             PinPromptContext::Send {
                 amount_micro_minotari: 1,
                 fee_micro_minotari: Some(25),
@@ -823,11 +916,11 @@ mod tests {
             }
         ));
         assert!(matches!(
-            send.pin_context(SendOrigin::Tapplet, 1, None),
+            send.pin_context(SendOrigin::Tapplet, 1, None, false),
             PinPromptContext::Send { origin, .. } if origin == "tapplet"
         ));
         assert!(matches!(
-            burn.pin_context(SendOrigin::App, 2, Some("memo".to_string())),
+            burn.pin_context(SendOrigin::App, 2, Some("memo".to_string()), false),
             PinPromptContext::Burn { amount_micro_minotari: 2, ref claim_public_key, payment_id: Some(_) }
                 if claim_public_key == "claimkey"
         ));
@@ -851,7 +944,7 @@ mod tests {
             "XTM"
         );
         assert!(matches!(
-            send.pin_context(SendOrigin::App, 3, None),
+            send.pin_context(SendOrigin::App, 3, None, false),
             PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account, pay_ref: None, ref origin, fee_micro_minotari: None }
                 if destination == "otl_esm_addr" && account == "component_abc" && origin == "app"
         ));
@@ -865,7 +958,7 @@ mod tests {
             pay_ref: Some("bridge-ref".to_string()),
         };
         assert!(matches!(
-            send.pin_context(SendOrigin::Tapplet, 3, None),
+            send.pin_context(SendOrigin::Tapplet, 3, None, false),
             PinPromptContext::L2Send { pay_ref: Some(ref pay_ref), ref origin, .. }
                 if pay_ref == "bridge-ref" && origin == "tapplet"
         ));
@@ -880,7 +973,7 @@ mod tests {
         assert_eq!(claim.counterparty(), "dae29ac8");
         assert_eq!(claim.currency(), "XTR");
         assert!(matches!(
-            claim.pin_context(SendOrigin::App, 4, None).with_fee(7),
+            claim.pin_context(SendOrigin::App, 4, None, false).with_fee(7),
             PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment, fee_micro_minotari: Some(7) }
                 if commitment == "dae29ac8"
         ));
@@ -930,6 +1023,151 @@ mod tests {
             SendOrigin::Mcp.new_request_id(),
             "request ids must be unique per request"
         );
+    }
+
+    // Same Esmeralda address the send-validation tests use: no embedded payment id.
+    const ESME_ONE_SIDED_ADDRESS: &str = "f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g";
+    // Exchange-style fixtures from the wallet send tests. They are not this wallet's
+    // network, so the payload builder rejects them; the decoder still has to agree
+    // with `Recipient::payment_id_bytes`.
+    const MAINNET_MEXC_DEPOSIT_ADDRESS: &str = "165DUuzQoKG9BaBqprN3ZmsMRfvGHMwNwCpehJUqGoGLsSDtB535XA3PPzfRZhu2uYM9xfT8JsKoXEquWMr6XVwKK46oQHdBBjJg3sveDnoiE4cr2HBSyGx8qdxRoUEsbKsZD9f";
+    const LOCALNET_DEPOSIT_ADDRESS: &str = "H6BhBUPxTJWtZVxhbExYLz623LRHXLKSaaVYZWXK2Yvn5jP4nufiUQzKo6fgHp2t3VuY6PiGGPubmynEDzxyXDXjAXPedBhZFgJT4dAVXEW1re";
+
+    fn address_with_payment_id(payment_id: &[u8]) -> String {
+        TariAddress::from_str(ESME_ONE_SIDED_ADDRESS)
+            .unwrap()
+            .with_memo_field_payment_id(payment_id.to_vec())
+            .unwrap()
+            .to_base58()
+    }
+
+    #[test]
+    fn consent_keeps_the_typed_message_when_the_address_has_no_payment_id() {
+        let kind = SpendKind::Send {
+            destination: ESME_ONE_SIDED_ADDRESS.to_string(),
+        };
+        let consent = consent_payment_id(&kind, Some("invoice-42")).unwrap();
+        assert_eq!(consent.payment_id.as_deref(), Some("invoice-42"));
+        assert!(!consent.payment_id_overridden);
+        assert!(matches!(
+            kind.pin_context(
+                SendOrigin::App,
+                1,
+                consent.payment_id.clone(),
+                consent.payment_id_overridden,
+            ),
+            PinPromptContext::Send {
+                payment_id: Some(ref id),
+                payment_id_overridden: false,
+                ..
+            } if id == "invoice-42"
+        ));
+
+        let empty = consent_payment_id(&kind, Some("")).unwrap();
+        assert_eq!(empty.payment_id, None);
+        assert!(!empty.payment_id_overridden);
+    }
+
+    #[test]
+    fn consent_shows_an_embedded_payment_id_and_flags_a_different_message() {
+        let kind = SpendKind::Send {
+            destination: address_with_payment_id(b"PW-DEPOSIT-123"),
+        };
+        let replaced = consent_payment_id(&kind, Some("harmless note")).unwrap();
+        assert_eq!(replaced.payment_id.as_deref(), Some("PW-DEPOSIT-123"));
+        assert!(replaced.payment_id_overridden);
+        assert!(matches!(
+            kind.pin_context(
+                SendOrigin::Mcp,
+                9,
+                replaced.payment_id.clone(),
+                replaced.payment_id_overridden,
+            ),
+            PinPromptContext::Send {
+                payment_id: Some(ref id),
+                payment_id_overridden: true,
+                ..
+            } if id == "PW-DEPOSIT-123"
+        ));
+
+        // A blank Message is not what the address embeds, so the screen still says so.
+        let blank = consent_payment_id(&kind, None).unwrap();
+        assert_eq!(blank.payment_id.as_deref(), Some("PW-DEPOSIT-123"));
+        assert!(blank.payment_id_overridden);
+
+        let same = consent_payment_id(&kind, Some("PW-DEPOSIT-123")).unwrap();
+        assert_eq!(same.payment_id.as_deref(), Some("PW-DEPOSIT-123"));
+        assert!(!same.payment_id_overridden);
+    }
+
+    #[test]
+    fn consent_shows_a_binary_embedded_payment_id_as_hex() {
+        let bytes = vec![0xff; 32];
+        let destination = address_with_payment_id(&bytes);
+        let kind = SpendKind::Send {
+            destination: destination.clone(),
+        };
+        let consent = consent_payment_id(&kind, Some("typed")).unwrap();
+        let expected = hex::encode(&bytes);
+        assert_eq!(consent.payment_id.as_deref(), Some(expected.as_str()));
+        assert!(consent.payment_id_overridden);
+
+        let recipient = Recipient {
+            address: TariAddress::from_str(&destination).unwrap(),
+            amount: MicroMinotari(1_000),
+            payment_id: Some("typed".to_string()),
+        };
+        assert_eq!(
+            recipient.payment_id_bytes().as_deref(),
+            Some(bytes.as_slice())
+        );
+    }
+
+    #[test]
+    fn a_real_exchange_address_payment_id_is_what_consent_shows() {
+        let mexc = TariAddress::from_str(MAINNET_MEXC_DEPOSIT_ADDRESS).unwrap();
+        let embedded = mexc.get_memo_field_payment_id_bytes();
+        assert_eq!(embedded.len(), 32);
+        let effective = effective_payment_id(&mexc, Some("typed message"));
+        let expected = hex::encode(&embedded);
+        assert_eq!(effective.payment_id.as_deref(), Some(expected.as_str()));
+        assert!(effective.payment_id_overridden);
+
+        let localnet = TariAddress::from_str(LOCALNET_DEPOSIT_ADDRESS).unwrap();
+        let effective = effective_payment_id(&localnet, None);
+        assert_eq!(effective.payment_id.as_deref(), Some("PW-DEPOSIT-123"));
+        assert!(effective.payment_id_overridden);
+
+        // The payload builder refuses an address the send itself would refuse.
+        let kind = SpendKind::Send {
+            destination: MAINNET_MEXC_DEPOSIT_ADDRESS.to_string(),
+        };
+        assert!(matches!(
+            consent_payment_id(&kind, Some("typed")),
+            Err(TransactionError::InvalidAddress(_))
+        ));
+    }
+
+    #[test]
+    fn burns_still_show_the_typed_payment_id() {
+        let kind = SpendKind::Burn {
+            claim_public_key: "ab".repeat(32),
+        };
+        let consent = consent_payment_id(&kind, Some("memo")).unwrap();
+        assert_eq!(consent.payment_id.as_deref(), Some("memo"));
+        assert!(!consent.payment_id_overridden);
+        assert!(matches!(
+            kind.pin_context(
+                SendOrigin::App,
+                2,
+                consent.payment_id.clone(),
+                consent.payment_id_overridden,
+            ),
+            PinPromptContext::Burn {
+                payment_id: Some(ref id),
+                ..
+            } if id == "memo"
+        ));
     }
 
     // =========================================================================
