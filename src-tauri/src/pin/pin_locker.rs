@@ -70,12 +70,14 @@ impl PinLocker {
             match last.elapsed() {
                 Ok(elapsed) => {
                     if elapsed < duration {
-                        Some(duration.as_secs() - elapsed.as_secs())
+                        Some(duration.saturating_sub(elapsed).as_secs().max(1))
                     } else {
                         None
                     }
                 }
-                Err(_) => None,
+                // If the system clock moved backward (`now < last_failed_pin_attempt`),
+                // preserve the full lockout window rather than allowing a clock-rollback bypass.
+                Err(_) => Some(duration.as_secs().max(1)),
             }
         } else {
             None
@@ -115,7 +117,7 @@ impl PinLockerState {
     }
 
     pub fn register_failed_pin_attempt(&mut self) {
-        self.failed_pin_attempts += 1;
+        self.failed_pin_attempts = self.failed_pin_attempts.saturating_add(1);
         self.last_failed_pin_attempt = Some(SystemTime::now());
     }
 
@@ -135,5 +137,49 @@ impl PinLockerState {
         keccak.update(&serialized_data);
         keccak.finalize(&mut output);
         output.to_vec() // Return the hash as a Vec<u8>
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, SystemTime};
+
+    use super::{PinLocker, PinLockerState};
+
+    #[tokio::test]
+    async fn locked_out_seconds_enforces_lockout_on_clock_rollback() {
+        let state = PinLockerState {
+            pin_locked: true,
+            failed_pin_attempts: 3,
+            last_failed_pin_attempt: Some(SystemTime::now() + Duration::from_secs(600)),
+        };
+        let locker = PinLocker::new(state);
+        assert_eq!(locker.locked_out_seconds().await, Some(30));
+    }
+
+    #[tokio::test]
+    async fn locked_out_seconds_never_returns_zero_while_locked() {
+        let state = PinLockerState {
+            pin_locked: true,
+            failed_pin_attempts: 3,
+            last_failed_pin_attempt: Some(SystemTime::now() - Duration::from_millis(29_500)),
+        };
+        let locker = PinLocker::new(state);
+        assert_eq!(locker.locked_out_seconds().await, Some(1));
+    }
+
+    #[test]
+    fn register_failed_pin_attempt_saturates_at_u32_max() {
+        let mut state = PinLockerState {
+            pin_locked: true,
+            failed_pin_attempts: u32::MAX,
+            last_failed_pin_attempt: None,
+        };
+        state.register_failed_pin_attempt();
+        assert_eq!(state.failed_pin_attempts, u32::MAX);
+        assert_eq!(
+            state.pin_lockout_duration(),
+            Some(Duration::from_secs(3600))
+        );
     }
 }

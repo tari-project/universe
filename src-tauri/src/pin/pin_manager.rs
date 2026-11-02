@@ -79,7 +79,7 @@ impl PinManager {
     }
 
     pub async fn validate_pin(pin_password: SafePassword) -> Result<(), anyhow::Error> {
-        let _validation_guard = PIN_VALIDATION.lock().await;
+        let _guard = PIN_VALIDATION_LOCK.lock().await;
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         let mut pin_locker = PinLocker::new(pin_locker_state);
         if let Some(remaining_seconds) = pin_locker.locked_out_seconds().await {
@@ -132,7 +132,7 @@ impl PinManager {
     }
 
     pub async fn set_pin_locked() -> Result<(), anyhow::Error> {
-        let _validation_guard = PIN_VALIDATION.lock().await;
+        let _guard = PIN_VALIDATION_LOCK.lock().await;
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         let mut pin_locker = PinLocker::new(pin_locker_state);
         pin_locker.set_pin_locked(true).await
@@ -141,9 +141,9 @@ impl PinManager {
 
 // Utils
 
-/// Serialises PIN validation and lockout counter updates so concurrent IPC calls
-/// cannot race on `failed_pin_attempts` to bypass the brute-force lockout window.
-static PIN_VALIDATION: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+/// Serialises PIN validation and lockout state updates so concurrent callers
+/// cannot race on `PinLockerState` attempt counters.
+static PIN_VALIDATION_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 /// Only one PIN prompt at a time, so the user always knows which dialog they are
 /// answering. Held only for a single emit-and-wait, never across prompts, so a caller

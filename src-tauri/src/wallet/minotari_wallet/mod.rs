@@ -71,7 +71,9 @@ use minotari_wallet::{
     transactions::{
         TransactionDisplayStatus, TransactionSource,
         burn::{BurnTxParams, BurnTxResult, create_burn_tx, persist_burn_records},
-        one_sided_transaction::Recipient,
+        input_selector::InputSelector,
+        manager::TransactionSender,
+        one_sided_transaction::{Recipient, check_memos_and_estimate_output_size},
     },
     utils::{
         crypto::{encrypt_data, parse_claimable_public_key_hex},
@@ -230,10 +232,19 @@ impl MinotariWalletManager {
         // address's bytes as they are, text or not, as the console wallet does.
         let payment_id = payment_id.filter(|id| !id.is_empty());
 
-        // Build the key manager (and so raise the PIN prompt) before anything locks
-        // UTXOs: a cancelled, mistyped or timed-out PIN returns from here having locked
-        // nothing, instead of leaving the selected inputs unspendable until the lock
-        // expires.
+        // Estimate the fee (when a PIN prompt will be shown) and build the key manager
+        // before anything locks UTXOs: a cancelled, mistyped or timed-out PIN returns
+        // from here having locked nothing, and the prompt shows the estimated network
+        // fee. For no-PIN and MCP sends `pass_gates` already estimated the fee for the
+        // confirmation dialog.
+        let pin_context = match pin_context {
+            Some(ctx) => {
+                let fee =
+                    Self::estimate_one_sided_fee(&address, amount, payment_id.clone()).await?;
+                Some(ctx.with_fee(fee))
+            }
+            None => None,
+        };
         let app_handle = INSTANCE
             .app_handle
             .read()
@@ -592,6 +603,42 @@ impl MinotariWalletManager {
         let account_id = Self::owner_account_id().await?;
         let conn = Self::get_db_connection().await?;
         get_latest_scanned_tip_block_by_account(&conn, account_id).map_err(|e| e.into())
+    }
+
+    /// Estimate the network fee (in µT) for a one-sided L1 send of `amount` µT to
+    /// `destination` with optional `payment_id` without locking any UTXOs.
+    ///
+    /// Resolves the destination address and its embedded payment ID the same way
+    /// [`Self::send_one_sided_transaction`] does, and reads `fee_per_gram` from
+    /// [`TransactionSender`] so the estimate tracks the sender's configuration.
+    pub async fn estimate_one_sided_fee(
+        destination: &str,
+        amount: u64,
+        payment_id: Option<String>,
+    ) -> Result<u64, anyhow::Error> {
+        if amount == 0 {
+            return Err(anyhow::anyhow!(
+                "Transaction amount must be greater than zero"
+            ));
+        }
+        let destination_address = parse_destination_address(destination)?;
+        let payment_id = payment_id.filter(|id| !id.is_empty());
+        let owner_address = Self::get_owner_address().await?;
+        let pool = INSTANCE.database_manager.get_pool().await?;
+        let sender = TransactionSender::new(
+            pool.clone(),
+            owner_address,
+            CredentialManager::minotari_db_password().await?,
+            wallet_network(),
+            CONFIRMATION_WINDOW,
+        )?;
+        let recipient = Recipient {
+            address: destination_address,
+            amount: amount.into(),
+            payment_id,
+        };
+        let conn = pool.get()?;
+        estimate_one_sided_fee_for_account(&conn, &sender, &recipient)
     }
 
     /// Get balance for the owner's account
@@ -1431,13 +1478,64 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
     }
 }
 
+/// Estimate an upper-bound fee (in µT) for a one-sided send to `recipient` using `sender`'s
+/// account, confirmation window and `fee_per_gram` without reserving any UTXOs.
+///
+/// [`check_memos_and_estimate_output_size`] validates the recipient and change memos (including
+/// any binary payment ID embedded in `recipient.address`) and conservatively bounds the output
+/// feature and metadata size so enough inputs are selected to cover the fee; the actual
+/// transaction built by `TransactionBuilder` charges the real output weights and can therefore
+/// cost slightly less.
+pub(crate) fn estimate_one_sided_fee_for_account(
+    conn: &Connection,
+    sender: &TransactionSender,
+    recipient: &Recipient,
+) -> Result<u64, anyhow::Error> {
+    let sender_address = sender
+        .account
+        .get_address(sender.network, &sender.password)?;
+    let estimated_output_size = Some(check_memos_and_estimate_output_size(
+        std::slice::from_ref(recipient),
+        &sender_address,
+    )?);
+    let selection = InputSelector::new(sender.account.id, sender.confirmation_window)
+        .fetch_unspent_outputs(
+            conn,
+            recipient.amount,
+            1,
+            sender.fee_per_gram,
+            estimated_output_size,
+        )?;
+    Ok(selection.fee().as_u64())
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        blocks_to_report, burn_times, confirmation_status, move_legacy_burn_proofs, pending_burns,
-        pending_burns_guard, record_burn_broadcast, scan_progress_percent,
+        CONFIRMATION_WINDOW, Recipient, TransactionSender, WalletMicroMinotari, blocks_to_report,
+        burn_times, confirmation_status, estimate_one_sided_fee_for_account, get_account_by_name,
+        move_legacy_burn_proofs, pending_burns, pending_burns_guard, record_burn_broadcast,
+        scan_progress_percent,
     };
-    use minotari_wallet::transactions::TransactionDisplayStatus;
+    use chrono::Utc;
+    use minotari_wallet::{
+        db::{create_account, insert_scanned_tip_block},
+        transactions::TransactionDisplayStatus,
+    };
+    use r2d2_sqlite::rusqlite::named_params;
+    use tari_common::configuration::Network;
+    use tari_common_types::seeds::cipher_seed::CipherSeed;
+    use tari_script::script;
+    use tari_transaction_components::{
+        consensus::ConsensusConstantsBuilder,
+        key_manager::wallet_types::{SeedWordsWallet, WalletType},
+        offline_signing::{
+            ConfirmationMode, PayloadSummary, present_payload_summary, sign_locked_transaction,
+        },
+        test_helpers::{TestParams, create_wallet_output_with_data},
+        transaction_components::OutputFeatures,
+    };
+    use zeroize::Zeroizing;
 
     #[test]
     fn burn_proofs_move_out_of_the_wallet_folder_once() {
@@ -1611,5 +1709,109 @@ mod tests {
     fn progress_is_zero_without_a_usable_tip() {
         // No node status yet.
         assert_eq!(scan_progress_percent(350_000, 0), 0.0);
+    }
+
+    #[test]
+    fn estimate_one_sided_fee_for_account_bounds_the_built_transaction_fee() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let pool = minotari_wallet::db::init_db(dir.path().join("wallet.db")).expect("db");
+        let conn = pool.get().expect("connection");
+        let password = "pass";
+        let wallet = WalletType::SeedWords(
+            SeedWordsWallet::construct_new(CipherSeed::random()).expect("construct wallet"),
+        );
+        create_account(&conn, "test", &wallet, password).expect("create account");
+        let account = get_account_by_name(&conn, "test")
+            .expect("get account")
+            .expect("account exists");
+        insert_scanned_tip_block(&conn, account.id, 200, &[0u8; 32]).expect("insert tip block");
+
+        let key_manager = account.get_key_manager(password).expect("key manager");
+        for seed in [1u8, 2] {
+            let output = create_wallet_output_with_data(
+                script!(Nop).expect("script"),
+                OutputFeatures::default(),
+                &TestParams::new(&key_manager),
+                WalletMicroMinotari::from(5_000_000u64),
+                &key_manager,
+            )
+            .expect("create test output");
+            conn.execute(
+                "INSERT INTO outputs (
+                    account_id, tx_id, output_hash, mined_in_block_height, mined_in_block_hash,
+                    value, mined_timestamp, wallet_output_json, status, confirmed_height,
+                    confirmed_hash, is_burn, maturity
+                 ) VALUES (
+                    :account_id, :tx_id, :hash, 100, :hash, :value, :ts, :json, 'UNSPENT', 100, :hash, 0, 0
+                 )",
+                named_params! {
+                    ":account_id": account.id,
+                    ":tx_id": i64::from(seed),
+                    ":hash": output.output_hash().to_vec(),
+                    ":value": 5_000_000i64,
+                    ":ts": Utc::now(),
+                    ":json": serde_json::to_string(&output).expect("serialize WalletOutput"),
+                },
+            )
+            .expect("insert test output");
+        }
+
+        let mut sender = TransactionSender::new(
+            pool.clone(),
+            "test".to_string(),
+            Zeroizing::new(password.to_string()),
+            Network::LocalNet,
+            CONFIRMATION_WINDOW,
+        )
+        .expect("build sender");
+        let address = sender
+            .account
+            .get_address(Network::LocalNet, &Zeroizing::new(password.to_string()))
+            .expect("recipient address");
+
+        for payment_id in [None, Some("invoice-42")] {
+            let recipient = Recipient {
+                address: address.clone(),
+                amount: WalletMicroMinotari::from(1_000_000u64),
+                payment_id: payment_id.map(str::to_string),
+            };
+            let estimated = estimate_one_sided_fee_for_account(&conn, &sender, &recipient)
+                .expect("estimate fee");
+            let key = format!("key-{}", payment_id.unwrap_or("none"));
+            let prepared = sender
+                .start_new_transaction(key, recipient, 300)
+                .expect("prepare transaction");
+            let summary = PayloadSummary::from_one_sided(prepared);
+            let confirmation = present_payload_summary(
+                &summary,
+                ConfirmationMode::NonInteractive,
+                &mut std::io::sink(),
+                &mut std::io::empty(),
+            )
+            .expect("summary");
+            let signed = sign_locked_transaction(
+                &key_manager,
+                ConsensusConstantsBuilder::new(Network::LocalNet).build(),
+                Network::LocalNet,
+                summary.confirm(confirmation).expect("confirm"),
+            )
+            .expect("sign transaction");
+            let actual_fee = signed
+                .signed_transaction
+                .transaction
+                .body
+                .get_total_fee()
+                .expect("total fee")
+                .as_u64();
+            assert!(actual_fee > 0);
+            assert!(estimated >= actual_fee);
+        }
+
+        let over = Recipient {
+            address,
+            amount: WalletMicroMinotari::from(50_000_000u64),
+            payment_id: None,
+        };
+        assert!(estimate_one_sided_fee_for_account(&conn, &sender, &over).is_err());
     }
 }

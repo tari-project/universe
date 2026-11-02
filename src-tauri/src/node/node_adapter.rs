@@ -42,8 +42,6 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
-use tari_common_types::chain_metadata::ChainMetadata;
-use tari_common_types::types::FixedHash;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_transaction_components::consensus::ConsensusManager;
@@ -87,11 +85,9 @@ pub(crate) struct NodeAdapterService {
 
 /// Remote nodes don't expose sync progress over HTTP: report Done once the node
 /// says it's synced, otherwise Startup so the setup screen keeps waiting.
-fn remote_sync_progress(metadata: Option<&ChainMetadata>, is_synced: bool) -> SyncProgressResponse {
-    let tip_height = metadata
-        .map(|meta| meta.best_block_height())
-        .unwrap_or_default();
-    if metadata.is_some() && is_synced {
+fn remote_sync_progress(best_block_height: Option<u64>, is_synced: bool) -> SyncProgressResponse {
+    let tip_height = best_block_height.unwrap_or_default();
+    if best_block_height.is_some() && is_synced {
         SyncProgressResponse {
             tip_height,
             local_height: tip_height,
@@ -107,6 +103,31 @@ fn remote_sync_progress(metadata: Option<&ChainMetadata>, is_synced: bool) -> Sy
             short_desc: "".to_string(),
             initial_connected_peers: 0,
         }
+    }
+}
+
+/// Extracts `(initial_sync_achieved, best_block_height)` from a local gRPC `TipInfoResponse`.
+fn local_tip_sync_state(
+    tip: &minotari_node_grpc_client::grpc::TipInfoResponse,
+) -> (bool, Option<u64>) {
+    (
+        tip.initial_sync_achieved,
+        tip.metadata.as_ref().map(|meta| meta.best_block_height),
+    )
+}
+
+/// Whether `wait_synced` has reached initial sync for a given network mode, tip height and progress.
+fn is_sync_complete(
+    solo_network: bool,
+    initial_sync_achieved: bool,
+    best_block_height: Option<u64>,
+    sync_percentage: f64,
+) -> bool {
+    if solo_network {
+        best_block_height.is_some_and(|height| height > 0)
+    } else {
+        initial_sync_achieved
+            && best_block_height.is_some_and(|height| height > 0 && sync_percentage >= 1.0)
     }
 }
 
@@ -304,13 +325,12 @@ impl NodeAdapterService {
                 return Ok(0);
             }
 
-            let (initial_sync_achieved, metadata) = if remote {
+            let (initial_sync_achieved, best_block_height) = if remote {
                 let tip = http_client.get_tip_info().await?;
-                let tari_transaction_components::rpc::models::TipInfoResponse {
-                    is_synced,
-                    metadata,
-                } = tip;
-                (is_synced, metadata)
+                (
+                    tip.is_synced,
+                    tip.metadata.as_ref().map(|meta| meta.best_block_height()),
+                )
             } else {
                 let client = grpc_client.as_mut().expect("Should have a client here");
 
@@ -320,28 +340,11 @@ impl NodeAdapterService {
                     .await
                     .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?
                     .into_inner();
-                let minotari_node_grpc_client::grpc::TipInfoResponse {
-                    metadata,
-                    initial_sync_achieved,
-                    base_node_state: _,
-                    failed_checkpoints: _,
-                } = tip;
-                let core_meta = metadata.and_then(|meta| {
-                    ChainMetadata::new(
-                        meta.best_block_height,
-                        FixedHash::try_from(meta.best_block_hash).unwrap_or_default(),
-                        0,
-                        0,
-                        0.into(),
-                        meta.timestamp,
-                    )
-                    .ok()
-                });
-                (initial_sync_achieved, core_meta)
+                local_tip_sync_state(&tip)
             };
 
             let sync_progress = if remote {
-                remote_sync_progress(metadata.as_ref(), initial_sync_achieved)
+                remote_sync_progress(best_block_height, initial_sync_achieved)
             } else {
                 let client = grpc_client.as_mut().expect("Should have a client here");
                 let sync = client
@@ -356,21 +359,14 @@ impl NodeAdapterService {
             progress_percentage_tx.send(sync_info.percentage).ok();
             progress_params_tx.send(sync_info.progress_params).ok();
 
-            let sync_complete = if self.is_solo_network() {
-                metadata.clone().is_some_and(|m| m.best_block_height() > 0)
-            } else {
-                initial_sync_achieved
-                    && metadata.clone().is_some_and(|metadata| {
-                        metadata.best_block_height() > 0 && sync_info.percentage >= 1.0
-                    })
-            };
-            if sync_complete {
+            if is_sync_complete(
+                self.is_solo_network(),
+                initial_sync_achieved,
+                best_block_height,
+                sync_info.percentage,
+            ) {
                 info!(target: LOG_TARGET_APP_LOGIC, "Initial sync achieved");
-                let tip_height = match metadata {
-                    Some(metadata) => metadata.best_block_height(),
-                    None => 0,
-                };
-                return Ok(tip_height);
+                return Ok(best_block_height.unwrap_or(0));
             }
 
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
@@ -828,15 +824,12 @@ pub enum NodeStatusMonitorError {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn metadata(height: u64) -> ChainMetadata {
-        ChainMetadata::new(height, FixedHash::default(), 0, 0, 1.into(), 0).expect("valid metadata")
-    }
+    use minotari_node_grpc_client::grpc::{MetaData, TipInfoResponse};
 
     #[test]
     fn remote_not_synced_reports_startup() {
-        for meta in [None, Some(metadata(100))] {
-            let progress = remote_sync_progress(meta.as_ref(), false);
+        for height in [None, Some(100)] {
+            let progress = remote_sync_progress(height, false);
             assert_eq!(progress.state, SyncState::Startup as i32);
             assert_eq!(progress.local_height, 0);
         }
@@ -846,10 +839,91 @@ mod tests {
 
     #[test]
     fn remote_synced_reports_done_at_full_progress() {
-        let progress = remote_sync_progress(Some(&metadata(100)), true);
+        let progress = remote_sync_progress(Some(100), true);
         assert_eq!(progress.state, SyncState::Done as i32);
         assert_eq!(progress.local_height, 100);
         let info = SyncProgressInfo::from_sync_progress(&progress, 1);
         assert!(info.percentage >= 1.0);
+    }
+
+    #[test]
+    fn local_tip_with_zero_difficulty_completes_sync_once_progress_reaches_done() {
+        let tip = TipInfoResponse {
+            metadata: Some(MetaData {
+                best_block_height: 100,
+                accumulated_difficulty: Vec::new(),
+                ..Default::default()
+            }),
+            initial_sync_achieved: true,
+            base_node_state: 0,
+            failed_checkpoints: false,
+        };
+        let (initial_sync_achieved, best_block_height) = local_tip_sync_state(&tip);
+        assert!(initial_sync_achieved);
+        assert_eq!(best_block_height, Some(100));
+
+        let startup_progress = SyncProgressResponse {
+            tip_height: 100,
+            local_height: 50,
+            state: SyncState::Block as i32,
+            short_desc: String::new(),
+            initial_connected_peers: 1,
+        };
+        let startup_info = SyncProgressInfo::from_sync_progress(&startup_progress, 1);
+        assert!(!is_sync_complete(
+            false,
+            initial_sync_achieved,
+            best_block_height,
+            startup_info.percentage
+        ));
+
+        let done_progress = SyncProgressResponse {
+            tip_height: 100,
+            local_height: 100,
+            state: SyncState::Done as i32,
+            short_desc: String::new(),
+            initial_connected_peers: 1,
+        };
+        let done_info = SyncProgressInfo::from_sync_progress(&done_progress, 1);
+        assert!(is_sync_complete(
+            false,
+            initial_sync_achieved,
+            best_block_height,
+            done_info.percentage
+        ));
+        assert!(!is_sync_complete(
+            false,
+            false,
+            best_block_height,
+            done_info.percentage
+        ));
+    }
+
+    #[test]
+    fn local_solo_network_completes_sync_as_soon_as_tip_height_is_positive() {
+        let genesis_tip = TipInfoResponse {
+            metadata: Some(MetaData {
+                best_block_height: 0,
+                ..Default::default()
+            }),
+            initial_sync_achieved: false,
+            base_node_state: 0,
+            failed_checkpoints: false,
+        };
+        let (synced, height) = local_tip_sync_state(&genesis_tip);
+        assert!(!is_sync_complete(true, synced, height, 0.0));
+        assert!(!is_sync_complete(true, false, None, 0.0));
+
+        let mined_tip = TipInfoResponse {
+            metadata: Some(MetaData {
+                best_block_height: 1,
+                ..Default::default()
+            }),
+            initial_sync_achieved: false,
+            base_node_state: 0,
+            failed_checkpoints: false,
+        };
+        let (synced, height) = local_tip_sync_state(&mined_tip);
+        assert!(is_sync_complete(true, synced, height, 0.0));
     }
 }
