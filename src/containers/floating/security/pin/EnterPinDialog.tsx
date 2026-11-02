@@ -12,6 +12,7 @@ import { Header, Heading, Wrapper } from './styles.ts';
 const REASON_KEYS: Partial<Record<PinPromptContext['kind'], string>> = {
     restore_wallet_details: 'security.pin.restore-wallet-details',
     seed_needs_pin: 'security.pin.seed-needs-pin',
+    security_upgrade: 'security.pin.security-upgrade',
     l2_unlock: 'security.pin.l2-unlock',
     l2_seed_export: 'security.pin.l2-seed-export',
     l2_seed_import: 'security.pin.l2-seed-import',
@@ -67,15 +68,17 @@ export default function EnterPinDialog() {
                 <Wrapper>
                     <Header>
                         <Heading>
-                            {burnContext
-                                ? t('security.pin.approve-burn')
-                                : l2ClaimContext
-                                  ? t('l2.claim.approve')
-                                  : fromTapplet
-                                    ? t('security.pin.approve-tapplet-send')
-                                    : sendContext || l2SendContext
-                                      ? t('security.pin.approve-send')
-                                      : t('security.pin.enter')}
+                            {pinContext?.kind === 'security_upgrade'
+                                ? t('security.pin.security-upgrade-title')
+                                : burnContext
+                                  ? t('security.pin.approve-burn')
+                                  : l2ClaimContext
+                                    ? t('l2.claim.approve')
+                                    : fromTapplet
+                                      ? t('security.pin.approve-tapplet-send')
+                                      : sendContext || l2SendContext
+                                        ? t('security.pin.approve-send')
+                                        : t('security.pin.enter')}
                         </Heading>{' '}
                         <CloseButton onClick={handleClose} />
                     </Header>
