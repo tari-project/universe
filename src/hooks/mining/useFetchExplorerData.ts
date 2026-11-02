@@ -9,6 +9,9 @@ import { getIsMining } from '@app/store/selectors/miningStoreSelectors.ts';
 import { useEffect, useRef } from 'react';
 
 const LIMIT = 10;
+const BASE_REFETCH_INTERVAL_MS = 1000 * 30;
+const CATCH_UP_BASE_INTERVAL_MS = 1000 * 5;
+const MAX_CATCH_UP_ATTEMPTS = 6;
 export const KEY_EXPLORER = 'block_explorer';
 export const KEY_STATS = 'block_stats';
 
@@ -43,6 +46,8 @@ export function useFetchExplorerData() {
     const isMining = useMiningStore((s) => getIsMining(s));
     const latestNodeBlockHeight = useBlockchainVisualisationStore((s) => s.latestBlockHeight);
     const cancelProcess = useRef(false);
+    const catchUpAttemptsRef = useRef(0);
+    const lastLaggingHeightRef = useRef<number | undefined>(undefined);
 
     const { data, isLoading, isError } = useQuery<BlockBubbleData[]>({
         queryKey: [KEY_EXPLORER, KEY_STATS, LIMIT],
@@ -57,23 +62,37 @@ export function useFetchExplorerData() {
         enabled: visualMode,
         refetchOnWindowFocus: true,
         refetchInterval: ({ state }) => {
-            const currentDataTip = state.data?.[0].height;
-            const BASE = 1000 * 30;
+            const currentDataTip = state.data?.[0]?.height;
             if (!latestNodeBlockHeight || !isMining || !currentDataTip) {
-                return BASE;
+                catchUpAttemptsRef.current = 0;
+                return BASE_REFETCH_INTERVAL_MS;
             }
 
-            return currentDataTip < latestNodeBlockHeight ? 1000 : BASE;
+            if (currentDataTip < latestNodeBlockHeight) {
+                if (lastLaggingHeightRef.current !== latestNodeBlockHeight) {
+                    lastLaggingHeightRef.current = latestNodeBlockHeight;
+                    catchUpAttemptsRef.current = 0;
+                }
+                if (catchUpAttemptsRef.current >= MAX_CATCH_UP_ATTEMPTS) {
+                    return BASE_REFETCH_INTERVAL_MS;
+                }
+                const attempt = catchUpAttemptsRef.current;
+                catchUpAttemptsRef.current += 1;
+                return Math.min(CATCH_UP_BASE_INTERVAL_MS * 2 ** Math.floor(attempt / 2), BASE_REFETCH_INTERVAL_MS);
+            }
+
+            catchUpAttemptsRef.current = 0;
+            return BASE_REFETCH_INTERVAL_MS;
         },
         staleTime: 60 * 1000,
     });
 
-    const currentDataTip = data?.[0].height;
+    const currentDataTip = data?.[0]?.height;
 
     useEffect(() => {
         if (!currentDataTip || !latestNodeBlockHeight) return;
         const nodeSync = latestNodeBlockHeight <= currentDataTip;
-        const shouldProccess = nodeSync && isMining && !isLoading && !isLoading && !cancelProcess.current;
+        const shouldProccess = nodeSync && isMining && !isLoading && !cancelProcess.current;
         if (shouldProccess) {
             cancelProcess.current = true;
             processNewBlock().then(() => {

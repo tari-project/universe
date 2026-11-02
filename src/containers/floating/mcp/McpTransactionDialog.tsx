@@ -21,6 +21,7 @@ export default function McpTransactionDialog() {
     const [countdown, setCountdown] = useState(TIMEOUT_SECS);
     const [submitting, setSubmitting] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
+    const deniedRequestIdRef = useRef<string | null>(null);
 
     // An `app` or `tapplet` origin means the send command itself asked the backend to confirm,
     // because no PIN is configured. Whoever started the send owns the progress/result UI,
@@ -45,14 +46,16 @@ export default function McpTransactionDialog() {
     }, []);
 
     useEffect(() => {
-        if (!pending) return;
+        if (!pending) {
+            deniedRequestIdRef.current = null;
+            return;
+        }
         setCountdown(TIMEOUT_SECS);
 
         const interval = setInterval(() => {
             setCountdown((prev) => {
                 if (prev <= 1) {
                     clearInterval(interval);
-                    handleDeny();
                     return 0;
                 }
                 return prev - 1;
@@ -60,7 +63,14 @@ export default function McpTransactionDialog() {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [pending, handleDeny]);
+    }, [pending]);
+
+    useEffect(() => {
+        if (!pending || countdown > 0) return;
+        if (deniedRequestIdRef.current === pending.request_id) return;
+        deniedRequestIdRef.current = pending.request_id;
+        void handleDeny();
+    }, [countdown, pending, handleDeny]);
 
     const handleApprove = useCallback(async () => {
         if (!pending) return;
