@@ -6,7 +6,6 @@
     "available-balance": "可用",
     "label-rewards": "我的奖励",
     "my-balance": "我的余额",
-    "sync-with-phone": "与手机同步",
     "transaction-details": "交易详情",
     "view-details": "查看详情"
   },
@@ -63,6 +62,9 @@
     "error-invalid-address": "地址无效",
     "error-invalid-amount": "金额无效",
     "error-message": "发送交易错误：",
+    "error-change-not-affordable": "剩余金额不足以支付手续费并保留每笔交易所需的找零。请尝试更小的金额，或点击“最大”。",
+    "error-max-unavailable": "无法计算最大金额。请稍后再试。",
+    "not-accepted-yet": "您的交易已记录，但网络尚未接受。钱包会自动继续发送，请勿重复发送。",
     "estimated-completion-time": "预计完成时间",
     "field-address": "地址",
     "field-amount": "金额",
@@ -174,5 +176,24 @@
     "mine-directly-to-exchange": "直接挖矿到 {{exchangeName}}",
     "mining-here": "在这里挖矿",
     "or": "或"
+  },
+  "abandon": {
+    "stalled": "您的基础节点一直拒绝这笔交易。钱包会继续重试，其资金会保持锁定，直到交易被打包或您放弃它。放弃之前，请稍后重试或切换到其他基础节点。",
+    "cta": "放弃交易",
+    "note": "交易将被放弃，其资金将被释放。如果某个节点仍持有该交易，它仍可能被打包：届时钱包会将其显示为已打包，而在此期间使用已释放资金进行的交易可能会失败。",
+    "unreconcilable-note": "警告：此交易没有找零输出。如果某个节点仍持有它且它被打包，钱包将不会显示其已打包：它会保持已放弃状态，而其资金显示为已花费，在此期间使用已释放资金进行的交易可能会失败。",
+    "confirm": "放弃",
+    "confirm-anyway": "仍然放弃",
+    "review-label": "您正在放弃",
+    "approve": "批准放弃",
+    "done": "交易已放弃。其资金已重新可用。",
+    "error-message": "无法放弃交易：",
+    "error-not-pending": "此交易已无法放弃：它已被打包或被拒绝。",
+    "error-input-spent": "其资金已在链上被花费。钱包会自行处理。",
+    "error-change-in-use": "其找零正被另一笔交易使用。请先放弃或处理那笔交易。",
+    "error-change-already-mined": "它似乎已被打包。请等待钱包处理。",
+    "chip": "已停滞",
+    "burn-note": "销毁将被放弃，其资金将被释放。如果某个节点仍持有它，它仍可能被打包，因此在其处理完成之前请勿重置或重新导入钱包：钱包保存着领取所需的唯一证明。在此期间使用已释放资金进行的交易可能会失败。",
+    "error-burn-unreconcilable": "此销毁没有找零输出，因此无法安全放弃：如果它被打包，钱包将无法识别。它会保持待处理状态，直到处理完成。"
   }
 }

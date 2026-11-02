@@ -16,8 +16,8 @@ import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
 import { MiningModeType, PauseOnBatteryModeState } from '@app/types/configs';
 import { setError } from './appStateStoreActions.ts';
-import { setApplicationLanguage, setShouldAlwaysUseSystemLanguage } from './appConfigStoreActions.ts';
-import { useConfigUIStore } from '../useAppConfigStore.ts';
+import { setApplicationLanguage, setMoneroAddress, setShouldAlwaysUseSystemLanguage } from './appConfigStoreActions.ts';
+import { useConfigUIStore, useConfigWalletStore } from '../useAppConfigStore.ts';
 
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: vi.fn(),
@@ -398,6 +398,42 @@ describe('appConfigStoreActions', () => {
         it('handles NotSupported state', () => {
             const mode = PauseOnBatteryModeState.NotSupported;
             expect(mode).toBe('NotSupported');
+        });
+    });
+
+    describe('setMoneroAddress', () => {
+        const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
+        const setErrorMock = setError as unknown as ReturnType<typeof vi.fn>;
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            useConfigWalletStore.setState((state) => ({
+                ...state,
+                monero_address: 'generated-address',
+                monero_address_is_generated: true,
+            }));
+        });
+
+        it('restores the previous Monero address when the PIN is rejected', async () => {
+            invokeMock.mockRejectedValue('PIN entry cancelled');
+
+            await setMoneroAddress('attacker-address');
+            await vi.waitFor(() => expect(setErrorMock).toHaveBeenCalledWith('Could not change Monero address'));
+
+            expect(invokeMock).toHaveBeenCalledWith('set_monero_address', { moneroAddress: 'attacker-address' });
+            expect(useConfigWalletStore.getState().monero_address).toBe('generated-address');
+            expect(useConfigWalletStore.getState().monero_address_is_generated).toBe(true);
+        });
+
+        it('keeps the new Monero address when the backend accepts it', async () => {
+            invokeMock.mockResolvedValue(undefined);
+
+            await setMoneroAddress('user-address');
+            await Promise.resolve();
+
+            expect(setErrorMock).not.toHaveBeenCalled();
+            expect(useConfigWalletStore.getState().monero_address).toBe('user-address');
+            expect(useConfigWalletStore.getState().monero_address_is_generated).toBe(false);
         });
     });
 

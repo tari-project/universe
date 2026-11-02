@@ -182,13 +182,6 @@
   "p2pool-stats": "Estatísticas do esquadrão",
   "p2pool-total-earnings": "Ganhos totais do esquadrão",
   "p2pool-user-total-earnings": "Ganhos totais",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "Acompanhe seu saldo XTM no seu telefone",
-    "do-not-share-this-code": "Não compartilhe este código com ninguém",
-    "link-tari-aurora": "Vincular Tari Universe Mobile",
-    "load-qr-code": "Carregar código QR",
-    "passphrase": "Frase secreta"
-  },
   "pause-on-battery-mode": {
     "description": "Pause mining when device is disconnected from charging",
     "title": "Pause on Battery Mode"

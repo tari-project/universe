@@ -39,6 +39,7 @@ use rmcp::{ServerHandler, tool, tool_handler, tool_router};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use tokio::sync::watch;
+use tokio_util::sync::CancellationToken;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_mcp::ConfigMcp;
@@ -50,6 +51,7 @@ use crate::node::node_adapter::BaseNodeStatus;
 pub struct TariMcpHandler {
     tool_router: ToolRouter<Self>,
     node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>,
+    request_cancel: CancellationToken,
 }
 
 // rmcp 2.0's `#[tool_handler]` defaults to rebuilding the router via
@@ -136,10 +138,14 @@ struct SendTransactionParams {
 }
 
 impl TariMcpHandler {
-    pub fn new(node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>) -> Self {
+    pub fn new(
+        node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>,
+        request_cancel: CancellationToken,
+    ) -> Self {
         Self {
             tool_router: Self::tool_router(),
             node_status_rx,
+            request_cancel,
         }
     }
 
@@ -676,12 +682,7 @@ impl TariMcpHandler {
             return Err("Transaction tier is disabled".to_string());
         }
         let start = Instant::now();
-        // Destination, amount and payment ID stay out of this line: it ships in support bundles.
-        info!(
-            target: LOG_TARGET_APP_LOGIC,
-            "MCP: send_transaction called (payment_id_present={})",
-            params.payment_id.as_ref().is_some_and(|id| !id.is_empty())
-        );
+        info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction called");
         self.audit_tool_call(
             "send_transaction",
             "transaction",
@@ -690,23 +691,37 @@ impl TariMcpHandler {
         )
         .await;
 
-        let result =
-            transaction::send_transaction(params.destination, params.amount, params.payment_id)
-                .await;
+        // The worker owns the send permit even if the HTTP session goes away. Shutdown
+        // cancels consent waits, but a send that has started locking inputs must finish.
+        let handler = self.clone();
+        tokio::spawn(async move {
+            let result = transaction::send_transaction(
+                params.destination,
+                params.amount,
+                params.payment_id,
+                handler.request_cancel.clone(),
+            )
+            .await;
 
-        let status = match &result {
-            Ok(_) => AuditStatus::Success,
-            Err(transaction::TransactionError::Denied(_)) => AuditStatus::Denied,
-            Err(transaction::TransactionError::RateLimited(_)) => AuditStatus::RateLimited,
-            Err(_) => AuditStatus::Error,
-        };
-        self.audit_tool_call(
-            "send_transaction",
-            "transaction",
-            status,
-            Some(u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX)),
-        )
-        .await;
-        result.map_err(|e| e.to_string())
+            // Record the outcome even if the client disconnected while the send ran.
+            let status = match &result {
+                Ok(_) => AuditStatus::Success,
+                Err(transaction::TransactionError::Denied(_)) => AuditStatus::Denied,
+                Err(transaction::TransactionError::RateLimited(_)) => AuditStatus::RateLimited,
+                Err(_) => AuditStatus::Error,
+            };
+            handler
+                .audit_tool_call(
+                    "send_transaction",
+                    "transaction",
+                    status,
+                    Some(u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX)),
+                )
+                .await;
+            result
+        })
+        .await
+        .map_err(|err| err.to_string())?
+        .map_err(|e| e.to_string())
     }
 }

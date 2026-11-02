@@ -55,10 +55,14 @@ use crate::systemtray_manager::SystemTrayManager;
 use crate::utils::battery_status::BatteryStatus;
 use crate::utils::platform_utils::PlatformUtils;
 use crate::{
-    UniverseAppState,
+    APPLICATION_FOLDER_ID, UniverseAppState,
     configs::{
-        config_core::ConfigCore, config_mcp::ConfigMcp, config_mining::ConfigMining,
-        config_ui::ConfigUI, config_wallet::ConfigWallet, trait_config::ConfigImpl,
+        config_core::ConfigCore,
+        config_mcp::ConfigMcp,
+        config_mining::ConfigMining,
+        config_ui::ConfigUI,
+        config_wallet::ConfigWallet,
+        trait_config::{ConfigImpl, harden_app_config_permissions},
     },
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
@@ -315,12 +319,21 @@ impl SetupManager {
         }
         EventsManager::handle_node_type_update(&app_handle).await;
 
+        // Clamp twice: before init so existing installs are fixed before any config is
+        // read, and after so dirs a fresh install just created (umask 0755) are covered too.
+        let app_config_root = dirs::config_dir()
+            .unwrap_or_else(std::env::temp_dir)
+            .join(APPLICATION_FOLDER_ID);
+        harden_app_config_permissions(&app_config_root);
+
         ConfigCore::initialize(app_handle.clone()).await;
         ConfigWallet::initialize(app_handle.clone()).await;
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
         ConfigMcp::initialize(app_handle.clone()).await;
+
+        harden_app_config_permissions(&app_config_root);
 
         // Initialize MCP server with node status receiver for chain tools
         crate::mcp::server::McpServerManager::initialize(state.node_status_watch_rx.clone()).await;
@@ -493,6 +506,11 @@ impl SetupManager {
         // migration never loses its legacy recovery files.
         if wallet_initialized {
             InternalWallet::purge_legacy_credential_files(&app_handle).await;
+            // Waits on a PIN dialog, so it must not hold up setup.
+            let app_handle = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                InternalWallet::ask_for_monero_seed_cipher_upgrade(&app_handle).await;
+            });
         }
 
         // Trigger it here so we can update UI when new wallet is created

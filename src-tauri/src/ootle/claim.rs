@@ -95,7 +95,8 @@ pub struct L2Burn {
     pub proof_file: Option<String>,
     /// "pending" until the burn is mined and its proof written, then "claimable", then
     /// "claimed" once a claim is accepted on L2. "foreign" instead of "claimable" when
-    /// the claim key isn't one of this wallet's L2 accounts.
+    /// the claim key isn't one of this wallet's L2 accounts. "abandoned" instead of
+    /// "pending" once the user abandoned it: it may still be mined, and then turns claimable.
     pub status: &'static str,
     /// The L1 height the burn was mined at, once its proof is written. The L2 can't
     /// accept its claim until it has imported that block.
@@ -753,6 +754,30 @@ mod tests {
         assert_eq!(hex::encode(proof.account_key.as_bytes()), CLAIM_KEY);
         assert_eq!(proof.claim_proof.value, 1_000_000_000);
         assert_eq!(proof.mined_height, 12_345);
+    }
+
+    #[test]
+    fn reads_a_proof_in_the_shape_minotari_writes() {
+        // minotari's BurnProofWorker writes the published tari_sidechain type with
+        // serde_json::to_vec_pretty. The claim code reads it with ootle's own type.
+        let written: tari_sidechain_l1::CompleteClaimBurnProof =
+            serde_json::from_str(PROOF).expect("the published format");
+        let json = serde_json::to_vec_pretty(&written).expect("json");
+        assert_eq!(
+            String::from_utf8(json.clone()).expect("utf8").trim_end(),
+            PROOF.trim_end(),
+            "the fixture is exactly what the worker writes"
+        );
+
+        let proof = BurnProof::from_json(&json).expect("converted by claim_proof_from_l1");
+        assert_eq!(
+            hex::encode(proof.claim_proof.commitment.as_bytes()),
+            COMMITMENT
+        );
+        assert_eq!(hex::encode(proof.account_key.as_bytes()), CLAIM_KEY);
+        assert_eq!(proof.claim_proof.value, 1_000_000_000);
+        assert_eq!(proof.mined_height, 12_345);
+        assert_eq!(proof.mined_in_epoch, written.mined_in_epoch);
     }
 
     #[test]
