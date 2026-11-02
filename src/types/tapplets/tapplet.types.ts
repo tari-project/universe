@@ -42,6 +42,30 @@ export interface SendOneSidedRequest {
     paymentId?: string;
 }
 
+/** Amounts are micro XTR as decimal strings. */
+export interface SendOotleStealthRequest {
+    amount: string;
+    address: string;
+    /** UUID v4 the bridge matches the deposit by. */
+    payRef: string;
+}
+
+export interface WaitOotleTransactionRequest {
+    transactionId: string;
+    timeoutSecs: number;
+}
+
+export interface OotleAccountData {
+    address: string;
+    network: string;
+}
+
+/** Micro XTR as decimal strings. */
+export interface OotleBalance {
+    available: string;
+    pending: string;
+}
+
 export interface BridgeTxDetails {
     amount: string;
     amountToReceive: string;

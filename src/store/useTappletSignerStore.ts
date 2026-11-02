@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { TappletSigner } from '@app/types/tapplets/TappletSigner.ts';
+import { TappletSigner, TappletSignerRejection } from '@app/types/tapplets/TappletSigner.ts';
 import { setError } from './actions/appStateStoreActions.ts';
 import { TransactionEvent } from '@app/types/tapplets/transaction.ts';
 import { TappletSignerParams } from '@app/types/tapplets/tapplet.types.ts';
@@ -62,7 +62,10 @@ export const runTappletTransaction = async (event: MessageEvent<TransactionEvent
         }
     } catch (error) {
         console.error(`Error running method "${String(methodName)}": ${error}`);
-        setError(`Error running method "${String(methodName)}": ${error}`);
+        // The signer refusing a tapplet's call is the tapplet's problem, not something to toast.
+        if (!(error instanceof TappletSignerRejection)) {
+            setError(`Error running method "${String(methodName)}": ${error}`);
+        }
         // Let the tapplet settle its pending request instead of hanging on it forever.
         event.source?.postMessage({ id, resultError: `${error}`, type: 'signer-call' }, { targetOrigin: event.origin });
     }

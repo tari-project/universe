@@ -39,6 +39,7 @@ export function useTrancheAutoRefresh({
                 return true;
             } else {
                 console.error('Failed to refresh tranche status');
+                return false;
             }
         } catch (error) {
             const errorObj = error instanceof Error ? error : new Error('Unknown error in TrancheAutoRefresh');

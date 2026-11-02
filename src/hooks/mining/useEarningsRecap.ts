@@ -1,37 +1,39 @@
 import { handleWinRecap, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
-import { useCallback, useEffect, useMemo } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { useEffect } from 'react';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 export default function useEarningsRecap() {
-    const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);
-    const transactions = useWalletStore((s) => s.wallet_transactions);
-    const coinbase_transactions = useMemo(() => {
-        // Filter by coinbase source from DisplayedTransaction
-        return transactions.filter((tx) => tx.source === 'coinbase');
-    }, [transactions]);
-
-    const getMissedEarnings = useCallback(() => {
-        if (recapIds.length && coinbase_transactions.length) {
-            const missedWins = coinbase_transactions.filter((tx) => recapIds.includes(tx.id));
-            const count = missedWins.length;
-            if (count > 0) {
-                const totalEarnings = missedWins.reduce((earnings, cur) => earnings + cur.amount, 0);
-                handleWinRecap({ count, totalEarnings });
-            }
-        }
-    }, [recapIds, coinbase_transactions]);
+    const hasRecapIds = useBlockchainVisualisationStore((s) => s.recapIds.length > 0);
 
     useEffect(() => {
-        const listener = listen<string>('tauri://focus', () => {
-            const documentIsVisible = document?.visibilityState === 'visible' || false;
-            if (documentIsVisible) {
-                getMissedEarnings();
+        if (!hasRecapIds) return;
+
+        let cancelled = false;
+        let unlistenFn: UnlistenFn | null = null;
+
+        listen<string>('tauri://focus', () => {
+            if (cancelled || document?.visibilityState !== 'visible') return;
+            const recapIds = useBlockchainVisualisationStore.getState().recapIds;
+            if (!recapIds.length) return;
+
+            const transactions = useWalletStore.getState().wallet_transactions;
+            const missedWins = transactions.filter((tx) => tx.source === 'coinbase' && recapIds.includes(tx.id));
+            if (missedWins.length > 0) {
+                const totalEarnings = missedWins.reduce((earnings, cur) => earnings + cur.amount, 0);
+                handleWinRecap({ count: missedWins.length, totalEarnings });
+            }
+        }).then((unlisten) => {
+            if (cancelled) {
+                unlisten();
+            } else {
+                unlistenFn = unlisten;
             }
         });
 
         return () => {
-            listener.then((unlisten) => unlisten());
+            cancelled = true;
+            unlistenFn?.();
         };
-    }, [getMissedEarnings, recapIds]);
+    }, [hasRecapIds]);
 }

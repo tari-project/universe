@@ -22,10 +22,10 @@ export default function McpTransactionDialog() {
     const [submitting, setSubmitting] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
 
-    // An `app` origin means the send command itself asked the backend to confirm, because
-    // no PIN is configured. The modal that started the send owns the progress/result UI,
+    // An `app` or `tapplet` origin means the send command itself asked the backend to confirm,
+    // because no PIN is configured. Whoever started the send owns the progress/result UI,
     // so this dialog is a plain approve/deny prompt in that case.
-    const isAppOrigin = pending?.origin === 'app';
+    const isAppOrigin = pending?.origin === 'app' || pending?.origin === 'tapplet';
 
     const handleDeny = useCallback(async () => {
         if (!pending) return;
@@ -101,6 +101,7 @@ export default function McpTransactionDialog() {
         if (!isAppOrigin && (mcpTxStatus === 'processing' || mcpTxStatus === 'completed')) {
             return undefined;
         }
+        if (pending.origin === 'tapplet') return t('wallet:security.pin.approve-tapplet-send');
         return isAppOrigin ? t('wallet:send.confirm-title') : t('wallet:send.review-title');
     };
 
@@ -129,6 +130,7 @@ export default function McpTransactionDialog() {
                                 amountMicroMinotari={pending.amount_micro_minotari}
                                 destination={pending.destination}
                                 paymentId={pending.payment_id}
+                                feeMicroMinotari={pending.fee_micro_minotari}
                                 subtitle={t('wallet:send.confirm-subtitle')}
                             />
                             <Button
@@ -148,6 +150,8 @@ export default function McpTransactionDialog() {
                             setStatus={noop}
                             amount={amountXtm}
                             address={pending.destination}
+                            message={pending.payment_id ?? undefined}
+                            feeMicroMinotari={pending.fee_micro_minotari}
                             handleClose={handleClose}
                         />
                     )}

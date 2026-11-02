@@ -36,7 +36,7 @@ use tari_ootle_wallet_sdk::{
         confidential_transfer::UtxoInputSelection,
         stealth_transfer::{BadgeUsage, StealthTransferParams, TransferFeeParams, TransferOutput},
     },
-    crypto::pay_to::PayTo,
+    crypto::{memo::Memo, pay_to::PayTo},
     models::{AccountWithAddress, TransactionContext, TransactionStatus, WalletLockDropGuard},
     network::WalletNetworkInterface,
 };
@@ -64,7 +64,8 @@ pub(super) const MAX_L2_FEE: u64 = 100_000;
 /// stalled indexer can't wedge every L1 and L2 spend behind it.
 const INDEXER_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Sends `amount` micro XTR from `account` to `destination` as a blinded stealth output.
+/// Sends `amount` micro XTR from `account` to `destination` as a blinded stealth output
+/// carrying `memo`.
 /// Fails before anything is submitted if the account can't cover the amount and fee, or
 /// the fee is over [`MAX_L2_FEE`]. `approve_fee` gets the settled fee before anything is
 /// signed for real, and stops the send by returning an error.
@@ -74,6 +75,7 @@ pub async fn send_xtr(
     account: AccountWithAddress,
     destination: OotleAddress,
     amount: u64,
+    memo: Option<Memo>,
     approve_fee: impl AsyncFnOnce(u64) -> Result<(), anyhow::Error>,
 ) -> Result<TransactionId, anyhow::Error> {
     let epoch = with_indexer_timeout(sdk.get_network_interface().get_current_epoch()).await??;
@@ -84,7 +86,7 @@ pub async fn send_xtr(
             address: destination,
             revealed_amount: Amount::zero(),
             blinded_amount: amount,
-            memo: None,
+            memo,
             pay_to: PayTo::StealthPublicKey,
         }],
         badge_usage: BadgeUsage::None,

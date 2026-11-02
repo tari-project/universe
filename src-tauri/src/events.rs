@@ -239,6 +239,7 @@ pub struct McpTransactionConfirmationPayload {
     /// anything reaching the Tauri command) or `"mcp"` (MCP transaction tool).
     pub origin: String,
     pub payment_id: Option<String>,
+    pub fee_micro_minotari: Option<u64>,
 }
 
 /// Optional context attached to the `EnterPin` event so the PIN dialog can tell the
@@ -246,10 +247,13 @@ pub struct McpTransactionConfirmationPayload {
 #[derive(Debug, Serialize, Clone)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum PinPromptContext {
+    /// An L1 send. `origin` is `"app"`, `"mcp"` or `"tapplet"`.
     Send {
         amount_micro_minotari: u64,
         destination: String,
         payment_id: Option<String>,
+        origin: String,
+        fee_micro_minotari: Option<u64>,
     },
     /// Burning L1 funds to be claimed on L2 by `claim_public_key`.
     Burn {
@@ -270,11 +274,14 @@ pub enum PinPromptContext {
     /// Replacing the L2 wallet with one restored from the L1 seed.
     L2SeedReset,
     /// Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`.
-    /// The fee is set once the dry run has priced the transaction.
+    /// `origin` is `"app"` or `"tapplet"`. The fee is set once the dry run has priced the
+    /// transaction.
     L2Send {
         amount_micro_minotari: u64,
         destination: String,
         account: String,
+        pay_ref: Option<String>,
+        origin: String,
         fee_micro_minotari: Option<u64>,
     },
     /// Claiming an L1 burn of `amount_micro_minotari` on L2, `commitment` (hex) being the
@@ -287,9 +294,12 @@ pub enum PinPromptContext {
 }
 
 impl PinPromptContext {
-    /// Sets the fee an L2 send or claim will pay. Other contexts are left as they are.
+    /// Sets the fee a send or L2 claim will pay. Other contexts are left as they are.
     pub fn with_fee(mut self, fee: u64) -> Self {
-        if let Self::L2Send {
+        if let Self::Send {
+            fee_micro_minotari, ..
+        }
+        | Self::L2Send {
             fee_micro_minotari, ..
         }
         | Self::L2Claim {
