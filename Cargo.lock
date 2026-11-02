@@ -2277,15 +2277,6 @@ checksum = "26bf8fc351c5ed29b5c2f0cbbac1b209b74f60ecd62e675a998df72c49af5204"
 
 [[package]]
 name = "defmt"
-version = "0.3.101"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4deef977660e373c458df605a913d4ab121db0ccd18d1ad6976dff7d37cddb53"
-dependencies = [
- "defmt 1.1.1",
-]
-
-[[package]]
-name = "defmt"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2953bfe4f93bbd20cc71198842756f77d161884c99ebbabc41d80231ded88d1"
@@ -3009,18 +3000,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
-name = "faster-hex"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04839bdf9d8c10f66806fad16b852fc72aab80873aebc3cb69d85b4fa41543ed"
-dependencies = [
- "autocfg",
- "defmt 0.3.101",
- "heapless",
- "serde",
-]
-
-[[package]]
 name = "fastrand"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3676,36 +3655,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gix-features"
-version = "0.42.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56f4399af6ec4fd9db84dd4cf9656c5c785ab492ab40a7c27ea92b4241923fed"
-dependencies = [
- "gix-trace",
- "libc",
- "prodash",
-]
-
-[[package]]
-name = "gix-hash"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d4900562c662852a6b42e2ef03442eccebf24f047d8eab4f23bc12ef0d785d8"
-dependencies = [
- "faster-hex",
- "gix-features",
- "serde",
- "sha1-checked",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "gix-trace"
-version = "0.1.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be3eb81d9dc914335923e50d52829c551feefd6a72d176c4130c546b67a60814"
-
-[[package]]
 name = "glib"
 version = "0.18.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3901,15 +3850,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hash32"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47d60b12902ba28e2730cd37e95b8c9223af2808df9e902d4df49588d1470606"
-dependencies = [
- "byteorder",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3987,16 +3927,6 @@ dependencies = [
  "flate2",
  "nom 7.1.3",
  "num-traits",
-]
-
-[[package]]
-name = "heapless"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bfb9eb618601c89945a70e254898da93b13be0388091d42117462b265bb3fad"
-dependencies = [
- "hash32",
- "stable_deref_trait",
 ]
 
 [[package]]
@@ -4394,7 +4324,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.61.2",
+ "windows-core 0.57.0",
 ]
 
 [[package]]
@@ -4812,7 +4742,7 @@ version = "0.2.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ab1baf72f08796de0260609515130699b890ac25f30e610ad894bc5856cafdb"
 dependencies = [
- "defmt 1.1.1",
+ "defmt",
  "jiff-core",
  "jiff-static",
  "jiff-tzdb-platform",
@@ -4829,7 +4759,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e52fe76043ccecc9005d2305ebaadf7d7fc0cc89ca6baa10a94d6bc68c7128c"
 dependencies = [
- "defmt 1.1.1",
+ "defmt",
  "log",
 ]
 
@@ -5515,6 +5445,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "merlin"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58c38e2799fc0978b65dfff8023ec7843e2330bb462f19198840b34b6582397d"
+dependencies = [
+ "byteorder",
+ "keccak",
+ "rand_core 0.6.4",
+ "zeroize",
+]
+
+[[package]]
 name = "migrations_internals"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5664,8 +5606,8 @@ dependencies = [
 
 [[package]]
 name = "minotari"
-version = "0.5.2"
-source = "git+https://github.com/tari-project/minotari-cli.git?tag=v0.5.2#52de86b6ba0f3555e6c890a3ed5b5597ff57a39e"
+version = "0.6.0"
+source = "git+https://github.com/tari-project/minotari-cli.git?rev=e695b6f4ae6568c1eac64cb99ef76580700efa58#e695b6f4ae6568c1eac64cb99ef76580700efa58"
 dependencies = [
  "anyhow",
  "argon2 0.6.0",
@@ -5702,7 +5644,7 @@ dependencies = [
  "tari_common_types",
  "tari_crypto",
  "tari_script",
- "tari_sidechain 8.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tari_sidechain 8.0.0",
  "tari_transaction_components",
  "tari_utilities",
  "thiserror 2.0.18",
@@ -5717,8 +5659,8 @@ dependencies = [
 
 [[package]]
 name = "minotari-scanning"
-version = "0.5.2"
-source = "git+https://github.com/tari-project/minotari-cli.git?tag=v0.5.2#52de86b6ba0f3555e6c890a3ed5b5597ff57a39e"
+version = "0.6.0"
+source = "git+https://github.com/tari-project/minotari-cli.git?rev=e695b6f4ae6568c1eac64cb99ef76580700efa58#e695b6f4ae6568c1eac64cb99ef76580700efa58"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5770,7 +5712,7 @@ dependencies = [
  "tari_max_size",
  "tari_node_components",
  "tari_script",
- "tari_sidechain 8.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tari_sidechain 8.0.0",
  "tari_transaction_components",
  "tari_utilities",
  "thiserror 2.0.18",
@@ -6580,7 +6522,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 [[package]]
 name = "ootle-network"
 version = "0.2.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "minicbor",
  "serde",
@@ -6589,8 +6531,8 @@ dependencies = [
 
 [[package]]
 name = "ootle_byte_type"
-version = "0.17.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.18.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "tari_crypto",
  "tari_template_lib_types",
@@ -6598,8 +6540,8 @@ dependencies = [
 
 [[package]]
 name = "ootle_serde"
-version = "0.6.1"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.6.2"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "base64 0.22.1",
  "hex",
@@ -7655,16 +7597,6 @@ checksum = "2d3554923a69f4ce04c4a754260c338f505ce22642d3830e049a399fc2059a29"
 dependencies = [
  "bitflags 2.10.0",
  "hex",
-]
-
-[[package]]
-name = "prodash"
-version = "29.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f04bb108f648884c23b98a0e940ebc2c93c0c3b89f04dbaf7eb8256ce617d1bc"
-dependencies = [
- "log",
- "parking_lot 0.12.5",
 ]
 
 [[package]]
@@ -9536,16 +9468,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sha1-checked"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89f599ac0c323ebb1c6082821a54962b839832b03984598375bff3975b804423"
-dependencies = [
- "digest 0.10.7",
- "sha1 0.10.6",
-]
-
-[[package]]
 name = "sha1_smol"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10309,8 +10231,8 @@ dependencies = [
  "tari_ootle_wallet_sdk_services",
  "tari_ootle_wallet_storage_sqlite",
  "tari_shutdown",
- "tari_sidechain 8.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "tari_sidechain 8.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d)",
+ "tari_sidechain 8.0.0",
+ "tari_sidechain 9.0.0",
  "tari_template_lib",
  "tari_transaction_components",
  "tari_utilities",
@@ -10352,8 +10274,8 @@ dependencies = [
 
 [[package]]
 name = "tari_bor"
-version = "0.16.5"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.16.6"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "borsh",
  "indexmap 2.14.2",
@@ -10459,7 +10381,7 @@ dependencies = [
  "tari_crypto",
  "tari_hashing",
  "tari_max_size",
- "tari_sidechain 8.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tari_sidechain 8.0.0",
  "tari_utilities",
  "thiserror 2.0.18",
  "utoipa",
@@ -10562,8 +10484,8 @@ dependencies = [
 
 [[package]]
 name = "tari_consensus_types"
-version = "0.47.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.49.2"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "borsh",
  "minicbor",
@@ -10575,7 +10497,7 @@ dependencies = [
  "tari_crypto",
  "tari_engine_types",
  "tari_ootle_common_types",
- "tari_sidechain 8.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d)",
+ "tari_sidechain 9.0.0",
  "tari_template_lib",
 ]
 
@@ -10630,7 +10552,7 @@ dependencies = [
  "tari_script",
  "tari_service_framework",
  "tari_shutdown",
- "tari_sidechain 8.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tari_sidechain 8.0.0",
  "tari_storage",
  "tari_test_utils",
  "tari_transaction_components",
@@ -10665,8 +10587,8 @@ dependencies = [
 
 [[package]]
 name = "tari_engine_types"
-version = "0.47.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.49.2"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "blake2 0.10.6",
  "borsh",
@@ -10688,7 +10610,6 @@ dependencies = [
  "tari_bor",
  "tari_crypto",
  "tari_hashing",
- "tari_ootle_template_metadata",
  "tari_template_abi",
  "tari_template_lib",
  "thiserror 2.0.18",
@@ -10716,8 +10637,8 @@ dependencies = [
 
 [[package]]
 name = "tari_indexer_client"
-version = "0.48.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.50.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "anyhow",
  "bounded-vec",
@@ -10734,7 +10655,6 @@ dependencies = [
  "tari_consensus_types",
  "tari_engine_types",
  "tari_ootle_common_types",
- "tari_ootle_template_metadata",
  "tari_ootle_transaction",
  "tari_template_abi",
  "tari_template_lib_types",
@@ -10759,8 +10679,8 @@ dependencies = [
 
 [[package]]
 name = "tari_jellyfish"
-version = "7.0.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "7.1.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "blake2 0.10.6",
  "borsh",
@@ -10833,8 +10753,8 @@ dependencies = [
 
 [[package]]
 name = "tari_ootle_address"
-version = "0.14.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.15.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "bech32",
  "ootle-network",
@@ -10847,8 +10767,8 @@ dependencies = [
 
 [[package]]
 name = "tari_ootle_app_utilities"
-version = "0.47.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.49.2"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "anyhow",
  "blake2 0.10.6",
@@ -10874,8 +10794,8 @@ dependencies = [
  "tari_ootle_common_types",
  "tari_ootle_storage",
  "tari_ootle_transaction",
- "tari_sidechain 8.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "tari_sidechain 8.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d)",
+ "tari_sidechain 8.0.0",
+ "tari_sidechain 9.0.0",
  "tari_template_lib",
  "tari_transaction_components",
  "thiserror 2.0.18",
@@ -10886,8 +10806,8 @@ dependencies = [
 
 [[package]]
 name = "tari_ootle_common_types"
-version = "0.47.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.49.2"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "blake2 0.10.6",
  "borsh",
@@ -10908,16 +10828,16 @@ dependencies = [
  "tari_crypto",
  "tari_engine_types",
  "tari_hashing",
- "tari_ootle_template_metadata",
- "tari_sidechain 8.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d)",
+ "tari_ootle_sr25519",
+ "tari_sidechain 9.0.0",
  "tari_template_lib_types",
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "tari_ootle_light_client"
-version = "0.1.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.3.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "ootle-network",
  "serde",
@@ -10927,16 +10847,29 @@ dependencies = [
  "tari_ootle_common_types",
  "tari_ootle_storage",
  "tari_ootle_transaction",
- "tari_sidechain 8.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d)",
+ "tari_sidechain 9.0.0",
  "tari_state_tree",
  "tari_template_lib_types",
  "thiserror 2.0.18",
 ]
 
 [[package]]
+name = "tari_ootle_sr25519"
+version = "0.1.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
+dependencies = [
+ "curve25519-dalek 5.0.0",
+ "merlin",
+ "rand 0.10.1",
+ "tari_crypto",
+ "tari_template_lib_types",
+ "zeroize",
+]
+
+[[package]]
 name = "tari_ootle_storage"
-version = "0.47.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.49.2"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "anyhow",
  "bitflags 2.10.0",
@@ -10955,7 +10888,7 @@ dependencies = [
  "tari_engine_types",
  "tari_ootle_common_types",
  "tari_ootle_transaction",
- "tari_sidechain 8.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d)",
+ "tari_sidechain 9.0.0",
  "tari_state_tree",
  "tari_template_lib_types",
  "thiserror 2.0.18",
@@ -10963,28 +10896,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "tari_ootle_template_metadata"
-version = "0.16.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
-dependencies = [
- "borsh",
- "cargo_toml",
- "gix-hash",
- "hex",
- "minicbor",
- "multihash",
- "serde",
- "sha2",
- "tari_bor",
- "tari_template_lib_types",
- "thiserror 2.0.18",
- "url",
-]
-
-[[package]]
 name = "tari_ootle_transaction"
-version = "0.47.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.49.2"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "borsh",
  "hex",
@@ -11001,15 +10915,14 @@ dependencies = [
  "tari_engine_types",
  "tari_hashing",
  "tari_ootle_common_types",
- "tari_ootle_template_metadata",
  "tari_template_lib_types",
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "tari_ootle_wallet_crypto"
-version = "0.48.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.50.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "argon2 0.5.3",
  "blake2 0.10.6",
@@ -11027,6 +10940,7 @@ dependencies = [
  "tari_engine_types",
  "tari_hashing",
  "tari_ootle_common_types",
+ "tari_ootle_transaction",
  "tari_template_lib_types",
  "tari_utilities",
  "thiserror 2.0.18",
@@ -11035,8 +10949,8 @@ dependencies = [
 
 [[package]]
 name = "tari_ootle_wallet_sdk"
-version = "0.49.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.51.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "anyhow",
  "futures",
@@ -11072,7 +10986,7 @@ dependencies = [
 [[package]]
 name = "tari_ootle_wallet_sdk_services"
 version = "0.34.2"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "anyhow",
  "futures",
@@ -11100,8 +11014,8 @@ dependencies = [
 
 [[package]]
 name = "tari_ootle_wallet_storage_sqlite"
-version = "0.49.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.51.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "diesel",
  "diesel_migrations",
@@ -11206,15 +11120,15 @@ dependencies = [
  "log",
  "serde",
  "tari_crypto",
- "tari_jellyfish 7.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tari_jellyfish 7.0.0",
  "tari_utilities",
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "tari_sidechain"
-version = "8.0.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "9.0.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -11223,23 +11137,24 @@ dependencies = [
  "log",
  "serde",
  "tari_crypto",
- "tari_jellyfish 7.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d)",
+ "tari_jellyfish 7.1.0",
  "tari_utilities",
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "tari_state_tree"
-version = "0.47.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.49.2"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
+ "borsh",
  "log",
  "minicbor",
  "ootle-network",
  "serde",
  "tari_bor",
  "tari_engine_types",
- "tari_jellyfish 7.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d)",
+ "tari_jellyfish 7.1.0",
  "tari_ootle_common_types",
  "tari_template_lib_types",
  "thiserror 2.0.18",
@@ -11260,8 +11175,8 @@ dependencies = [
 
 [[package]]
 name = "tari_template_abi"
-version = "0.21.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.22.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "minicbor",
  "serde",
@@ -11271,8 +11186,8 @@ dependencies = [
 
 [[package]]
 name = "tari_template_builtin"
-version = "0.44.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.46.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "anyhow",
  "tari_template_lib_types",
@@ -11280,8 +11195,8 @@ dependencies = [
 
 [[package]]
 name = "tari_template_lib"
-version = "0.35.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.37.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "borsh",
  "minicbor",
@@ -11294,8 +11209,8 @@ dependencies = [
 
 [[package]]
 name = "tari_template_lib_types"
-version = "0.35.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.36.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "bnum",
  "borsh",
@@ -11309,8 +11224,8 @@ dependencies = [
 
 [[package]]
 name = "tari_template_macros"
-version = "0.24.0"
-source = "git+https://github.com/tari-project/tari-ootle.git?rev=c72aa4083877153bdfc737b5da6a02872bc6a81d#c72aa4083877153bdfc737b5da6a02872bc6a81d"
+version = "0.26.0"
+source = "git+https://github.com/tari-project/tari-ootle.git?rev=aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90#aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -11369,7 +11284,7 @@ dependencies = [
  "tari_max_size",
  "tari_mmr",
  "tari_script",
- "tari_sidechain 8.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tari_sidechain 8.0.0",
  "tari_utilities",
  "thiserror 2.0.18",
  "utoipa",

@@ -54,7 +54,7 @@ use minotari_wallet::transactions::{
     abandon::AbandonSendError, input_selector::UtxoSelectionError,
 };
 use tari_common::configuration::Network;
-use tari_ootle_wallet_sdk::{OotleAddress, PayRef, crypto::memo::Memo};
+use tari_ootle_wallet_sdk::{DestinationTag, OotleAddress, crypto::memo::Memo};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
 use crate::LOG_TARGET_APP_LOGIC;
@@ -655,7 +655,7 @@ fn l2_send_memo(
     pay_ref: Option<&str>,
     destination: &OotleAddress,
 ) -> Result<Option<(String, Memo)>, TransactionError> {
-    let embedded = destination.pay_ref().map(|p| p.as_bytes());
+    let embedded = destination.destination_tag().map(|tag| tag.as_bytes());
     let bytes = match (pay_ref.map(str::as_bytes), embedded) {
         (Some(explicit), Some(embedded)) if explicit != embedded => {
             return Err(TransactionError::InvalidAddress(
@@ -665,12 +665,12 @@ fn l2_send_memo(
         (Some(bytes), _) | (None, Some(bytes)) => bytes,
         (None, None) => return Ok(None),
     };
-    let memo = PayRef::new_checked(bytes)
-        .and_then(|_| Memo::new_pay_ref_and_message(bytes, ""))
+    let memo = DestinationTag::new_checked(bytes)
+        .and_then(|_| Memo::new_destination_tag_and_message(bytes, ""))
         .ok_or_else(|| {
             TransactionError::InvalidAddress(format!(
                 "Pay reference must be 1 to {} bytes",
-                PayRef::MAX_LEN
+                DestinationTag::MAX_LEN
             ))
         })?;
     // Only printable ASCII is shown as text, so the PIN prompt can't show a lookalike of what is sent.
@@ -1213,7 +1213,9 @@ mod tests {
     }
 
     fn memo_pay_ref(memo: &Memo) -> Vec<u8> {
-        memo.as_pay_ref().expect("memo has a pay ref").to_vec()
+        memo.as_destination_tag()
+            .expect("memo has a pay ref")
+            .to_vec()
     }
 
     #[test]
@@ -1228,8 +1230,8 @@ mod tests {
 
     #[test]
     fn l2_send_memo_falls_back_to_the_address_pay_ref() {
-        let embedded = PayRef::new_checked(b"from-address".as_slice()).expect("pay ref");
-        let address = ootle_address().with_pay_ref(embedded);
+        let embedded = DestinationTag::new_checked(b"from-address".as_slice()).expect("pay ref");
+        let address = ootle_address().with_destination_tag(embedded);
 
         let (shown, memo) = l2_send_memo(None, &address)
             .expect("no pay ref")
@@ -1245,8 +1247,8 @@ mod tests {
 
     #[test]
     fn l2_send_memo_rejects_a_pay_ref_that_differs_from_the_address_one() {
-        let embedded = PayRef::new_checked(b"from-address".as_slice()).expect("pay ref");
-        let address = ootle_address().with_pay_ref(embedded);
+        let embedded = DestinationTag::new_checked(b"from-address".as_slice()).expect("pay ref");
+        let address = ootle_address().with_destination_tag(embedded);
         let err = l2_send_memo(Some("explicit"), &address).expect_err("rejected");
         assert!(matches!(err, TransactionError::InvalidAddress(_)));
     }
@@ -1259,8 +1261,8 @@ mod tests {
             "ref\u{200D}".as_bytes().to_vec(),
             "line\nbreak".as_bytes().to_vec(),
         ] {
-            let embedded = PayRef::new_checked(bytes.clone()).expect("pay ref");
-            let address = ootle_address().with_pay_ref(embedded);
+            let embedded = DestinationTag::new_checked(bytes.clone()).expect("pay ref");
+            let address = ootle_address().with_destination_tag(embedded);
             let (shown, memo) = l2_send_memo(None, &address)
                 .expect("the recipient's bytes are sent")
                 .expect("a memo");
@@ -1305,12 +1307,12 @@ mod tests {
 
     #[test]
     fn l2_send_memo_rejects_an_empty_or_oversized_pay_ref() {
-        let too_long = "a".repeat(PayRef::MAX_LEN + 1);
+        let too_long = "a".repeat(DestinationTag::MAX_LEN + 1);
         for pay_ref in ["", too_long.as_str()] {
             let err = l2_send_memo(Some(pay_ref), &ootle_address()).expect_err("rejected");
             assert!(matches!(err, TransactionError::InvalidAddress(_)));
         }
-        let longest = "a".repeat(PayRef::MAX_LEN);
+        let longest = "a".repeat(DestinationTag::MAX_LEN);
         assert!(l2_send_memo(Some(&longest), &ootle_address()).is_ok());
     }
 

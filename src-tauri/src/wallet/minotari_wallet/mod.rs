@@ -97,10 +97,12 @@ use minotari_wallet::{
         TransactionDisplayStatus, TransactionSource,
         abandon::{ABANDONED_REASON, abandon_send},
         burn::{BurnTxParams, BurnTxResult, create_burn_tx, persist_burn_records},
-        fee_estimator::estimated_output_size_for_payment_id,
+        fee_estimator::{
+            estimated_output_size_for_payment_id, estimated_output_size_for_recipients,
+        },
         manager::record_first_broadcast,
         monitor::MAX_BROADCAST_ATTEMPTS,
-        one_sided_transaction::{Recipient, check_memos_and_estimate_output_size},
+        one_sided_transaction::Recipient,
     },
     utils::{
         crypto::{encrypt_data, parse_claimable_public_key_hex},
@@ -121,7 +123,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
-use tari_common_types::{tari_address::TariAddress, transaction::TxId};
+use tari_common_types::transaction::TxId;
 use tari_transaction_components::fee::Fee;
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tari_transaction_components::transaction_components::{MAX_TRANSACTION_INPUTS, Transaction};
@@ -498,8 +500,14 @@ impl MinotariWalletManager {
         // The node URL is captured at start; a node switch takes effect on the next wallet phase restart.
         let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
         let (shutdown_tx, shutdown_rx) = tokio::sync::broadcast::channel(1);
-        let handle = BurnProofWorker::new(pool, client, Self::burn_proofs_dir()?, wallet_network())
-            .run(shutdown_rx);
+        let handle = BurnProofWorker::new(
+            pool,
+            client,
+            Self::burn_proofs_dir()?,
+            wallet_network(),
+            REQUIRED_CONFIRMATIONS,
+        )
+        .run(shutdown_rx);
         *INSTANCE.burn_proof_handle.write().await = Some(handle);
         info!(target: LOG_TARGET, "Burn proof worker spawned.");
 
@@ -621,14 +629,11 @@ impl MinotariWalletManager {
     ) -> Result<u64, anyhow::Error> {
         let payment_id = payment_id.filter(|id| !id.is_empty());
         let output_size = match parse_destination_address(address) {
-            Ok(destination) => check_memos_and_estimate_output_size(
-                &[Recipient {
-                    address: destination,
-                    amount: MicroMinotari::zero(),
-                    payment_id,
-                }],
-                &Self::get_owner_address().await?.parse::<TariAddress>()?,
-            )?,
+            Ok(destination) => estimated_output_size_for_recipients(&[Recipient {
+                address: destination,
+                amount: MicroMinotari::zero(),
+                payment_id,
+            }])?,
             Err(_) => estimated_output_size_for_payment_id(payment_id.map_or(0, |id| id.len()))?,
         };
         let account_id = Self::owner_account_id().await?;
@@ -1421,7 +1426,7 @@ fn scan_reached_tip(final_height: u64, tip_height: u64) -> bool {
 /// `InputSelector::fetch_unspent_outputs` will select for; one µT more fails with
 /// `ChangeNotAffordable`.
 ///
-/// This mirrors minotari's `minotari/src/transactions/input_selector.rs` at v0.5.2 (query,
+/// This mirrors minotari's `minotari/src/transactions/input_selector.rs` at v0.6.0 (query,
 /// fee terms, minimum change, dust rule, input cap). Re-check it against that file on every
 /// minotari bump; `the_max_sendable_amount_sends_with_change_and_one_micro_tari_more_does_not`
 /// is the guard.
@@ -1679,10 +1684,11 @@ mod tests {
     use minotari_wallet::models::OutputStatus;
     use minotari_wallet::transactions::{
         burn::{BurnTxParams, create_burn_tx},
+        fee_estimator::estimated_output_size_for_recipients,
         input_selector::UtxoSelectionError,
         manager::{TransactionSender, record_first_broadcast},
         monitor::MAX_BROADCAST_ATTEMPTS,
-        one_sided_transaction::{Recipient, check_memos_and_estimate_output_size},
+        one_sided_transaction::Recipient,
     };
     use std::collections::HashSet;
     use tari_common::configuration::Network;
@@ -2187,14 +2193,11 @@ mod tests {
                 .expect("account exists")
                 .get_address(Network::LocalNet, &Zeroizing::new(PASSWORD.to_string()))
                 .expect("address");
-            let output_size = check_memos_and_estimate_output_size(
-                &[Recipient {
-                    address: own_address.clone(),
-                    amount: MicroMinotari::zero(),
-                    payment_id: payment_id.map(str::to_string),
-                }],
-                &own_address,
-            )
+            let output_size = estimated_output_size_for_recipients(&[Recipient {
+                address: own_address.clone(),
+                amount: MicroMinotari::zero(),
+                payment_id: payment_id.map(str::to_string),
+            }])
             .expect("output size");
             let max = max_sendable(&conn, account_id, output_size).expect("max");
             drop(conn);
