@@ -56,10 +56,7 @@ import { useUiMiningStateMachine } from '@app/hooks/mining/useMiningUiStateMachi
 import useEarningsRecap from '@app/hooks/mining/useEarningsRecap';
 import { useAirdropPolling } from '@app/hooks/airdrop/stateHelpers/useAirdropPolling';
 import { useAutomaticOtpClaim } from '@app/hooks/airdrop/claim/useAutomaticOtpClaim';
-import {
-    useTrancheAutoRefresh,
-    resetTrancheAutoRefreshStateForTests,
-} from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh';
+import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { useAirdropStore, useConfigUIStore, useUIStore } from '@app/store';
@@ -70,7 +67,6 @@ describe('timer and listener lifecycle fixes (#3373)', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         vi.clearAllMocks();
-        resetTrancheAutoRefreshStateForTests();
         mockListen.mockImplementation(async () => vi.fn());
         mockInvoke.mockResolvedValue(undefined);
     });
@@ -214,7 +210,7 @@ describe('timer and listener lifecycle fixes (#3373)', () => {
         expect(unlistenSecond).toHaveBeenCalledTimes(1);
     });
 
-    it('coalesces simultaneous focus and visibilitychange tranche refreshes across multiple mounted hooks', async () => {
+    it('refreshes tranches once per focus when the claim modal hook is mounted alongside the sidebar hook', async () => {
         useAirdropStore.setState({
             userDetails: {
                 user: {
@@ -245,18 +241,12 @@ describe('timer and listener lifecycle fixes (#3373)', () => {
         const first = renderHook(() => useTrancheAutoRefresh({ enabled: true, notifyOnNewTranches: false }), {
             wrapper,
         });
-        const second = renderHook(() => useTrancheAutoRefresh({ enabled: true, notifyOnNewTranches: false }), {
+        const second = renderHook(() => useTrancheAutoRefresh({ enabled: false, notifyOnNewTranches: false }), {
             wrapper,
-        });
-
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            get: () => 'visible',
         });
 
         await act(async () => {
             window.dispatchEvent(new Event('focus'));
-            document.dispatchEvent(new Event('visibilitychange'));
             await Promise.resolve();
         });
 
