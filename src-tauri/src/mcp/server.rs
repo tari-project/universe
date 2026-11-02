@@ -31,6 +31,7 @@ use rmcp::transport::streamable_http_server::tower::StreamableHttpService;
 use sha2::{Digest, Sha256};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent, SECONDS_PER_DAY};
@@ -41,12 +42,14 @@ use crate::node::node_adapter::BaseNodeStatus;
 
 static INSTANCE: LazyLock<RwLock<McpServerManager>> =
     LazyLock::new(|| RwLock::new(McpServerManager::new()));
+static LIFECYCLE: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 const SHUTDOWN_TIMEOUT_SECS: u64 = 5;
 
 pub struct McpServerManager {
     server_handle: Option<JoinHandle<()>>,
     shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
+    request_cancel: Option<CancellationToken>,
     bound_port: Option<u16>,
     node_status_rx: Option<Arc<tokio::sync::watch::Receiver<BaseNodeStatus>>>,
 }
@@ -56,6 +59,7 @@ impl McpServerManager {
         Self {
             server_handle: None,
             shutdown_tx: None,
+            request_cancel: None,
             bound_port: None,
             node_status_rx: None,
         }
@@ -79,6 +83,11 @@ impl McpServerManager {
     }
 
     pub async fn start() -> Result<u16, anyhow::Error> {
+        let _lifecycle = LIFECYCLE.lock().await;
+        Self::start_locked().await
+    }
+
+    async fn start_locked() -> Result<u16, anyhow::Error> {
         // Check if already running
         {
             let manager = Self::current().read().await;
@@ -127,11 +136,19 @@ impl McpServerManager {
         info!(target: LOG_TARGET_APP_LOGIC, "MCP server listening on 127.0.0.1:{bound_port}");
 
         // Build the rmcp StreamableHttpService
+        let request_cancel = CancellationToken::new();
+        let handler_cancel = request_cancel.clone();
         let mcp_service: StreamableHttpService<TariMcpHandler, LocalSessionManager> =
             StreamableHttpService::new(
-                move || Ok(TariMcpHandler::new(node_status_rx.clone())),
+                move || {
+                    Ok(TariMcpHandler::new(
+                        node_status_rx.clone(),
+                        handler_cancel.clone(),
+                    ))
+                },
                 LocalSessionManager::default().into(),
-                StreamableHttpServerConfig::default(),
+                StreamableHttpServerConfig::default()
+                    .with_cancellation_token(request_cancel.clone()),
             );
 
         // Build axum 0.8 router with bearer auth middleware
@@ -163,6 +180,7 @@ impl McpServerManager {
             let mut manager = Self::current().write().await;
             manager.server_handle = Some(handle);
             manager.shutdown_tx = Some(shutdown_tx);
+            manager.request_cancel = Some(request_cancel);
             manager.bound_port = Some(bound_port);
         }
 
@@ -172,22 +190,34 @@ impl McpServerManager {
     }
 
     pub async fn stop() {
-        let (handle, shutdown_tx) = {
+        let _lifecycle = LIFECYCLE.lock().await;
+        Self::stop_locked().await;
+    }
+
+    async fn stop_locked() {
+        let (handle, shutdown_tx, request_cancel) = {
             let mut manager = Self::current().write().await;
             let handle = manager.server_handle.take();
             let tx = manager.shutdown_tx.take();
+            let request_cancel = manager.request_cancel.take();
             manager.bound_port = None;
-            (handle, tx)
+            (handle, tx, request_cancel)
         };
+
+        if let Some(cancel) = request_cancel {
+            cancel.cancel();
+        }
+        crate::wallet::send_gate::clear_inflight_from(crate::wallet::send_gate::SendOrigin::Mcp)
+            .await;
 
         if let Some(tx) = shutdown_tx {
             let _unused = tx.send(true);
         }
 
-        if let Some(handle) = handle {
+        if let Some(mut handle) = handle {
             let timeout = tokio::time::timeout(
                 std::time::Duration::from_secs(SHUTDOWN_TIMEOUT_SECS),
-                handle,
+                &mut handle,
             );
             match timeout.await {
                 Ok(Ok(())) => {
@@ -197,20 +227,20 @@ impl McpServerManager {
                     error!(target: LOG_TARGET_APP_LOGIC, "MCP server task panicked: {e:?}");
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "MCP server shutdown timed out after {SHUTDOWN_TIMEOUT_SECS}s");
+                    warn!(target: LOG_TARGET_APP_LOGIC, "MCP server shutdown timed out after {SHUTDOWN_TIMEOUT_SECS}s; aborting task");
+                    handle.abort();
+                    let _unused = handle.await;
                 }
             }
         }
 
         EventsEmitter::emit_mcp_server_status_update(false, None).await;
-
-        crate::wallet::send_gate::clear_inflight_from(crate::wallet::send_gate::SendOrigin::Mcp)
-            .await;
     }
 
     pub async fn restart() -> Result<u16, anyhow::Error> {
-        Self::stop().await;
-        Self::start().await
+        let _lifecycle = LIFECYCLE.lock().await;
+        Self::stop_locked().await;
+        Self::start_locked().await
     }
 }
 
@@ -253,5 +283,46 @@ async fn auth_middleware(
             }
         }
         _ => Err(axum::http::StatusCode::UNAUTHORIZED),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn lifecycle_calls_wait_for_a_stopping_server() {
+        let cancel = CancellationToken::new();
+        let (finish_tx, finish_rx) = tokio::sync::oneshot::channel::<()>();
+        let handle = tokio::spawn(async move {
+            let _unused = finish_rx.await;
+        });
+        {
+            let mut manager = McpServerManager::current().write().await;
+            manager.server_handle = Some(handle);
+            manager.request_cancel = Some(cancel.clone());
+            manager.bound_port = Some(19222);
+        }
+
+        let mut stop = Box::pin(McpServerManager::stop());
+        assert!(futures::poll!(stop.as_mut()).is_pending());
+        assert!(cancel.is_cancelled());
+        assert!(McpServerManager::current().read().await.port().is_none());
+
+        // The old listener is still shutting down even though its state was taken.
+        let mut start = Box::pin(McpServerManager::start());
+        let mut restart = Box::pin(McpServerManager::restart());
+        let mut second_stop = Box::pin(McpServerManager::stop());
+        assert!(futures::poll!(start.as_mut()).is_pending());
+        assert!(futures::poll!(restart.as_mut()).is_pending());
+        assert!(futures::poll!(second_stop.as_mut()).is_pending());
+
+        drop(start);
+        drop(restart);
+        drop(second_stop);
+        drop(stop);
+        let _unused = finish_tx.send(());
+        assert!(LIFECYCLE.try_lock().is_ok());
     }
 }

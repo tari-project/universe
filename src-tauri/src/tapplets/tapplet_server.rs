@@ -30,14 +30,28 @@ use crate::{
 
 use axum::Router;
 use log::{error, info};
-use std::{net::SocketAddr, path::PathBuf};
-use tokio::select;
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::LazyLock};
+use tokio::{select, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 use tower_http::services::ServeDir;
 
+static ACTIVE_TAPPLET_SERVERS: LazyLock<Mutex<HashMap<PathBuf, CancellationToken>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
 pub async fn start_tapplet(tapplet_path: PathBuf) -> Result<(String, CancellationToken), Error> {
     info!(target: LOG_TARGET_APP_LOGIC, "Start tapplet path {:?}", &tapplet_path);
-    serve(using_serve_dir(tapplet_path), 0).await
+    let key = tapplet_path
+        .canonicalize()
+        .unwrap_or_else(|_| tapplet_path.clone());
+    // Starts are serialized across tapplets; use per-path locks if the number grows.
+    let mut active_servers = ACTIVE_TAPPLET_SERVERS.lock().await;
+    active_servers.retain(|_, token| !token.is_cancelled());
+    if let Some(prev_token) = active_servers.remove(&key) {
+        prev_token.cancel();
+    }
+    let (address, cancel_token) = serve(using_serve_dir(tapplet_path), 0).await?;
+    active_servers.insert(key, cancel_token.clone());
+    Ok((address, cancel_token))
 }
 
 pub fn using_serve_dir(tapplet_path: PathBuf) -> Router {
@@ -86,5 +100,25 @@ pub async fn serve(app: Router, port: u16) -> Result<(String, CancellationToken)
 async fn shutdown_signal(cancel_token: CancellationToken) {
     select! {
         _ = cancel_token.cancelled() => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn concurrent_starts_leave_only_one_server_active_for_a_path() {
+        let directory = tempfile::tempdir().expect("temporary tapplet directory");
+        let path = directory.path().to_path_buf();
+        let (first, second) =
+            tokio::join!(start_tapplet(path.clone()), start_tapplet(path.clone()));
+        let (_, first_token) = first.expect("first server starts");
+        let (_, second_token) = second.expect("second server starts");
+
+        assert!(first_token.is_cancelled() ^ second_token.is_cancelled());
+        first_token.cancel();
+        second_token.cancel();
+        ACTIVE_TAPPLET_SERVERS.lock().await.remove(&path);
     }
 }
