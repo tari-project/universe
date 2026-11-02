@@ -10367,6 +10367,7 @@ dependencies = [
  "tari_ootle_wallet_sdk",
  "tari_ootle_wallet_sdk_services",
  "tari_ootle_wallet_storage_sqlite",
+ "tari_script",
  "tari_shutdown",
  "tari_sidechain 8.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=c72aa408)",
  "tari_template_lib",
