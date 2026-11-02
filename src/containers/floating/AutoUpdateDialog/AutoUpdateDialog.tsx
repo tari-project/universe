@@ -8,7 +8,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { UpdatedStatus } from './UpdatedStatus';
 import { ButtonSectionWrapper, ButtonsWrapper } from './AutoUpdateDialog.styles';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { setDialogToShow } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
@@ -53,16 +53,20 @@ const AutoUpdateDialog = memo(function AutoUpdateDialog() {
     const subtitle = resolveSubtitle(isDownloading, couldNotUpdate);
 
     useEffect(() => {
-        const unlistenPromise = listen(
+        let cancelled = false;
+        let unlistenFn: UnlistenFn | null = null;
+
+        listen(
             'updates_event',
             ({ payload }: { payload: AskForUpdatePayload | DownloadProgressPayload | CouldNotUpdatePayload }) => {
+                if (cancelled) return;
                 switch (payload.event_type) {
                     case 'ask_for_update':
                         setDialogToShow('autoUpdate');
                         setVersion(payload.version);
                         break;
                     case 'download_progress':
-                        if (!open) {
+                        if (useUIStore.getState().dialogToShow !== 'autoUpdate') {
                             // open when auto update is triggered
                             setDialogToShow('autoUpdate');
                         }
@@ -78,11 +82,19 @@ const AutoUpdateDialog = memo(function AutoUpdateDialog() {
                         break;
                 }
             }
-        );
+        ).then((unlisten) => {
+            if (cancelled) {
+                unlisten();
+            } else {
+                unlistenFn = unlisten;
+            }
+        });
+
         return () => {
-            unlistenPromise.then((unlisten) => unlisten());
+            cancelled = true;
+            unlistenFn?.();
         };
-    }, [open]);
+    }, []);
 
     const handleClose = useCallback(() => {
         console.info('Update declined');

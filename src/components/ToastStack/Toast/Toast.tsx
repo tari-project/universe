@@ -4,7 +4,8 @@ import { toastVariants } from './motion';
 import { removeToast, ToastType } from '../useToastStore';
 
 import { Wrapper, CloseButton, ToastContent, ProgressCircle, Title, Text } from './styles';
-import { useMotionValue, useMotionValueEvent } from 'motion/react';
+
+const CIRCLE_CIRCUMFERENCE = 75.398;
 
 interface ToastProps {
     id?: number | string;
@@ -19,21 +20,31 @@ interface ToastProps {
 export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = false, type = 'default' }: ToastProps) => {
     const [show, setShow] = useState(false);
     const [positionVariant, setPositionVariant] = useState('hidden');
-    const progress = useMotionValue(0);
-    const [progressValue, setProgressValue] = useState(0);
-    const progressInterval = useRef<NodeJS.Timeout>(undefined);
+    const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const elapsedTimeRef = useRef<number>(0);
-    const lastUpdateRef = useRef<number>(Date.now());
-    const [finished, setFinished] = useState(false);
+    const lastUpdateRef = useRef<number>(0);
+    const circleRef = useRef<SVGCircleElement | null>(null);
 
-    useMotionValueEvent(progress, 'change', (latest) => {
-        setProgressValue(latest);
-    });
-
-    const handleHide = useCallback((id: number | string = 0) => {
-        setShow(false);
-        removeToast(id);
+    const clearTimers = useCallback(() => {
+        if (dismissTimeoutRef.current !== null) {
+            clearTimeout(dismissTimeoutRef.current);
+            dismissTimeoutRef.current = null;
+        }
+        if (hideTimeoutRef.current !== null) {
+            clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+        }
     }, []);
+
+    const handleHide = useCallback(
+        (toastId: number | string = 0) => {
+            clearTimers();
+            setShow(false);
+            removeToast(toastId);
+        },
+        [clearTimers]
+    );
 
     useEffect(() => {
         setShow(true);
@@ -48,36 +59,51 @@ export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = fals
     }, [show, index]);
 
     useEffect(() => {
-        if (show) {
-            if (!isHovered) {
-                lastUpdateRef.current = Date.now();
-                const updateProgress = () => {
-                    const now = Date.now();
-                    elapsedTimeRef.current += now - lastUpdateRef.current;
-                    lastUpdateRef.current = now;
+        if (!show) {
+            return clearTimers;
+        }
 
-                    const newProgress = (elapsedTimeRef.current / timeout) * 100;
+        const safeTimeout = Math.max(timeout, 1);
+        const circle = circleRef.current;
 
-                    if (newProgress <= 100) {
-                        progress.set(newProgress);
-                        progressInterval.current = setTimeout(updateProgress, 10);
-                    } else if (!finished) {
-                        setFinished(true);
-                        setTimeout(() => handleHide(id), 200);
-                    }
-                };
+        if (!isHovered) {
+            const remaining = Math.max(0, safeTimeout - elapsedTimeRef.current);
+            lastUpdateRef.current = Date.now();
 
-                updateProgress();
-            } else {
-                // save the pause point
-                const now = Date.now();
-                elapsedTimeRef.current += now - lastUpdateRef.current;
-                clearTimeout(progressInterval.current);
+            if (circle) {
+                const startRatio = Math.min(Math.max(elapsedTimeRef.current / safeTimeout, 0), 1);
+                circle.style.transition = 'none';
+                circle.style.strokeDashoffset = `${CIRCLE_CIRCUMFERENCE * (1 - startRatio)}`;
+                void circle.getBoundingClientRect();
+                circle.style.transition = `stroke-dashoffset ${remaining}ms linear`;
+                circle.style.strokeDashoffset = '0';
+            }
+
+            dismissTimeoutRef.current = setTimeout(() => {
+                dismissTimeoutRef.current = null;
+                elapsedTimeRef.current = safeTimeout;
+                hideTimeoutRef.current = setTimeout(() => {
+                    hideTimeoutRef.current = null;
+                    handleHide(id);
+                }, 200);
+            }, remaining);
+        } else {
+            if (lastUpdateRef.current > 0) {
+                elapsedTimeRef.current = Math.min(
+                    safeTimeout,
+                    elapsedTimeRef.current + Math.max(0, Date.now() - lastUpdateRef.current)
+                );
+            }
+            clearTimers();
+            if (circle) {
+                const pausedRatio = Math.min(Math.max(elapsedTimeRef.current / safeTimeout, 0), 1);
+                circle.style.transition = 'none';
+                circle.style.strokeDashoffset = `${CIRCLE_CIRCUMFERENCE * (1 - pausedRatio)}`;
             }
         }
 
-        return () => clearTimeout(progressInterval.current);
-    }, [show, isHovered, timeout, id, handleHide, finished, progress]);
+        return clearTimers;
+    }, [show, isHovered, timeout, id, handleHide, clearTimers]);
 
     return (
         <Wrapper
@@ -93,13 +119,14 @@ export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = fals
                 <Title>{title}</Title>
                 {text && <Text>{text}</Text>}
                 <CloseButton onClick={() => handleHide(id)} $type={type}>
-                    <ProgressCircle width="28" height="28" viewBox="0 0 28 28" $progress={progressValue} $type={type}>
+                    <ProgressCircle width="28" height="28" viewBox="0 0 28 28" $type={type}>
                         <circle
+                            ref={circleRef}
                             cx="14"
                             cy="14"
                             r="12"
-                            strokeDasharray="75.398"
-                            strokeDashoffset={75.398 - (75.398 * Math.min(progressValue, 100)) / 100}
+                            strokeDasharray={String(CIRCLE_CIRCUMFERENCE)}
+                            strokeDashoffset={CIRCLE_CIRCUMFERENCE}
                         />
                     </ProgressCircle>
                     <span>×</span>
