@@ -9,6 +9,7 @@ import {
     TransactionDirection,
     TransactionSource,
     TransactionDisplayStatus,
+    OutputStatus,
 } from '@app/types/app-status.ts';
 
 import { formatEffectiveDate } from '../helpers';
@@ -275,7 +276,7 @@ export function getInputDetails(input: TransactionInput): StatusListEntry[] {
     return sortByFieldOrder(entries, INPUT_FIELD_ORDER);
 }
 
-export function getOutputDetails(output: TransactionOutput): StatusListEntry[] {
+export function getOutputDetails(output: TransactionOutput, currentStatus: OutputStatus | null): StatusListEntry[] {
     const entries: OrderedEntry[] = [];
 
     entries.push({
@@ -288,7 +289,7 @@ export function getOutputDetails(output: TransactionOutput): StatusListEntry[] {
     entries.push({
         field: OutputField.Status,
         label: i18n.t('wallet:details.status'),
-        value: output.status,
+        value: currentStatus ?? i18n.t('wallet:details.status-unavailable'),
     });
 
     entries.push({

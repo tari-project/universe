@@ -2431,6 +2431,15 @@ pub async fn get_wallet_transaction_history() -> Result<Vec<DisplayedTransaction
 }
 
 #[tauri::command]
+pub async fn get_wallet_output_statuses(
+    hashes: Vec<tari_common_types::types::FixedHash>,
+) -> Result<Vec<Option<minotari_wallet::models::OutputStatus>>, String> {
+    MinotariWalletManager::get_output_statuses(hashes)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn refresh_wallet_history(app_handle: tauri::AppHandle) -> Result<(), String> {
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet])
