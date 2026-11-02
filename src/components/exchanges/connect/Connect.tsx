@@ -85,7 +85,6 @@ export const Connect = () => {
 
     const handleWXTMSubmit = useCallback(async () => {
         const encodedAddress = await convertEthAddressToTariAddress(address, data?.id || 'unknown');
-        console.info('Encoded exchange address with payment ID');
         return encodedAddress;
     }, [address, data?.id]);
 
