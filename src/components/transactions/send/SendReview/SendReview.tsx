@@ -19,6 +19,8 @@ interface Props {
     message?: string;
     /** The destination address replaced `message`'s source with its own payment id. */
     paymentIdOverridden?: boolean;
+    /** The send is recorded but the node hasn't accepted it yet; it is retried automatically. */
+    notAcceptedYet?: boolean;
     feeMicroMinotari?: number | null;
     handleClose: () => void;
 }
@@ -30,6 +32,7 @@ export function SendReview({
     address,
     message,
     paymentIdOverridden,
+    notAcceptedYet,
     feeMicroMinotari,
     handleClose,
 }: Props) {
@@ -113,6 +116,13 @@ export function SendReview({
                                 <strong>{`${formattedAmount} XTM`}</strong> {t('send.completed-amount-sent')}{' '}
                                 <strong>{formattedAddress}</strong>
                                 {`.`}
+                                {notAcceptedYet && (
+                                    <>
+                                        <br />
+                                        <br />
+                                        <span data-testid="send-not-accepted">{t('send.not-accepted-yet')}</span>
+                                    </>
+                                )}
                             </>
                         </StatusHero>
                     )}

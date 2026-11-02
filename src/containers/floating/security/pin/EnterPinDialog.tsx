@@ -12,6 +12,7 @@ import { Header, Heading, Wrapper } from './styles.ts';
 const REASON_KEYS: Partial<Record<PinPromptContext['kind'], string>> = {
     restore_wallet_details: 'security.pin.restore-wallet-details',
     seed_needs_pin: 'security.pin.seed-needs-pin',
+    security_upgrade: 'security.pin.security-upgrade',
     l2_unlock: 'security.pin.l2-unlock',
     l2_seed_export: 'security.pin.l2-seed-export',
     l2_seed_import: 'security.pin.l2-seed-import',
@@ -34,6 +35,7 @@ export default function EnterPinDialog() {
     const fromTapplet = (sendContext ?? l2SendContext)?.origin === 'tapplet';
 
     const l2ClaimContext = pinContext?.kind === 'l2_claim' ? pinContext : null;
+    const abandonContext = pinContext?.kind === 'abandon' ? pinContext : null;
     const reasonKey = pinContext ? REASON_KEYS[pinContext.kind] : undefined;
 
     function handleClose() {
@@ -67,15 +69,19 @@ export default function EnterPinDialog() {
                 <Wrapper>
                     <Header>
                         <Heading>
-                            {burnContext
-                                ? t('security.pin.approve-burn')
-                                : l2ClaimContext
-                                  ? t('l2.claim.approve')
-                                  : fromTapplet
-                                    ? t('security.pin.approve-tapplet-send')
-                                    : sendContext || l2SendContext
-                                      ? t('security.pin.approve-send')
-                                      : t('security.pin.enter')}
+                            {pinContext?.kind === 'security_upgrade'
+                                ? t('security.pin.security-upgrade-title')
+                                : burnContext
+                                  ? t('security.pin.approve-burn')
+                                  : abandonContext
+                                    ? t('abandon.approve')
+                                    : l2ClaimContext
+                                      ? t('l2.claim.approve')
+                                      : fromTapplet
+                                        ? t('security.pin.approve-tapplet-send')
+                                        : sendContext || l2SendContext
+                                          ? t('security.pin.approve-send')
+                                          : t('security.pin.enter')}
                         </Heading>{' '}
                         <CloseButton onClick={handleClose} />
                     </Header>
@@ -120,6 +126,14 @@ export default function EnterPinDialog() {
                             destination={l2ClaimContext.commitment}
                             feeMicroMinotari={l2ClaimContext.fee_micro_minotari}
                             subtitle={t('l2.claim.approve-subtitle')}
+                        />
+                    )}
+                    {abandonContext && (
+                        <TransactionContextSummary
+                            kind="abandon"
+                            amountMicroMinotari={abandonContext.amount_micro_minotari}
+                            destination={abandonContext.tx_id}
+                            abandon={abandonContext}
                         />
                     )}
                     <EnterPin onSubmit={handleSubmit} />

@@ -162,6 +162,11 @@ export interface SeedNeedsPinPromptContext {
     kind: 'seed_needs_pin';
 }
 
+/** One-time startup ask: the stored Monero seed needs the PIN to move to the current encryption. */
+export interface SecurityUpgradePinPromptContext {
+    kind: 'security_upgrade';
+}
+
 /** Unlocking (or first enabling) the L2 wallet, revealing, importing or resetting its seed. */
 export interface L2SeedPinPromptContext {
     kind: 'l2_unlock' | 'l2_seed_export' | 'l2_seed_import' | 'l2_seed_reset';
@@ -195,13 +200,25 @@ export interface L2ClaimPinPromptContext {
     fee_micro_minotari: number | null;
 }
 
+/** Abandoning stalled send or burn `tx_id`, which hands its inputs back. */
+export interface AbandonPinPromptContext {
+    kind: 'abandon';
+    amount_micro_minotari: number;
+    tx_id: string;
+    /** The user accepted that it has no change output to recognise it by. */
+    accept_unreconcilable: boolean;
+    is_burn: boolean;
+}
+
 export type PinPromptContext =
     | SendPinPromptContext
+    | AbandonPinPromptContext
     | BurnPinPromptContext
     | L2SendPinPromptContext
     | L2ClaimPinPromptContext
     | RestoreWalletDetailsPinPromptContext
     | SeedNeedsPinPromptContext
+    | SecurityUpgradePinPromptContext
     | L2SeedPinPromptContext;
 
 /** Payload of `CreatePin` and `EnterPin`. `id` goes back in the `pin-dialog-response`. */
@@ -210,7 +227,7 @@ export interface PinPromptPayload {
     context?: PinPromptContext | null;
 }
 
-export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim';
+export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim' | 'abandon';
 
 /** XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs. */
 export interface L2Balance {
@@ -256,7 +273,8 @@ export interface L2Burn {
     claim_public_key: string;
     amount: number;
     proof_file: string | null;
-    status: 'pending' | 'claimable' | 'claimed' | 'foreign';
+    /** 'abandoned': the user abandoned it while pending; it may still be mined. */
+    status: 'pending' | 'abandoned' | 'claimable' | 'claimed' | 'foreign';
     /** The L1 height the burn was mined at, null when the L1 wallet doesn't know it. */
     mined_height: number | null;
     /** Unix seconds, when the burn was made. */

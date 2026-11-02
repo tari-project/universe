@@ -244,6 +244,12 @@ pub struct McpTransactionConfirmationPayload {
     pub payment_id: Option<String>,
     /// The destination address replaced the caller's Message with its own payment id.
     pub payment_id_overridden: bool,
+
+    /// For an abandon: the user accepted that it has no change output to recognise it by.
+    pub accept_unreconcilable: bool,
+    /// For an abandon: it is a burn to L2.
+    pub is_burn: bool,
+
     pub fee_micro_minotari: Option<u64>,
 }
 
@@ -274,6 +280,9 @@ pub enum PinPromptContext {
     RestoreWalletDetails,
     /// The stored seed is PIN-protected although the config says no PIN is set.
     SeedNeedsPin,
+    /// One-time ask at startup: the Monero seed is still on the legacy PIN cipher and needs
+    /// the PIN to move to the current one.
+    SecurityUpgrade,
     /// Unlocking (or first enabling) the L2 wallet.
     L2Unlock,
     /// Revealing the L2 seed words.
@@ -299,6 +308,14 @@ pub enum PinPromptContext {
         amount_micro_minotari: u64,
         commitment: String,
         fee_micro_minotari: Option<u64>,
+    },
+    /// Abandoning stalled send or burn `tx_id`, which hands its inputs back.
+    Abandon {
+        amount_micro_minotari: u64,
+        tx_id: String,
+        /// The user accepted that it has no change output to recognise it by.
+        accept_unreconcilable: bool,
+        is_burn: bool,
     },
 }
 

@@ -23,7 +23,7 @@
 use crate::binaries::binaries_resolver::LatestVersionApiAdapter;
 use crate::requests::clients::http_file_client::HttpFileClient;
 use crate::{APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC};
-use anyhow::{Error, anyhow};
+use anyhow::Error;
 use async_trait::async_trait;
 use log::{error, info};
 use std::path::PathBuf;
@@ -31,6 +31,7 @@ use tari_common::configuration::Network;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
+use super::adapter_github::{parse_expected_checksum, sibling_release_file};
 use super::binaries_resolver::BinaryDownloadInfo;
 
 pub(crate) struct TorReleaseAdapter {}
@@ -50,13 +51,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         // sending a PhaseStatus, leaving the phase reporting Initializing forever.
         let contents = String::from_utf8_lossy(&buffer_sha256);
 
-        let tor_hash = contents
-            .lines()
-            .find(|line| line.contains(asset_name))
-            .and_then(|line| line.split_whitespace().next())
-            .map(|hash| hash.to_string());
-
-        tor_hash.ok_or(anyhow!("No checksum was found for xmrig"))
+        parse_expected_checksum(&contents, asset_name)
     }
 
     async fn download_and_get_checksum_path(
@@ -64,14 +59,8 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         directory: PathBuf,
         download_info: BinaryDownloadInfo,
     ) -> Result<PathBuf, Error> {
-        let checksum_url = match download_info.main_url.rfind('/') {
-            Some(pos) => format!(
-                "{}/{}",
-                &download_info.main_url[..pos],
-                "sha256sums-signed-build.txt"
-            ),
-            None => download_info.main_url,
-        };
+        let checksum_url =
+            sibling_release_file(&download_info.main_url, "sha256sums-signed-build.txt");
 
         match HttpFileClient::builder()
             .with_cloudflare_cache_check()
@@ -81,7 +70,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         {
             Ok(checksum_path) => Ok(checksum_path),
             Err(_) => {
-                let checksum_fallback_url = format!("{}.asc", download_info.fallback_url);
+                let checksum_fallback_url = sibling_release_file(
+                    &download_info.fallback_url,
+                    "sha256sums-signed-build.txt",
+                );
                 info!(target: LOG_TARGET_APP_LOGIC, "Fallback URL: {checksum_fallback_url}");
                 HttpFileClient::builder()
                     .build(checksum_fallback_url.clone(), directory.clone())?
@@ -121,5 +113,31 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
     fn get_base_fallback_download_url(&self, version: &str) -> String {
         let base_url = "https://archive.torproject.org/tor-package-archive/torbrowser".to_string();
         format!("{base_url}/{version}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn checksum_manifest_uses_the_exact_asset_entry() {
+        let dir = tempfile::tempdir().expect("temporary directory");
+        let manifest = dir.path().join("SHA256SUMS");
+        std::fs::write(
+            &manifest,
+            format!(
+                "{}  tor.zip.sig\n{}  tor.zip\n",
+                "0".repeat(64),
+                "1".repeat(64)
+            ),
+        )
+        .expect("write manifest");
+
+        let checksum = TorReleaseAdapter {}
+            .get_expected_checksum(manifest, "tor.zip")
+            .await
+            .expect("checksum");
+        assert_eq!(checksum, "1".repeat(64));
     }
 }

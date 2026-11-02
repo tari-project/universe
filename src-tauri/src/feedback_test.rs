@@ -284,3 +284,23 @@ fn diagnostics_never_serializes_secret_shaped_fields() {
         }
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn failed_support_archive_removes_partial_zip() {
+    use std::ffi::OsString;
+    use std::os::unix::ffi::OsStringExt;
+
+    let directory = tempfile::tempdir().expect("temporary log directory");
+    let invalid_name = OsString::from_vec(vec![0xff]);
+    fs::write(directory.path().join(invalid_name), "log").expect("log file");
+    let diagnostics = sample_diagnostics();
+
+    assert!(create_support_archive(directory.path(), &diagnostics).is_err());
+    assert!(
+        !directory
+            .path()
+            .join("logs_config_anon_id_for_tests.zip")
+            .exists()
+    );
+}

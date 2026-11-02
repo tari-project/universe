@@ -130,7 +130,32 @@ pub async fn stop_mining(cpu: Option<bool>, gpu: Option<bool>) -> Result<String,
     serde_json::to_string(&results).map_err(|e| e.to_string())
 }
 
+fn resolve_canonical_mining_mode(
+    requested: &str,
+    modes: &std::collections::HashMap<String, crate::configs::config_mining::MiningMode>,
+) -> Result<String, String> {
+    let trimmed = requested.trim();
+    if trimmed.is_empty() {
+        return Err("Mining mode cannot be empty".to_string());
+    }
+    if let Some((canonical_key, _)) = modes.iter().find(|(k, _)| k.eq_ignore_ascii_case(trimmed)) {
+        Ok(canonical_key.clone())
+    } else {
+        let mut valid: Vec<&str> = modes.keys().map(String::as_str).collect();
+        valid.sort_unstable();
+        Err(format!(
+            "Invalid mining mode '{requested}'. Valid modes are: {}",
+            valid.join(", ")
+        ))
+    }
+}
+
 pub async fn set_mining_mode(mode: String) -> Result<String, String> {
+    let mode = {
+        let current_config = ConfigMining::content().await;
+        resolve_canonical_mining_mode(&mode, current_config.mining_modes())?
+    };
+
     let cpu_was_running = CpuManager::read().await.is_running();
     let gpu_was_running = GpuManager::read().await.is_running();
 
@@ -212,4 +237,35 @@ pub async fn get_gpu_devices() -> Result<String, String> {
         .collect();
 
     serde_json::to_string(&result).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_canonical_mining_mode;
+    use crate::configs::config_mining::ConfigMiningContent;
+
+    #[test]
+    fn canonicalizes_valid_modes_and_rejects_unknown_modes() {
+        let default_cfg = ConfigMiningContent::default();
+        let modes = default_cfg.mining_modes();
+
+        assert_eq!(
+            resolve_canonical_mining_mode("eco", modes).expect("eco"),
+            "Eco"
+        );
+        assert_eq!(
+            resolve_canonical_mining_mode(" TURBO ", modes).expect("turbo"),
+            "Turbo"
+        );
+        assert_eq!(
+            resolve_canonical_mining_mode("ludicrous", modes).expect("ludicrous"),
+            "Ludicrous"
+        );
+        assert_eq!(
+            resolve_canonical_mining_mode("Custom", modes).expect("custom"),
+            "Custom"
+        );
+        assert!(resolve_canonical_mining_mode("", modes).is_err());
+        assert!(resolve_canonical_mining_mode("invalid_mode", modes).is_err());
+    }
 }
