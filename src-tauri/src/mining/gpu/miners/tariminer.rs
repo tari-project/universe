@@ -39,7 +39,7 @@ use crate::utils::windows_setup_utils::add_firewall_rule;
 
 use crate::{
     APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
-    binaries::{Binaries, BinaryResolver},
+    binaries::{Binaries, BinaryResolver, binaries_resolver::BinaryResolveError},
     configs::{
         config_mining::{ConfigMining, ConfigMiningContent},
         trait_config::ConfigImpl,
@@ -244,14 +244,19 @@ fn parse_device_list(output: &str) -> Vec<TariMinerDevice> {
 }
 
 /// Runs `--list-devices` against each backend binary in the archive and returns the devices from
-/// the first backend that reports at least one supported GPU.
+/// the first backend that reports at least one supported GPU. Every CUDA build lists the same
+/// devices, so once one of them answers cleanly the remaining CUDA builds are skipped.
 async fn detect_devices_from_backends(
     resolved_binary: &Path,
     config_dir: &Path,
 ) -> Result<Vec<TariMinerDevice>, anyhow::Error> {
     let args = vec!["--list-devices".to_string()];
+    let mut cuda_listed = false;
 
     for backend in TariMinerBackend::ALL {
+        if cuda_listed && backend.vendor() == NVIDIA_VENDOR {
+            continue;
+        }
         let binary_path = backend_binary_path(resolved_binary, backend);
         if !binary_path.exists() {
             continue;
@@ -315,6 +320,7 @@ async fn detect_devices_from_backends(
         if !detected.is_empty() {
             return Ok(detected);
         }
+        cuda_listed |= backend.vendor() == NVIDIA_VENDOR;
     }
 
     Err(anyhow::anyhow!("No supported GPU devices found"))
@@ -531,11 +537,24 @@ impl GpuMinerInterfaceTrait for TariMinerGpuMiner {
 
         let config_dir = config_path.join(APPLICATION_FOLDER_ID);
 
-        let resolved_binary = BinaryResolver::current()
+        // The resolver checks only the selected backend file. If just that one was quarantined,
+        // probe its siblings anyway and surface the antivirus error only if none of them answer.
+        let (resolved_binary, resolve_error) = match BinaryResolver::current()
             .get_binary_path(Binaries::TariMiner)
-            .await?;
+            .await
+        {
+            Ok(path) => (path, None),
+            Err(error) => match error.downcast_ref::<BinaryResolveError>() {
+                Some(BinaryResolveError::AntivirusIssue { expected_path, .. }) => {
+                    (expected_path.clone(), Some(error))
+                }
+                _ => return Err(error),
+            },
+        };
 
-        let gpu_devices = detect_devices_from_backends(&resolved_binary, &config_dir).await?;
+        let gpu_devices = detect_devices_from_backends(&resolved_binary, &config_dir)
+            .await
+            .map_err(|error| resolve_error.unwrap_or(error))?;
 
         for device in &gpu_devices {
             info!(
@@ -1152,10 +1171,10 @@ mod tests {
         );
         assert_eq!(
             backend_binary_path(
-                Path::new("C:\\tariminer\\1.1.8\\bin\\tari_c29_pool_miner_sm_86.exe"),
+                &PathBuf::from("bin").join("tari_c29_pool_miner_sm_86.exe"),
                 TariMinerBackend::Sm89
             ),
-            PathBuf::from("C:\\tariminer\\1.1.8\\bin\\tari_c29_pool_miner_sm_89.exe")
+            PathBuf::from("bin").join("tari_c29_pool_miner_sm_89.exe")
         );
     }
 
@@ -1176,13 +1195,20 @@ mod tests {
     async fn detect_devices_from_backends_falls_through_silent_cuda_backends_to_amd() {
         let temp_dir = tempfile::tempdir().expect("tempdir");
         let sm86 = temp_dir.path().join("tari_c29_pool_miner_sm_86");
+        let sm89 = temp_dir.path().join("tari_c29_pool_miner_sm_89");
         let amd = temp_dir.path().join("tari_c29_pool_miner_amd");
+        let sm89_probed = temp_dir.path().join("sm89_probed");
 
         std::fs::write(
             &sm86,
             "#!/bin/sh\necho 'no CUDA GPU devices found' >&2\nexit 0\n",
         )
         .expect("write sm_86 stub");
+        std::fs::write(
+            &sm89,
+            format!("#!/bin/sh\ntouch '{}'\n", sm89_probed.display()),
+        )
+        .expect("write sm_89 stub");
         std::fs::write(
             &amd,
             "#!/bin/sh\nprintf '0\\tAMD Radeon AI PRO R9700\\tgfx1201\\t03\\n'\n",
@@ -1192,6 +1218,11 @@ mod tests {
         let devices = detect_devices_from_backends(&sm86, temp_dir.path())
             .await
             .expect("AMD backend should answer");
+
+        assert!(
+            !sm89_probed.exists(),
+            "sm_89 is skipped once sm_86 lists cleanly"
+        );
 
         assert_eq!(
             devices,
