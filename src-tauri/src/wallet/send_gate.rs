@@ -854,6 +854,7 @@ pub async fn gated_l2_claim(
 /// Run the consent gates for one spend: serialise on the gate permit, then show the
 /// approve/deny dialog when the origin requires it. On success the returned
 /// [`GatePass`] carries the permit and the PIN context to sign under.
+#[allow(clippy::too_many_lines)]
 async fn pass_gates(
     origin: SendOrigin,
     request_id: String,
@@ -937,8 +938,7 @@ async fn pass_gates(
         );
 
         let fee_micro_minotari = if matches!(kind, SpendKind::Send { .. }) {
-            // The caller's Message, not the display form. A binary embedded id is shown
-            // as hex, and the estimator resolves the bytes the output will carry itself.
+            // The typed Message: the estimator resolves the bytes the output carries itself.
             Some(
                 MinotariWalletManager::estimate_one_sided_fee(
                     destination,
