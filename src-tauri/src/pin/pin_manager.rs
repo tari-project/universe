@@ -132,6 +132,7 @@ impl PinManager {
     }
 
     pub async fn set_pin_locked() -> Result<(), anyhow::Error> {
+        let _guard = PIN_VALIDATION_LOCK.lock().await;
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         let mut pin_locker = PinLocker::new(pin_locker_state);
         pin_locker.set_pin_locked(true).await
