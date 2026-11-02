@@ -177,10 +177,12 @@ export const JoinSpaceWrapper = styled(m.div)`
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: Poppins, sans-serif;
-    font-weight: 500;
-    font-size: 11px;
+    gap: 12px;
+    border-radius: 30px;
+    border: 1px solid #ffffff33;
+    padding: 0 5px;
+    font-weight: 600;
+    font-size: 10px;
     line-height: 17px;
     letter-spacing: 1%;
-    color: #fff;
 `;
