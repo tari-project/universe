@@ -37,8 +37,7 @@ fn validate_amount(
     amount: &str,
     config: &crate::configs::config_mcp::ConfigMcpContent,
 ) -> Result<u64, String> {
-    let minotari_amount =
-        Minotari::from_str(amount).map_err(|e| format!("Invalid amount '{}': {}", amount, e))?;
+    let minotari_amount = Minotari::from_str(amount).map_err(|e| format!("Invalid amount: {e}"))?;
     let micro_minotari_amount = MicroMinotari::from(minotari_amount);
     let amount_u64 = micro_minotari_amount.as_u64();
 

@@ -287,7 +287,7 @@ fn read_burns(dir: &Path, status: &'static str) -> Result<Vec<L2Burn>, anyhow::E
                     .duration_since(SystemTime::UNIX_EPOCH)?
                     .as_secs(),
             }),
-            Err(e) => warn!(target: LOG_TARGET, "Skipping burn proof {file}: {e}"),
+            Err(e) => warn!(target: LOG_TARGET, "Skipping an unreadable burn proof: {e}"),
         }
     }
     Ok(burns)
@@ -364,7 +364,7 @@ fn mark_claimed(dir: &Path, file: &str) {
     let moved = std::fs::create_dir_all(dir.join(CLAIMED_DIR))
         .and_then(|()| std::fs::rename(dir.join(file), dir.join(CLAIMED_DIR).join(file)));
     if let Err(e) = moved {
-        warn!(target: LOG_TARGET, "Could not mark {file} claimed: {e}");
+        warn!(target: LOG_TARGET, "Could not mark a burn proof claimed: {e}");
     }
 }
 
@@ -379,8 +379,8 @@ fn settle(
 ) -> L2ClaimResult {
     match (&file, accepted) {
         (Some(file), true) => mark_claimed(dir, file),
-        (Some(file), false) => {
-            warn!(target: LOG_TARGET, "Claim of {file} was rejected, it stays claimable: {reason:?}")
+        (Some(_), false) => {
+            warn!(target: LOG_TARGET, "An L2 claim was rejected, its burn stays claimable: {reason:?}")
         }
         (None, true) => {}
         (None, false) => warn!(target: LOG_TARGET, "An L2 send was rejected: {reason:?}"),
@@ -406,11 +406,11 @@ pub fn reconcile_claims(
                 false
             }
             Ok(None) => {
-                warn!(target: LOG_TARGET, "The wallet has no record of {id} ({file:?}), no longer tracking it");
+                warn!(target: LOG_TARGET, "The wallet has no record of {id}, no longer tracking it");
                 false
             }
             Err(e) => {
-                warn!(target: LOG_TARGET, "Could not look up {id} ({file:?}): {e}");
+                warn!(target: LOG_TARGET, "Could not look up {id}: {e}");
                 true
             }
         });
