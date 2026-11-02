@@ -415,7 +415,7 @@ impl BinaryManager {
 
         let archive_destination_path: PathBuf = if main_file_download_result.is_err() {
             info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
-            if let Some(mut progress_sender_shutdown) = main_progress_sender_shutdown {
+            if let Some(progress_sender_shutdown) = main_progress_sender_shutdown {
                 progress_sender_shutdown.trigger();
             }
 
@@ -432,7 +432,7 @@ impl BinaryManager {
                 .execute()
                 .await
                 .inspect_err(|_| {
-                    if let Some(mut progress_sender_shutdown) = fallback_progress_sender_shutdown {
+                    if let Some(progress_sender_shutdown) = fallback_progress_sender_shutdown {
                         progress_sender_shutdown.trigger();
                     }
                 })?
