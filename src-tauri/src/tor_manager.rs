@@ -162,6 +162,15 @@ impl TorManager {
             .map(|m| m.control_port))
     }
 
+    pub async fn get_control_cookie_path(&self) -> Option<PathBuf> {
+        self.watcher
+            .read()
+            .await
+            .status_monitor
+            .as_ref()
+            .map(|m| m.cookie_path())
+    }
+
     pub async fn get_entry_guards(&self) -> Result<Vec<String>, anyhow::Error> {
         self.watcher.read().await.adapter.get_entry_guards().await
     }

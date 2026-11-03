@@ -220,6 +220,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         progress_stepper.complete_step(SetupStep::StartingNode, || async {
             for _i in 0..2 {
                 let tor_control_port = state.tor_manager.get_control_port().await?;
+                let tor_cookie_path = state.tor_manager.get_control_cookie_path().await;
                 match
                     state.node_manager.ensure_started(
                         node_data_dir.clone(),
@@ -227,6 +228,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         log_dir.clone(),
                         use_tor,
                         tor_control_port,
+                        tor_cookie_path,
                         Some(app_configuration.base_node_grpc_address.clone())
                     ).await
                 {

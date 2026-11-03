@@ -38,7 +38,9 @@ use tokio::time::timeout;
 
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HandleUnhealthyResult;
-use crate::tor_control_client::{TorControlClient, TorStatus};
+use crate::tor_control_client::{
+    TorControlClient, TorStatus, control_auth_cookie_path, read_authentication_command,
+};
 use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use crate::{
     process_adapter::{
@@ -54,6 +56,7 @@ pub(crate) struct TorAdapter {
     config_file: Option<PathBuf>,
     config: TorConfig,
     active_control_port: AtomicU16,
+    cookie_path: std::sync::RwLock<Option<PathBuf>>,
     status_broadcast: watch::Sender<TorStatus>,
 }
 
@@ -81,6 +84,7 @@ impl TorAdapter {
             config_file: None,
             config,
             active_control_port: AtomicU16::new(initial_control_port),
+            cookie_path: std::sync::RwLock::new(None),
             status_broadcast,
         }
     }
@@ -147,18 +151,23 @@ impl TorAdapter {
         if control_port == 0 {
             return Err(anyhow!("Tor control port is not initialized"));
         }
+        let cookie_path = self
+            .cookie_path
+            .read()
+            .map_err(|_| anyhow!("Tor cookie path lock poisoned"))?
+            .clone()
+            .ok_or_else(|| anyhow!("Tor cookie path is not initialized"))?;
         let control_port_address = format!("127.0.0.1:{control_port}");
 
         timeout(TOR_CONTROL_TIMEOUT, async move {
+            let auth_command = read_authentication_command(&cookie_path).await?;
             let stream = TcpStream::connect(&control_port_address).await?;
             let mut reader = BufReader::new(stream);
 
-            // AUTHENTICATE (Tor control protocol requires CRLF line endings)
-            let auth_command = "AUTHENTICATE\r\n";
             reader.get_mut().write_all(auth_command.as_bytes()).await?;
             let mut response = String::new();
             reader.read_line(&mut response).await?;
-            if !response.starts_with("250 OK") {
+            if response != "250 OK\r\n" {
                 error!(target: LOG_TARGET_APP_LOGIC, "Tor AUTHENTICATE failed for: {control_port_address:?}");
                 return Err(Error::msg("Authentication failed"));
             }
@@ -188,7 +197,7 @@ impl TorAdapter {
 
                 Ok(entry_guards)
             } else {
-                error!(target: LOG_TARGET_APP_LOGIC, "Tor GETINFO entry-guards with response: {response:?}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Tor GETINFO entry-guards failed");
                 Err(Error::msg("Failed to get entry guards"))
             }
         })
@@ -213,7 +222,13 @@ impl ProcessAdapter for TorAdapter {
         let inner_shutdown = Shutdown::new();
 
         info!(target: LOG_TARGET_APP_LOGIC, "Starting tor");
+        let data_dir = std::path::absolute(data_dir)?;
         let working_dir = prepare_tor_working_dir(&data_dir, is_first_start)?;
+        let cookie_path = control_auth_cookie_path(&data_dir);
+        *self
+            .cookie_path
+            .write()
+            .map_err(|_| anyhow!("Tor cookie path lock poisoned"))? = Some(cookie_path.clone());
 
         let working_dir_string = convert_to_string(working_dir)?;
         let log_dir_string = convert_to_string(log_dir.join("tor.log"))?;
@@ -243,9 +258,10 @@ impl ProcessAdapter for TorAdapter {
             self.socks_port.to_string(),
             "--controlport".to_string(),
             format!("127.0.0.1:{}", control_port),
-            // TODO: Put hashed password back
-            // "--HashedControlPassword".to_string(),
-            // EncryptedKey::hash_password(&self.password).to_string(),
+            "--CookieAuthentication".to_string(),
+            "1".to_string(),
+            "--CookieAuthFile".to_string(),
+            convert_to_string(cookie_path)?,
             "--clientuseipv6".to_string(),
             "1".to_string(),
             "--DataDirectory".to_string(),
@@ -312,10 +328,16 @@ pub(crate) struct TorStatusMonitor {
     base_path: PathBuf,
 }
 
+impl TorStatusMonitor {
+    pub fn cookie_path(&self) -> PathBuf {
+        control_auth_cookie_path(&self.base_path)
+    }
+}
+
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
-        let client = TorControlClient::new(self.control_port);
+        let client = TorControlClient::new(self.control_port, self.cookie_path());
         match timeout(timeout_duration, client.get_info()).await {
             Ok(Ok(status)) => {
                 let _res = self.status_broadcast.send(status);
@@ -395,6 +417,31 @@ mod tests {
     use tokio::net::TcpListener;
 
     #[test]
+    fn test_spawn_args_require_cookie_authentication_under_tor_data() {
+        let temp = tempfile::tempdir().expect("test setup succeeds");
+        let (tx, _rx) = watch::channel(TorStatus::default());
+        let adapter = TorAdapter::new(tx);
+        let (process, _) = adapter
+            .spawn_inner(
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().join("tor"),
+                false,
+            )
+            .expect("test setup succeeds");
+        let args = &process.startup_spec.args;
+        assert!(
+            args.windows(2)
+                .any(|pair| pair == ["--CookieAuthentication", "1"])
+        );
+        let expected = temp.path().join("tor-data/control_auth_cookie");
+        assert!(args.windows(2).any(|pair| pair[0] == "--CookieAuthFile"
+            && pair[1] == expected.to_str().expect("test setup succeeds")));
+        assert!(!args.iter().any(|arg| arg == "--HashedControlPassword"));
+    }
+
+    #[test]
     fn prepare_tor_working_dir_clears_stale_files_and_recreates_dir_on_first_start() {
         let temp = tempfile::tempdir().expect("tempdir");
         let stale_dir = temp.path().join("tor-data");
@@ -443,7 +490,7 @@ mod tests {
             let mut reader = BufReader::new(stream);
             let mut line = String::new();
             reader.read_line(&mut line).await.expect("read auth");
-            assert_eq!(line, "AUTHENTICATE\r\n");
+            assert_eq!(line, format!("AUTHENTICATE {}\r\n", "ab".repeat(32)));
             reader
                 .get_mut()
                 .write_all(b"250 OK\r\n")
@@ -463,9 +510,42 @@ mod tests {
         let (tx, _rx) = watch::channel(TorStatus::default());
         let adapter = TorAdapter::new(tx);
         adapter.active_control_port.store(port, Ordering::Relaxed);
+        let temp = tempfile::tempdir().expect("test setup succeeds");
+        let cookie_path = temp.path().join("cookie");
+        std::fs::write(&cookie_path, [0xab; 32]).expect("test setup succeeds");
+        *adapter.cookie_path.write().expect("test setup succeeds") = Some(cookie_path);
 
         let guards = adapter.get_entry_guards().await.expect("entry guards");
         assert_eq!(guards, vec!["$AAA~guard1 up".to_string()]);
         server.await.expect("server join");
+    }
+
+    #[tokio::test]
+    async fn get_entry_guards_rejects_failed_or_malformed_authentication() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cookie_path = temp.path().join("cookie");
+        std::fs::write(&cookie_path, [0xab; 32]).expect("write cookie");
+        for reply in ["515 Authentication failed\r\n", "250 OK unexpected\r\n", ""] {
+            let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+            let (tx, _rx) = watch::channel(TorStatus::default());
+            let adapter = TorAdapter::new(tx);
+            adapter.active_control_port.store(
+                listener.local_addr().expect("addr").port(),
+                Ordering::Relaxed,
+            );
+            *adapter.cookie_path.write().expect("cookie lock") = Some(cookie_path.clone());
+            let (result, ()) = tokio::join!(adapter.get_entry_guards(), async {
+                let (stream, _) = listener.accept().await.expect("accept");
+                let mut reader = BufReader::new(stream);
+                let mut line = String::new();
+                reader.read_line(&mut line).await.expect("read auth");
+                reader
+                    .get_mut()
+                    .write_all(reply.as_bytes())
+                    .await
+                    .expect("auth reply");
+            });
+            assert!(result.is_err(), "must reject {reply:?}");
+        }
     }
 }

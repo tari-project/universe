@@ -51,12 +51,13 @@ pub async fn get_mcp_token(pin: Option<String>) -> Result<Option<String>, String
 pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
     {
         let mut config = ConfigMcp::current().write().await;
-        let content = config._get_content_mut();
-        if enabled && content.bearer_token().is_none() {
-            content.ensure_token();
+        let mut updated = config._get_content().clone();
+        if enabled && updated.bearer_token().is_none() {
+            updated.ensure_token();
         }
-        content.set_enabled(enabled);
-        ConfigMcp::_save_config(content.clone()).map_err(|e| e.to_string())?;
+        updated.set_enabled(enabled);
+        ConfigMcp::_save_config(updated.clone()).map_err(|e| e.to_string())?;
+        *config._get_content_mut() = updated;
     }
 
     if enabled {

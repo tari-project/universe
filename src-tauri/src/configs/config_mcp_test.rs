@@ -22,8 +22,8 @@
 
 use super::config_mcp::ConfigMcpContent;
 
-fn ensure_test_identity() {
-    super::config_mcp::token_cipher::set_anon_id("test-anon-id".to_string());
+fn ensure_test_key() -> super::config_mcp::token_cipher::TestKeyGuard {
+    super::config_mcp::token_cipher::test_key(Some([42; 32]))
 }
 
 // =============================================================================
@@ -272,7 +272,7 @@ fn set_control_tier_disabled() {
 
 #[test]
 fn config_serialization_roundtrip() {
-    ensure_test_identity();
+    let _key = ensure_test_key();
     let config = ConfigMcpContent::default();
     let serialized = serde_json::to_string(&config).unwrap();
     let deserialized: ConfigMcpContent = serde_json::from_str(&serialized).unwrap();
@@ -299,12 +299,63 @@ fn config_serialization_roundtrip() {
 
 #[test]
 fn config_serialization_with_token() {
-    ensure_test_identity();
+    let _key = ensure_test_key();
     let mut config = ConfigMcpContent::default();
     config.ensure_token();
 
     let serialized = serde_json::to_string(&config).unwrap();
+    assert!(!serialized.contains(config.bearer_token().as_deref().unwrap()));
+    let redacted = serde_json::to_string(&config.to_redacted_value().unwrap()).unwrap();
+    assert!(!redacted.contains(config.bearer_token().as_deref().unwrap()));
     let deserialized: ConfigMcpContent = serde_json::from_str(&serialized).unwrap();
 
     assert_eq!(config.bearer_token(), deserialized.bearer_token());
+}
+
+#[test]
+fn test_key_unavailable_serialization_fails_and_retries() {
+    let _key = super::config_mcp::token_cipher::test_key(None);
+    let mut config = ConfigMcpContent::default();
+    config.ensure_token();
+    let error = serde_json::to_string(&config).expect_err("key lookup must fail");
+    assert!(error.to_string().contains("credential store"));
+    let _key = super::config_mcp::token_cipher::test_key(Some([7; 32]));
+    let serialized = serde_json::to_string(&config).expect("test operation succeeds");
+    let deserialized: ConfigMcpContent =
+        serde_json::from_str(&serialized).expect("test operation succeeds");
+    assert_eq!(config.bearer_token(), deserialized.bearer_token());
+}
+
+#[test]
+fn test_wrong_or_unavailable_key_clears_stored_token() {
+    let mut config = ConfigMcpContent::default();
+    config.ensure_token();
+    let serialized = {
+        let _key = super::config_mcp::token_cipher::test_key(Some([7; 32]));
+        serde_json::to_string(&config).expect("test operation succeeds")
+    };
+    for key in [Some([8; 32]), None] {
+        let _key = super::config_mcp::token_cipher::test_key(key);
+        let deserialized: ConfigMcpContent =
+            serde_json::from_str(&serialized).expect("test operation succeeds");
+        assert!(deserialized.bearer_token().is_none());
+    }
+}
+
+#[test]
+fn test_token_persisted_in_config_file_round_trips() {
+    let _key = super::config_mcp::token_cipher::test_key(Some([9; 32]));
+    let mut config = ConfigMcpContent::default();
+    let token = config.ensure_token().to_string();
+    let temp = tempfile::tempdir().expect("test operation succeeds");
+    let path = temp.path().join("config_mcp.json");
+    std::fs::write(
+        &path,
+        serde_json::to_vec(&config).expect("test operation succeeds"),
+    )
+    .expect("test operation succeeds");
+    let loaded: ConfigMcpContent =
+        serde_json::from_slice(&std::fs::read(path).expect("test operation succeeds"))
+            .expect("test operation succeeds");
+    assert_eq!(loaded.bearer_token().as_deref(), Some(token.as_str()));
 }

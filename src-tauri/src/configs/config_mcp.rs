@@ -44,30 +44,59 @@ pub(crate) mod token_cipher {
     use log::warn;
     use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
     use ring::digest;
-    use std::sync::OnceLock;
+    use std::sync::Mutex;
+    use zeroize::Zeroizing;
 
     const NONCE_LEN: usize = 12;
 
-    static ANON_ID: OnceLock<String> = OnceLock::new();
+    static KEY: Mutex<Option<Zeroizing<[u8; 32]>>> = Mutex::new(None);
 
-    /// Must be called before loading MCP config. Key material stays fixed for the process.
-    pub fn set_anon_id(anon_id: String) {
-        let existing = ANON_ID.get_or_init(|| anon_id.clone());
-        assert_eq!(
-            existing, &anon_id,
-            "token_cipher: anon_id already set to a different value"
-        );
+    fn key_bytes() -> Result<Zeroizing<[u8; 32]>, &'static str> {
+        #[cfg(test)]
+        if let Some(key) = TEST_KEY.get() {
+            return key.map(Zeroizing::new);
+        }
+        let mut cached = KEY
+            .lock()
+            .map_err(|_| "MCP credential store key lock poisoned")?;
+        if let Some(key) = cached.as_ref() {
+            return Ok(key.clone());
+        }
+        let password = crate::credential_manager::CredentialManager::mcp_token_key()
+            .map_err(|_| "Could not read or create MCP key in the keyring credential store")?;
+        let mut key = Zeroizing::new([0u8; 32]);
+        hex::decode_to_slice(password.as_str(), key.as_mut_slice())
+            .map_err(|_| "Invalid MCP key in the keyring credential store")?;
+        *cached = Some(key.clone());
+        Ok(key)
+    }
+
+    // Per-thread injection keeps unit tests off the OS store and independent of each other.
+    #[cfg(test)]
+    std::thread_local! {
+        static TEST_KEY: std::cell::Cell<Option<Result<[u8; 32], &'static str>>> = const {
+            std::cell::Cell::new(Some(Err("MCP keyring credential store unavailable")))
+        };
+    }
+
+    #[cfg(test)]
+    pub struct TestKeyGuard(Option<Result<[u8; 32], &'static str>>);
+
+    #[cfg(test)]
+    impl Drop for TestKeyGuard {
+        fn drop(&mut self) {
+            TEST_KEY.set(self.0);
+        }
+    }
+
+    #[cfg(test)]
+    pub fn test_key(key: Option<[u8; 32]>) -> TestKeyGuard {
+        TestKeyGuard(TEST_KEY.replace(Some(key.ok_or("MCP keyring credential store unavailable"))))
     }
 
     fn derive_key() -> Result<LessSafeKey, &'static str> {
-        let anon_id = ANON_ID
-            .get()
-            .ok_or("token_cipher: anon_id not set — call set_anon_id before loading ConfigMcp")?;
-        let material = format!("tari-universe-mcp-token-v1:{anon_id}");
-        let hash1 = digest::digest(&digest::SHA256, material.as_bytes());
-        let hash2 = digest::digest(&digest::SHA256, hash1.as_ref());
-        let unbound =
-            UnboundKey::new(&AES_256_GCM, &hash2.as_ref()[..32]).map_err(|_| "AES key error")?;
+        let key = key_bytes()?;
+        let unbound = UnboundKey::new(&AES_256_GCM, key.as_slice()).map_err(|_| "AES key error")?;
         Ok(LessSafeKey::new(unbound))
     }
 
@@ -291,11 +320,6 @@ pub struct ConfigMcp {
 
 impl ConfigMcp {
     pub async fn initialize(app_handle: AppHandle) {
-        let anon_id = super::config_core::ConfigCore::content()
-            .await
-            .anon_id()
-            .clone();
-        token_cipher::set_anon_id(anon_id);
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
         drop(config);
@@ -398,13 +422,18 @@ mod tests {
 
     #[test]
     fn undecryptable_bearer_token_disables_mcp_and_preserves_settings() {
+        let _key = token_cipher::test_key(Some([42; 32]));
         let mut cfg = ConfigMcpContent::default();
         cfg.set_enabled(true);
         cfg.set_port(23456);
         cfg.set_max_transaction_amount(Some(500_000));
         cfg.set_rate_limit_transaction(12);
+        cfg.set_read_tier_enabled(false);
+        cfg.set_control_tier_enabled(false);
         let mut serialized = serde_json::to_value(&cfg).expect("serialize");
-        serialized["bearer_token"] = serde_json::json!("invalid ciphertext");
+        // Fixture encrypted by the retired identity-derived key for an old install.
+        serialized["bearer_token"] =
+            serde_json::json!("STDG_qnqJP9Zo1lLhCoGbD_mwX7arxixiF7aUy7TbbMBaehGeZnIXijF2Q");
         let mut loaded: ConfigMcpContent =
             serde_json::from_value(serialized).expect("deserialize should preserve settings");
         assert!(loaded.disable_if_token_missing());
@@ -413,5 +442,7 @@ mod tests {
         assert_eq!(*loaded.port(), 23456);
         assert_eq!(*loaded.max_transaction_amount(), Some(500_000));
         assert_eq!(*loaded.rate_limit_transaction(), 12);
+        assert!(!loaded.read_tier_enabled());
+        assert!(!loaded.control_tier_enabled());
     }
 }
