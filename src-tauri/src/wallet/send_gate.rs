@@ -373,7 +373,7 @@ impl SpendKind {
 ///
 /// Since minotari 0.3.0 an address with the payment-id feature replaces the caller's
 /// Message: [`Recipient::payment_id_bytes`] sends the address's bytes as they are, text
-/// or not. Text is shown as text. Anything else is `0x` hex, so a binary exchange reference
+/// or not. Printable ASCII is shown as text. Anything else is `0x` hex, so a binary exchange reference
 /// is visible instead of the Message the caller typed.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct EffectivePaymentId {
@@ -402,23 +402,18 @@ pub fn effective_payment_id(
     EffectivePaymentId {
         // Bytes, not display strings: typing the hex of a binary id is not sending it.
         payment_id_overridden: embedded && bytes.as_deref() != typed.map(str::as_bytes),
-        payment_id: bytes.map(display_payment_id_bytes),
+        payment_id: bytes.as_deref().map(display_payment_id_bytes),
     }
 }
 
-/// Text when it is UTF-8 with no control or bidi characters, so the address can't make
-/// the review line read as something else. Anything else is `0x` hex.
-fn display_payment_id_bytes(bytes: Vec<u8>) -> String {
-    match String::from_utf8(bytes) {
-        Ok(text) if !text.chars().any(is_deceptive_char) => text,
-        Ok(text) => format!("0x{}", hex::encode(text.into_bytes())),
-        Err(err) => format!("0x{}", hex::encode(err.into_bytes())),
+/// Printable ASCII is shown as text, anything else as `0x` hex, so a consent screen can't
+/// show a lookalike (bidi, zero-width, confusable) of the bytes that are sent.
+fn display_payment_id_bytes(bytes: &[u8]) -> String {
+    if bytes.iter().all(|b| b.is_ascii_graphic() || *b == b' ') {
+        String::from_utf8_lossy(bytes).into_owned()
+    } else {
+        format!("0x{}", hex::encode(bytes))
     }
-}
-
-fn is_deceptive_char(c: char) -> bool {
-    c.is_control()
-        || matches!(c, '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
 }
 
 /// [`effective_payment_id`] for a destination string, parsed the same way the send is.
@@ -777,13 +772,7 @@ fn l2_send_memo(
                 DestinationTag::MAX_LEN
             ))
         })?;
-    // Only printable ASCII is shown as text, so the PIN prompt can't show a lookalike of what is sent.
-    let shown = if bytes.iter().all(|b| b.is_ascii_graphic() || *b == b' ') {
-        String::from_utf8_lossy(bytes).into_owned()
-    } else {
-        format!("0x{}", hex::encode(bytes))
-    };
-    Ok(Some((shown, memo)))
+    Ok(Some((display_payment_id_bytes(bytes), memo)))
 }
 
 /// The PIN prompt shows the amount as a JS number divided by 10^6. Above 2^52 micro units that
@@ -1464,8 +1453,18 @@ mod tests {
     }
 
     #[test]
-    fn payment_id_text_with_control_or_bidi_characters_is_shown_as_hex() {
-        for text in ["PW\u{202E}321", "PW\u{2066}ID", "PW\nID", "PW\u{200F}ID"] {
+    fn payment_id_text_that_is_not_printable_ascii_is_shown_as_hex() {
+        for text in [
+            "PW\u{202E}321",
+            "PW\u{2066}ID",
+            "PW\nID",
+            "PW\u{200F}ID",
+            "invoice-123\u{200B}",
+            "invoice-123\u{200C}",
+            "invoice-123\u{2060}",
+            "invoice-123\u{E0041}",
+            "café",
+        ] {
             let kind = SpendKind::Send {
                 destination: address_with_payment_id(text.as_bytes()),
             };
@@ -1478,12 +1477,6 @@ mod tests {
             );
             assert!(consent.payment_id_overridden);
         }
-        // Non-ASCII text without those characters stays readable.
-        let kind = SpendKind::Send {
-            destination: address_with_payment_id("café".as_bytes()),
-        };
-        let consent = consent_payment_id(&kind, None).unwrap();
-        assert_eq!(consent.payment_id.as_deref(), Some("café"));
     }
 
     #[test]
