@@ -34,6 +34,10 @@ const RESULTS: Record<string, unknown> = {
   get_block_count: { count: height, status: 'OK', untrusted: false },
   submit_block: { status: 'OK' },
 };
+// monerod also accepts the legacy names; xmrig's daemon mode asks for getblocktemplate.
+RESULTS.getblocktemplate = RESULTS.get_block_template;
+RESULTS.submitblock = RESULTS.submit_block;
+RESULTS.getblockcount = RESULTS.get_block_count;
 
 // Playwright runs globalSetup and globalTeardown in the same runner process,
 // but the static and dynamic imports can load separate module instances, so
@@ -41,9 +45,14 @@ const RESULTS: Record<string, unknown> = {
 const KEY = Symbol.for('tari.playwright.monerodStub');
 const state = globalThis as unknown as Record<symbol, http.Server | undefined>;
 
+// Always send Content-Length, as monerod does. Without it Node falls back to
+// Transfer-Encoding: chunked, which the proxy copies onto its own response next
+// to a Content-Length it adds; that malformed reply is dropped (empty reply), so
+// the proxy never passes its health check.
 function send(res: http.ServerResponse, status: number, body: unknown): void {
-  res.writeHead(status, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(body));
+  const payload = Buffer.from(JSON.stringify(body));
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Content-Length': payload.length });
+  res.end(payload);
 }
 
 function handleJsonRpc(raw: string, res: http.ServerResponse): void {
