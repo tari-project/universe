@@ -173,7 +173,31 @@ Configuration files are stored at:
 - **Windows**: `%APPDATA%\tari-universe\`
 - **macOS**: `~/Library/Application Support/tari-universe/`
 
+MCP bearer tokens in `config_mcp.json` are encrypted with a random key held in
+the credential store (the OS keyring/keychain on desktop). The configuration
+file alone is not enough to recover a token.
+
+The bundled Tor service binds its control port to `127.0.0.1` and requires
+cookie authentication. Its cookie is stored at `tor-data/control_auth_cookie`
+under Tor's application data directory. Health checks and entry-guard queries
+read the cookie for each connection and fail if it is missing, invalid, or
+rejected. The local node receives the same cookie path on Linux and Windows;
+the macOS local node uses its separate Tor control endpoint on port 9051.
+
 ## Troubleshooting
+
+### MCP disabled after an upgrade or credential-store error
+
+Tokens encrypted by older versions, or tokens that cannot be decrypted, are
+cleared and MCP is disabled. Other MCP settings, including the port, limits,
+and access tiers, are preserved.
+
+1. Restore credential-store access: unlock your keyring/keychain and allow Tari
+   Universe to access it if prompted.
+2. Re-enable MCP in Settings to generate and save a new bearer token. If the
+   credential store is still unavailable, enabling fails and the server stays off.
+3. Replace the old bearer token in each MCP client's configuration with the new
+   token, then reconnect the client.
 
 ### MCP transaction requests
 

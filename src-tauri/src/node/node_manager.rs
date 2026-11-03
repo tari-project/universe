@@ -157,6 +157,7 @@ impl NodeManager {
         log_path: PathBuf,
         use_tor: bool,
         tor_control_port: Option<u16>,
+        tor_cookie_path: Option<PathBuf>,
         remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
@@ -169,6 +170,7 @@ impl NodeManager {
                 None, // always 127.0.0.1
                 use_tor,
                 tor_control_port,
+                tor_cookie_path,
             )
             .await?;
             start_watcher(
@@ -188,6 +190,7 @@ impl NodeManager {
                 remote_grpc_address,
                 use_tor,
                 None, // no control port needed
+                None, // no cookie needed
             )
             .await?;
             start_watcher(
@@ -218,6 +221,7 @@ impl NodeManager {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn configure_adapter<T>(
         &self,
         node_watcher: Arc<RwLock<Option<ProcessWatcher<T>>>>,
@@ -225,6 +229,7 @@ impl NodeManager {
         remote_grpc_address: Option<String>,
         use_tor: bool,
         tor_control_port: Option<u16>,
+        tor_cookie_path: Option<PathBuf>,
     ) -> Result<(), anyhow::Error>
     where
         T: NodeAdapter + ProcessAdapter + Send + Sync + Clone + 'static,
@@ -232,7 +237,9 @@ impl NodeManager {
         let mut node_watcher = node_watcher.write().await;
         if let Some(node_watcher) = node_watcher.as_mut() {
             node_watcher.adapter.use_tor(use_tor);
-            node_watcher.adapter.set_tor_control_port(tor_control_port);
+            node_watcher
+                .adapter
+                .set_tor_control_port(tor_control_port, tor_cookie_path);
             let ab_group = *ConfigCore::content().await.ab_group();
             node_watcher.adapter.set_ab_group(ab_group);
 

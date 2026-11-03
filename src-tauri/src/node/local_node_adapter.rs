@@ -80,6 +80,7 @@ pub(crate) struct LocalNodeAdapter {
     pub(crate) tcp_listener_port: u16,
     pub(crate) use_pruned_mode: bool,
     pub(crate) tor_control_port: Option<u16>,
+    tor_cookie_path: Option<PathBuf>,
     required_initial_peers: u32,
     pub(crate) ab_test_group: ABTestSelector,
     pub(crate) http_api_port: u16,
@@ -106,6 +107,7 @@ impl LocalNodeAdapter {
             required_initial_peers,
             use_tor: false,
             tor_control_port: None,
+            tor_cookie_path: None,
             ab_test_group: ABTestSelector::GroupA,
             http_api_port,
             consensus_manager,
@@ -172,8 +174,13 @@ impl NodeAdapter for LocalNodeAdapter {
         self.use_tor = use_tor;
     }
 
-    fn set_tor_control_port(&mut self, tor_control_port: Option<u16>) {
+    fn set_tor_control_port(
+        &mut self,
+        tor_control_port: Option<u16>,
+        cookie_path: Option<PathBuf>,
+    ) {
         self.tor_control_port = tor_control_port;
+        self.tor_cookie_path = cookie_path;
     }
 
     fn set_ab_group(&mut self, ab_test_group: ABTestSelector) {
@@ -315,6 +322,17 @@ impl ProcessAdapter for LocalNodeAdapter {
                 args.push(format!(
                     "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{tor_control_port}"
                 ));
+                if !cfg!(target_os = "macos") {
+                    let cookie_path = self.tor_cookie_path.as_ref().ok_or_else(|| {
+                        anyhow::anyhow!("Tor control authentication cookie path is missing")
+                    })?;
+                    let cookie_path = std::path::absolute(cookie_path)?;
+                    args.push("-p".to_string());
+                    args.push(format!(
+                        "base_node.p2p.transport.tor.control_auth=cookie=@{}",
+                        convert_to_string(cookie_path)?
+                    ));
+                }
             }
             let network = Network::get_current_or_user_setting_or_default();
             match network {
@@ -422,5 +440,54 @@ impl ProcessAdapter for LocalNodeAdapter {
 
     fn pid_file_name(&self) -> &str {
         "node_pid"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_local_node_tor_control_args_use_cookie_except_on_macos() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let (tx, _rx) = watch::channel(BaseNodeStatus::default());
+        let consensus = ConsensusManager::builder(Network::get_current()).build();
+        let mut adapter = LocalNodeAdapter::new(tx, consensus);
+        adapter.use_tor(true);
+        let cookie = temp.path().join("tor-data/control_auth_cookie");
+        adapter.set_tor_control_port(Some(12345), Some(cookie.clone()));
+        let (process, _) = adapter
+            .spawn_inner(
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().join("node-binary"),
+                false,
+            )
+            .expect("spawn spec");
+        let args = &process.startup_spec.args;
+        let port = if cfg!(target_os = "macos") {
+            9051
+        } else {
+            12345
+        };
+        let address =
+            format!("base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{port}");
+        assert!(
+            args.windows(2)
+                .any(|pair| pair[0] == "-p" && pair[1] == address)
+        );
+        if cfg!(target_os = "macos") {
+            assert!(!args.iter().any(|arg| arg.contains("tor.control_auth=")));
+        } else {
+            let auth = format!(
+                "base_node.p2p.transport.tor.control_auth=cookie=@{}",
+                cookie.display()
+            );
+            assert!(
+                args.windows(2)
+                    .any(|pair| pair[0] == "-p" && pair[1] == auth)
+            );
+        }
     }
 }

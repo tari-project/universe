@@ -70,7 +70,7 @@ pub trait NodeAdapter {
     ) -> Result<(Option<RistrettoPublicKey>, String), anyhow::Error>;
     fn get_http_api_url(&self) -> String;
     fn use_tor(&mut self, use_tor: bool);
-    fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
+    fn set_tor_control_port(&mut self, tor_control_port: Option<u16>, cookie_path: Option<PathBuf>);
     fn set_ab_group(&mut self, ab_group: ABTestSelector);
 }
 
