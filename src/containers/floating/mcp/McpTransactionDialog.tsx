@@ -130,6 +130,7 @@ export default function McpTransactionDialog() {
                                 amountMicroMinotari={pending.amount_micro_minotari}
                                 destination={pending.destination}
                                 paymentId={pending.payment_id}
+                                paymentIdOverridden={pending.payment_id_overridden}
                                 feeMicroMinotari={pending.fee_micro_minotari}
                                 subtitle={t('wallet:send.confirm-subtitle')}
                                 abandon={pending}
@@ -152,6 +153,7 @@ export default function McpTransactionDialog() {
                             amount={amountXtm}
                             address={pending.destination}
                             message={pending.payment_id ?? undefined}
+                            paymentIdOverridden={pending.payment_id_overridden}
                             feeMicroMinotari={pending.fee_micro_minotari}
                             handleClose={handleClose}
                         />

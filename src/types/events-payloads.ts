@@ -138,9 +138,18 @@ export interface SendPinPromptContext {
     kind: 'send';
     amount_micro_minotari: number;
     destination: string;
+    /** Payment id that will be sent: the address's embedded id when it has one. */
     payment_id?: string | null;
+    /** The address replaced the typed message with its own payment id. */
+    payment_id_overridden?: boolean;
     origin: TransactionOrigin;
     fee_micro_minotari?: number | null;
+}
+
+/** What an L1 send will carry. `payment_id` is the address's embedded id when it has one. */
+export interface EffectiveL1PaymentId {
+    payment_id: string | null;
+    payment_id_overridden: boolean;
 }
 
 /** The wallet details were missing from the config and are being rebuilt from the stored seed. */

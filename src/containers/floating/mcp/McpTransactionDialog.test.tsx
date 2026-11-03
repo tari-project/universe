@@ -196,6 +196,38 @@ describe('McpTransactionDialog', () => {
         });
     });
 
+    it('shows the address payment id and warns when it replaces the message', async () => {
+        setMcpPendingTransaction({
+            request_id: 'mcp_tx_embedded',
+            destination: '5AexampleAddress',
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+            payment_id: 'embedded-id',
+            payment_id_overridden: true,
+        });
+        const { unmount } = render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('embedded-id')).toBeInTheDocument();
+        });
+        expect(screen.getByTestId('payment-id-overridden')).toHaveTextContent('send.payment-id-overridden');
+        unmount();
+
+        setMcpPendingTransaction({
+            request_id: 'app_tx_embedded',
+            origin: 'app',
+            destination: '5AexampleAddress',
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+            payment_id: 'aa'.repeat(8),
+            payment_id_overridden: true,
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('aa'.repeat(8))).toBeInTheDocument();
+        });
+        expect(screen.getByTestId('payment-id-overridden')).toBeInTheDocument();
+    });
+
     it('shows countdown timer text', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',

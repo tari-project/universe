@@ -285,6 +285,7 @@ export type BackendStateUpdateEvent =
               amount_display: string;
               origin?: TransactionOrigin;
               payment_id?: string | null;
+              payment_id_overridden?: boolean;
               accept_unreconcilable?: boolean;
               is_burn?: boolean;
           };

@@ -139,6 +139,7 @@
     "placeholder-address": "Enter address",
     "placeholder-amount": "100",
     "placeholder-message": "Message",
+    "payment-id-overridden": "This address includes its own payment ID, and that is what will be sent.",
     "processing": "Processing",
     "processing-button": "Processing Transaction...",
     "processing-text": "Your transfer is processing. This can take a few minutes.",

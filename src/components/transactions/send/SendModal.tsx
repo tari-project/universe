@@ -13,6 +13,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { setError as setStoreError } from '@app/store';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+import type { EffectiveL1PaymentId } from '@app/types/events-payloads.ts';
 
 interface SendModalProps {
     section: string;
@@ -29,6 +30,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const [notAcceptedYet, setNotAcceptedYet] = useState(false);
 
     const [feeMicroMinotari, setFeeMicroMinotari] = useState<number | null>(null);
+    const [resolvedPaymentId, setResolvedPaymentId] = useState<EffectiveL1PaymentId | null>(null);
     // Without a PIN the backend's confirmation dialog is the review step.
     const hasReviewStep = useWalletStore((s) => s.is_pin_locked);
 
@@ -54,6 +56,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         setNotAcceptedYet(false);
 
         setFeeMicroMinotari(null);
+        setResolvedPaymentId(null);
         setStatus('fields');
     };
 
@@ -64,6 +67,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     function handleBack() {
         estimateRequestIdRef.current += 1;
+        setResolvedPaymentId(null);
         setStatus('fields');
         setIsBack(true);
     }
@@ -72,30 +76,50 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
+            const effectivePaymentId = () =>
+                invoke('effective_l1_payment_id', { destination: data.address, paymentId: data.message });
+
             if (status === 'fields' && hasReviewStep) {
                 const requestId = ++estimateRequestIdRef.current;
-                if (data.amount) {
-                    try {
-                        const estimatedFee = await invoke('estimate_l1_send_fee', {
-                            destination: data.address,
-                            amount: data.amount.toString(),
-                            paymentId: data.message,
-                        });
-                        if (estimateRequestIdRef.current !== requestId) {
-                            return;
-                        }
-                        setFeeMicroMinotari(typeof estimatedFee === 'number' ? estimatedFee : null);
-                    } catch (error) {
-                        if (estimateRequestIdRef.current !== requestId) {
-                            return;
-                        }
-                        setFeeMicroMinotari(null);
-                        setError('amount', { message: `${error}` });
-                        return;
-                    }
+                const [fee, effective] = await Promise.allSettled([
+                    data.amount
+                        ? invoke('estimate_l1_send_fee', {
+                              destination: data.address,
+                              amount: data.amount.toString(),
+                              paymentId: data.message,
+                          })
+                        : Promise.resolve(null),
+                    effectivePaymentId(),
+                ]);
+                if (estimateRequestIdRef.current !== requestId) {
+                    return;
                 }
+                if (fee.status === 'rejected') {
+                    setFeeMicroMinotari(null);
+                    setError('amount', { message: `${fee.reason}` });
+                    return;
+                }
+                if (effective.status === 'rejected') {
+                    setResolvedPaymentId(null);
+                    setError('address', { message: `${effective.reason}` });
+                    return;
+                }
+                setFeeMicroMinotari(typeof fee.value === 'number' ? fee.value : null);
+                setResolvedPaymentId(effective.value);
                 setStatus('reviewing');
                 return;
+            }
+
+            // No PIN: the backend dialog is the review, but the status screens below still
+            // show the payment id that is sent, not the typed Message.
+            if (!hasReviewStep) {
+                try {
+                    setResolvedPaymentId(await effectivePaymentId());
+                } catch (error) {
+                    setResolvedPaymentId(null);
+                    setError('address', { message: `${error}` });
+                    return;
+                }
             }
 
             setStatus('processing');
@@ -161,7 +185,8 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 setStatus={setStatus}
                 amount={methods.getValues().amount}
                 address={methods.getValues().address}
-                message={methods.getValues().message}
+                message={resolvedPaymentId ? (resolvedPaymentId.payment_id ?? undefined) : methods.getValues().message}
+                paymentIdOverridden={resolvedPaymentId?.payment_id_overridden}
                 notAcceptedYet={notAcceptedYet}
                 feeMicroMinotari={feeMicroMinotari}
                 handleClose={handleClose}
