@@ -24,6 +24,7 @@ use anyhow::anyhow;
 use futures::StreamExt;
 use log::{debug, info, warn};
 use std::path::PathBuf;
+use std::time::Duration;
 use tokio::fs::create_dir_all;
 use tokio::sync::watch;
 use tokio::{fs::File, io::AsyncWriteExt};
@@ -38,7 +39,7 @@ use crate::requests::{
 };
 use crate::utils::network_status::NetworkStatus;
 
-use super::http_client::{HttpClient, classify_status_error};
+use super::http_client::classify_status_error;
 
 const MAX_RETRIES: u32 = 5;
 
@@ -145,8 +146,50 @@ impl HttpFileClient {
         self.download().await
     }
 
+    fn request_client(
+        &self,
+        head: bool,
+    ) -> Result<reqwest_middleware::ClientWithMiddleware, anyhow::Error> {
+        // The checksum-order test uses an in-process HTTP server. Never let
+        // that exception apply to release builds, non-loopback URLs, or redirects.
+        let test_loopback_http = !self.config.exclusive_create
+            && cfg!(test)
+            && reqwest::Url::parse(&self.url).is_ok_and(|url| {
+                url.scheme() == "http"
+                    && url.host_str() == Some("127.0.0.1")
+                    && url.username().is_empty()
+                    && url.password().is_none()
+            });
+        let mut builder = reqwest::Client::builder().https_only(!test_loopback_http);
+        if !self.config.exclusive_create {
+            builder = builder.user_agent(create_user_agent());
+        }
+        if head {
+            builder = builder.timeout(Duration::from_secs(30));
+        }
+        if test_loopback_http {
+            builder = builder.redirect(reqwest::redirect::Policy::none());
+        }
+        Ok(reqwest_middleware::ClientBuilder::new(builder.build()?).build())
+    }
+
+    async fn send_head_request(&self) -> Result<reqwest::Response, anyhow::Error> {
+        let response = self
+            .request_client(true)?
+            .head(&self.url)
+            .send()
+            .await
+            .map_err(|e| {
+                BinaryDownloadError::NetworkError(format!("HEAD request failed with error: {e}"))
+            })?;
+        if !response.status().is_success() {
+            return Err(classify_status_error("HEAD", response.status()));
+        }
+        Ok(response)
+    }
+
     pub async fn handle_default_flow(&self) -> Result<(), anyhow::Error> {
-        let head_response = HttpClient::default().send_head_request(&self.url).await?;
+        let head_response = self.send_head_request().await?;
         let expected_size = get_content_length_from_head_response(&head_response);
 
         let destination = &self.destination;
@@ -200,7 +243,7 @@ impl HttpFileClient {
 
     #[allow(clippy::too_many_lines)]
     pub async fn handle_resume_flow(&self) -> Result<(), anyhow::Error> {
-        let head_response = HttpClient::default().send_head_request(&self.url).await?;
+        let head_response = self.send_head_request().await?;
         let expected_size = get_content_length_from_head_response(&head_response);
         let destination = &self.destination;
         let destination_file = destination.join(&self.file_name);
@@ -329,26 +372,7 @@ impl HttpFileClient {
         file: &mut File,
         resume: bool,
     ) -> Result<(), anyhow::Error> {
-        let client = if self.config.exclusive_create {
-            // Also reject a vendor redirect that downgrades the installer transfer to HTTP.
-            reqwest_middleware::ClientBuilder::new(
-                reqwest::Client::builder().https_only(true).build()?,
-            )
-            .build()
-        } else {
-            // Every binary archive and its checksum come from hardcoded https:// mirrors
-            // (cdn-universe.tari.com, github.com, Tor's dist host). A compromised mirror
-            // is the only thing that could 3xx-redirect the transfer to plain HTTP, so
-            // pin https_only here too and keep the swap on TLS. Keep the user agent the
-            // default client sends.
-            reqwest_middleware::ClientBuilder::new(
-                reqwest::Client::builder()
-                    .user_agent(create_user_agent())
-                    .https_only(true)
-                    .build()?,
-            )
-            .build()
-        };
+        let client = self.request_client(false)?;
         let mut request = client
             .get(&self.url)
             .header(reqwest::header::ACCEPT, "application/octet-stream");
