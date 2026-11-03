@@ -761,3 +761,44 @@ fn move_unreadable_wallet_config_to_recovery_keeps_the_files() {
 
     move_unreadable_wallet_config_to_recovery(dir.path()).expect("nothing left to move is fine");
 }
+
+use super::internal_wallet::owned_wallet_for_pin_recovery;
+
+async fn derived_details(id: &str, seed: CipherSeed) -> TariWalletDetails {
+    InternalWallet::get_tari_wallet_details(WalletId::new(id.to_string()), seed)
+        .await
+        .expect("derive wallet details")
+}
+
+#[tokio::test]
+async fn test_pin_recovery_ownership_no_owned_wallet_is_an_error() {
+    let derived = derived_details("derived", CipherSeed::random()).await;
+    let result = owned_wallet_for_pin_recovery(&derived.tari_address, None);
+    assert!(
+        result.is_err(),
+        "with no owned wallet on disk there is nothing to recover"
+    );
+    assert_ne!(result.unwrap_err(), "Seed words do not match");
+}
+
+#[tokio::test]
+async fn test_pin_recovery_ownership_address_mismatch_is_rejected() {
+    let owned = derived_details("owned", CipherSeed::random()).await;
+    let other = derived_details("other", CipherSeed::random()).await;
+    assert_eq!(
+        owned_wallet_for_pin_recovery(&other.tari_address, Some(owned)).unwrap_err(),
+        "Seed words do not match"
+    );
+}
+
+#[tokio::test]
+async fn test_pin_recovery_ownership_match_returns_the_owned_details() {
+    let seed = CipherSeed::random();
+    let owned = derived_details("owned_id", seed.clone()).await;
+    // forgot_pin derives with a throwaway id; only the address decides.
+    let derived = derived_details("nonsense", seed).await;
+    let captured = owned_wallet_for_pin_recovery(&derived.tari_address, Some(owned.clone()))
+        .expect("the owned wallet's seed words must pass");
+    assert_eq!(captured.id, owned.id);
+    assert_eq!(captured.tari_address, owned.tari_address);
+}

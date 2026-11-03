@@ -41,7 +41,9 @@ use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEven
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::internal_wallet::{InternalWallet, mnemonic_to_tari_cipher_seed};
+use crate::internal_wallet::{
+    InternalWallet, mnemonic_to_tari_cipher_seed, owned_wallet_for_pin_recovery,
+};
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::consts::GpuMinerType;
 use crate::mining::gpu::manager::GpuManager;
@@ -550,13 +552,15 @@ pub async fn forgot_pin(
     .await
     .map_err(|e| e.to_string())?;
 
-    let current_tari_address = InternalWallet::tari_address()
-        .await
-        .map_err(|e| e.to_string())?;
-    if extracted_wallet_details.tari_address != current_tari_address {
-        error!(target: LOG_TARGET_APP_LOGIC, "Seed words do not match current wallet address");
-        return Err("Seed words do not match".to_string());
-    }
+    // Captured once, before the create-PIN dialog, so nothing changed while it is open can
+    // redirect which wallet's credentials get rewritten.
+    let wallet_config = ConfigWallet::content().await;
+    let owned_wallet = owned_wallet_for_pin_recovery(
+        &extracted_wallet_details.tari_address,
+        wallet_config.tari_wallet_details().clone(),
+    )
+    .inspect_err(|e| error!(target: LOG_TARGET_APP_LOGIC, "PIN recovery refused: {e}"))?;
+    let monero_address_is_generated = *wallet_config.monero_address_is_generated();
 
     // The Monero credential is enciphered with the forgotten PIN, so recovery replaces it. Words
     // are accepted only when they derive the recorded address; without them the user has asked for
@@ -568,7 +572,7 @@ pub async fn forgot_pin(
             let address = seed
                 .to_address::<Mainnet>()
                 .map_err(|_| "Monero seed words do not match".to_string())?;
-            if address != *ConfigWallet::content().await.monero_address() {
+            if address != *wallet_config.monero_address() {
                 error!(target: LOG_TARGET_APP_LOGIC, "Monero seed words do not match the recorded Monero address");
                 return Err("Monero seed words do not match".to_string());
             }
@@ -577,10 +581,15 @@ pub async fn forgot_pin(
         _ => None,
     };
 
-    let pin =
-        InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed.clone(), monero_seed)
-            .await
-            .map_err(|e| e.to_string())?;
+    let pin = InternalWallet::recover_forgotten_pin(
+        &app_handle,
+        tari_cipher_seed.clone(),
+        &owned_wallet,
+        monero_address_is_generated,
+        monero_seed,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
     // The L2 store is encrypted with the forgotten PIN. A failure here leaves the new PIN in
     // place, so running the recovery again retries it.
     let data_dir = app_handle

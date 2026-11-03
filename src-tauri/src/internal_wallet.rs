@@ -540,12 +540,15 @@ impl InternalWallet {
     pub async fn recover_forgotten_pin(
         app_handle: &AppHandle,
         tari_seed: CipherSeed,
+        owned_wallet: &TariWalletDetails,
+        monero_address_is_generated: bool,
         monero_seed: Option<MoneroSeed>,
     ) -> Result<SafePassword, anyhow::Error> {
+        // The wallet and the Monero flag are captured by the caller before this dialog; nothing
+        // read after it may decide which credentials are rewritten.
         let pin_password = PinManager::create_pin(app_handle).await?;
 
-        let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
-        {
+        let encrypted_monero_seed = if monero_address_is_generated {
             let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
             // The old Monero blob is enciphered with the forgotten PIN, so it is replaced here:
             // either with the seed the caller proved derives the recorded address, or, when the
@@ -584,14 +587,10 @@ impl InternalWallet {
         };
         let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
-            let wallet_id = InternalWallet::tari_wallet_details()
-                .await
-                .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
-                .id;
             let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?.to_vec();
             InternalWallet::set_credentials(
                 app_handle,
-                wallet_id.clone(),
+                owned_wallet.id.clone(),
                 &Credential {
                     encrypted_seed: encrypted_tari_seed.clone(),
                 },
@@ -605,8 +604,14 @@ impl InternalWallet {
         if InternalWallet::is_initialized() {
             let mut internal_wallet_guard = InternalWallet::current()?.write().await;
             internal_wallet_guard.encrypted_monero_seed = Hidden::hide(encrypted_monero_seed);
-            internal_wallet_guard.encrypted_tari_seed =
-                Hidden::hide(Some(encrypted_tari_seed.clone()));
+            // The new blob belongs to the owned wallet; never attach it to a different one.
+            if internal_wallet_guard
+                .tari_wallet_details
+                .as_ref()
+                .is_some_and(|details| details.id == owned_wallet.id)
+            {
+                internal_wallet_guard.encrypted_tari_seed = Hidden::hide(Some(encrypted_tari_seed));
+            }
         }
 
         Ok(pin_password)
@@ -1586,6 +1591,21 @@ pub(crate) async fn seed_proves_recorded_address(
             Err(_) => false,
         },
     )
+}
+
+/// Forgot-PIN ownership check. The forgotten PIN enciphers the owned wallet's seed recorded on
+/// disk, so the seed words must derive that wallet's address. A selected external address plays
+/// no part. Returns the owned details so recovery writes to the wallet id checked here.
+pub(crate) fn owned_wallet_for_pin_recovery(
+    derived_address: &TariAddress,
+    owned: Option<TariWalletDetails>,
+) -> Result<TariWalletDetails, String> {
+    let owned =
+        owned.ok_or_else(|| "No wallet with seed words is set up on this device".to_string())?;
+    if *derived_address != owned.tari_address {
+        return Err("Seed words do not match".to_string());
+    }
+    Ok(owned)
 }
 
 pub async fn mnemonic_to_tari_cipher_seed(
