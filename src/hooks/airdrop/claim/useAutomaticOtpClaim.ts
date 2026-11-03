@@ -56,7 +56,7 @@ export function useAutomaticOtpClaim() {
                 switch (payload.event) {
                     case 'otp-response': {
                         const otpResponse = data as OtpResponse;
-                        console.info('OTP received:', otpResponse.otp, 'Expires:', otpResponse.expiresAt);
+                        console.info('OTP received, expires:', otpResponse.expiresAt);
                         setOtpData(otpResponse);
                         setState((prev) => ({
                             ...prev,

@@ -406,7 +406,7 @@ pub struct TxnDialogResponse {
 /// Parse an XTM amount string into µT, rejecting unparseable and zero amounts.
 pub fn parse_amount(amount: &str) -> Result<u64, TransactionError> {
     let minotari_amount = Minotari::from_str(amount)
-        .map_err(|e| TransactionError::InvalidAmount(format!("Invalid amount '{amount}': {e}")))?;
+        .map_err(|e| TransactionError::InvalidAmount(format!("Invalid amount: {e}")))?;
     let amount_u64 = MicroMinotari::from(minotari_amount).as_u64();
 
     if amount_u64 == 0 {

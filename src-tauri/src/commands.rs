@@ -1919,7 +1919,8 @@ pub async fn l2_claim_burn(
     app_handle: tauri::AppHandle,
     commitment: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[l2_claim_burn] called with args: (commitment: {commitment:?})");
+    // The commitment identifies the burn being claimed, so it stays out of the log.
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_claim_burn] called");
     gated_l2_claim(app_handle, SendOrigin::App.new_request_id(), commitment)
         .await
         .map_err(|e| e.to_string())
@@ -2504,7 +2505,8 @@ pub async fn encode_payment_id_to_address(
     payment_id: String,
     tari_address: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "encode_payment_id_to_address called with payment_id: {payment_id:?}, tari_address: {tari_address:?}");
+    // The payment ID and both addresses (the result embeds the payment ID) stay out of the log.
+    info!(target: LOG_TARGET_APP_LOGIC, "encode_payment_id_to_address called");
     let mut address_with_memo_field =
         DualAddress::from_base58(tari_address.as_str()).map_err(|e| {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to parse Tari address: {e}");
@@ -2517,7 +2519,7 @@ pub async fn encode_payment_id_to_address(
             e.to_string()
         })?;
     let address_base58 = address_with_memo_field.to_base58();
-    info!(target: LOG_TARGET_APP_LOGIC, "Encoded Tari address with payment ID: {address_base58:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "Encoded payment ID into Tari address");
 
     Ok(address_base58)
 }
