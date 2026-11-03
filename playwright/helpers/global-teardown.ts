@@ -1,5 +1,6 @@
 import { spawnSync } from 'child_process';
 import os from 'os';
+import { stopMonerodStub } from './monerod-stub';
 
 const isWin = os.platform() === 'win32';
 
@@ -62,4 +63,5 @@ export default async function globalTeardown() {
   if (vitePid) {
     killPid(Number(vitePid));
   }
+  await stopMonerodStub();
 }

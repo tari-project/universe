@@ -6,7 +6,7 @@
         "mmproxy": "6.3.0-pre.2 | e5635bf",
         "sha-p2pool": "1.0.3 | cff9241",
         "tariminer": "1.1.8",
-        "tor": "15.0.5",
+        "tor": "16.0",
         "wallet": "6.3.0-pre.2 | e5635bf",
         "xmrig": "6.26.0"
     },
@@ -30,33 +30,33 @@
             }
         },
         "tor": {
-            "version": "15.0.5",
+            "version": "16.0",
             "platforms": {
                 "linux-x86_64": {
-                    "tor/libcrypto.so.3": "a8d7343d36458ec5b3c307e6690631c310f8dc00d6961861ddd347753f624332",
-                    "tor/libevent-2.1.so.7": "ac9c728b83f8ac5b814f2ee4458f90e71330e7f960bc0505ac089c3bfa0f74a4",
-                    "tor/libssl.so.3": "14a2b8e615be06268fba8e3e9f51252c53ed98cf9eef2e3cf0f8572f47e19760",
-                    "tor/pluggable_transports/conjure-client": "bd4d344b35d49e8daff49eb480baa68323a5559253ad3361d9149290101f01f4",
-                    "tor/pluggable_transports/lyrebird": "ff5f2d1fb9bf09f76b3a2cc5654a1fb11586f3981a586a3cdde455badc4c55bb",
-                    "tor/tor": "8c925fa234461413152bc6018b45ed9389ec42707165f04021a5786c84732a12"
+                    "tor/libcrypto.so.3": "e2c0901c520c07cdaab4af3507bf20f6c80273571764b4dc9b3b0b4a75621052",
+                    "tor/libevent-2.1.so.7": "d252ad9c63de5ac276bdcf73f466ecf6ce0b390f33c3d241b6a32ea4e2f59ef6",
+                    "tor/libssl.so.3": "cb31eaf171a10f660137b6c3d1ff552c2e89fdedd20e8523a7bf30cc06727457",
+                    "tor/pluggable_transports/conjure-client": "d81204290e4a94a71a064914a02ccaeb6ddd059fd322b04fd94a885c4670a2b0",
+                    "tor/pluggable_transports/lyrebird": "a626627f9da2a1f1fa78bf93203bd71aa1480e22530ed3568a14b954b45bba46",
+                    "tor/tor": "4c05f632c1231ef8ab5fc828a24661a8df9af6a56e1d7b742dfd632ee93e9c8b"
                 },
                 "windows-x86_64": {
-                    "tor/pluggable_transports/conjure-client.exe": "aba683ba02cf269b0bc9ade6b0540098d432deaa03abe63982d27f1aea8ddb14",
-                    "tor/pluggable_transports/lyrebird.exe": "dd1edf62d1cd795a0935cce414f784c2f07952889f86c9db883ff78e5cf5480f",
-                    "tor/tor-gencert.exe": "22a8bb19c4cdb33762979cd57d11f613bc8a6193bc6d500d16efab2bace61768",
-                    "tor/tor.exe": "fa3b6b5ed9ea44aa91e7904081745b4af63a8e322e8090eaa7e303ce68247e9c"
+                    "tor/pluggable_transports/conjure-client.exe": "51221664b9531cc3804a264989c68d4911ac40c11f8f739363ff5efa9e3eee42",
+                    "tor/pluggable_transports/lyrebird.exe": "6a8f58e82a39510f144bbef5815ece0762c8a632375da810e9d803d610622201",
+                    "tor/tor-gencert.exe": "33b2fd3b1520ad598e7e080f673c443f3225d591616e03444b997f6165ae6ffb",
+                    "tor/tor.exe": "1607d98f5d13859077b1b349c55beba76b09acc788f0431fd824d11966fb1074"
                 },
                 "macos-x86_64": {
-                    "tor/libevent-2.1.7.dylib": "00668ff080c7efbf05f591beee98cb5659c942c918128a33aa30db262d9bcc36",
+                    "tor/libevent-2.1.7.dylib": "25646a77c3f71f62f7cc3756320e6f7c3cc48174d5763b11ba03148daaae81e9",
                     "tor/pluggable_transports/conjure-client": "639b6efc3ca0a1d4267a68ed038a2eaa98f8fa7d29bce546e70e1da2f6c6892d",
-                    "tor/pluggable_transports/lyrebird": "14b953cb65813857b1492d64ce48a4e981d7d5bff9bc67fa3a899c33daa20fcf",
-                    "tor/tor": "099acbc1a359d9507ac4f473f5c6b48e6c20f44e6f128672abf7279899b488f9"
+                    "tor/pluggable_transports/lyrebird": "bbd8b9f7146b5edb239053a35b67f88c7e09457f18f236392950fac7d394a146",
+                    "tor/tor": "333a612b7ea40a87fae29d08aa350ac1d28aee2523940e07f47e87b038358b73"
                 },
                 "macos-aarch64": {
-                    "tor/libevent-2.1.7.dylib": "1f993bee6b06612edcfac99bedd848cb40d91b213cc98ea57659676920970cbd",
+                    "tor/libevent-2.1.7.dylib": "d51339ae695865b911c56c6d4da9a4084a74c9484c856c4fa5c22440ba82e0b9",
                     "tor/pluggable_transports/conjure-client": "80a77a507025d78ec2c17a67eb8640092185bd415ff5f7d657f80b0cf8042dfb",
-                    "tor/pluggable_transports/lyrebird": "94f64abef19dc481f32e41f87ec5f999ad64f04e37ac779121533f1c5b42c9a1",
-                    "tor/tor": "9c9874ec3d58bb2ddb02dc61cc3c843134b1f2efc28fc6b5434c85087b1f6596"
+                    "tor/pluggable_transports/lyrebird": "7c0ac55caec0d0977477cbe3fcba4ea35867d84876af7d61c7f7373b1f2f3e1d",
+                    "tor/tor": "213f3d797e33de082ad69e5be9d2324d4053f379fc58b76e916327d5ddac55ce"
                 }
             }
         },
