@@ -653,13 +653,18 @@ impl InternalWallet {
                     // A plain Monero seed, as written before any PIN existed.
                     let encrypted_monero_seed =
                         cryptography::encrypt(&stored_monero_seed, &pin_password)?;
+                    // Forced: the two credential writes in this function aren't atomic. If this
+                    // Monero write committed and the Tari write below then failed on a transient
+                    // keyring error, the function would return Err with the PIN unlocked, and a
+                    // retry with a different PIN could never decrypt this blob again. Retrying
+                    // through the keyring dialog keeps the pair consistent under one PIN.
                     InternalWallet::set_credentials(
                         app_handle,
                         WalletId::new(MONERO_WALLET_ID.to_string()),
                         &Credential {
                             encrypted_seed: encrypted_monero_seed.clone(),
                         },
-                        false,
+                        true,
                     )
                     .await?;
                     encrypted_monero_seed
@@ -681,13 +686,16 @@ impl InternalWallet {
         let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
             let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?.to_vec();
+            // Forced, for the same reason as the Monero write above: the Monero credential may
+            // already be committed under this PIN, so a transient failure here must retry rather
+            // than abort and strand the wallet between two PINs.
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id,
                 &Credential {
                     encrypted_seed: encrypted_tari_seed.clone(),
                 },
-                false,
+                true,
             )
             .await?;
             encrypted_tari_seed

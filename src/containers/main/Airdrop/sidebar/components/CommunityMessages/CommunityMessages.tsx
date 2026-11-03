@@ -3,8 +3,11 @@ import { CloseButton, Message } from './CommunityMessages.styles';
 import { AnimatePresence } from 'motion/react';
 import CloseIcon from '@app/components/GreenModal/icons/CloseIcon';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import DOMPurify from 'dompurify';
+import { useTranslation } from 'react-i18next';
 
 export const CommunityMessages = () => {
+    const { t } = useTranslation('common', { useSuspense: false });
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const [dismissedMessages, setDismissedMessages] = useState<string[]>([]);
     const communityMessages = useAirdropStore((s) => s.communityMessages);
@@ -40,6 +43,11 @@ export const CommunityMessages = () => {
         return communityMessages?.find((message) => !dismissedMessages.includes(message.id));
     }, [communityMessages, dismissedMessages]);
 
+    // textHtml comes from the remote airdrop API, so it's untrusted. Sanitize it before it
+    // reaches dangerouslySetInnerHTML: a compromised or spoofed response must not be able to
+    // run script inside the app webview (where it would reach the Tauri IPC bridge).
+    const safeHtml = useMemo(() => (activeMessage ? DOMPurify.sanitize(activeMessage.textHtml) : ''), [activeMessage]);
+
     return (
         <AnimatePresence mode="wait">
             {activeMessage ? (
@@ -61,8 +69,8 @@ export const CommunityMessages = () => {
                         opacity: 0,
                     }}
                 >
-                    <div dangerouslySetInnerHTML={{ __html: activeMessage.textHtml }} />
-                    <CloseButton onClick={() => handleCloseMessage(activeMessage.id)}>
+                    <div dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                    <CloseButton aria-label={t('close')} onClick={() => handleCloseMessage(activeMessage.id)}>
                         <CloseIcon />
                     </CloseButton>
                 </Message>

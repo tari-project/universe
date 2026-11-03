@@ -116,12 +116,14 @@ export default function SeedWords({ isMonero = false, isL2 = false }: SeedWordsP
     }
     const handleCopyClick = useCallback(() => {
         startTransition(async () => {
+            // Seed words are the wallet's whole secret; don't leave them sitting on the
+            // clipboard for the next app to read.
             if (seedWords?.length && seedWordsFetched) {
-                copyToClipboard(seedWords.join(' '));
+                copyToClipboard(seedWords.join(' '), undefined, { clearAfterMs: 60_000 });
             } else {
                 getSeedWords().then((r) => {
                     if (r?.length) {
-                        copyToClipboard(r.join(' '));
+                        copyToClipboard(r.join(' '), undefined, { clearAfterMs: 60_000 });
                         setSeedWords([]);
                     }
                 });

@@ -113,11 +113,13 @@ impl TorControlClient {
                     .ok_or_else(|| anyhow!("No status capture in tor bootstrap status"))?
                     .as_str()
                     == "Done";
-                // drop the next line
-                let _s250_ok = reader.next_line().await?;
             } else {
                 warn!(target: LOG_TARGET_APP_LOGIC, "Failed to parse Tor bootstrap response");
             }
+            // GETINFO always closes with a trailing "250 OK". Drain it whether or
+            // not the data line parsed, otherwise the circuit and liveness reads
+            // below consume the wrong lines and misreport Tor's status.
+            let _s250_ok = reader.next_line().await?;
         }
 
         writer.write_all(CIRCUIT_QUERY.as_bytes()).await?;

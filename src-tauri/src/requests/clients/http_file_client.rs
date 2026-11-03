@@ -30,7 +30,9 @@ use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::binaries::binaries_resolver::BinaryDownloadError;
-use crate::requests::utils::{create_exponential_timeout, get_content_size_from_file};
+use crate::requests::utils::{
+    create_exponential_timeout, create_user_agent, get_content_size_from_file,
+};
 use crate::requests::{
     cache::cloudflare::CloudFlareCache, utils::get_content_length_from_head_response,
 };
@@ -334,7 +336,18 @@ impl HttpFileClient {
             )
             .build()
         } else {
-            HttpClient::default().client
+            // Every binary archive and its checksum come from hardcoded https:// mirrors
+            // (cdn-universe.tari.com, github.com, Tor's dist host). A compromised mirror
+            // is the only thing that could 3xx-redirect the transfer to plain HTTP, so
+            // pin https_only here too and keep the swap on TLS. Keep the user agent the
+            // default client sends.
+            reqwest_middleware::ClientBuilder::new(
+                reqwest::Client::builder()
+                    .user_agent(create_user_agent())
+                    .https_only(true)
+                    .build()?,
+            )
+            .build()
         };
         let mut request = client
             .get(&self.url)
