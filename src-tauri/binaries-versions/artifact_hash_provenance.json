@@ -64,25 +64,25 @@
         "archive_sha256": "b819d17aa7016263c3bf1a1b3e7eab3f3fee4badca33777c98b73cfae7eab056",
         "checksum_source": "https://github.com/tari-project/tari/releases/download/v6.3.0-pre.2/tari_suite-6.3.0-pre.2-mainnet-e5635bf-windows-x64.exe.zip.sha256"
     },
-    "tor-expert-bundle-linux-x86_64-15.0.5.tar.gz": {
-        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/tor-expert-bundle-linux-x86_64-15.0.5.tar.gz",
-        "archive_sha256": "df5d4850779d9648160c54df1a82733ea54f3430c46b3cc3ed2a22b579f8758e",
-        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/sha256sums-signed-build.txt"
+    "tor-expert-bundle-linux-x86_64-16.0.tar.gz": {
+        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/16.0/tor-expert-bundle-linux-x86_64-16.0.tar.gz",
+        "archive_sha256": "cc950ebe9acb80188325c3a2cd8817def7dd7237d6fdcd861bb87b234a0cb2fd",
+        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/16.0/sha256sums-signed-build.txt"
     },
-    "tor-expert-bundle-macos-aarch64-15.0.5.tar.gz": {
-        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/tor-expert-bundle-macos-aarch64-15.0.5.tar.gz",
-        "archive_sha256": "147be0997f4538c6f20f3a113f6220f7a1c711acc3410f534f0a3cf62b7a06dd",
-        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/sha256sums-signed-build.txt"
+    "tor-expert-bundle-macos-aarch64-16.0.tar.gz": {
+        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/16.0/tor-expert-bundle-macos-aarch64-16.0.tar.gz",
+        "archive_sha256": "b8da251eccbe9e82f3681ee3af3c97fb4291c4a4e153e5b824bde48a1117cd6a",
+        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/16.0/sha256sums-signed-build.txt"
     },
-    "tor-expert-bundle-macos-x86_64-15.0.5.tar.gz": {
-        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/tor-expert-bundle-macos-x86_64-15.0.5.tar.gz",
-        "archive_sha256": "38a62c81c93eee88a273a14b8669e7d5a72583adef1c37c28e1cd98ee5ea2ade",
-        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/sha256sums-signed-build.txt"
+    "tor-expert-bundle-macos-x86_64-16.0.tar.gz": {
+        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/16.0/tor-expert-bundle-macos-x86_64-16.0.tar.gz",
+        "archive_sha256": "5b1860215c26f2d408392d1d79e798a2f81d65eb939510bb94c11f237bd0bfc3",
+        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/16.0/sha256sums-signed-build.txt"
     },
-    "tor-expert-bundle-windows-x86_64-15.0.5.tar.gz": {
-        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/tor-expert-bundle-windows-x86_64-15.0.5.tar.gz",
-        "archive_sha256": "49aabfe2958c8084e9fba1f78d85049e16a657e1f679b75102bbf9518497607f",
-        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/15.0.5/sha256sums-signed-build.txt"
+    "tor-expert-bundle-windows-x86_64-16.0.tar.gz": {
+        "url": "https://archive.torproject.org/tor-package-archive/torbrowser/16.0/tor-expert-bundle-windows-x86_64-16.0.tar.gz",
+        "archive_sha256": "2ee123e9167318a3742778ff704e75f01d4780f05a14522d451fe011011077c4",
+        "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/16.0/sha256sums-signed-build.txt"
     },
     "xmrig-6.26.0-linux-static-x64.tar.gz": {
         "url": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-linux-static-x64.tar.gz",
