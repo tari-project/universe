@@ -116,10 +116,11 @@ impl TorControlClient {
             } else {
                 warn!(target: LOG_TARGET_APP_LOGIC, "Failed to parse Tor bootstrap response");
             }
-            // GETINFO always closes with a trailing "250 OK". Drain it whether or
-            // not the data line parsed, otherwise the circuit and liveness reads
-            // below consume the wrong lines and misreport Tor's status.
-            let _s250_ok = reader.next_line().await?;
+            // Only multi-line replies have a trailing "250 OK". Error replies
+            // are single-line and waiting for another line would hang here.
+            if response.starts_with("250-") {
+                let _s250_ok = reader.next_line().await?;
+            }
         }
 
         writer.write_all(CIRCUIT_QUERY.as_bytes()).await?;
@@ -129,7 +130,9 @@ impl TorControlClient {
             if response.contains("circuit-established=1") {
                 circuit_ok = true;
             }
-            let _s250_ok = reader.next_line().await?;
+            if response.starts_with("250-") {
+                let _s250_ok = reader.next_line().await?;
+            }
         }
 
         writer.write_all(NETWORK_QUERY.as_bytes()).await?;
@@ -227,6 +230,46 @@ mod tests {
             let status = result.expect("authenticated info");
             assert!(status.is_bootstrapped && status.circuit_ok && status.network_liveness);
         }
+    }
+
+    #[tokio::test]
+    async fn test_get_info_does_not_wait_for_a_second_line_after_error_reply() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cookie_path = temp.path().join("cookie");
+        std::fs::write(&cookie_path, [0xab; 32]).expect("write cookie");
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let client =
+            TorControlClient::new(listener.local_addr().expect("addr").port(), cookie_path);
+        let server = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let mut reader = BufReader::new(stream);
+            let mut line = String::new();
+            for (query, reply) in [
+                (None, "250 OK\r\n"),
+                (Some(BOOTSTRAP_QUERY), "552 Unrecognized key\r\n"),
+                (Some(CIRCUIT_QUERY), "552 Unrecognized key\r\n"),
+                (Some(NETWORK_QUERY), "552 Unrecognized key\r\n"),
+            ] {
+                line.clear();
+                reader.read_line(&mut line).await.expect("read command");
+                if let Some(query) = query {
+                    assert_eq!(line, query);
+                }
+                reader
+                    .get_mut()
+                    .write_all(reply.as_bytes())
+                    .await
+                    .expect("reply");
+            }
+        });
+        let status = tokio::time::timeout(std::time::Duration::from_secs(2), client.get_info())
+            .await
+            .expect("single-line Tor error must not block")
+            .expect("status response");
+        server.await.expect("server finishes");
+        assert!(!status.is_bootstrapped && !status.circuit_ok && !status.network_liveness);
     }
 
     #[tokio::test]
