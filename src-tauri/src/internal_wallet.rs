@@ -668,7 +668,7 @@ impl InternalWallet {
         let plain_tari_seed = Zeroizing::new(
             tari_seed
                 .to_binary()
-                .expect("a decoded Tari seed must encode")
+                .map_err(|e| anyhow!("Failed to encode the Tari seed: {e:?}"))?
                 .to_vec(),
         );
         let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?.to_vec();
@@ -722,6 +722,16 @@ impl InternalWallet {
             // External Monero address is used, no seed to encrypt
             None
         };
+        // Both failure paths below put the pre-PIN seeds back. The Tari write runs under the
+        // Monero lock taken above; the PIN-state rollback takes it again after the drop.
+        let restore = || {
+            InternalWallet::restore_plain_pin_credentials(
+                app_handle,
+                wallet_id.clone(),
+                &plain_tari_seed,
+                plain_monero_seed.as_deref().map(Vec::as_slice),
+            )
+        };
         if let Err(tari_error) = InternalWallet::set_credentials(
             app_handle,
             wallet_id.clone(),
@@ -732,16 +742,9 @@ impl InternalWallet {
         )
         .await
         {
-            InternalWallet::restore_plain_pin_credentials(
-                app_handle,
-                wallet_id,
-                &plain_tari_seed,
-                plain_monero_seed.as_ref().map(|plain| plain.as_slice()),
-            )
-                .await
-                .map_err(|rollback_error| {
-                    anyhow!("Tari credential write failed: {tari_error}; credential rollback failed: {rollback_error}")
-                })?;
+            restore().await.map_err(|rollback_error| {
+                anyhow!("Tari credential write failed: {tari_error}; credential rollback failed: {rollback_error}")
+            })?;
             return Err(tari_error);
         }
         drop(_monero_credential);
@@ -751,13 +754,7 @@ impl InternalWallet {
             } else {
                 None
             };
-            InternalWallet::restore_plain_pin_credentials(
-                app_handle,
-                wallet_id,
-                &plain_tari_seed,
-                plain_monero_seed.as_ref().map(|plain| plain.as_slice()),
-            )
-            .await
+            restore().await
         })
         .await?;
 

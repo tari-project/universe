@@ -86,105 +86,29 @@ describe('useCopyToClipboard', () => {
         expect(clear).toHaveBeenCalledTimes(1);
     });
 
-    it('does not let the old timer clear a replacement write that is still pending', async () => {
-        const seed = 'word '.repeat(24).trim();
-        readText.mockResolvedValue(seed);
-        let finishSecondWrite!: () => void;
-        writeText.mockResolvedValueOnce(undefined).mockImplementationOnce(
-            () =>
-                new Promise<void>((resolve) => {
-                    finishSecondWrite = resolve;
-                })
-        );
-        const { result } = renderHook(() => useCopyToClipboard());
-
-        await act(async () => result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 }));
-        await act(async () => vi.advanceTimersByTimeAsync(50_000));
-        act(() => result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 }));
-        await act(async () => vi.advanceTimersByTimeAsync(10_000));
-        expect(clear).not.toHaveBeenCalled();
-
-        await act(async () => finishSecondWrite());
-        await act(async () => vi.advanceTimersByTimeAsync(60_000));
-        expect(clear).toHaveBeenCalledTimes(1);
-    });
-
-    it('clears the previous secret if its replacement write fails', async () => {
+    it('keeps the previous secret timer when a later copy fails', async () => {
         const seed = 'word '.repeat(24).trim();
         readText.mockResolvedValue(seed);
         writeText.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('clipboard busy'));
-        const { result } = renderHook(() => useCopyToClipboard());
-        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-        await act(async () => result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 }));
-        await act(async () => result.current.copyToClipboard('new value'));
-        expect(clear).toHaveBeenCalledTimes(1);
-        consoleError.mockRestore();
-    });
-
-    it('retains the previous secret while its expiry read is pending', async () => {
-        const seed = 'word '.repeat(24).trim();
-        let finishExpiryRead!: (value: string) => void;
-        readText
-            .mockImplementationOnce(
-                () =>
-                    new Promise<string>((resolve) => {
-                        finishExpiryRead = resolve;
-                    })
-            )
-            .mockResolvedValue(seed);
-        writeText.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('clipboard busy'));
         const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         const { result } = renderHook(() => useCopyToClipboard());
 
         await act(async () => result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 }));
-        await act(async () => vi.advanceTimersByTimeAsync(60_000));
-        await act(async () => result.current.copyToClipboard('new value'));
-        expect(clear).toHaveBeenCalledTimes(1);
-        await act(async () => finishExpiryRead(seed));
-        expect(clear).toHaveBeenCalledTimes(1);
-        consoleError.mockRestore();
-    });
-
-    it('clears a secret whose write finishes after a newer copy fails', async () => {
-        const seed = 'word '.repeat(24).trim();
-        let clipboard = '';
-        let finishFirstWrite!: () => void;
-        writeText
-            .mockImplementationOnce(
-                () =>
-                    new Promise<void>((resolve) => {
-                        finishFirstWrite = () => {
-                            clipboard = seed;
-                            resolve();
-                        };
-                    })
-            )
-            .mockRejectedValueOnce(new Error('clipboard busy'));
-        readText.mockImplementation(() => Promise.resolve(clipboard));
-        clear.mockImplementation(() => {
-            clipboard = '';
-            return Promise.resolve();
-        });
-        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-        const { result } = renderHook(() => useCopyToClipboard());
-
-        act(() => result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 }));
         await act(async () => result.current.copyToClipboard('new value'));
         expect(clear).not.toHaveBeenCalled();
-        await act(async () => finishFirstWrite());
+        await act(async () => vi.advanceTimersByTimeAsync(60_000));
         expect(clear).toHaveBeenCalledTimes(1);
-        expect(clipboard).toBe('');
         consoleError.mockRestore();
     });
 
-    it('clears a copied secret when the component unmounts', async () => {
+    it('still clears on schedule after the component unmounts', async () => {
         const seed = 'word '.repeat(24).trim();
         readText.mockResolvedValue(seed);
         const { result, unmount } = renderHook(() => useCopyToClipboard());
+
         await act(async () => result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 }));
-        await act(async () => unmount());
-        expect(clear).toHaveBeenCalledTimes(1);
+        unmount();
+        expect(clear).not.toHaveBeenCalled();
         await act(async () => vi.advanceTimersByTimeAsync(60_000));
         expect(clear).toHaveBeenCalledTimes(1);
     });

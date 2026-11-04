@@ -128,7 +128,9 @@ impl TorManager {
                 _ = tokio::time::sleep_until(deadline) => {
                     let err_msg = format!("Waiting for Tor to be ready timed out after {STARTUP_TIMEOUT}");
                     log::error!(target: LOG_TARGET_STATUSES, "{err_msg}");
-                    self.watcher.write().await.stop().await?;
+                    if let Err(e) = self.watcher.write().await.stop().await {
+                        log::warn!(target: LOG_TARGET_STATUSES, "Failed to stop Tor after the startup timeout: {e}");
+                    }
                     return Err(anyhow!(err_msg))
                 }
                 _ = tor_status_watch_rx.changed() => {
