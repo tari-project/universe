@@ -615,28 +615,13 @@ impl Drop for ProcessInstance {
                 });
                 }
                 _ => {
-                    // We're not in a tokio context, we need to use block_on
-                    // This is the fallback case - log it as it might indicate a design issue
-                    warn!(target: LOG_TARGET_APP_LOGIC, "Process {} dropped outside tokio context, using block_on for cleanup", self.startup_spec.name);
-
-                    // Use a timeout to prevent indefinite blocking
-                    match tokio::runtime::Handle::try_current() {
-                        Ok(rt) => {
-                            rt.block_on(async move {
-                        if let Err(e) = tokio::time::timeout(
-                            Duration::from_secs(5),
-                            handle
-                        ).await {
-                            warn!(target: LOG_TARGET_APP_LOGIC, "Timeout or error during emergency process cleanup: {e}");
-                        }
-                    });
-                        }
-                        _ => {
-                            // Last resort: detach the handle and let the OS clean up
-                            warn!(target: LOG_TARGET_APP_LOGIC, "Cannot properly clean up process {}, detaching handle", self.startup_spec.name);
-                            std::mem::forget(handle);
-                        }
-                    }
+                    // No tokio runtime at drop time (likely during shutdown). We can't
+                    // await the join handle without one, and re-checking try_current()
+                    // here only ever returns Err again, so there's no block_on path to
+                    // take. The child is spawned with kill_on_drop, so the OS process is
+                    // still reaped; detaching the cleanup task is the honest fallback.
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Process {} dropped outside tokio context; detaching cleanup task", self.startup_spec.name);
+                    drop(handle);
                 }
             }
         }

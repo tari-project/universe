@@ -384,23 +384,21 @@ impl NodeAdapterService {
 
         let connected_peers = peers_list
             .iter()
-            .filter(|peer| {
-                let since = match NaiveDateTime::parse_from_str(
-                    peer.addresses[0].last_seen.as_str(),
+            .filter_map(|peer| {
+                // A peer record from the node's gRPC can carry an empty address
+                // list; skip it rather than index [0] and panic the command task.
+                let address = peer.addresses.first()?;
+                let since = NaiveDateTime::parse_from_str(
+                    address.last_seen.as_str(),
                     "%Y-%m-%d %H:%M:%S%.f",
-                ) {
-                    Ok(datetime) => datetime,
-                    Err(_e) => {
-                        return false;
-                    }
-                };
+                )
+                .ok()?;
                 let since = Utc.from_utc_datetime(&since);
                 let duration = SystemTime::now()
                     .duration_since(since.into())
                     .unwrap_or_default();
-                duration.as_secs() < 60
+                (duration.as_secs() < 60).then(|| address.address.to_hex())
             })
-            .map(|peer| peer.addresses[0].address.to_hex())
             .collect::<Vec<String>>();
 
         Ok(connected_peers)

@@ -145,7 +145,7 @@ The project uses comprehensive linting tools to maintain code quality:
 
 ```bash
 # Frontend linting
-pnpm run lint          # Run all linters (knip + eslint)
+pnpm run lint          # eslint, isolation-allowlist check, knip, and tsc
 pnpm run lint:fix      # Auto-fix ESLint issues
 pnpm run lint:taplo    # Check TOML file formatting
 
@@ -230,8 +230,7 @@ history before retrying to avoid sending twice.
 
 - [RFC documents](https://rfc.tari.com) are hosted on Github Pages
 - Source code documentation is hosted on [docs.rs](https://docs.rs)
-- [Contributing Guide](Contributing.md)
 
 ## License
 
-Tari Universe is open source software licensed under the [Enhanced Common Public Attribution License Version 1.0](LICENSE).
+Tari Universe is open source software licensed under the [Enhanced Common Public Attribution License Version 1.0](LICENSE.md).

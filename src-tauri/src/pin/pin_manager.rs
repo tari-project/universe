@@ -32,7 +32,10 @@ use tokio::sync::oneshot;
 
 use crate::{
     LOG_TARGET_APP_LOGIC,
-    configs::{config_wallet::ConfigWallet, trait_config::ConfigImpl},
+    configs::{
+        config_wallet::{ConfigWallet, ConfigWalletContent},
+        trait_config::ConfigImpl,
+    },
     events::PinPromptContext,
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
@@ -155,6 +158,38 @@ impl PinManager {
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         let mut pin_locker = PinLocker::new(pin_locker_state);
         pin_locker.set_pin_locked(true).await
+    }
+
+    /// Keep PIN validation paused until a failed config save has restored both
+    /// credentials and the previous PIN state.
+    pub async fn set_pin_locked_with_rollback<F, Fut>(rollback: F) -> Result<(), anyhow::Error>
+    where
+        F: FnOnce() -> Fut,
+        Fut: std::future::Future<Output = Result<(), anyhow::Error>>,
+    {
+        let _guard = PIN_VALIDATION_LOCK.lock().await;
+        let previous_state = ConfigWallet::content().await.pin_locker_state().clone();
+        let mut pin_locker = PinLocker::new(previous_state.clone());
+        if let Err(pin_error) = pin_locker.set_pin_locked(true).await {
+            let credential_rollback = rollback().await;
+            let config_rollback = ConfigWallet::update_field(
+                ConfigWalletContent::set_pin_locker_state,
+                previous_state,
+            )
+            .await;
+            if let Err(rollback_error) = credential_rollback {
+                return Err(anyhow::anyhow!(
+                    "PIN-state write failed: {pin_error}; credential rollback failed: {rollback_error}"
+                ));
+            }
+            if let Err(rollback_error) = config_rollback {
+                return Err(anyhow::anyhow!(
+                    "PIN-state write failed: {pin_error}; config rollback failed: {rollback_error}"
+                ));
+            }
+            return Err(pin_error);
+        }
+        Ok(())
     }
 }
 

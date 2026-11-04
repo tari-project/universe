@@ -617,6 +617,39 @@ impl InternalWallet {
         Ok(pin_password)
     }
 
+    /// Restore the unpinned seeds after a partial PIN setup failure.
+    async fn restore_plain_pin_credentials(
+        app_handle: &AppHandle,
+        wallet_id: WalletId,
+        tari_seed: &[u8],
+        monero_seed: Option<&[u8]>,
+    ) -> Result<(), anyhow::Error> {
+        let tari_result = InternalWallet::set_credentials(
+            app_handle,
+            wallet_id,
+            &Credential {
+                encrypted_seed: tari_seed.to_vec(),
+            },
+            false,
+        )
+        .await;
+        let monero_result = if let Some(monero_seed) = monero_seed {
+            InternalWallet::set_credentials(
+                app_handle,
+                WalletId::new(MONERO_WALLET_ID.to_string()),
+                &Credential {
+                    encrypted_seed: monero_seed.to_vec(),
+                },
+                false,
+            )
+            .await
+        } else {
+            Ok(())
+        };
+        tari_result?;
+        monero_result
+    }
+
     /// Asks for a new PIN, enciphers the stored seeds with it and returns it.
     pub async fn create_pin(app_handle: &AppHandle) -> Result<SafePassword, anyhow::Error> {
         if PinManager::pin_locked().await {
@@ -632,10 +665,22 @@ impl InternalWallet {
             .await
             .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
             .id;
+        let plain_tari_seed = Zeroizing::new(
+            tari_seed
+                .to_binary()
+                .map_err(|e| anyhow!("Failed to encode the Tari seed: {e:?}"))?
+                .to_vec(),
+        );
+        let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?.to_vec();
 
-        let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
-        {
-            let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
+        let monero_generated = *ConfigWallet::content().await.monero_address_is_generated();
+        let _monero_credential = if monero_generated {
+            Some(MONERO_CREDENTIAL_LOCK.lock().await)
+        } else {
+            None
+        };
+        let mut plain_monero_seed = None;
+        let encrypted_monero_seed = if monero_generated {
             // Encrypt Monero Seed with PIN. An earlier run can have written this credential and
             // then failed, so a blob that already decrypts with this PIN is kept as it is:
             // encrypting it again would bury the seed.
@@ -647,12 +692,16 @@ impl InternalWallet {
             .await?
             .encrypted_seed;
             let encrypted_monero_seed =
-                if cryptography::decrypt(&stored_monero_seed, &pin_password).is_ok() {
+                if let Ok(plain) = cryptography::decrypt(&stored_monero_seed, &pin_password) {
+                    plain_monero_seed = Some(plain);
                     stored_monero_seed
                 } else if stored_monero_seed.len() == 32 {
                     // A plain Monero seed, as written before any PIN existed.
+                    plain_monero_seed = Some(Zeroizing::new(stored_monero_seed.clone()));
                     let encrypted_monero_seed =
                         cryptography::encrypt(&stored_monero_seed, &pin_password)?;
+                    // Do not hold MONERO_CREDENTIAL_LOCK across a keyring dialog. If the Tari
+                    // write below fails, restore this plain seed before releasing the lock.
                     InternalWallet::set_credentials(
                         app_handle,
                         WalletId::new(MONERO_WALLET_ID.to_string()),
@@ -668,31 +717,46 @@ impl InternalWallet {
                         "Stored Monero seed is neither plain nor enciphered with this PIN"
                     ));
                 };
-            if InternalWallet::is_initialized() {
-                let mut internal_wallet_guard = InternalWallet::current()?.write().await;
-                internal_wallet_guard.encrypted_monero_seed =
-                    Hidden::hide(Some(encrypted_monero_seed.clone()));
-            }
             Some(encrypted_monero_seed)
         } else {
             // External Monero address is used, no seed to encrypt
             None
         };
-        let encrypted_tari_seed = {
-            // Encrypt Tari Seed with PIN
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?.to_vec();
-            InternalWallet::set_credentials(
+        // Both failure paths below put the pre-PIN seeds back. The Tari write runs under the
+        // Monero lock taken above; the PIN-state rollback takes it again after the drop.
+        let restore = || {
+            InternalWallet::restore_plain_pin_credentials(
                 app_handle,
-                wallet_id,
-                &Credential {
-                    encrypted_seed: encrypted_tari_seed.clone(),
-                },
-                false,
+                wallet_id.clone(),
+                &plain_tari_seed,
+                plain_monero_seed.as_deref().map(Vec::as_slice),
             )
-            .await?;
-            encrypted_tari_seed
         };
-        PinManager::set_pin_locked().await?;
+        if let Err(tari_error) = InternalWallet::set_credentials(
+            app_handle,
+            wallet_id.clone(),
+            &Credential {
+                encrypted_seed: encrypted_tari_seed.clone(),
+            },
+            false,
+        )
+        .await
+        {
+            restore().await.map_err(|rollback_error| {
+                anyhow!("Tari credential write failed: {tari_error}; credential rollback failed: {rollback_error}")
+            })?;
+            return Err(tari_error);
+        }
+        drop(_monero_credential);
+        PinManager::set_pin_locked_with_rollback(|| async {
+            let _rollback_guard = if monero_generated {
+                Some(MONERO_CREDENTIAL_LOCK.lock().await)
+            } else {
+                None
+            };
+            restore().await
+        })
+        .await?;
 
         if InternalWallet::is_initialized() {
             let mut internal_wallet_guard = InternalWallet::current()?.write().await;

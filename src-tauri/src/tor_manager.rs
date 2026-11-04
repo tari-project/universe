@@ -117,11 +117,20 @@ impl TorManager {
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let mut tor_status_watch_rx = self.status_watch_rx.clone();
 
+        // One fixed deadline for the whole wait. A plain sleep() recreated each
+        // iteration would restart on every status update (Tor emits one roughly
+        // every poll), so the timeout would never actually fire while Tor keeps
+        // reporting progress. sleep_until keeps pointing at the same instant.
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(STARTUP_TIMEOUT);
+
         loop {
             tokio::select! {
-                _ = tokio::time::sleep(Duration::from_secs(STARTUP_TIMEOUT)) => {
+                _ = tokio::time::sleep_until(deadline) => {
                     let err_msg = format!("Waiting for Tor to be ready timed out after {STARTUP_TIMEOUT}");
                     log::error!(target: LOG_TARGET_STATUSES, "{err_msg}");
+                    if let Err(e) = self.watcher.write().await.stop().await {
+                        log::warn!(target: LOG_TARGET_STATUSES, "Failed to stop Tor after the startup timeout: {e}");
+                    }
                     return Err(anyhow!(err_msg))
                 }
                 _ = tor_status_watch_rx.changed() => {
