@@ -52,10 +52,7 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
     {
         let mut config = ConfigMcp::current().write().await;
         let mut updated = config._get_content().clone();
-        if enabled && updated.bearer_token().is_none() {
-            updated.ensure_token();
-        }
-        updated.set_enabled(enabled);
+        apply_mcp_enable_state(&mut updated, enabled);
         ConfigMcp::_save_config(updated.clone()).map_err(|e| e.to_string())?;
         *config._get_content_mut() = updated;
     }
@@ -89,12 +86,10 @@ pub async fn refresh_mcp_token_expiry() -> Result<(), String> {
 pub async fn revoke_mcp_token() -> Result<(), String> {
     {
         let mut config = ConfigMcp::current().write().await;
-        let content = config._get_content_mut();
-        content.set_bearer_token(None::<String>);
-        content.set_token_created_at(None::<SystemTime>);
-        content.set_token_expires_at(None::<SystemTime>);
-        content.set_enabled(false);
-        ConfigMcp::_save_config(content.clone()).map_err(|e| e.to_string())?;
+        let mut updated = config._get_content().clone();
+        apply_mcp_token_revocation(&mut updated);
+        ConfigMcp::_save_config(updated.clone()).map_err(|e| e.to_string())?;
+        *config._get_content_mut() = updated;
     }
 
     McpServerManager::stop().await;
@@ -191,4 +186,54 @@ pub async fn mcp_transaction_dialog_response(
     approved: bool,
 ) -> Result<(), String> {
     crate::wallet::send_gate::respond_to_transaction(request_id, approved).await
+}
+
+fn apply_mcp_enable_state(content: &mut ConfigMcpContent, enabled: bool) {
+    if enabled {
+        if !*content.enabled() {
+            content.set_transactions_enabled(false);
+        }
+        content.ensure_token();
+    }
+    content.set_enabled(enabled);
+}
+
+fn apply_mcp_token_revocation(content: &mut ConfigMcpContent) {
+    content.revoke_token();
+    content.set_enabled(false);
+    content.set_transactions_enabled(false);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn revoking_token_disables_transactions_and_reenabling_without_pin_keeps_them_off() {
+        let mut content = ConfigMcpContent::default();
+        content.set_enabled(true);
+        content.set_bearer_token(Some("tu_old_token".to_string()));
+        content.set_transactions_enabled(true);
+
+        apply_mcp_token_revocation(&mut content);
+        assert!(!*content.enabled());
+        assert!(content.bearer_token().is_none());
+        assert!(!*content.transactions_enabled());
+
+        // A new bearer token must not inherit the old transaction permission.
+        content.set_transactions_enabled(true);
+        apply_mcp_enable_state(&mut content, true);
+        assert!(*content.enabled());
+        assert!(content.bearer_token().is_some());
+        assert!(!*content.transactions_enabled());
+    }
+
+    #[test]
+    fn enabling_an_already_enabled_server_keeps_its_pinned_transaction_permission() {
+        let mut content = ConfigMcpContent::default();
+        content.set_enabled(true);
+        content.set_transactions_enabled(true);
+        apply_mcp_enable_state(&mut content, true);
+        assert!(*content.transactions_enabled());
+    }
 }
