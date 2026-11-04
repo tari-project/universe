@@ -26,6 +26,7 @@ use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{
     AirdropTokens, ConfigCore, ConfigCoreContent, canonicalise_ootle_indexer_url,
+    check_ootle_indexer_network,
 };
 use crate::configs::config_mining::{
     ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState,
@@ -1873,12 +1874,16 @@ pub fn l2_validate_address(address: String) -> Result<(), String> {
 /// is None off networks with a default when the override is cleared.
 #[tauri::command]
 pub async fn set_ootle_indexer_url(url: String) -> Result<Option<String>, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[set_ootle_indexer_url] called with url: {url:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[set_ootle_indexer_url] called");
     let url = url.trim();
     let custom = if url.is_empty() {
         None
     } else {
-        Some(canonicalise_ootle_indexer_url(url).map_err(|e| e.to_string())?)
+        let indexer = canonicalise_ootle_indexer_url(url).map_err(|e| e.to_string())?;
+        check_ootle_indexer_network(&indexer, Network::get_current_or_user_setting_or_default())
+            .await
+            .map_err(|e| e.to_string())?;
+        Some(indexer)
     };
     ConfigCore::update_field(ConfigCoreContent::set_ootle_indexer_url, custom)
         .await

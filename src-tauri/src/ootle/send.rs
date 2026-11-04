@@ -55,10 +55,8 @@ pub(super) const VALIDITY_EPOCHS: u64 = 3;
 /// Same as tari_walletd: dry runs before giving up on the fee settling.
 const MAX_FEE_ROUNDS: usize = 5;
 /// The fee is whatever the indexer's dry run says and the engine never refunds it, so a
-/// bad or tampered reply could sweep the account. Esmeralda averages about 6,600 micro XTR
-/// a transaction (fee volume over receipt count on the indexer's network/economics, and
-/// that includes template publishes at 250,000 each); a transfer is a few thousand.
-/// 0.1 XTR leaves plenty of headroom and still caps the damage.
+/// bad or tampered reply could sweep the account. Cap the fee at 0.1 XTR to bound
+/// the damage while allowing headroom for transfers on supported networks.
 pub(super) const MAX_L2_FEE: u64 = 100_000;
 /// Every indexer call made while the send gate permit is held gets this long, so a
 /// stalled indexer can't wedge every L1 and L2 spend behind it.

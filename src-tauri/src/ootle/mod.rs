@@ -22,8 +22,9 @@
 
 //! The Ootle (L2) wallet, run in-process from the tari-ootle wallet SDK.
 //!
-//! Esmeralda only. The L2 seed is the L1 seed, so a fresh store stays "not enabled" until
-//! the user enables L2 behind the PIN, which restores the SDK seed from the L1 seed words
+//! Available on MainNet and Esmeralda. The L2 seed is the L1 seed, so a fresh store stays
+//! "not enabled" until the user enables L2 behind the PIN, which restores the SDK seed
+//! from the L1 seed words
 //! and starts the services. The store's seed is encrypted with the per-install keyring
 //! secret and the PIN, so the wallet phase only notes whether one exists: an enabled store
 //! stays locked, and nothing L2 runs, until the user unlocks it with the PIN.
@@ -83,7 +84,10 @@ use url::Url;
 use zeroize::Zeroizing;
 
 use crate::{
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    configs::{
+        config_core::{ConfigCore, check_ootle_indexer_network},
+        trait_config::ConfigImpl,
+    },
     credential_manager::CredentialManager,
     events::PinPromptContext,
     events_emitter::EventsEmitter,
@@ -163,7 +167,7 @@ pub struct OotleWalletManager {
 
 impl OotleWalletManager {
     /// Finds the L2 store and notes whether L2 was enabled in it, which leaves it locked
-    /// until [`Self::enable`] opens it with the PIN. Does nothing off Esmeralda.
+    /// until [`Self::enable`] opens it with the PIN. Does nothing on unsupported networks.
     pub async fn initialize(data_dir: &Path) -> Result<(), anyhow::Error> {
         let mut lifecycle = INSTANCE.lifecycle.lock().await;
         let result = Self::find_store(data_dir).await;
@@ -215,7 +219,7 @@ impl OotleWalletManager {
     /// never enabled in gets the L1 seed restored into it first; that is how L2 is turned
     /// on. A locked store is unlocked; one older builds encrypted with the keyring secret
     /// alone is rebuilt under the secret and the PIN from its own seed words. Refused
-    /// without a PIN or off Esmeralda.
+    /// without a PIN or on unsupported networks.
     pub async fn enable(app_handle: &AppHandle) -> Result<(), TransactionError> {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
@@ -228,7 +232,7 @@ impl OotleWalletManager {
     }
 
     /// Has the user create a PIN and opens L2 with it, so turning L2 on from a wallet with
-    /// no PIN asks for the PIN once. Refused off Esmeralda.
+    /// no PIN asks for the PIN once. Refused on unsupported networks.
     pub async fn create_pin_and_enable(app_handle: &AppHandle) -> Result<(), TransactionError> {
         check_l2_allowed(Network::get_current_or_user_setting_or_default(), true)?;
         let pin = InternalWallet::create_pin(app_handle)
@@ -276,8 +280,8 @@ impl OotleWalletManager {
         replace_store(&lifecycle, &store_dir, words.as_ref(), &owner, &password).await
     }
 
-    /// The L2 seed words, once the user enters their PIN. Refused without a PIN, off
-    /// Esmeralda, and before L2 is enabled.
+    /// The L2 seed words, once the user enters their PIN. Refused without a PIN, on
+    /// unsupported networks, and before L2 is enabled.
     pub async fn seed_words(app_handle: &AppHandle) -> Result<Vec<String>, TransactionError> {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
@@ -298,7 +302,7 @@ impl OotleWalletManager {
 
     /// Replaces the L2 wallet with one restored from `seed_words`, which belong to L2
     /// only, once the user enters their PIN. The words are checked before anything is
-    /// touched. Refused without a PIN or off Esmeralda.
+    /// touched. Refused without a PIN or on unsupported networks.
     pub async fn import_seed_words(
         app_handle: &AppHandle,
         seed_words: Vec<String>,
@@ -330,7 +334,7 @@ impl OotleWalletManager {
     }
 
     /// Replaces the L2 wallet with one restored from the L1 seed, undoing an import, once
-    /// the user enters their PIN. Refused without a PIN or off Esmeralda.
+    /// the user enters their PIN. Refused without a PIN or on unsupported networks.
     pub async fn use_l1_seed(app_handle: &AppHandle) -> Result<(), TransactionError> {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
@@ -364,7 +368,7 @@ impl OotleWalletManager {
         Ok(())
     }
 
-    /// Everything the L2 panel shows. Refused without a PIN or off Esmeralda, and
+    /// Everything the L2 panel shows. Refused without a PIN or on unsupported networks, and
     /// before the wallet phase has found the store. A store that was never enabled reports
     /// `enabled: false`, a locked one `enabled: true, locked: true`, both with no accounts.
     pub async fn state() -> Result<L2WalletState, TransactionError> {
@@ -447,7 +451,7 @@ impl OotleWalletManager {
     }
 
     /// Burns to L2 made from this wallet and whether they can be claimed yet. Refused
-    /// without a PIN or off Esmeralda.
+    /// without a PIN or on unsupported networks.
     pub async fn burns() -> Result<Vec<L2Burn>, TransactionError> {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
@@ -500,6 +504,9 @@ async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), Transa
     }
     let store_dir = found_store_dir().await?;
     let (network, indexer_url) = network_and_indexer().await?;
+    check_ootle_indexer_network(&indexer_url, network)
+        .await
+        .map_err(wallet_error)?;
     let secret = keyring_secret()?;
     let pin_str = pin_text(pin)?;
     let sdk = match stored_seed(&store_dir).map_err(wallet_error)? {
@@ -597,6 +604,9 @@ async fn replace_store(
     password: &str,
 ) -> Result<(), TransactionError> {
     let (network, indexer_url) = network_and_indexer().await?;
+    check_ootle_indexer_network(&indexer_url, network)
+        .await
+        .map_err(wallet_error)?;
 
     // The lock restart_phases holds, so a node-type or Tor restart cannot stop and resume
     // the wallet phase in the middle of the swap and leave two wallet phases running.
@@ -640,7 +650,7 @@ async fn found_store_dir() -> Result<PathBuf, TransactionError> {
         .ok_or_else(not_started)
 }
 
-/// The network and its indexer.
+/// The network and its indexer. Local store recovery must also work offline.
 async fn network_and_indexer() -> Result<(Network, Url), TransactionError> {
     let indexer_url = ConfigCore::content()
         .await

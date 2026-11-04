@@ -340,7 +340,7 @@
       "foreign": "Sent to a claim key this wallet doesn't hold",
       "rejected": "Claim rejected",
       "confirmed": "Claim confirmed",
-      "not-yet-claimable": "The L2 hasn't seen this burn yet. On esmeralda it follows L1 by 100 blocks, try again in a while.",
+      "not-yet-claimable": "The L2 hasn't seen this burn yet. It follows L1 with a delay, try again in a while.",
       "submitted": "Claim submitted, waiting for confirmation",
       "failed": "Claim failed",
       "approve": "Approve claim",

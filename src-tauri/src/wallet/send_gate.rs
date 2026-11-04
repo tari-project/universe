@@ -561,7 +561,7 @@ pub async fn gated_send_with_cancel(
 
 /// Networks with an L2 Universe can use. A burn anywhere else would just destroy funds.
 pub fn network_supports_l2(network: Network) -> bool {
-    matches!(network, Network::Esmeralda)
+    matches!(network, Network::Esmeralda | Network::MainNet)
 }
 
 /// Checks run before anything on L2 (and any burn to it) shows a dialog or takes the
@@ -808,7 +808,7 @@ fn check_tapplet_pay_ref(pay_ref: Option<&str>) -> Result<(), TransactionError> 
 }
 
 /// Claim an L1 burn on L2 behind the same gates as [`gated_l2_send`]. Refused without a
-/// PIN or off Esmeralda, and only for a burn whose proof file is there to claim. Returns
+/// PIN or on unsupported networks, and only for a burn whose proof file is there to claim. Returns
 /// the L2 transaction id.
 pub async fn gated_l2_claim(
     app_handle: tauri::AppHandle,
@@ -1287,10 +1287,10 @@ mod tests {
     }
 
     #[test]
-    fn only_esmeralda_supports_l2() {
+    fn test_supported_networks_allow_l2() {
         assert!(network_supports_l2(Network::Esmeralda));
+        assert!(network_supports_l2(Network::MainNet));
         for network in [
-            Network::MainNet,
             Network::StageNet,
             Network::NextNet,
             Network::LocalNet,
@@ -1301,16 +1301,28 @@ mod tests {
     }
 
     #[test]
-    fn l2_needs_a_pin_and_esmeralda() {
+    fn test_l2_requires_pin_on_supported_networks() {
         assert!(check_l2_allowed(Network::Esmeralda, true).is_ok());
+        assert!(check_l2_allowed(Network::MainNet, true).is_ok());
+        assert!(matches!(
+            check_l2_allowed(Network::MainNet, false),
+            Err(TransactionError::NoPinConfigured(_))
+        ));
         assert!(matches!(
             check_l2_allowed(Network::Esmeralda, false),
             Err(TransactionError::NoPinConfigured(_))
         ));
-        assert!(matches!(
-            check_l2_allowed(Network::MainNet, true),
-            Err(TransactionError::Disabled(_))
-        ));
+        for network in [
+            Network::LocalNet,
+            Network::Igor,
+            Network::StageNet,
+            Network::NextNet,
+        ] {
+            assert!(matches!(
+                check_l2_allowed(network, true),
+                Err(TransactionError::Disabled(_))
+            ));
+        }
     }
 
     #[test]
