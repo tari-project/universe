@@ -58,10 +58,11 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
         setUITheme(configTheme as displayMode);
     }
     try {
-        if (i18next.language !== uiConfig.application_language) {
+        const configLanguage = resolveI18nLanguage(uiConfig.application_language);
+        if (i18next.language !== configLanguage) {
             console.info('Current language is', i18next.language);
-            console.info('Changing language to', uiConfig.application_language);
-            await changeLanguage(uiConfig.application_language);
+            console.info('Changing language to', configLanguage);
+            await changeLanguage(configLanguage);
         }
     } catch (e) {
         console.error('Could not set UI config:', e);
@@ -93,7 +94,7 @@ const rollbackLanguageConfig = async (
 ): Promise<void> => {
     useConfigUIStore.setState((c) => ({ ...c, ...previousUIConfig }));
     if (previousUIConfig.application_language) {
-        await changeLanguage(previousUIConfig.application_language);
+        await changeLanguage(resolveI18nLanguage(previousUIConfig.application_language));
     }
 };
 

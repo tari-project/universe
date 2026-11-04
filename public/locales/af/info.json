@@ -7,6 +7,9 @@
     "step-5": "Niks! Sodra jy gesinkroniseer is, sal jy outomaties begin XTM myn. Verdien bonus XTM deur vriende uit te nooi.",
     "step-6": "Tari is pro-mens, pro-vryheid, en oopbron. Dit word aangedryf en beveilig deur almal wat Tari Universe gebruik. Tari bestaan as gevolg van jou. {{emoji}}"
   },
+  "footer": {
+    "heading": "ek is \"n voetskrif"
+  },
   "heading": {
     "step-1": "Welkom by Tari Universe!",
     "step-2": "Wat is Tari?",
@@ -14,8 +17,5 @@
     "step-4": "Is Tari Nou Regstreeks?",
     "step-5": "Wat Doen Ek Volgende?",
     "step-6": "Jy is Tari"
-  },
-  "footer": {
-    "heading": "ek is \"n voetskrif"
   }
 }

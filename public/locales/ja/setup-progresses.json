@@ -13,10 +13,10 @@
   "critical-initialization-failure": "重大な初期化エラー",
   "error": {
     "description": {
-      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+      "space": "デバイスの空き容量を確保してください。容量不足のため、Tari Universeは必要なPIDファイルを作成できません。"
     },
     "title": {
-      "space": "No space left on device"
+      "space": "デバイスに空き容量がありません"
     }
   },
   "failed-to-complete-step": "ステップの完了に失敗しました",
@@ -45,8 +45,8 @@
     "binaries-cpu-miner-download": "CPUマイナーバイナリの準備中 | ダウンロード中: {{ progress }}%",
     "binaries-gpu-miner": "GPUマイナーバイナリを準備中",
     "binaries-gpu-miner-download": "GPUマイナーバイナリの準備中 | ダウンロード中: {{ progress }}%",
-    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
-    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
+    "binaries-tari-miner": "オープンソースGPUマイナーのバイナリを準備中",
+    "binaries-tari-miner-download": "オープンソースGPUマイナーのバイナリを準備中 | ダウンロード中: {{ progress }}%",
     "binaries-merge-mining-proxy": "マージマイニングプロキシバイナリを準備中",
     "binaries-merge-mining-proxy-download": "マージマイニングプロキシバイナリの準備中 | ダウンロード中: {{ progress }}%",
     "binaries-node": "ノードバイナリを準備中",
@@ -54,7 +54,6 @@
     "binaries-tor": "Torバイナリを準備中",
     "binaries-tor-download": "Torバイナリの準備中 | ダウンロード中: {{ progress }}%",
     "detect-gpu": "GPUを検出中",
-    "done": "完了",
     "initialize-application-modules": "プラットフォームの前提条件を初期化中",
     "initialize-cpu-hardware": "CPUハードウェアを初期化",
     "initialize-gpu-hardware": "GPUハードウェアを初期化",
@@ -62,13 +61,13 @@
     "migrating-database": "データベースをバージョン{{current_db_version}}から{{target_db_version}}に移行中 進捗: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "マージマイニングプロキシを開始",
     "network-speed-test": "ネットワーク速度テスト",
-    "platform-prequisites": "プラットフォームの前提条件を初期化中",
+    "ootle-wallet": "レイヤー2ウォレットを起動中",
     "setup-bridge": "ブリッジの準備中",
     "setup-bridge-download": "ブリッジの準備中 | ダウンロード中: {{ progress }}%",
     "start-tor": "Torを開始",
     "starting-node": "Minotariノードを開始",
-    "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
-    "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
+    "waiting-for-block-sync": "ブロック同期を待っています。{{local_header_height}}/{{tip_header_height}} ヘッダー、{{local_block_height}}/{{tip_block_height}} ブロックが同期されました。",
+    "waiting-for-header-sync": "ヘッダー同期を待っています。{{local_header_height}}/{{tip_header_height}} ヘッダー、{{local_block_height}}/{{tip_block_height}} ブロックが同期されました。 ",
     "waiting-for-initial-sync": "ネットワークピアに接続中 {{initial_connected_peers}}/{{required_peers}}"
   }
 }

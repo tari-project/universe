@@ -5,17 +5,17 @@
     "is-live": "ist live"
   },
   "battery-alert-dialog": {
-    "auto-resume-info": "Mining will automatically resume when AC power is connected",
-    "description": "We've noticed your device is running on battery power. To help preserve your battery life and ensure optimal performance, we've temporarily paused mining. Mining will automatically resume when your device is connected to a power source.",
-    "title": "Mining Paused - Battery Mode Detected",
-    "understood": "I Understand"
+    "auto-resume-info": "Das Mining wird automatisch fortgesetzt, sobald das Netzteil angeschlossen ist",
+    "description": "Wir haben festgestellt, dass dein Gerät im Akkubetrieb läuft. Um die Akkulaufzeit zu schonen und eine optimale Leistung sicherzustellen, haben wir das Mining vorübergehend pausiert. Das Mining wird automatisch fortgesetzt, sobald dein Gerät an eine Stromquelle angeschlossen ist.",
+    "title": "Mining pausiert – Akkubetrieb erkannt",
+    "understood": "Verstanden"
   },
   "close-experience-dialog": {
-    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
-    "dont-ask-again": "Don't ask me again",
-    "exit-completely": "Exit Completely",
-    "run-in-background": "Run in Background",
-    "title": "Choose how to close Tari Universe"
+    "description": "Du kannst die App entweder in den Infobereich minimieren, um im Hintergrund weiter zu minen, oder sie vollständig beenden, um alle Prozesse zu stoppen.",
+    "dont-ask-again": "Nicht mehr fragen",
+    "exit-completely": "Vollständig beenden",
+    "run-in-background": "Im Hintergrund ausführen",
+    "title": "Wähle, wie Tari Universe geschlossen werden soll"
   },
   "field-error-message": {
     "integers-only": "Nur Ganzzahlen erlaubt",

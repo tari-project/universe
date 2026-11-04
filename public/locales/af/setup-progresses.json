@@ -13,10 +13,10 @@
   "critical-initialization-failure": "Kritieke inisialisering mislukking",
   "error": {
     "description": {
-      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+      "space": "Maak asseblief spasie op jou toestel vry. Tari Universe kan nie die nodige PID-lêers skep nie weens spasiebeperkings."
     },
     "title": {
-      "space": "No space left on device"
+      "space": "Geen spasie oor op toestel nie"
     }
   },
   "failed-to-complete-step": "Misluk om stap te voltooi",
@@ -45,8 +45,8 @@
     "binaries-cpu-miner-download": "Bereiding van CPU Mynwerker Binêr | Laai af: {{ progress }}%",
     "binaries-gpu-miner": "Bereiding van GPU Mynwerker Binêr",
     "binaries-gpu-miner-download": "Bereiding van GPU Mynwerker Binêr | Laai af: {{ progress }}%",
-    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
-    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
+    "binaries-tari-miner": "Berei oopbron GPU-myner-binêre voor",
+    "binaries-tari-miner-download": "Berei oopbron GPU-myner-binêre voor | Laai af: {{ progress }}%",
     "binaries-merge-mining-proxy": "Bereiding van Saamsmelt Myn Proksie Binêr",
     "binaries-merge-mining-proxy-download": "Bereiding van Saamvoeg Myn Proksi Binêr | Laai af: {{ progress }}%",
     "binaries-node": "Bereiding van Node Binêr",
@@ -54,7 +54,6 @@
     "binaries-tor": "Bereiding van Tor Binêr",
     "binaries-tor-download": "Bereiding van Tor Binêr | Laai af: {{ progress }}%",
     "detect-gpu": "Bespeur GPU\"s",
-    "done": "Klaar",
     "initialize-application-modules": "Initialiseer Platform Voorvereistes",
     "initialize-cpu-hardware": "Inisialiseer CPU Hardeware",
     "initialize-gpu-hardware": "Inisialiseer GPU Hardeware",
@@ -62,13 +61,13 @@
     "migrating-database": "Migreer Databasis van weergawe {{current_db_version}} na {{target_db_version}} vordering: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Begin Saamsmelt Myn Proksie",
     "network-speed-test": "Netwerk Spoedtoets",
-    "platform-prequisites": "Initialiseer Platform Voorvereistes",
+    "ootle-wallet": "Begin Laag 2-beursie",
     "setup-bridge": "Bereiding van Brug",
     "setup-bridge-download": "Bereiding van Brug | Laai af: {{ progress }}%",
     "start-tor": "Begin Tor",
     "starting-node": "Begin Minotari Node",
-    "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
-    "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
+    "waiting-for-block-sync": "Wag vir bloksinchronisasie. {{local_header_height}}/{{tip_header_height}} kopstukke en {{local_block_height}}/{{tip_block_height}} blokke gesinchroniseer.",
+    "waiting-for-header-sync": "Wag vir kopstuksinchronisasie. {{local_header_height}}/{{tip_header_height}} kopstukke en {{local_block_height}}/{{tip_block_height}} blokke gesinchroniseer. ",
     "waiting-for-initial-sync": "Koppel aan netwerk eweknieë {{initial_connected_peers}}/{{required_peers}}"
   }
 }

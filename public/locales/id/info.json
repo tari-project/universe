@@ -7,6 +7,9 @@
     "step-5": "Tidak ada! Setelah Anda tersinkronisasi, Anda akan otomatis mulai menambang XTM. Dapatkan bonus XTM dengan mengundang teman.",
     "step-6": "Tari mendukung manusia, kebebasan, dan bersifat open-source. Ini didukung dan diamankan oleh semua orang yang menjalankan Tari Universe. Tari ada karena Anda. {{emoji}}"
   },
+  "footer": {
+    "heading": "saya adalah footer"
+  },
   "heading": {
     "step-1": "Selamat Datang di Tari Universe!",
     "step-2": "Apa itu Tari?",
@@ -14,8 +17,5 @@
     "step-4": "Apakah Tari Sudah Aktif Sekarang?",
     "step-5": "Apa yang Harus Saya Lakukan Selanjutnya?",
     "step-6": "Anda adalah Tari"
-  },
-  "footer": {
-    "heading": "saya adalah footer"
   }
 }

@@ -13,10 +13,10 @@
   "critical-initialization-failure": "Échec critique de l\"initialisation",
   "error": {
     "description": {
-      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+      "space": "Veuillez libérer de l'espace sur votre appareil. Tari Universe ne peut pas créer les fichiers PID nécessaires en raison d'un manque d'espace."
     },
     "title": {
-      "space": "No space left on device"
+      "space": "Plus d'espace disponible sur l'appareil"
     }
   },
   "failed-to-complete-step": "Échec de l\"étape",
@@ -45,8 +45,8 @@
     "binaries-cpu-miner-download": "Préparation du binaire du mineur CPU | Téléchargement : {{ progress }}%",
     "binaries-gpu-miner": "Préparation du binaire du mineur GPU",
     "binaries-gpu-miner-download": "Préparation du binaire du mineur GPU | Téléchargement : {{ progress }}%",
-    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
-    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
+    "binaries-tari-miner": "Préparation du binaire du mineur GPU open source",
+    "binaries-tari-miner-download": "Préparation du binaire du mineur GPU open source | Téléchargement : {{ progress }}%",
     "binaries-merge-mining-proxy": "Préparation du binaire du proxy de fusion minière",
     "binaries-merge-mining-proxy-download": "Préparation du binaire du proxy de minage fusionné | Téléchargement : {{ progress }}%",
     "binaries-node": "Préparation du binaire du nœud",
@@ -54,7 +54,6 @@
     "binaries-tor": "Préparation du binaire Tor",
     "binaries-tor-download": "Préparation du binaire Tor | Téléchargement : {{ progress }}%",
     "detect-gpu": "Détection des GPU",
-    "done": "Terminé",
     "initialize-application-modules": "Initialisation des prérequis de la plateforme",
     "initialize-cpu-hardware": "Initialiser le matériel CPU",
     "initialize-gpu-hardware": "Initialiser le matériel GPU",
@@ -62,13 +61,13 @@
     "migrating-database": "Migration de la base de données de la version {{current_db_version}} à {{target_db_version}} progression : {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Démarrage du proxy de fusion minière",
     "network-speed-test": "Test de vitesse du réseau",
-    "platform-prequisites": "Initialisation des prérequis de la plateforme",
+    "ootle-wallet": "Démarrage du portefeuille de Couche 2",
     "setup-bridge": "Préparation du pont",
     "setup-bridge-download": "Préparation du pont | Téléchargement : {{ progress }}%",
     "start-tor": "Démarrage de Tor",
     "starting-node": "Démarrage du nœud Minotari",
-    "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
-    "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
+    "waiting-for-block-sync": "En attente de synchronisation des blocs. {{local_header_height}}/{{tip_header_height}} en-têtes et {{local_block_height}}/{{tip_block_height}} blocs synchronisés.",
+    "waiting-for-header-sync": "En attente de synchronisation des en-têtes. {{local_header_height}}/{{tip_header_height}} en-têtes et {{local_block_height}}/{{tip_block_height}} blocs synchronisés. ",
     "waiting-for-initial-sync": "Connexion aux pairs du réseau {{initial_connected_peers}}/{{required_peers}}"
   }
 }

@@ -43,20 +43,23 @@
   "gpu-device-enabled": "GPU Madencilik cihazları",
   "gpu-device-enabled-description": "Belirli bir GPU cihazını etkinleştir veya devre dışı bırak.",
   "gpu-device-no-found": "⚠️ GPU cihazı bulunamadı",
-  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
+  "gpu-device-single-device-note": "{{miner}} aynı anda yalnızca bir GPU'da madencilik yapar — etkinleştirilen ilk cihaz kullanılır.",
   "gpu-engine": "Gpu Motoru",
   "gpu-miner-description": {
-    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
-    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+    "LolMiner": "AMD ve NVIDIA GPU'lar için kapalı kaynaklı C29 madencisi",
+    "TariMiner": "NVIDIA GPU'lar için açık kaynaklı C29 madencisi"
   },
-  "gpu-miner-failed-with": "Failed with: {{error}}",
-  "gpu-miner-select-placeholder": "Select GPU miner",
+  "gpu-miner-failed-with": "Hata: {{error}}",
+  "gpu-miner-select-placeholder": "GPU madencisi seçin",
   "gpu-miners": "GPU Madencileri",
   "gpu-miners-not-found": "GPU Madencisi bulunamadı",
   "gpu-mining-enabled": "GPU Madenciliği",
-  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
-  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-mining-not-recommended": "Düşük seviye donanım algılandı, GPU madenciliği önerilmez",
+  "gpu-not-available-on-macos": "⚠️ GPU madenciliği macOS'ta kullanılamaz",
+  "gpu-solo-mining-unavailable": "⚠️ Yüklü hiçbir GPU madencisi solo madenciliği desteklemediği için gerekli",
   "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
+  "gpu-cannot-mine": "⚠️ GPU'nuz Tari madenciliği yapamıyor: {{reason}}",
+  "gpu-cannot-mine-unknown": "madenci bu cihazı desteklemiyor",
   "hardware-status": "Donanım durumu",
   "idle-timeout": {
     "max": "Maks. 21600 saniye",
@@ -80,69 +83,50 @@
   "low-hash-rate-warning": "Hashrate\"iniz çok düşük. Tari Evreni dışındaki tüm uygulamaları kapatmayı deneyin",
   "mcp": {
     "advanced": {
-      "control-tier": "Control Tier",
-      "expiry-days": "Token Expiry (days)",
-      "port": "Server Port",
-      "rate-limit": "Transaction Rate Limit (per minute)",
-      "read-tier": "Read Tier",
-      "title": "Advanced Settings"
+      "control-tier": "Kontrol Seviyesi",
+      "port": "Sunucu Bağlantı Noktası",
+      "read-tier": "Okuma Seviyesi"
     },
     "agent-config": {
-      "copied": "Copied!",
-      "copy": "Copy Configuration",
-      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
-      "or-add-to-settings-json": "Or add this to your settings JSON:",
-      "title": "Agent Configuration"
+      "copied": "Kopyalandı!",
+      "copy": "Yapılandırmayı Kopyala",
+      "description": "Bir yapay zeka ajanını Tari Universe'e bağlamak için aşağıdaki yapılandırmayı kopyalayın",
+      "or-add-to-settings-json": "Veya bunu ayarlar JSON dosyanıza ekleyin:",
+      "title": "Ajan Yapılandırması"
     },
     "audit-log": {
-      "description": "Recent MCP tool calls",
-      "duration-ms": "{{ms}}ms",
-      "empty": "No audit entries yet",
-      "export": "Export Log",
-      "title": "Audit Log"
+      "description": "Son MCP araç çağrıları",
+      "duration-ms": "{{ms}} ms",
+      "empty": "Henüz denetim kaydı yok",
+      "export": "Kaydı Dışa Aktar",
+      "title": "Denetim Kaydı"
     },
     "server-toggle": {
-      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
-      "status-running": "Running on port {{port}}",
-      "status-stopped": "Stopped",
-      "title": "MCP Server"
+      "description": "Yapay zeka ajanlarının Tari Universe ile etkileşime girmesine izin vermek için MCP sunucusunu etkinleştirin",
+      "status-running": "{{port}} bağlantı noktasında çalışıyor",
+      "status-stopped": "Durduruldu",
+      "title": "MCP Sunucusu"
     },
-    "title": "MCP Server",
     "token-display": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "copied": "Copied!",
-      "copy": "Copy",
-      "created": "Created",
-      "days-remaining": "{{days}} days remaining",
-      "description": "Use this token to authenticate MCP clients",
-      "expires": "Expires",
-      "hide": "Hide",
-      "no-token": "No token generated",
-      "refresh-expiry": "Refresh Expiry",
-      "reveal": "Reveal",
-      "revoke": "Revoke Token",
-      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
-      "title": "Bearer Token"
+      "copied": "Kopyalandı!",
+      "copy": "Kopyala",
+      "created": "Oluşturuldu",
+      "days-remaining": "{{days}} gün kaldı",
+      "description": "MCP istemcilerinin kimliğini doğrulamak için bu tokenı kullanın",
+      "expires": "Sona eriyor",
+      "hide": "Gizle",
+      "refresh-expiry": "Süreyi Yenile",
+      "reveal": "Göster",
+      "revoke": "Tokenı İptal Et",
+      "revoke-confirm": "Emin misiniz? Bu işlem MCP sunucusunu durduracak ve yeni bir token oluşturulmasını gerektirecek.",
+      "title": "Bearer Tokenı"
     },
     "transaction-dialog": {
-      "amount": "Amount",
-      "approve": "Approve",
-      "deny": "Deny",
-      "destination": "Destination",
-      "enter-pin": "Enter PIN to approve",
-      "micro-minotari": "({{amount}} µT)",
-      "remaining": "{{countdown}}s remaining",
-      "title": "MCP Transaction Confirmation"
+      "remaining": "{{countdown}} sn kaldı"
     },
     "transactions": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "description": "Allow MCP clients to send transactions (requires PIN)",
-      "max-amount": "Max Transaction Amount (µT)",
-      "max-amount-description": "Leave empty for no limit",
-      "pin-required": "PIN must be configured to enable transactions",
-      "title": "Transactions"
+      "description": "MCP istemcilerinin işlem göndermesine izin ver (PIN gerektirir)",
+      "title": "İşlemler"
     }
   },
   "mine-on-app-start": {
@@ -161,12 +145,14 @@
   "no-entry-guard": "Giriş Koruması bağlı değil!",
   "no-pool-configuration-available": "Havuz yapılandırması mevcut değil",
   "node": {
-    "confirm-title": "Confirm node data location change",
-    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
-    "data-cta": "Change location",
-    "data-subtitle": "Set a custom location to store the base node data",
-    "data-title": "Node data settings"
+    "confirm-title": "Düğüm verisi konum değişikliğini onaylayın",
+    "confirm-warning": "Temel düğüm konumunuzu taşımak mevcut zincir verilerinizin kaybolmasına neden olabilir. Bu olursa yeniden senkronize etmeniz gerekir.",
+    "data-cta": "Konumu değiştir",
+    "data-subtitle": "Temel düğüm verilerini saklamak için özel bir konum belirleyin",
+    "data-title": "Düğüm verisi ayarları"
   },
+  "custom-remote-node-address": "Özel uzak düğüm adresi (gRPC)",
+  "custom-remote-node-address-error": "Geçersiz adres: {{reason}}",
   "node-configuration": "Düğüm yapılandırması",
   "node-configuration-description": "Yerel kullanıma hazır olana kadar Uzaktan, Yerel veya her ikisiyle bağlanın",
   "node-connection-address": "Bağlantı adresi",
@@ -176,10 +162,10 @@
   "not-connected-to-tari": "Tari Ağına Bağlı Değil",
   "open-logs-directory": "Günlükler dizinini açın",
   "pause-on-battery-mode": {
-    "description": "Pause mining when device is disconnected from charging",
-    "title": "Pause on Battery Mode"
+    "description": "Cihazın şarj bağlantısı kesildiğinde madenciliği duraklat",
+    "title": "Pil Modunda Duraklat"
   },
-  "pin": "Pin",
+  "pin": "PIN",
   "pool-configuration": "Havuz Yapılandırması",
   "pool-mining": "Havuz Madenciliği",
   "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kabileye) katılacaksınız.",
@@ -224,6 +210,10 @@
     "description": "Etkinleştirildiğinde, bilgisayarınıza giriş yaptığınızda uygulama otomatik olarak başlar.",
     "title": "Sistem açılışında otomatik başlat"
   },
+  "show-window-on-startup": {
+    "description": "Etkinleştirildiğinde, Tari Universe başlangıçtan sonra ana penceresini gösterir. Görev tepsisinde başlatmak için bunu kapatın.",
+    "title": "Başlangıçta pencereyi göster"
+  },
   "should-use-system-language": "Sistem Dilini Kullan",
   "stable-version-note": "Uygulamanın ön sürüm versiyonunu kapatarak, güvenilirlik ve tutarlılığı önceliklendiren kararlı sürüme döneceksiniz. En son özellikler ve iyileştirmeleri kaçırabilirsiniz.",
   "stats-server-port": "İstatistik sunucu portu",
@@ -231,11 +221,12 @@
   "sync-incomplete": "Senkronize ediliyor...",
   "sync-status": "Senkronizasyon Durumu",
   "tabs": {
-    "airdrop": "Airdrop Claim",
+    "airdrop": "Airdrop Talebi",
     "connections": "Bağlantılar",
     "experimental": "Deneysel",
     "general": "Genel",
-    "mcp": "MCP Server",
+    "l2": "Ootle",
+    "mcp": "MCP Sunucusu",
     "mining": "Madencilik",
     "p2p": "Havuz Madenciliği",
     "pools": "Madencilik Havuzları",
@@ -245,8 +236,8 @@
   },
   "tari-wallet-address": "Tari Cüzdan Adresi",
   "task-tray": {
-    "description": "Tari universe will be minimized to task tray after closing",
-    "title": "Run app from task tray on close"
+    "description": "Tari Universe kapatıldıktan sonra görev tepsisine küçültülecek",
+    "title": "Kapatıldığında uygulamayı görev tepsisinden çalıştır"
   },
   "terms-and-conditions": "Şartlar ve Koşullar",
   "theme": "Tema",
@@ -270,5 +261,31 @@
   "waiting-for-data": "Zincir verileri bekleniyor...",
   "yes": "Evet",
   "your-feedback": "Lütfen sorununuzu açıklayın",
-  "your-reference": "Referansınız"
+  "your-reference": "Referansınız:<br/><bold>{{logRef}}</bold>",
+  "l2": {
+    "status": "Katman 2",
+    "pin-required": "Katman 2'yi kullanmak için bir PIN ayarlamalısınız",
+    "set-pin": "PIN ayarla",
+    "enable-description": "Katman 2, mevcut seed kelimelerinizden oluşturulan bir cüzdan kullanır. PIN'iniz istenecek.",
+    "enable": "Katman 2'yi Etkinleştir",
+    "enable-error": "Katman 2 etkinleştirilemedi: ",
+    "unlock-description": "Katman 2 kilitli.\nAçmak için PIN'inizi girin.",
+    "unlock": "Katman 2'nin Kilidini Aç",
+    "unlock-error": "Katman 2'nin kilidi açılamadı: ",
+    "indexer": "Dizinleyici",
+    "indexer-error": "Geçersiz dizinleyici URL'si: {{reason}}",
+    "seed-words": "Seed kelimeleri",
+    "seed-note-l1": "Ootle cüzdanınız, Tari cüzdanınızla aynı seed kelimelerini kullanır.",
+    "seed-note-imported": "Ootle cüzdanınız kendi içe aktarılmış seed kelimelerini kullanır. Bunları ayrıca yedekleyin.",
+    "use-l1-seed": "Tari cüzdan seed'imi kullan",
+    "confirm-import": "Katman 2 seed kelimelerini içe aktar",
+    "seed-change-error": "Katman 2 seed kelimeleri değiştirilemedi",
+    "confirm-replace-copy": "Mevcut Katman 2 cüzdanınız değiştirilecek.\nOnu yalnızca seed kelimeleriyle geri alabilirsiniz.",
+    "address": "Ootle cüzdan adresi",
+    "address-description": "Ootle'da XTR almak için bunu paylaşın.",
+    "public-key": "Ootle sahip açık anahtarı",
+    "public-key-description": "Tari cüzdanınızdan yapılan yakımlar için talep anahtarı. L2'ye Yak bunu sizin için doldurur.",
+    "side-by-side": "Cüzdanların yan yana olmasına izin ver",
+    "side-by-side-description": "Tari ve Ootle cüzdanlarını yan yana göster. Kapalıyken her gezinme düğmesi kendi cüzdanını ayrı olarak açar."
+  }
 }

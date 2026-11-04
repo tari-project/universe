@@ -10,6 +10,9 @@
   "mining-schedules-description": "Agende sua atividade de mineração",
   "next-milestone": "Próximo Marco",
   "recent-wins": "Vitórias recentes",
+  "reward": {
+    "stacked": "Você acumulou"
+  },
   "rewards": "Recompensas",
   "setup-scheduler": "Configurar Agendador",
   "share": {

@@ -1,37 +1,37 @@
 {
   "bubbles": {
     "active-nodes": "सक्रिय नोड्स",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "ago": "पहले",
+    "block": "ब्लॉक",
+    "got-rewarded": "को इनाम मिला",
+    "miners": "माइनर",
+    "pool": "पूल",
+    "solved": "हल किया गया",
+    "solving": "हल किया जा रहा है"
   },
   "connection-to-node-lost": "माइनर से कनेक्शन खो गया। कृपया माइनर के पुनः कनेक्ट होने या पुनः आरंभ करने की प्रतीक्षा करें।",
   "cpu-power": "CPU पावर",
   "current-block-time": "वर्तमान ब्लॉक समय",
-  "day": "day",
+  "day": "दिन",
   "estimated-day": "Est XTM/दिन",
   "estimated-earnings": "अनुमानित कमाई",
   "floor": "न्यूनतम स्तर",
   "gpu-power": "GPU पावर",
   "mining-button-text": {
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
+    "state-pause": "माइनिंग रोकें",
+    "state-resume": "माइनिंग फिर से शुरू करें",
     "state-start": "माइनिंग शुरू करें"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "सभी मोड देखें",
+      "alert_cta-turbo": "टर्बो का उपयोग करें",
+      "alert_text": "इको मोड सिस्टम संसाधनों के केवल एक छोटे प्रतिशत का उपयोग करता है।",
+      "alert_text_extra": "पावर मोड बढ़ाकर देखें।",
+      "alert_title": "पर्याप्त इनाम नहीं मिल रहे?"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "मोड",
+    "mode-long": "माइनर मोड"
   },
   "orphan-chain-tooltip": {
     "heading": "कोशिश करने के लिए चीजें:",
@@ -43,26 +43,26 @@
     "step_6": "ऐप रीसेट करने का प्रयास करें (सेटिंग्स में)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "<strong>{{duration}}</strong> के लिए रोकें",
+    "until-restart": "मेरे<strong> पुनः आरंभ करने</strong> तक रोकें"
   },
   "pool": {
     "accepted_shares": "स्वीकृत शेयर",
-    "balance": "Total earnings",
+    "balance": "कुल कमाई",
     "min_payout": "न्यूनतम भुगतान",
     "unpaid": "अवैतनिक"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "शेड्यूल सहेजें",
+    "cta-save-complete": "सहेजा गया!",
+    "current": "आपका वर्तमान शेड्यूल",
+    "mining-schedule": "माइनिंग शेड्यूल",
+    "mining-schedule-copy": "स्वचालित रूप से माइनिंग शुरू करने के लिए विशिष्ट समय निर्धारित करें।",
+    "mining-schedule-setup": "माइनिंग शेड्यूल सेट करें",
+    "scheduled-to-mine": "माइन करने का निर्धारित समय",
+    "scheduled-to-pause": "माइनिंग रोकने का निर्धारित समय",
+    "time-label-end": "दैनिक समाप्ति समय",
+    "time-label-start": "दैनिक प्रारंभ समय"
   },
   "you-earn-rewards-separately": "आप CPU और GPU माइनिंग के लिए अलग-अलग पुरस्कार अर्जित करते हैं",
   "you-won-block": "आप <span>ब्लॉक #{{ blockHeight }}</span> के विजेता थे",

@@ -12,26 +12,26 @@
   "connection-to-node-lost": "마이너와의 연결이 끊어졌습니다. 마이너가 다시 연결되거나 재시작될 때까지 기다려주세요.",
   "cpu-power": "CPU 전력",
   "current-block-time": "현재 블록 시간",
-  "day": "day",
+  "day": "일",
   "estimated-day": "Est XTM/일",
   "estimated-earnings": "예상 수익",
   "floor": "최저값",
   "gpu-power": "GPU 전력",
   "mining-button-text": {
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
+    "state-pause": "채굴 일시 중지",
+    "state-resume": "채굴 재개",
     "state-start": "채굴 시작"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "모든 모드 보기",
+      "alert_cta-turbo": "터보 사용",
+      "alert_text": "에코 모드는 시스템 리소스의 일부만 사용합니다.",
+      "alert_text_extra": "전원 모드를 높여 보세요.",
+      "alert_title": "보상이 충분하지 않나요?"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "모드",
+    "mode-long": "채굴 모드"
   },
   "orphan-chain-tooltip": {
     "heading": "시도할 것들:",
@@ -43,8 +43,8 @@
     "step_6": "앱을 재설정해 보세요 (설정에서)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "<strong>{{duration}}</strong> 동안 일시 중지",
+    "until-restart": "<strong>재시작</strong>할 때까지 일시 중지"
   },
   "pool": {
     "accepted_shares": "수락된 공유",
@@ -53,16 +53,16 @@
     "unpaid": "미지급"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "일정 저장",
+    "cta-save-complete": "저장됨!",
+    "current": "현재 일정",
+    "mining-schedule": "채굴 일정",
+    "mining-schedule-copy": "특정 시간을 설정하여 자동으로 채굴을 시작하세요.",
+    "mining-schedule-setup": "채굴 일정 설정",
+    "scheduled-to-mine": "채굴 예정 시간",
+    "scheduled-to-pause": "채굴 일시 중지 예정 시간",
+    "time-label-end": "매일 종료 시간",
+    "time-label-start": "매일 시작 시간"
   },
   "you-earn-rewards-separately": "CPU와 GPU 채굴에 대해 각각 보상을 받습니다",
   "you-won-block": "당신은 <span>블록 #{{ blockHeight }}</span>의 승자였습니다",

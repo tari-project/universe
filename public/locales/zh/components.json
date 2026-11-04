@@ -5,17 +5,17 @@
     "is-live": "已上线"
   },
   "battery-alert-dialog": {
-    "auto-resume-info": "Mining will automatically resume when AC power is connected",
-    "description": "We've noticed your device is running on battery power. To help preserve your battery life and ensure optimal performance, we've temporarily paused mining. Mining will automatically resume when your device is connected to a power source.",
-    "title": "Mining Paused - Battery Mode Detected",
-    "understood": "I Understand"
+    "auto-resume-info": "连接交流电源后，挖矿将自动恢复",
+    "description": "我们注意到您的设备正在使用电池供电。为了帮助延长电池寿命并确保最佳性能，我们已暂停挖矿。设备连接电源后，挖矿将自动恢复。",
+    "title": "挖矿已暂停 - 检测到电池模式",
+    "understood": "我明白了"
   },
   "close-experience-dialog": {
-    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
-    "dont-ask-again": "Don't ask me again",
-    "exit-completely": "Exit Completely",
-    "run-in-background": "Run in Background",
-    "title": "Choose how to close Tari Universe"
+    "description": "您可以将应用最小化到系统托盘以在后台继续挖矿，也可以完全退出以停止所有进程。",
+    "dont-ask-again": "不再询问",
+    "exit-completely": "完全退出",
+    "run-in-background": "在后台运行",
+    "title": "选择关闭 Tari Universe 的方式"
   },
   "field-error-message": {
     "integers-only": "只允许整数",

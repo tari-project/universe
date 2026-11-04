@@ -13,10 +13,10 @@
   "critical-initialization-failure": "Kegagalan inisialisasi kritis",
   "error": {
     "description": {
-      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+      "space": "Harap kosongkan ruang di perangkat Anda. Tari Universe tidak dapat membuat file PID yang diperlukan karena keterbatasan ruang."
     },
     "title": {
-      "space": "No space left on device"
+      "space": "Tidak ada ruang tersisa di perangkat"
     }
   },
   "failed-to-complete-step": "Gagal menyelesaikan langkah",
@@ -45,8 +45,8 @@
     "binaries-cpu-miner-download": "Mempersiapkan Biner Penambang CPU | Mengunduh: {{ progress }}%",
     "binaries-gpu-miner": "Menyiapkan Binary Penambang GPU",
     "binaries-gpu-miner-download": "Mempersiapkan Biner Penambang GPU | Mengunduh: {{ progress }}%",
-    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
-    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
+    "binaries-tari-miner": "Menyiapkan Biner Penambang GPU sumber terbuka",
+    "binaries-tari-miner-download": "Menyiapkan Biner Penambang GPU sumber terbuka | Mengunduh: {{ progress }}%",
     "binaries-merge-mining-proxy": "Menyiapkan Binary Proxy Merge Mining",
     "binaries-merge-mining-proxy-download": "Mempersiapkan Biner Proxy Penambangan Gabungan | Mengunduh: {{ progress }}%",
     "binaries-node": "Menyiapkan Binary Node",
@@ -54,7 +54,6 @@
     "binaries-tor": "Menyiapkan Binary Tor",
     "binaries-tor-download": "Mempersiapkan Biner Tor | Mengunduh: {{ progress }}%",
     "detect-gpu": "Mendeteksi GPU",
-    "done": "Selesai",
     "initialize-application-modules": "Memulai Prasyarat Platform",
     "initialize-cpu-hardware": "Inisialisasi Perangkat Keras CPU",
     "initialize-gpu-hardware": "Inisialisasi Perangkat Keras GPU",
@@ -62,13 +61,13 @@
     "migrating-database": "Migrasi Basis Data dari versi {{current_db_version}} ke {{target_db_version}} kemajuan: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Memulai Proxy Merge Mining",
     "network-speed-test": "Tes Kecepatan Jaringan",
-    "platform-prequisites": "Memulai Prasyarat Platform",
+    "ootle-wallet": "Memulai Dompet Layer 2",
     "setup-bridge": "Mempersiapkan Jembatan",
     "setup-bridge-download": "Mempersiapkan Jembatan | Mengunduh: {{ progress }}%",
     "start-tor": "Memulai Tor",
     "starting-node": "Memulai Node Minotari",
-    "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
-    "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
+    "waiting-for-block-sync": "Menunggu sinkronisasi blok. {{local_header_height}}/{{tip_header_height}} header dan {{local_block_height}}/{{tip_block_height}} blok tersinkronisasi.",
+    "waiting-for-header-sync": "Menunggu sinkronisasi header. {{local_header_height}}/{{tip_header_height}} header dan {{local_block_height}}/{{tip_block_height}} blok tersinkronisasi. ",
     "waiting-for-initial-sync": "Menghubungkan ke rekan jaringan {{initial_connected_peers}}/{{required_peers}}"
   }
 }
