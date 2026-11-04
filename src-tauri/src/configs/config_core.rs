@@ -429,7 +429,7 @@ mod tests {
         tokio::spawn(async move {
             let (mut stream, _) = listener.accept().await.unwrap();
             let mut request = [0; 2048];
-            stream.read(&mut request).await.unwrap();
+            let _ = stream.read(&mut request).await.unwrap();
             stream.write_all(
                 b"HTTP/1.1 302 Found\r\nLocation: https://indexer.example/network\r\nContent-Length: 21\r\nConnection: close\r\n\r\n{\"network\":\"mainnet\"}",
             ).await.unwrap();
