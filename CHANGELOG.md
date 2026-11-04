@@ -1,3 +1,39 @@
+🚀 TARI UNIVERSE v1.6.21: Twin Tides Part 2 – Landfall
+
+_November 6, 2026_
+
+🔄 Rolling out via auto-update
+
+Hey Tari fam,
+
+Twin Tides brought a second wallet to testnet. This one brings it ashore: the Ootle Layer 2 wallet is now open on mainnet. The rest of the boat is security work, much of it from reports that came in through our GitHub security advisory program, plus AMD support for TARI.Miner, a Tor update the network now insists on, and a pile of wallet fixes. It's a bigger drop than the version number lets on.
+
+✨ WHAT'S NEW
+
+- 🌊 **Layer 2 on mainnet** – The Ootle Layer 2 wallet that was testnet-only in Twin Tides is now switched on for mainnet. Click the L2 button in the sidebar, enter your PIN, and you get an L2 balance, a QR code to receive, sends, and burns from your Tari wallet that you can claim on L2. Each network talks to its own indexer, and Tari Universe checks which network an indexer belongs to before connecting, so a mainnet wallet can never end up talking to a testnet indexer (or the other way around). Heads up: it's early days for L2 on mainnet, so start small and tell us what you find.
+- 🎮 **TARI.Miner on AMD** – TARI.Miner, the open-source C29 miner, now mines on AMD cards too (RDNA2, RDNA3 and RDNA4). It also finds your GPUs by asking the miner itself instead of `nvidia-smi`, which fixes detection on AMD rigs and on Flatpak installs without the NVIDIA extension.
+- 💸 **See the fee before you send** – The review screen and the PIN dialog now show the real network fee for an L1 send, estimated before you approve. The placeholder numbers that used to sit there are gone. **Max** now fills an amount that actually goes through, fee and change included.
+- 💤 **Stalled sends can be abandoned** – A send or burn the network never picked up gets a "Stalled" chip and an abandon option, gated by your PIN just like a send. A send the node hasn't accepted yet now says so, so you don't send it twice.
+- 📜 **Transaction details that stay current** – The output status in a transaction's details was frozen at the moment the transaction was saved. It now shows the live state (Spent, Locked, Unconfirmed and friends) and refreshes while the panel is open.
+
+✨ WHAT'S FIXED
+
+- 🔒 **Security hardening, with thanks** – We've closed a run of reports from our GitHub security advisory program (HackerOne is gone, advisories are the way in now). The PIN key for your Monero seed is now derived with Argon2id instead of a single unsalted hash, PIN lockouts can't be dodged by rolling the clock back, the PIN is now required to change your exchange or Monero payout address or to revert to the internal wallet, forgot-PIN recovery is tied to the wallet recorded on disk, config files and the MCP audit log are owner-only on Linux and macOS, the bundled Tor control port needs a fresh cookie, and downloaded binaries (miners, Tor, the node) are checksum-verified before extraction and again at launch. Thank you to everyone who reported.
+- 🤖 **MCP token keys moved to your credential store** – The key that protects your MCP bearer token now lives in the OS credential store. Heads up for MCP users: existing tokens are cleared by this update and the server stays off until you issue a new token and update your client. Your port and limits are kept.
+- 🧅 **Tor 0.4.9 on Windows and Linux** – Since 28 October the Tor network turns away older Tor clients. macOS got the new Tor in v1.6.19; Windows and Linux now ship the Tor Browser 16.0 expert bundle (Tor 0.4.9.15) too. Heads up: a fresh binary can trip a new antivirus false positive, so check your exclusions if Tor won't start.
+- 💼 **Wallet loads with a blank Monero address** – Clearing the Monero address in Settings > Advanced left you with a "config_wallet.json is incomplete" dialog, a blank Tari address and no CPU mining. The address is optional at load now, and Tari Universe derives it from your Monero seed when it can. Solo CPU mining asks you for an address instead of handing xmrig an empty one.
+- 🏦 **Payment IDs, round three** – If a deposit address carries its own payment ID, the review screen and PIN dialog now show the ID that will actually be sent, not the Message you typed. The payment ID field is capped at 140 bytes, and a burn memo that's too long is refused before any funds are locked up.
+- 🔁 **Your chosen external address sticks** – Pointing Tari Universe at an external Tari address used to reset on restart. It survives now.
+- 🌐 **Node sync that finishes** – A local node could never report "synced" through the startup wait because of a zero-difficulty check, and a remote node that hadn't finished syncing could crash the app. Both fixed.
+- 🙈 **Less in the logs** – Amounts, destinations, L2 claim keys and payment IDs no longer land in the log files that go into support bundles, and binary paths under your home folder stay out of Sentry reports.
+- 🇨🇳 **Chinese plurals** – Our Chinese locale was filed under `cn`, which isn't a real language code, so plural forms quietly followed your OS language instead. It's `zh` now, and every language file is back in sync with English.
+- 🎨 **Smoother frontend** – Stores compare values before re-rendering, timers and event listeners clean up after themselves, and a copied seed phrase clears itself from the clipboard after 60 seconds.
+- 🔧 **Under the hood** – Updated the built-in wallet to minotari v0.6.0 (transaction confirmations now come from the wallet's own chain scan) and Ootle to v0.49.2. An L2 store from the old v0.44 schema is rebuilt in place and keeps its address, and seeds saved without a PIN on v1.6.17 or earlier still load. The Bridge tapplet can make an L2 deposit through Tari Universe. The MCP server, scheduler and support bundle tidy up after themselves on shutdown, Windows Defender and firewall setup got stricter about paths and quoting, and we cleared eight Dependabot advisories (zip, vitest, i18next-http-backend, smol-toml). The old Sync with Phone (paper wallet) feature is removed. Seed backup exports from this version are v3 and won't import into older versions.
+
+Thank you for your patience while this one came together. You are Tari. We are ALL Tari 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.20: Deposit Reference Fix, Part Two
 
 _October 29, 2026_
