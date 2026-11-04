@@ -53,7 +53,7 @@ use tari_ootle_wallet_sdk::{
     cipher_seed::CipherSeedRestore,
     crypto::memo::Memo,
     local_key_store::LocalKeyStore,
-    models::{EpochBirthday, WalletEvent},
+    models::{BalanceChangeSource, EpochBirthday, WalletEvent},
 };
 use tari_ootle_wallet_sdk_services::{
     Shutdown, ShutdownSignal,
@@ -1085,23 +1085,36 @@ async fn start_services(
     spawn_service(&tracker, &signal, "network poller", poll);
 
     let notify = INSTANCE.notify.clone();
-    let events = emit_state_on_events(sdk.clone(), notify.subscribe());
-    spawn_service(&tracker, &signal, "state events", events);
+    let state_events_rx = notify.subscribe();
     let (transactions, handle) =
         TransactionService::new(notify.clone(), sdk.clone(), signal.clone());
-    spawn_service(&tracker, &signal, "transaction service", transactions.run());
     *INSTANCE.transactions.lock().await = Some(handle);
 
     let (scanner, scanner_handle) =
         StealthUtxoScannerWorker::new(sdk.clone(), notify.clone()).spawn();
+    let scanner_abort = scanner.abort_handle();
+    let mut abort_signal = signal.clone();
+    tracker.spawn(async move {
+        abort_signal.wait().await;
+        scanner_abort.abort();
+    });
     spawn_service(&tracker, &signal, "utxo scanner", async { scanner.await? });
-    let recovery = UtxoRecovery::new(sdk.clone()).with_notify(notify.clone());
+
+    let (monitor, monitor_handle) = AccountMonitor::new(
+        notify.clone(),
+        sdk.clone(),
+        scanner_handle.clone(),
+        signal.clone(),
+    );
+    spawn_service(&tracker, &signal, "account monitor", monitor.run());
+    spawn_service(&tracker, &signal, "transaction service", transactions.run());
+
+    let recovery = UtxoRecovery::new(sdk.clone()).with_notify(notify);
     let waker = scanner_handle.subscribe_notifications();
     spawn_service(&tracker, &signal, "utxo recovery", recovery.run(waker));
 
-    let (monitor, monitor_handle) =
-        AccountMonitor::new(notify, sdk.clone(), scanner_handle.clone(), signal.clone());
-    spawn_service(&tracker, &signal, "account monitor", monitor.run());
+    let events = emit_state_on_events(sdk.clone(), state_events_rx);
+    spawn_service(&tracker, &signal, "state events", events);
 
     if needs_recovery {
         let birthday = sdk.key_manager_api().get_cipher_seed_birthday_epoch()?;
@@ -1152,6 +1165,9 @@ async fn emit_state_on_events(
             // A claim's proof file moves before the state goes out, so the panel's burn
             // list refreshes with it gone.
             Ok(event) => {
+                if let Err(e) = record_stealth_balance_event(&sdk, &event) {
+                    error!(target: LOG_TARGET, "Could not record the L2 stealth balance change: {e}");
+                }
                 let result = claim::track_claim(&proof_dir, &event);
                 emit_state(&sdk).await;
                 emit_results(result).await;
@@ -1164,6 +1180,39 @@ async fn emit_state_on_events(
             Err(broadcast::error::RecvError::Closed) => return Ok(()),
         }
     }
+}
+
+/// Record the balance before publishing state. The account monitor receives the same
+/// broadcast independently and may process it after the frontend state listener.
+fn record_stealth_balance_event(sdk: &OotleSdk, event: &WalletEvent) -> Result<(), anyhow::Error> {
+    let (account, resource) = match event {
+        WalletEvent::UtxoRecovered(e) => (e.account_address, *e.address.resource_address()),
+        WalletEvent::UtxoSpent(e) => (e.account_address, *e.address.resource_address()),
+        WalletEvent::UtxoBurnt(e) => (e.account_address, *e.address.resource_address()),
+        _ => return Ok(()),
+    };
+    let accounts = sdk.accounts_api();
+    let vault = accounts
+        .get_vault_by_resource(&account, &resource)
+        .optional()?;
+    if vault
+        .as_ref()
+        .is_some_and(|v| !v.resource_type.is_stealth())
+    {
+        return Ok(());
+    }
+    let revealed = vault.map(|v| v.revealed_balance).unwrap_or_default();
+    let confidential = sdk
+        .stealth_outputs_api()
+        .get_unspent_balance_for_account_resource(&account, &resource)?;
+    accounts.record_resource_balance_change(
+        account,
+        resource,
+        revealed,
+        confidential,
+        BalanceChangeSource::Scan,
+    )?;
+    Ok(())
 }
 
 /// Tells the frontend how tracked claims and sends ended.
@@ -1201,6 +1250,14 @@ fn spawn_service(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tari_ootle_wallet_sdk::models::{
+        KeyBranch, KeyId, OutputStatus, StealthOutputModel, UtxoRecoveredEvent,
+    };
+    use tari_template_lib::types::{
+        EncryptedData,
+        crypto::{PedersenCommitmentBytes, RistrettoPublicKeyBytes, UtxoTag},
+        stealth::SpendAuthorization,
+    };
 
     #[test]
     fn l2_seed_words_are_the_l1_seed_words() {
@@ -1216,6 +1273,67 @@ mod tests {
         for i in 0..l1_words.len() {
             assert_eq!(l1_words.get_word(i).unwrap(), l2_words.get_word(i).unwrap());
         }
+    }
+
+    #[test]
+    fn recovered_utxo_history_is_recorded_before_state_is_built() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        let key = sdk.key_manager_api().next_account_address().expect("key");
+        let account = sdk
+            .accounts_api()
+            .create_account(Some("default"), true, key)
+            .expect("account");
+        let output = StealthOutputModel {
+            owner_account: *account.component_address(),
+            resource_address: STEALTH_TARI_RESOURCE_ADDRESS,
+            commitment: PedersenCommitmentBytes::from_array([7; PedersenCommitmentBytes::length()]),
+            value: 42,
+            sender_public_nonce: RistrettoPublicKeyBytes::default(),
+            view_only_key_id: KeyId::derived(KeyBranch::ViewOnlyKey, 0),
+            owner_key_id: Some(KeyId::derived(KeyBranch::Account, 0)),
+            encrypted_data: EncryptedData::try_from(vec![0; EncryptedData::min_size()])
+                .expect("data"),
+            tag_byte: UtxoTag::new(7),
+            memo: None,
+            auth: SpendAuthorization::Key(RistrettoPublicKeyBytes::default()),
+            minimum_value_promise: 0,
+            status: OutputStatus::Unspent,
+            is_burnt: false,
+            is_frozen: false,
+            is_on_chain: true,
+            is_condition_spendable: true,
+            lock_id: None,
+            proven_up: None,
+            spent_version: None,
+        };
+        sdk.stealth_outputs_api()
+            .upsert_utxo(&output)
+            .expect("utxo");
+        let event = WalletEvent::UtxoRecovered(UtxoRecoveredEvent {
+            address: output.to_utxo_address(),
+            account_address: *account.component_address(),
+        });
+        record_stealth_balance_event(&sdk, &event).expect("balance event");
+        record_stealth_balance_event(&sdk, &event).expect("duplicate monitor event");
+        let state = state::build_state(&sdk).expect("state");
+        assert_eq!(state.accounts[0].balance.confidential, 42);
+        assert_eq!(state.accounts[0].history.len(), 1);
+
+        sdk.stealth_outputs_api()
+            .mark_burnt(&output.to_utxo_address())
+            .expect("burn");
+        let burnt = WalletEvent::UtxoBurnt(tari_ootle_wallet_sdk::models::UtxoBurntEvent {
+            address: output.to_utxo_address(),
+            account_address: *account.component_address(),
+        });
+        record_stealth_balance_event(&sdk, &burnt).expect("burn balance event");
+        let state = state::build_state(&sdk).expect("state after burn");
+        assert_eq!(state.accounts[0].balance.confidential, 0);
+        assert_eq!(state.accounts[0].history.len(), 2);
     }
 
     #[test]
