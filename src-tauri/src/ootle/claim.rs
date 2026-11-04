@@ -43,11 +43,13 @@ use tari_crypto::{
 use tari_engine_types::{
     commit_result::{ExecutionFailureCode, RejectReason},
     confidential::{ClaimBurnOutputData, MinotariBurnClaimProof},
+    substate::SubstateId,
 };
 use tari_ootle_app_utilities::burn_claim_proof::claim_proof_from_l1;
 use tari_ootle_common_types::{Epoch, optional::Optional};
 use tari_ootle_transaction::{Transaction, TransactionId};
 use tari_ootle_wallet_sdk::{
+    apis::substate::SubstateApiError,
     crypto::{OutputWitness, StealthInputWitness, StealthOutputWitness, memo::Memo},
     models::{
         AccountWithAddress, KeyBranch, TransactionContext, TransactionContextKind,
@@ -60,7 +62,7 @@ use tari_sidechain::CompleteClaimBurnProof;
 use tari_template_lib::{
     prelude::RistrettoPublicKeyBytes,
     types::{
-        Amount, EncryptedData,
+        Amount, ClaimedOutputTombstoneAddress, EncryptedData,
         constants::{STEALTH_TARI_RESOURCE_ADDRESS, TARI_TOKEN},
         stealth::{RevealedOutput, SpendAuthorization},
     },
@@ -406,7 +408,14 @@ pub fn reconcile_claims(
                 false
             }
             Ok(None) => {
-                warn!(target: LOG_TARGET, "The wallet has no record of {id}, no longer tracking it");
+                if file
+                    .as_deref()
+                    .is_some_and(|f| !dir.join(f).exists() && dir.join(CLAIMED_DIR).join(f).is_file())
+                {
+                    ended.push((file.take(), true));
+                } else {
+                    warn!(target: LOG_TARGET, "The wallet has no record of {id}, no longer tracking it");
+                }
                 false
             }
             Err(e) => {
@@ -447,6 +456,27 @@ pub fn track_claim(dir: &Path, event: &WalletEvent) -> Option<L2ClaimResult> {
     Some(settle(dir, file, reason.is_none(), reason, not_yet))
 }
 
+/// The wallet SDK verifies this read against a trusted validator committee.
+/// A missing or unverified tombstone must leave the proof claimable.
+async fn verified_claim_tombstone_exists(
+    sdk: &OotleSdk,
+    proof: &BurnProof,
+) -> Result<bool, anyhow::Error> {
+    let tombstone = SubstateId::ClaimedOutputTombstone(
+        ClaimedOutputTombstoneAddress::from_commitment(proof.claim_proof.commitment),
+    );
+    match with_indexer_timeout(
+        sdk.substate_api()
+            .fetch_substate_from_network(&tombstone, None),
+    )
+    .await?
+    {
+        Ok(_) => Ok(true),
+        Err(SubstateApiError::SubstateDoesNotExist { .. }) => Ok(false),
+        Err(error) => Err(error.into()),
+    }
+}
+
 /// Claims the burn in `proof` into the wallet account its claim key belongs to and
 /// returns the L2 transaction id. Dry runs at a fee of 1 first, like tari_walletd's
 /// auto claim, and submits at the fee the dry run asks for once `approve_fee` accepts it.
@@ -460,7 +490,8 @@ pub async fn claim_burn(
 ) -> Result<TransactionId, anyhow::Error> {
     // Checked again here, under the send gate permit: a second click passes
     // find_claimable before the first claim is tracked.
-    ensure_no_pending_claim(&MinotariWalletManager::burn_proofs_dir()?, &file_name)?;
+    let proof_dir = MinotariWalletManager::burn_proofs_dir()?;
+    ensure_no_pending_claim(&proof_dir, &file_name)?;
     let claim_key = proof.account_key;
     let account = sdk
         .accounts_api()
@@ -469,6 +500,10 @@ pub async fn claim_burn(
         .ok_or_else(|| {
             anyhow!("The claim key {claim_key} isn't one of this wallet's L2 accounts")
         })?;
+    if verified_claim_tombstone_exists(sdk, &proof).await? {
+        mark_claimed(&proof_dir, &file_name);
+        bail!("This burn has already been claimed on Layer 2.");
+    }
     let epoch = with_indexer_timeout(sdk.get_network_interface().get_current_epoch()).await??;
     // The dry run doesn't check L1 inclusion, so it can't catch a claim made too early.
     ensure_claimable_in(epoch, proof.mined_in_epoch)?;
@@ -489,6 +524,10 @@ pub async fn claim_burn(
         .await?
         .map_err(|e| anyhow!("The claim fee estimate failed: {e}"))?;
     if let Some(reason) = result.finalize.any_reject() {
+        if verified_claim_tombstone_exists(sdk, &proof).await? {
+            mark_claimed(&proof_dir, &file_name);
+            bail!("This burn has already been claimed on Layer 2: {reason}");
+        }
         bail!("The claim would be rejected: {reason}");
     }
     let fee = check_claim_fee(result.finalize.required_fees(), proof.claim_proof.value)?;
@@ -1052,5 +1091,35 @@ mod tests {
                 .expect("lookup")
                 .is_none()
         );
+    }
+
+    #[test]
+    fn unverified_duplicate_rejection_keeps_burn_proof_claimable() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
+        write(dir, &file, PROOF);
+
+        let duplicate = RejectReason::ExecutionFailure {
+            code: ExecutionFailureCode::EngineInvariant,
+            message: format!("At instruction #0: Duplicate substate tombstone_{COMMITMENT}"),
+        };
+        let id = TransactionId::from([9; 32]);
+        track(dir, id, Some(file.clone()));
+        let finalized = WalletEvent::TransactionFinalized(
+            tari_ootle_wallet_sdk::models::TransactionFinalizedEvent {
+                transaction_id: id,
+                finalize: tari_engine_types::commit_result::FinalizeResult::new_rejected(
+                    Default::default(),
+                    duplicate,
+                ),
+                final_fee: 0,
+                status: TransactionStatus::Rejected,
+            },
+        );
+        let res = track_claim(dir, &finalized).expect("settled claim");
+        assert!(!res.accepted);
+        assert!(dir.join(&file).is_file());
+        assert!(!dir.join(CLAIMED_DIR).join(&file).exists());
     }
 }
