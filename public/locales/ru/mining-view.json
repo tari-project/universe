@@ -18,26 +18,20 @@
   "floor": "Минимум",
   "gpu-power": "GPU Мощность",
   "mining-button-text": {
-    "cancel-mining": "Отмена майнинга",
-    "changing-mode": "Изменение режима",
-    "started-auto-mining": "Авто-майнинг запущен",
-    "starting-mining": "Запуск майнинга",
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
-    "state-start": "Начать майнинг",
-    "stop-mining": "Остановить майнинг",
-    "waiting-for-idle": "Ожидание простоя"
+    "state-pause": "Приостановить майнинг",
+    "state-resume": "Возобновить майнинг",
+    "state-start": "Начать майнинг"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "Все режимы",
+      "alert_cta-turbo": "Включить Turbo️",
+      "alert_text": "Режим Eco использует лишь небольшую часть ресурсов системы.",
+      "alert_text_extra": "Попробуйте повысить режим мощности.",
+      "alert_title": "Недостаточно наград?"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "Режим",
+    "mode-long": "Режим майнера"
   },
   "orphan-chain-tooltip": {
     "heading": "Что можно попробовать:",
@@ -49,8 +43,8 @@
     "step_6": "Попробуйте сбросить настройки приложения (в Настройках)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "Пауза на <strong>{{duration}}</strong>",
+    "until-restart": "Пауза до<strong> перезапуска</strong>"
   },
   "pool": {
     "accepted_shares": "Принятые шары",
@@ -59,16 +53,16 @@
     "unpaid": "Не выплачено"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "Сохранить расписание",
+    "cta-save-complete": "Сохранено!",
+    "current": "Ваше текущее расписание",
+    "mining-schedule": "Расписание майнинга",
+    "mining-schedule-copy": "Задайте время для автоматического запуска майнинга.",
+    "mining-schedule-setup": "Настроить расписание майнинга",
+    "scheduled-to-mine": "Майнинг запланирован на",
+    "scheduled-to-pause": "Пауза майнинга запланирована на",
+    "time-label-end": "Ежедневное время окончания",
+    "time-label-start": "Ежедневное время начала"
   },
   "you-earn-rewards-separately": "Вы получаете награды за майнинг на CPU и GPU отдельно",
   "you-won-block": "Вы выиграли <span>блок #{{ blockHeight }}</span>",

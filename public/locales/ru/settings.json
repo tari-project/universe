@@ -43,20 +43,23 @@
   "gpu-device-enabled": "Устройства для майнинга на GPU",
   "gpu-device-enabled-description": "Включить или отключить конкретное устройство GPU.",
   "gpu-device-no-found": "⚠️ Устройства GPU не найдены",
-  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
+  "gpu-device-single-device-note": "{{miner}} майнит только на одной видеокарте — используется первое включённое устройство.",
   "gpu-engine": "Движок GPU",
   "gpu-miner-description": {
-    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
-    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+    "LolMiner": "Майнер C29 с закрытым исходным кодом для видеокарт AMD и NVIDIA",
+    "TariMiner": "Майнер C29 с открытым исходным кодом для видеокарт NVIDIA"
   },
-  "gpu-miner-failed-with": "Failed with: {{error}}",
-  "gpu-miner-select-placeholder": "Select GPU miner",
+  "gpu-miner-failed-with": "Ошибка: {{error}}",
+  "gpu-miner-select-placeholder": "Выберите GPU-майнер",
   "gpu-miners": "Майнеры на GPU",
   "gpu-miners-not-found": "Майнеры на GPU не найдены",
   "gpu-mining-enabled": "Майнинг на GPU",
-  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
-  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-mining-not-recommended": "Обнаружено слабое оборудование, GPU-майнинг не рекомендуется",
+  "gpu-not-available-on-macos": "⚠️ GPU-майнинг недоступен на macOS",
+  "gpu-solo-mining-unavailable": "⚠️ Обязательно, так как ни один установленный GPU-майнер не поддерживает соло-майнинг",
   "gpu-unavailable": "⚠️ GPU отключен, так как ваше оборудование не поддерживает его",
+  "gpu-cannot-mine": "⚠️ Ваша видеокарта не может майнить Tari: {{reason}}",
+  "gpu-cannot-mine-unknown": "майнер не поддерживает это устройство",
   "hardware-status": "Состояние оборудования",
   "idle-timeout": {
     "max": "Максимум 21600 секунд",
@@ -80,69 +83,50 @@
   "low-hash-rate-warning": "Ваш хешрейт очень низкий. Попробуйте закрыть все приложения, кроме Tari Universe",
   "mcp": {
     "advanced": {
-      "control-tier": "Control Tier",
-      "expiry-days": "Token Expiry (days)",
-      "port": "Server Port",
-      "rate-limit": "Transaction Rate Limit (per minute)",
-      "read-tier": "Read Tier",
-      "title": "Advanced Settings"
+      "control-tier": "Уровень управления",
+      "port": "Порт сервера",
+      "read-tier": "Уровень чтения"
     },
     "agent-config": {
-      "copied": "Copied!",
-      "copy": "Copy Configuration",
-      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
-      "or-add-to-settings-json": "Or add this to your settings JSON:",
-      "title": "Agent Configuration"
+      "copied": "Скопировано!",
+      "copy": "Копировать конфигурацию",
+      "description": "Скопируйте конфигурацию ниже, чтобы подключить ИИ-агента к Tari Universe",
+      "or-add-to-settings-json": "Или добавьте это в ваш JSON-файл настроек:",
+      "title": "Конфигурация агента"
     },
     "audit-log": {
-      "description": "Recent MCP tool calls",
-      "duration-ms": "{{ms}}ms",
-      "empty": "No audit entries yet",
-      "export": "Export Log",
-      "title": "Audit Log"
+      "description": "Последние вызовы инструментов MCP",
+      "duration-ms": "{{ms}} мс",
+      "empty": "Записей аудита пока нет",
+      "export": "Экспортировать журнал",
+      "title": "Журнал аудита"
     },
     "server-toggle": {
-      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
-      "status-running": "Running on port {{port}}",
-      "status-stopped": "Stopped",
-      "title": "MCP Server"
+      "description": "Включите MCP-сервер, чтобы ИИ-агенты могли взаимодействовать с Tari Universe",
+      "status-running": "Работает на порту {{port}}",
+      "status-stopped": "Остановлен",
+      "title": "MCP-сервер"
     },
-    "title": "MCP Server",
     "token-display": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "copied": "Copied!",
-      "copy": "Copy",
-      "created": "Created",
-      "days-remaining": "{{days}} days remaining",
-      "description": "Use this token to authenticate MCP clients",
-      "expires": "Expires",
-      "hide": "Hide",
-      "no-token": "No token generated",
-      "refresh-expiry": "Refresh Expiry",
-      "reveal": "Reveal",
-      "revoke": "Revoke Token",
-      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
-      "title": "Bearer Token"
+      "copied": "Скопировано!",
+      "copy": "Копировать",
+      "created": "Создан",
+      "days-remaining": "Осталось дней: {{days}}",
+      "description": "Используйте этот токен для аутентификации MCP-клиентов",
+      "expires": "Истекает",
+      "hide": "Скрыть",
+      "refresh-expiry": "Продлить срок действия",
+      "reveal": "Показать",
+      "revoke": "Отозвать токен",
+      "revoke-confirm": "Вы уверены? Это остановит MCP-сервер, и потребуется создать новый токен.",
+      "title": "Bearer-токен"
     },
     "transaction-dialog": {
-      "amount": "Amount",
-      "approve": "Approve",
-      "deny": "Deny",
-      "destination": "Destination",
-      "enter-pin": "Enter PIN to approve",
-      "micro-minotari": "({{amount}} µT)",
-      "remaining": "{{countdown}}s remaining",
-      "title": "MCP Transaction Confirmation"
+      "remaining": "Осталось {{countdown}} с"
     },
     "transactions": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "description": "Allow MCP clients to send transactions (requires PIN)",
-      "max-amount": "Max Transaction Amount (µT)",
-      "max-amount-description": "Leave empty for no limit",
-      "pin-required": "PIN must be configured to enable transactions",
-      "title": "Transactions"
+      "description": "Разрешить MCP-клиентам отправлять транзакции (требуется PIN)",
+      "title": "Транзакции"
     }
   },
   "mine-on-app-start": {
@@ -161,12 +145,14 @@
   "no-entry-guard": "Нет подключения к Entry Guard!",
   "no-pool-configuration-available": "Конфигурация пула недоступна",
   "node": {
-    "confirm-title": "Confirm node data location change",
-    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
-    "data-cta": "Change location",
-    "data-subtitle": "Set a custom location to store the base node data",
-    "data-title": "Node data settings"
+    "confirm-title": "Подтвердите изменение расположения данных ноды",
+    "confirm-warning": "Перемещение базовой ноды может привести к потере существующих данных блокчейна. В этом случае потребуется повторная синхронизация.",
+    "data-cta": "Изменить расположение",
+    "data-subtitle": "Укажите своё расположение для хранения данных базовой ноды",
+    "data-title": "Настройки данных ноды"
   },
+  "custom-remote-node-address": "Адрес своей удалённой ноды (gRPC)",
+  "custom-remote-node-address-error": "Неверный адрес: {{reason}}",
   "node-configuration": "Конфигурация узлов",
   "node-configuration-description": "Подключитесь к удаленной, локальной или обеим нодам пока Ваша локальная не будет готова",
   "node-connection-address": "Адрес подключения",
@@ -176,8 +162,8 @@
   "not-connected-to-tari": "Не подключено к сети Tari",
   "open-logs-directory": "Открыть папку с логами",
   "pause-on-battery-mode": {
-    "description": "Pause mining when device is disconnected from charging",
-    "title": "Pause on Battery Mode"
+    "description": "Приостанавливать майнинг, когда устройство отключено от зарядки",
+    "title": "Пауза при работе от батареи"
   },
   "pin": "Пин",
   "pool-configuration": "Конфигурация пула",
@@ -224,6 +210,10 @@
     "description": "При включении приложение будет автоматически запускаться при входе в систему на Вашем компьютере.",
     "title": "Автозапуск при загрузке системы"
   },
+  "show-window-on-startup": {
+    "description": "Если включено, Tari Universe будет показывать главное окно после запуска. Отключите, чтобы запускаться в системный трей.",
+    "title": "Показывать окно при запуске"
+  },
   "should-use-system-language": "Использовать системный язык",
   "stable-version-note": "Отключив пре-релизную версию приложения, Вы вернетесь к стабильной версии, которая опирается на надежность и последовательность. При этом Вы можете упустить последние функции и улучшения.",
   "stats-server-port": "Порт сервера статистики",
@@ -231,11 +221,12 @@
   "sync-incomplete": "Синхронизация...",
   "sync-status": "Статус синхронизации",
   "tabs": {
-    "airdrop": "Airdrop Claim",
+    "airdrop": "Получение Airdrop",
     "connections": "Подключения",
     "experimental": "Экспериментальные",
     "general": "Общие",
-    "mcp": "MCP Server",
+    "l2": "Ootle",
+    "mcp": "MCP-сервер",
     "mining": "Майнинг",
     "p2p": "Майнинг в пуле",
     "pools": "Майнинговые пулы",
@@ -245,8 +236,8 @@
   },
   "tari-wallet-address": "Адрес кошелька Tari",
   "task-tray": {
-    "description": "Tari universe will be minimized to task tray after closing",
-    "title": "Run app from task tray on close"
+    "description": "Tari Universe будет свёрнут в системный трей после закрытия",
+    "title": "Сворачивать в системный трей при закрытии"
   },
   "terms-and-conditions": "Условия и положения",
   "theme": "Тема",
@@ -270,5 +261,31 @@
   "waiting-for-data": "Ожидание данных цепочки...",
   "yes": "Да",
   "your-feedback": "Пожалуйста, опишите Вашу проблему",
-  "your-reference": "Ваша ссылка"
+  "your-reference": "Ваш идентификатор:<br/><bold>{{logRef}}</bold>",
+  "l2": {
+    "status": "Уровень 2",
+    "pin-required": "Чтобы использовать Уровень 2, необходимо установить PIN",
+    "set-pin": "Установить PIN",
+    "enable-description": "Уровень 2 использует кошелёк, созданный из вашей текущей seed-фразы. Вас попросят ввести PIN.",
+    "enable": "Включить Уровень 2",
+    "enable-error": "Не удалось включить Уровень 2: ",
+    "unlock-description": "Уровень 2 заблокирован.\nВведите PIN, чтобы открыть его.",
+    "unlock": "Разблокировать Уровень 2",
+    "unlock-error": "Не удалось разблокировать Уровень 2: ",
+    "indexer": "Индексатор",
+    "indexer-error": "Неверный URL индексатора: {{reason}}",
+    "seed-words": "Seed-фраза",
+    "seed-note-l1": "Ваш кошелёк Ootle использует ту же seed-фразу, что и ваш кошелёк Tari.",
+    "seed-note-imported": "Ваш кошелёк Ootle использует собственную импортированную seed-фразу. Сохраните её отдельно.",
+    "use-l1-seed": "Использовать seed-фразу кошелька Tari",
+    "confirm-import": "Импортировать seed-фразу Уровня 2",
+    "seed-change-error": "Не удалось изменить seed-фразу Уровня 2",
+    "confirm-replace-copy": "Ваш текущий кошелёк Уровня 2 будет заменён.\nВернуть его можно только с помощью его seed-фразы.",
+    "address": "Адрес кошелька Ootle",
+    "address-description": "Поделитесь им, чтобы получать XTR в Ootle.",
+    "public-key": "Публичный ключ владельца Ootle",
+    "public-key-description": "Ключ получения для сжиганий из вашего кошелька Tari. «Сжечь в L2» подставляет его автоматически.",
+    "side-by-side": "Показывать кошельки рядом",
+    "side-by-side-description": "Показывать кошельки Tari и Ootle рядом друг с другом. Если выключено, каждая кнопка навигации открывает свой кошелёк отдельно."
+  }
 }

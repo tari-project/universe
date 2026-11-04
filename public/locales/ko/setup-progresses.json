@@ -13,10 +13,10 @@
   "critical-initialization-failure": "중대한 초기화 실패",
   "error": {
     "description": {
-      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+      "space": "기기의 저장 공간을 확보하세요. 공간이 부족하여 Tari Universe가 필요한 PID 파일을 생성할 수 없습니다."
     },
     "title": {
-      "space": "No space left on device"
+      "space": "기기에 남은 공간이 없습니다"
     }
   },
   "failed-to-complete-step": "단계를 완료하지 못했습니다",
@@ -45,8 +45,8 @@
     "binaries-cpu-miner-download": "CPU 채굴기 바이너리 준비 중 | 다운로드 중: {{ progress }}%",
     "binaries-gpu-miner": "GPU 채굴기 바이너리 준비 중",
     "binaries-gpu-miner-download": "GPU 채굴기 바이너리 준비 중 | 다운로드 중: {{ progress }}%",
-    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
-    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
+    "binaries-tari-miner": "오픈 소스 GPU 채굴기 바이너리 준비 중",
+    "binaries-tari-miner-download": "오픈 소스 GPU 채굴기 바이너리 준비 중 | 다운로드 중: {{ progress }}%",
     "binaries-merge-mining-proxy": "병합 채굴 프록시 바이너리 준비 중",
     "binaries-merge-mining-proxy-download": "병합 채굴 프록시 바이너리 준비 중 | 다운로드 중: {{ progress }}%",
     "binaries-node": "노드 바이너리 준비 중",
@@ -54,7 +54,6 @@
     "binaries-tor": "Tor 바이너리 준비 중",
     "binaries-tor-download": "Tor 바이너리 준비 중 | 다운로드 중: {{ progress }}%",
     "detect-gpu": "GPU 감지 중",
-    "done": "완료",
     "initialize-application-modules": "플랫폼 필수 조건 초기화 중",
     "initialize-cpu-hardware": "CPU 하드웨어 초기화",
     "initialize-gpu-hardware": "GPU 하드웨어 초기화",
@@ -62,13 +61,13 @@
     "migrating-database": "데이터베이스를 버전 {{current_db_version}}에서 {{target_db_version}}로 마이그레이션 중 진행: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "병합 채굴 프록시 시작 중",
     "network-speed-test": "네트워크 속도 테스트",
-    "platform-prequisites": "플랫폼 필수 조건 초기화 중",
+    "ootle-wallet": "레이어 2 지갑 시작 중",
     "setup-bridge": "브리지 준비 중",
     "setup-bridge-download": "브리지 준비 중 | 다운로드 중: {{ progress }}%",
     "start-tor": "Tor 시작 중",
     "starting-node": "Minotari 노드 시작 중",
-    "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
-    "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
+    "waiting-for-block-sync": "블록 동기화 대기 중. 헤더 {{local_header_height}}/{{tip_header_height}}개, 블록 {{local_block_height}}/{{tip_block_height}}개 동기화됨.",
+    "waiting-for-header-sync": "헤더 동기화 대기 중. 헤더 {{local_header_height}}/{{tip_header_height}}개, 블록 {{local_block_height}}/{{tip_block_height}}개 동기화됨. ",
     "waiting-for-initial-sync": "네트워크 피어에 연결 중 {{initial_connected_peers}}/{{required_peers}}"
   }
 }

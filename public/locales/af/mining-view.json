@@ -10,31 +10,28 @@
     "solving": "word opgelos"
   },
   "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
-  "cpu-hashrate": "CPU Hashrate",
   "cpu-power": "CPU Krag",
   "current-block-time": "Huidige bloktyd",
-  "day": "day",
+  "day": "dag",
   "estimated-day": "Est XTM/dag",
   "estimated-earnings": "Geskatte verdienste",
   "floor": "Vloer",
-  "gpu-hashrate": "GPU Hashrate",
   "gpu-power": "GPU Krag",
-  "gpu-usage": "GPU Usage",
   "mining-button-text": {
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
+    "state-pause": "Pouseer mynbou",
+    "state-resume": "Hervat mynbou",
     "state-start": "Begin myn"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "Sien alle modusse",
+      "alert_cta-turbo": "Gebruik Turbo️",
+      "alert_text": "Eko-modus gebruik slegs 'n klein persentasie van stelselhulpbronne.",
+      "alert_text_extra": "Probeer om die kragmodus hoër te stel.",
+      "alert_title": "Verdien jy nie genoeg belonings nie?"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "Modus",
+    "mode-long": "Mynmodus"
   },
   "orphan-chain-tooltip": {
     "heading": "Dinge om te probeer:",
@@ -46,8 +43,8 @@
     "step_6": "Probeer \"n toepassingherstel (in Instellings)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "Pouseer vir <strong>{{duration}}</strong>",
+    "until-restart": "Pouseer totdat ek<strong> herbegin</strong>"
   },
   "pool": {
     "accepted_shares": "Aanvaarde aandele",
@@ -56,16 +53,16 @@
     "unpaid": "Onbetaald"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "Stoor skedule",
+    "cta-save-complete": "Gestoor!",
+    "current": "Jou huidige skedule",
+    "mining-schedule": "Mynskedule",
+    "mining-schedule-copy": "Stel spesifieke tye om outomaties te begin myn.",
+    "mining-schedule-setup": "Stel mynskedule op",
+    "scheduled-to-mine": "Geskeduleer om te myn om",
+    "scheduled-to-pause": "Geskeduleer om mynbou te pouseer om",
+    "time-label-end": "Daaglikse eindtyd",
+    "time-label-start": "Daaglikse begintyd"
   },
   "you-earn-rewards-separately": "Jy verdien belonings vir die myn van CPU en GPU afsonderlik",
   "you-won-block": "Jy was die wenner van <span>blok #{{ blockHeight }}</span>",

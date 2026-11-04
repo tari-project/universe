@@ -12,26 +12,26 @@
   "connection-to-node-lost": "与矿工的连接丢失。请等待矿机重新连接或重启矿机.",
   "cpu-power": "CPU 功率",
   "current-block-time": "当前区块时间",
-  "day": "day",
+  "day": "天",
   "estimated-day": "预估 XTM/天",
   "estimated-earnings": "预计收益",
   "floor": "地板",
   "gpu-power": "GPU 功率",
   "mining-button-text": {
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
+    "state-pause": "暂停挖矿",
+    "state-resume": "恢复挖矿",
     "state-start": "开始挖矿"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "查看所有模式",
+      "alert_cta-turbo": "使用涡轮模式",
+      "alert_text": "节能模式只使用少量系统资源。",
+      "alert_text_extra": "试着调高功率模式。",
+      "alert_title": "获得的奖励不够多？"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "模式",
+    "mode-long": "挖矿模式"
   },
   "orphan-chain-tooltip": {
     "heading": "尝试以下操作：",
@@ -43,8 +43,8 @@
     "step_6": "尝试重置应用程序（在设置中）"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "暂停 <strong>{{duration}}</strong>",
+    "until-restart": "暂停直到我<strong>重启</strong>"
   },
   "pool": {
     "accepted_shares": "已接受份额",
@@ -53,16 +53,16 @@
     "unpaid": "未支付"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "保存计划",
+    "cta-save-complete": "已保存！",
+    "current": "您当前的计划",
+    "mining-schedule": "挖矿计划",
+    "mining-schedule-copy": "设置特定时间以自动开始挖矿。",
+    "mining-schedule-setup": "设置挖矿计划",
+    "scheduled-to-mine": "计划开始挖矿时间",
+    "scheduled-to-pause": "计划暂停挖矿时间",
+    "time-label-end": "每日结束时间",
+    "time-label-start": "每日开始时间"
   },
   "you-earn-rewards-separately": "您分别为 CPU 和 GPU 挖矿获得奖励",
   "you-won-block": "您赢得了<span>区块 #{{ blockHeight }}</span>",

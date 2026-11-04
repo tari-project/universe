@@ -7,6 +7,9 @@
     "step-5": "无需操作！一旦同步，您将自动开始挖取XTM。通过邀请朋友赚取奖励XTM。",
     "step-6": "Tari支持人性、支持自由，并且是开源的。它由运行Tari Universe的每个人提供动力和安全保障。Tari因您而存在。{{emoji}}"
   },
+  "footer": {
+    "heading": "我是页脚"
+  },
   "heading": {
     "step-1": "欢迎来到 Tari Universe！",
     "step-2": "什么是Tari？",
@@ -14,8 +17,5 @@
     "step-4": "Tari现在上线了吗？",
     "step-5": "接下来我该做什么？",
     "step-6": "您是Tari"
-  },
-  "footer": {
-    "heading": "我是页脚"
   }
 }

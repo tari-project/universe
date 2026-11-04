@@ -5,17 +5,17 @@
     "is-live": "실시간"
   },
   "battery-alert-dialog": {
-    "auto-resume-info": "Mining will automatically resume when AC power is connected",
-    "description": "We've noticed your device is running on battery power. To help preserve your battery life and ensure optimal performance, we've temporarily paused mining. Mining will automatically resume when your device is connected to a power source.",
-    "title": "Mining Paused - Battery Mode Detected",
-    "understood": "I Understand"
+    "auto-resume-info": "AC 전원이 연결되면 채굴이 자동으로 재개됩니다",
+    "description": "기기가 배터리 전원으로 작동 중인 것을 감지했습니다. 배터리 수명을 보호하고 최적의 성능을 보장하기 위해 채굴을 일시 중지했습니다. 기기가 전원에 연결되면 채굴이 자동으로 재개됩니다.",
+    "title": "채굴 일시 중지 - 배터리 모드 감지됨",
+    "understood": "확인했습니다"
   },
   "close-experience-dialog": {
-    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
-    "dont-ask-again": "Don't ask me again",
-    "exit-completely": "Exit Completely",
-    "run-in-background": "Run in Background",
-    "title": "Choose how to close Tari Universe"
+    "description": "앱을 시스템 트레이로 최소화하여 백그라운드에서 계속 채굴하거나, 완전히 종료하여 모든 프로세스를 중지할 수 있습니다.",
+    "dont-ask-again": "다시 묻지 않기",
+    "exit-completely": "완전히 종료",
+    "run-in-background": "백그라운드에서 실행",
+    "title": "Tari Universe 종료 방법 선택"
   },
   "field-error-message": {
     "integers-only": "정수만 허용됨",

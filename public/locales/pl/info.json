@@ -7,6 +7,9 @@
     "step-5": "Nic! Gdy jesteś zsynchronizowany, automatycznie zaczniesz kopać XTM. Zarabiaj bonus XTM zapraszając znajomych.",
     "step-6": "Tari jest pro-ludzkie, pro-wolnościowe i open-source. Jest zasilane i zabezpieczane przez wszystkich, którzy uruchamiają Tari Universe. Tari istnieje dzięki tobie. {{emoji}}"
   },
+  "footer": {
+    "heading": "jestem stopką"
+  },
   "heading": {
     "step-1": "Witamy w Tari Universe!",
     "step-2": "Czym jest Tari?",
@@ -14,8 +17,5 @@
     "step-4": "Czy Tari jest już na żywo?",
     "step-5": "Co robić dalej?",
     "step-6": "Jesteś Tari"
-  },
-  "footer": {
-    "heading": "jestem stopką"
   }
 }

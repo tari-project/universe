@@ -43,20 +43,23 @@
   "gpu-device-enabled": "Perangkat Penambangan GPU",
   "gpu-device-enabled-description": "Aktifkan atau nonaktifkan perangkat GPU tertentu.",
   "gpu-device-no-found": "⚠️ Tidak ada perangkat GPU yang ditemukan",
-  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
+  "gpu-device-single-device-note": "{{miner}} menambang di satu GPU pada satu waktu — perangkat aktif pertama yang digunakan.",
   "gpu-engine": "Mesin Gpu",
   "gpu-miner-description": {
-    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
-    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+    "LolMiner": "Penambang C29 sumber tertutup untuk GPU AMD dan NVIDIA",
+    "TariMiner": "Penambang C29 sumber terbuka untuk GPU NVIDIA"
   },
-  "gpu-miner-failed-with": "Failed with: {{error}}",
-  "gpu-miner-select-placeholder": "Select GPU miner",
+  "gpu-miner-failed-with": "Gagal dengan: {{error}}",
+  "gpu-miner-select-placeholder": "Pilih penambang GPU",
   "gpu-miners": "Penambang GPU",
   "gpu-miners-not-found": "Tidak ada Penambang GPU ditemukan",
   "gpu-mining-enabled": "Penambangan GPU",
-  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
-  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-mining-not-recommended": "Terdeteksi perangkat keras kelas bawah, penambangan GPU tidak disarankan",
+  "gpu-not-available-on-macos": "⚠️ Penambangan GPU tidak tersedia di macOS",
+  "gpu-solo-mining-unavailable": "⚠️ Diperlukan karena tidak ada penambang GPU terpasang yang mendukung penambangan solo",
   "gpu-unavailable": "⚠️ GPU dinonaktifkan karena perangkat keras Anda tidak mendukungnya",
+  "gpu-cannot-mine": "⚠️ GPU Anda tidak dapat menambang Tari: {{reason}}",
+  "gpu-cannot-mine-unknown": "penambang tidak mendukung perangkat ini",
   "hardware-status": "Status perangkat keras",
   "idle-timeout": {
     "max": "Maksimum adalah 21600 detik",
@@ -80,69 +83,50 @@
   "low-hash-rate-warning": "Hashrate Anda sangat rendah. Coba tutup semua aplikasi selain Tari Universe",
   "mcp": {
     "advanced": {
-      "control-tier": "Control Tier",
-      "expiry-days": "Token Expiry (days)",
-      "port": "Server Port",
-      "rate-limit": "Transaction Rate Limit (per minute)",
-      "read-tier": "Read Tier",
-      "title": "Advanced Settings"
+      "control-tier": "Tingkat Kontrol",
+      "port": "Port Server",
+      "read-tier": "Tingkat Baca"
     },
     "agent-config": {
-      "copied": "Copied!",
-      "copy": "Copy Configuration",
-      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
-      "or-add-to-settings-json": "Or add this to your settings JSON:",
-      "title": "Agent Configuration"
+      "copied": "Disalin!",
+      "copy": "Salin Konfigurasi",
+      "description": "Salin konfigurasi di bawah untuk menghubungkan agen AI ke Tari Universe",
+      "or-add-to-settings-json": "Atau tambahkan ini ke JSON pengaturan Anda:",
+      "title": "Konfigurasi Agen"
     },
     "audit-log": {
-      "description": "Recent MCP tool calls",
-      "duration-ms": "{{ms}}ms",
-      "empty": "No audit entries yet",
-      "export": "Export Log",
-      "title": "Audit Log"
+      "description": "Panggilan alat MCP terbaru",
+      "duration-ms": "{{ms}} md",
+      "empty": "Belum ada entri audit",
+      "export": "Ekspor Log",
+      "title": "Log Audit"
     },
     "server-toggle": {
-      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
-      "status-running": "Running on port {{port}}",
-      "status-stopped": "Stopped",
-      "title": "MCP Server"
+      "description": "Aktifkan server MCP agar agen AI dapat berinteraksi dengan Tari Universe",
+      "status-running": "Berjalan di port {{port}}",
+      "status-stopped": "Berhenti",
+      "title": "Server MCP"
     },
-    "title": "MCP Server",
     "token-display": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "copied": "Copied!",
-      "copy": "Copy",
-      "created": "Created",
-      "days-remaining": "{{days}} days remaining",
-      "description": "Use this token to authenticate MCP clients",
-      "expires": "Expires",
-      "hide": "Hide",
-      "no-token": "No token generated",
-      "refresh-expiry": "Refresh Expiry",
-      "reveal": "Reveal",
-      "revoke": "Revoke Token",
-      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
-      "title": "Bearer Token"
+      "copied": "Disalin!",
+      "copy": "Salin",
+      "created": "Dibuat",
+      "days-remaining": "{{days}} hari tersisa",
+      "description": "Gunakan token ini untuk mengautentikasi klien MCP",
+      "expires": "Kedaluwarsa",
+      "hide": "Sembunyikan",
+      "refresh-expiry": "Perbarui Masa Berlaku",
+      "reveal": "Tampilkan",
+      "revoke": "Cabut Token",
+      "revoke-confirm": "Apakah Anda yakin? Ini akan menghentikan server MCP dan mengharuskan pembuatan token baru.",
+      "title": "Token Bearer"
     },
     "transaction-dialog": {
-      "amount": "Amount",
-      "approve": "Approve",
-      "deny": "Deny",
-      "destination": "Destination",
-      "enter-pin": "Enter PIN to approve",
-      "micro-minotari": "({{amount}} µT)",
-      "remaining": "{{countdown}}s remaining",
-      "title": "MCP Transaction Confirmation"
+      "remaining": "{{countdown}} dtk tersisa"
     },
     "transactions": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "description": "Allow MCP clients to send transactions (requires PIN)",
-      "max-amount": "Max Transaction Amount (µT)",
-      "max-amount-description": "Leave empty for no limit",
-      "pin-required": "PIN must be configured to enable transactions",
-      "title": "Transactions"
+      "description": "Izinkan klien MCP mengirim transaksi (memerlukan PIN)",
+      "title": "Transaksi"
     }
   },
   "mine-on-app-start": {
@@ -161,12 +145,14 @@
   "no-entry-guard": "Tidak ada Penjaga Masuk yang terhubung!",
   "no-pool-configuration-available": "Tidak ada konfigurasi pool yang tersedia",
   "node": {
-    "confirm-title": "Confirm node data location change",
-    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
-    "data-cta": "Change location",
-    "data-subtitle": "Set a custom location to store the base node data",
-    "data-title": "Node data settings"
+    "confirm-title": "Konfirmasi perubahan lokasi data node",
+    "confirm-warning": "Memindahkan lokasi base node Anda dapat menyebabkan hilangnya data chain yang ada. Jika ini terjadi, Anda harus melakukan sinkronisasi ulang.",
+    "data-cta": "Ubah lokasi",
+    "data-subtitle": "Atur lokasi khusus untuk menyimpan data base node",
+    "data-title": "Pengaturan data node"
   },
+  "custom-remote-node-address": "Alamat node jarak jauh khusus (gRPC)",
+  "custom-remote-node-address-error": "Alamat tidak valid: {{reason}}",
   "node-configuration": "Konfigurasi Node",
   "node-configuration-description": "Hubungkan dengan Remote, Lokal, atau keduanya hingga Lokal Anda siap digunakan",
   "node-connection-address": "Alamat koneksi",
@@ -176,10 +162,10 @@
   "not-connected-to-tari": "Tidak terhubung ke Jaringan Tari",
   "open-logs-directory": "Buka direktori log",
   "pause-on-battery-mode": {
-    "description": "Pause mining when device is disconnected from charging",
-    "title": "Pause on Battery Mode"
+    "description": "Jeda penambangan saat perangkat tidak sedang diisi daya",
+    "title": "Jeda dalam Mode Baterai"
   },
-  "pin": "Pin",
+  "pin": "PIN",
   "pool-configuration": "Konfigurasi Pool",
   "pool-mining": "Penambangan Pool",
   "pool-mining-description": "Ketika diaktifkan, Anda akan menambang dalam pool dan bergabung dengan kelompok penambang.",
@@ -224,6 +210,10 @@
     "description": "Ketika diaktifkan, aplikasi akan mulai secara otomatis saat Anda masuk ke komputer Anda.",
     "title": "Mulai otomatis saat boot sistem"
   },
+  "show-window-on-startup": {
+    "description": "Jika diaktifkan, Tari Universe akan menampilkan jendela utamanya setelah dijalankan. Matikan ini untuk meluncurkan ke baki tugas.",
+    "title": "Tampilkan jendela saat memulai"
+  },
   "should-use-system-language": "Gunakan bahasa sistem",
   "stable-version-note": "Dengan mematikan versi pra-rilis aplikasi, Anda akan kembali ke rilis stabil, yang memprioritaskan keandalan dan konsistensi. Meskipun Anda mungkin melewatkan fitur dan peningkatan terbaru.",
   "stats-server-port": "Port server statistik",
@@ -231,11 +221,12 @@
   "sync-incomplete": "Sinkronisasi...",
   "sync-status": "Status Sinkronisasi",
   "tabs": {
-    "airdrop": "Airdrop Claim",
+    "airdrop": "Klaim Airdrop",
     "connections": "Koneksi",
     "experimental": "Eksperimental",
     "general": "Umum",
-    "mcp": "MCP Server",
+    "l2": "Ootle",
+    "mcp": "Server MCP",
     "mining": "Penambangan",
     "p2p": "Penambangan Pool",
     "pools": "Kolam Penambangan",
@@ -245,8 +236,8 @@
   },
   "tari-wallet-address": "Alamat Dompet Tari",
   "task-tray": {
-    "description": "Tari universe will be minimized to task tray after closing",
-    "title": "Run app from task tray on close"
+    "description": "Tari Universe akan diminimalkan ke baki tugas setelah ditutup",
+    "title": "Jalankan aplikasi dari baki tugas saat ditutup"
   },
   "terms-and-conditions": "Syarat & Ketentuan",
   "theme": "Tema",
@@ -270,5 +261,31 @@
   "waiting-for-data": "Menunggu data rantai...",
   "yes": "Ya",
   "your-feedback": "Silakan jelaskan masalah Anda",
-  "your-reference": "Referensi Anda"
+  "your-reference": "Referensi Anda:<br/><bold>{{logRef}}</bold>",
+  "l2": {
+    "status": "Layer 2",
+    "pin-required": "Anda harus mengatur PIN untuk menggunakan Layer 2",
+    "set-pin": "Atur PIN",
+    "enable-description": "Layer 2 menggunakan dompet yang dibuat dari frasa seed Anda yang sudah ada. Anda akan diminta memasukkan PIN.",
+    "enable": "Aktifkan Layer 2",
+    "enable-error": "Tidak dapat mengaktifkan Layer 2: ",
+    "unlock-description": "Layer 2 terkunci.\nMasukkan PIN Anda untuk membukanya.",
+    "unlock": "Buka Kunci Layer 2",
+    "unlock-error": "Tidak dapat membuka kunci Layer 2: ",
+    "indexer": "Pengindeks",
+    "indexer-error": "URL pengindeks tidak valid: {{reason}}",
+    "seed-words": "Frasa seed",
+    "seed-note-l1": "Dompet Ootle Anda menggunakan frasa seed yang sama dengan dompet Tari Anda.",
+    "seed-note-imported": "Dompet Ootle Anda menggunakan frasa seed hasil impor sendiri. Cadangkan secara terpisah.",
+    "use-l1-seed": "Gunakan seed dompet Tari saya",
+    "confirm-import": "Impor frasa seed Layer 2",
+    "seed-change-error": "Tidak dapat mengubah frasa seed Layer 2",
+    "confirm-replace-copy": "Dompet Layer 2 Anda saat ini akan diganti.\nAnda hanya dapat memulihkannya dengan frasa seed-nya.",
+    "address": "Alamat dompet Ootle",
+    "address-description": "Bagikan ini untuk menerima XTR di Ootle.",
+    "public-key": "Kunci publik pemilik Ootle",
+    "public-key-description": "Kunci klaim untuk burn dari dompet Tari Anda. Burn ke L2 mengisinya untuk Anda.",
+    "side-by-side": "Izinkan dompet ditampilkan berdampingan",
+    "side-by-side-description": "Tampilkan dompet Tari dan Ootle bersebelahan. Jika nonaktif, setiap tombol navigasi membuka dompetnya sendiri."
+  }
 }

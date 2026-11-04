@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "Tudo pronto!",
     "got-it": "Entendi"
+  },
+  "complete": {
+    "continue": "Continuar para o Tari Universe",
+    "happy-mining": "Boa mineração!",
+    "secured": "Sua carteira agora tem um backup seguro — ótimo trabalho!\nSeus tokens Tari estão seguros e prontos sempre que precisar, mesmo se você trocar ou perder seu dispositivo."
   },
   "completedTip": {
     "text": "Sua frase semente pode ser encontrada novamente em suas configurações",
@@ -28,6 +34,7 @@
   },
   "skip": "Pular por enquanto",
   "steps": {
+    "chip": "Etapa {{step}} de {{total}}",
     "complete-false": "Incompleto",
     "complete-true": "Completo",
     "step": "Passo {{stepNumber}}",
@@ -41,5 +48,9 @@
     "placeholder": "Clique nas palavras abaixo na ordem correta",
     "text": "Para ter certeza de que você anotou sua frase semente corretamente, selecione as palavras na ordem correta.",
     "title": "Verifique sua frase semente"
+  },
+  "warning": {
+    "steps": "Etapas",
+    "title": "Proteja sua carteira"
   }
 }

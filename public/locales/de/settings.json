@@ -43,20 +43,23 @@
   "gpu-device-enabled": "GPU-Mining-Geräte",
   "gpu-device-enabled-description": "Bestimmtes GPU-Gerät aktivieren oder deaktivieren.",
   "gpu-device-no-found": "⚠️ Keine GPU-Geräte gefunden",
-  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
+  "gpu-device-single-device-note": "{{miner}} mint jeweils nur auf einer GPU – es wird das erste aktivierte Gerät verwendet.",
   "gpu-engine": "GPU-Engine",
   "gpu-miner-description": {
-    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
-    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+    "LolMiner": "Closed-Source-C29-Miner für AMD- und NVIDIA-GPUs",
+    "TariMiner": "Open-Source-C29-Miner für NVIDIA-GPUs"
   },
-  "gpu-miner-failed-with": "Failed with: {{error}}",
-  "gpu-miner-select-placeholder": "Select GPU miner",
+  "gpu-miner-failed-with": "Fehlgeschlagen mit: {{error}}",
+  "gpu-miner-select-placeholder": "GPU-Miner auswählen",
   "gpu-miners": "GPU-Miner",
   "gpu-miners-not-found": "Keine GPU-Miner gefunden",
   "gpu-mining-enabled": "GPU-Mining",
-  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
-  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-mining-not-recommended": "Leistungsschwache Hardware erkannt, GPU-Mining wird nicht empfohlen",
+  "gpu-not-available-on-macos": "⚠️ GPU-Mining ist unter macOS nicht verfügbar",
+  "gpu-solo-mining-unavailable": "⚠️ Erforderlich, da kein installierter GPU-Miner Solo-Mining unterstützt",
   "gpu-unavailable": "⚠️ GPU deaktiviert, da deine Hardware dies nicht unterstützt",
+  "gpu-cannot-mine": "⚠️ Deine GPU kann Tari nicht minen: {{reason}}",
+  "gpu-cannot-mine-unknown": "der Miner unterstützt dieses Gerät nicht",
   "hardware-status": "Hardware-Status",
   "idle-timeout": {
     "max": "Maximum sind 21600 Sekunden",
@@ -80,69 +83,50 @@
   "low-hash-rate-warning": "Ihre Hashrate ist sehr niedrig. Versuchen Sie, alle Apps außer Tari Universe zu schließen",
   "mcp": {
     "advanced": {
-      "control-tier": "Control Tier",
-      "expiry-days": "Token Expiry (days)",
-      "port": "Server Port",
-      "rate-limit": "Transaction Rate Limit (per minute)",
-      "read-tier": "Read Tier",
-      "title": "Advanced Settings"
+      "control-tier": "Steuerungsstufe",
+      "port": "Server-Port",
+      "read-tier": "Lesestufe"
     },
     "agent-config": {
-      "copied": "Copied!",
-      "copy": "Copy Configuration",
-      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
-      "or-add-to-settings-json": "Or add this to your settings JSON:",
-      "title": "Agent Configuration"
+      "copied": "Kopiert!",
+      "copy": "Konfiguration kopieren",
+      "description": "Kopiere die folgende Konfiguration, um einen KI-Agenten mit Tari Universe zu verbinden",
+      "or-add-to-settings-json": "Oder füge dies zu deiner Einstellungs-JSON hinzu:",
+      "title": "Agenten-Konfiguration"
     },
     "audit-log": {
-      "description": "Recent MCP tool calls",
-      "duration-ms": "{{ms}}ms",
-      "empty": "No audit entries yet",
-      "export": "Export Log",
-      "title": "Audit Log"
+      "description": "Letzte MCP-Tool-Aufrufe",
+      "duration-ms": "{{ms}} ms",
+      "empty": "Noch keine Audit-Einträge",
+      "export": "Protokoll exportieren",
+      "title": "Audit-Protokoll"
     },
     "server-toggle": {
-      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
-      "status-running": "Running on port {{port}}",
-      "status-stopped": "Stopped",
-      "title": "MCP Server"
+      "description": "Aktiviere den MCP-Server, damit KI-Agenten mit Tari Universe interagieren können",
+      "status-running": "Läuft auf Port {{port}}",
+      "status-stopped": "Gestoppt",
+      "title": "MCP-Server"
     },
-    "title": "MCP Server",
     "token-display": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "copied": "Copied!",
-      "copy": "Copy",
-      "created": "Created",
-      "days-remaining": "{{days}} days remaining",
-      "description": "Use this token to authenticate MCP clients",
-      "expires": "Expires",
-      "hide": "Hide",
-      "no-token": "No token generated",
-      "refresh-expiry": "Refresh Expiry",
-      "reveal": "Reveal",
-      "revoke": "Revoke Token",
-      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
-      "title": "Bearer Token"
+      "copied": "Kopiert!",
+      "copy": "Kopieren",
+      "created": "Erstellt",
+      "days-remaining": "{{days}} Tage verbleibend",
+      "description": "Verwende dieses Token, um MCP-Clients zu authentifizieren",
+      "expires": "Läuft ab",
+      "hide": "Ausblenden",
+      "refresh-expiry": "Ablauf verlängern",
+      "reveal": "Anzeigen",
+      "revoke": "Token widerrufen",
+      "revoke-confirm": "Bist du sicher? Dadurch wird der MCP-Server gestoppt und ein neues Token muss generiert werden.",
+      "title": "Bearer-Token"
     },
     "transaction-dialog": {
-      "amount": "Amount",
-      "approve": "Approve",
-      "deny": "Deny",
-      "destination": "Destination",
-      "enter-pin": "Enter PIN to approve",
-      "micro-minotari": "({{amount}} µT)",
-      "remaining": "{{countdown}}s remaining",
-      "title": "MCP Transaction Confirmation"
+      "remaining": "{{countdown}} s verbleibend"
     },
     "transactions": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "description": "Allow MCP clients to send transactions (requires PIN)",
-      "max-amount": "Max Transaction Amount (µT)",
-      "max-amount-description": "Leave empty for no limit",
-      "pin-required": "PIN must be configured to enable transactions",
-      "title": "Transactions"
+      "description": "MCP-Clients erlauben, Transaktionen zu senden (erfordert PIN)",
+      "title": "Transaktionen"
     }
   },
   "mine-on-app-start": {
@@ -161,12 +145,14 @@
   "no-entry-guard": "Kein Eingangswächter verbunden!",
   "no-pool-configuration-available": "Keine Pool-Konfiguration verfügbar",
   "node": {
-    "confirm-title": "Confirm node data location change",
-    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
-    "data-cta": "Change location",
-    "data-subtitle": "Set a custom location to store the base node data",
-    "data-title": "Node data settings"
+    "confirm-title": "Änderung des Speicherorts der Node-Daten bestätigen",
+    "confirm-warning": "Das Verschieben des Speicherorts deiner Base Node kann dazu führen, dass deine vorhandenen Chain-Daten verloren gehen. In diesem Fall musst du neu synchronisieren.",
+    "data-cta": "Speicherort ändern",
+    "data-subtitle": "Lege einen benutzerdefinierten Speicherort für die Base-Node-Daten fest",
+    "data-title": "Einstellungen für Node-Daten"
   },
+  "custom-remote-node-address": "Benutzerdefinierte Remote-Node-Adresse (gRPC)",
+  "custom-remote-node-address-error": "Ungültige Adresse: {{reason}}",
   "node-configuration": "Knotenkonfiguration",
   "node-configuration-description": "Verbinden Sie sich mit Remote, Lokal oder beidem, bis Ihr Lokal einsatzbereit ist",
   "node-connection-address": "Verbindungsadresse",
@@ -176,10 +162,10 @@
   "not-connected-to-tari": "Nicht mit dem Tari-Netzwerk verbunden",
   "open-logs-directory": "Protokollverzeichnis öffnen",
   "pause-on-battery-mode": {
-    "description": "Pause mining when device is disconnected from charging",
-    "title": "Pause on Battery Mode"
+    "description": "Mining pausieren, wenn das Gerät nicht am Ladegerät angeschlossen ist",
+    "title": "Im Akkubetrieb pausieren"
   },
-  "pin": "Pin",
+  "pin": "PIN",
   "pool-configuration": "Pool-Konfiguration",
   "pool-mining": "Pool-Mining",
   "pool-mining-description": "Wenn aktiviert, wirst du in einem Pool minen und einer Gruppe von Minern beitreten.",
@@ -224,6 +210,10 @@
     "description": "Wenn aktiviert, startet die App automatisch, wenn Sie sich an Ihrem Computer anmelden.",
     "title": "Automatischer Start beim Systemstart"
   },
+  "show-window-on-startup": {
+    "description": "Wenn aktiviert, zeigt Tari Universe nach dem Start sein Hauptfenster an. Deaktiviere dies, um im Infobereich zu starten.",
+    "title": "Fenster beim Start anzeigen"
+  },
   "should-use-system-language": "Systemsprache verwenden",
   "stable-version-note": "Wenn du die Vorabversion der Anwendung ausschaltest, kehrst du zur stabilen Version zurück, die Zuverlässigkeit und Konsistenz priorisiert. Dabei könntest du die neuesten Funktionen und Verbesserungen verpassen.",
   "stats-server-port": "Statistik-Server-Port",
@@ -231,11 +221,12 @@
   "sync-incomplete": "Synchronisieren...",
   "sync-status": "Synchronisierungsstatus",
   "tabs": {
-    "airdrop": "Airdrop Claim",
+    "airdrop": "Airdrop beanspruchen",
     "connections": "Verbindungen",
     "experimental": "Experimentell",
     "general": "Allgemein",
-    "mcp": "MCP Server",
+    "l2": "Ootle",
+    "mcp": "MCP-Server",
     "mining": "Mining",
     "p2p": "Pool-Mining",
     "pools": "Mining-Pools",
@@ -245,8 +236,8 @@
   },
   "tari-wallet-address": "Tari-Wallet-Adresse",
   "task-tray": {
-    "description": "Tari universe will be minimized to task tray after closing",
-    "title": "Run app from task tray on close"
+    "description": "Tari Universe wird nach dem Schließen in den Infobereich minimiert",
+    "title": "App beim Schließen im Infobereich ausführen"
   },
   "terms-and-conditions": "Allgemeine Geschäftsbedingungen",
   "theme": "Thema",
@@ -270,5 +261,31 @@
   "waiting-for-data": "Warten auf Kettendaten...",
   "yes": "Ja",
   "your-feedback": "Beschreibe dein Problem, einschließlich deines Telegram-Namens, falls vorhanden, damit wir dich mit Updates kontaktieren können.",
-  "your-reference": "Dein Verweis:<br/><bold>{{logRef}}</bold>"
+  "your-reference": "Dein Verweis:<br/><bold>{{logRef}}</bold>",
+  "l2": {
+    "status": "Layer 2",
+    "pin-required": "Du musst eine PIN festlegen, um Layer 2 zu nutzen",
+    "set-pin": "PIN festlegen",
+    "enable-description": "Layer 2 verwendet eine Wallet, die aus deinen vorhandenen Seed-Wörtern erstellt wird. Du wirst nach deiner PIN gefragt.",
+    "enable": "Layer 2 aktivieren",
+    "enable-error": "Layer 2 konnte nicht aktiviert werden: ",
+    "unlock-description": "Layer 2 ist gesperrt.\nGib deine PIN ein, um es zu öffnen.",
+    "unlock": "Layer 2 entsperren",
+    "unlock-error": "Layer 2 konnte nicht entsperrt werden: ",
+    "indexer": "Indexer",
+    "indexer-error": "Ungültige Indexer-URL: {{reason}}",
+    "seed-words": "Seed-Wörter",
+    "seed-note-l1": "Deine Ootle-Wallet verwendet dieselben Seed-Wörter wie deine Tari-Wallet.",
+    "seed-note-imported": "Deine Ootle-Wallet verwendet eigene importierte Seed-Wörter. Sichere sie separat.",
+    "use-l1-seed": "Seed meiner Tari-Wallet verwenden",
+    "confirm-import": "Layer-2-Seed-Wörter importieren",
+    "seed-change-error": "Die Layer-2-Seed-Wörter konnten nicht geändert werden",
+    "confirm-replace-copy": "Deine aktuelle Layer-2-Wallet wird ersetzt.\nDu kannst sie nur mit ihren Seed-Wörtern zurückholen.",
+    "address": "Ootle-Wallet-Adresse",
+    "address-description": "Teile diese, um XTR auf Ootle zu empfangen.",
+    "public-key": "Öffentlicher Ootle-Besitzerschlüssel",
+    "public-key-description": "Der Claim-Schlüssel für Burns aus deiner Tari-Wallet. „Auf L2 burnen“ füllt ihn für dich aus.",
+    "side-by-side": "Wallets nebeneinander erlauben",
+    "side-by-side-description": "Zeigt die Tari- und Ootle-Wallets nebeneinander an. Wenn deaktiviert, öffnet jede Navigationsschaltfläche ihre Wallet einzeln."
+  }
 }

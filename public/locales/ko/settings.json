@@ -43,20 +43,23 @@
   "gpu-device-enabled": "GPU 채굴 장치",
   "gpu-device-enabled-description": "특정 GPU 장치를 활성화하거나 비활성화합니다.",
   "gpu-device-no-found": "⚠️ GPU 장치를 찾을 수 없습니다",
-  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
+  "gpu-device-single-device-note": "{{miner}}은(는) 한 번에 하나의 GPU에서만 채굴합니다. 활성화된 첫 번째 장치가 사용됩니다.",
   "gpu-engine": "GPU 엔진",
   "gpu-miner-description": {
-    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
-    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+    "LolMiner": "AMD 및 NVIDIA GPU용 비공개 소스 C29 채굴기",
+    "TariMiner": "NVIDIA GPU용 오픈 소스 C29 채굴기"
   },
-  "gpu-miner-failed-with": "Failed with: {{error}}",
-  "gpu-miner-select-placeholder": "Select GPU miner",
+  "gpu-miner-failed-with": "실패 원인: {{error}}",
+  "gpu-miner-select-placeholder": "GPU 채굴기 선택",
   "gpu-miners": "GPU 채굴기",
   "gpu-miners-not-found": "GPU 채굴기를 찾을 수 없습니다",
   "gpu-mining-enabled": "GPU 채굴",
-  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
-  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-mining-not-recommended": "저사양 하드웨어가 감지되었습니다. GPU 채굴은 권장되지 않습니다",
+  "gpu-not-available-on-macos": "⚠️ macOS에서는 GPU 채굴을 사용할 수 없습니다",
+  "gpu-solo-mining-unavailable": "⚠️ 설치된 GPU 채굴기 중 솔로 채굴을 지원하는 것이 없어 필수입니다",
   "gpu-unavailable": "⚠️ 하드웨어가 지원하지 않아 GPU가 비활성화되었습니다",
+  "gpu-cannot-mine": "⚠️ 이 GPU로는 Tari를 채굴할 수 없습니다: {{reason}}",
+  "gpu-cannot-mine-unknown": "채굴기가 이 장치를 지원하지 않습니다",
   "hardware-status": "하드웨어 상태",
   "idle-timeout": {
     "max": "최대 21600초",
@@ -80,69 +83,50 @@
   "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
   "mcp": {
     "advanced": {
-      "control-tier": "Control Tier",
-      "expiry-days": "Token Expiry (days)",
-      "port": "Server Port",
-      "rate-limit": "Transaction Rate Limit (per minute)",
-      "read-tier": "Read Tier",
-      "title": "Advanced Settings"
+      "control-tier": "제어 등급",
+      "port": "서버 포트",
+      "read-tier": "읽기 등급"
     },
     "agent-config": {
-      "copied": "Copied!",
-      "copy": "Copy Configuration",
-      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
-      "or-add-to-settings-json": "Or add this to your settings JSON:",
-      "title": "Agent Configuration"
+      "copied": "복사됨!",
+      "copy": "구성 복사",
+      "description": "아래 구성을 복사하여 AI 에이전트를 Tari Universe에 연결하세요",
+      "or-add-to-settings-json": "또는 설정 JSON에 다음을 추가하세요:",
+      "title": "에이전트 구성"
     },
     "audit-log": {
-      "description": "Recent MCP tool calls",
-      "duration-ms": "{{ms}}ms",
-      "empty": "No audit entries yet",
-      "export": "Export Log",
-      "title": "Audit Log"
+      "description": "최근 MCP 도구 호출",
+      "duration-ms": "{{ms}}밀리초",
+      "empty": "아직 감사 항목이 없습니다",
+      "export": "로그 내보내기",
+      "title": "감사 로그"
     },
     "server-toggle": {
-      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
-      "status-running": "Running on port {{port}}",
-      "status-stopped": "Stopped",
-      "title": "MCP Server"
+      "description": "AI 에이전트가 Tari Universe와 상호 작용할 수 있도록 MCP 서버를 활성화하세요",
+      "status-running": "포트 {{port}}에서 실행 중",
+      "status-stopped": "중지됨",
+      "title": "MCP 서버"
     },
-    "title": "MCP Server",
     "token-display": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "copied": "Copied!",
-      "copy": "Copy",
-      "created": "Created",
-      "days-remaining": "{{days}} days remaining",
-      "description": "Use this token to authenticate MCP clients",
-      "expires": "Expires",
-      "hide": "Hide",
-      "no-token": "No token generated",
-      "refresh-expiry": "Refresh Expiry",
-      "reveal": "Reveal",
-      "revoke": "Revoke Token",
-      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
-      "title": "Bearer Token"
+      "copied": "복사됨!",
+      "copy": "복사",
+      "created": "생성일",
+      "days-remaining": "{{days}}일 남음",
+      "description": "이 토큰을 사용하여 MCP 클라이언트를 인증하세요",
+      "expires": "만료일",
+      "hide": "숨기기",
+      "refresh-expiry": "만료 기간 갱신",
+      "reveal": "표시",
+      "revoke": "토큰 폐기",
+      "revoke-confirm": "확실합니까? MCP 서버가 중지되며 새 토큰을 생성해야 합니다.",
+      "title": "Bearer 토큰"
     },
     "transaction-dialog": {
-      "amount": "Amount",
-      "approve": "Approve",
-      "deny": "Deny",
-      "destination": "Destination",
-      "enter-pin": "Enter PIN to approve",
-      "micro-minotari": "({{amount}} µT)",
-      "remaining": "{{countdown}}s remaining",
-      "title": "MCP Transaction Confirmation"
+      "remaining": "{{countdown}}초 남음"
     },
     "transactions": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "description": "Allow MCP clients to send transactions (requires PIN)",
-      "max-amount": "Max Transaction Amount (µT)",
-      "max-amount-description": "Leave empty for no limit",
-      "pin-required": "PIN must be configured to enable transactions",
-      "title": "Transactions"
+      "description": "MCP 클라이언트가 거래를 보낼 수 있도록 허용 (PIN 필요)",
+      "title": "거래"
     }
   },
   "mine-on-app-start": {
@@ -161,12 +145,14 @@
   "no-entry-guard": "엔트리 가드가 연결되지 않았습니다!",
   "no-pool-configuration-available": "사용 가능한 풀 구성이 없습니다",
   "node": {
-    "confirm-title": "Confirm node data location change",
-    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
-    "data-cta": "Change location",
-    "data-subtitle": "Set a custom location to store the base node data",
-    "data-title": "Node data settings"
+    "confirm-title": "노드 데이터 위치 변경 확인",
+    "confirm-warning": "베이스 노드 위치를 옮기면 기존 체인 데이터가 손실될 수 있습니다. 이 경우 다시 동기화해야 합니다.",
+    "data-cta": "위치 변경",
+    "data-subtitle": "베이스 노드 데이터를 저장할 사용자 지정 위치 설정",
+    "data-title": "노드 데이터 설정"
   },
+  "custom-remote-node-address": "사용자 지정 원격 노드 주소 (gRPC)",
+  "custom-remote-node-address-error": "잘못된 주소: {{reason}}",
   "node-configuration": "노드 구성",
   "node-configuration-description": "로컬이 준비될 때까지 원격, 로컬 또는 둘 다 연결",
   "node-connection-address": "연결 주소",
@@ -176,8 +162,8 @@
   "not-connected-to-tari": "Tari 네트워크에 연결되지 않음",
   "open-logs-directory": "로그 디렉토리 열기",
   "pause-on-battery-mode": {
-    "description": "Pause mining when device is disconnected from charging",
-    "title": "Pause on Battery Mode"
+    "description": "기기의 충전이 끊기면 채굴 일시 중지",
+    "title": "배터리 모드에서 일시 중지"
   },
   "pin": "핀",
   "pool-configuration": "풀 구성",
@@ -224,6 +210,10 @@
     "description": "활성화되면 컴퓨터에 로그인할 때 앱이 자동으로 시작됩니다.",
     "title": "시스템 부팅 시 자동 시작"
   },
+  "show-window-on-startup": {
+    "description": "활성화하면 Tari Universe가 시작 후 메인 창을 표시합니다. 끄면 작업 트레이로 실행됩니다.",
+    "title": "시작 시 창 표시"
+  },
   "should-use-system-language": "시스템 언어 사용",
   "stable-version-note": "애플리케이션의 사전 릴리스 버전을 끄면 안정 릴리스로 돌아가며, 이는 신뢰성과 일관성을 우선시합니다. 최신 기능과 개선 사항을 놓칠 수 있습니다.",
   "stats-server-port": "통계 서버 포트",
@@ -231,11 +221,12 @@
   "sync-incomplete": "동기화 중...",
   "sync-status": "동기화 상태",
   "tabs": {
-    "airdrop": "Airdrop Claim",
+    "airdrop": "에어드롭 청구",
     "connections": "연결",
     "experimental": "실험적",
     "general": "일반",
-    "mcp": "MCP Server",
+    "l2": "Ootle",
+    "mcp": "MCP 서버",
     "mining": "채굴",
     "p2p": "풀 채굴",
     "pools": "채굴 풀",
@@ -245,8 +236,8 @@
   },
   "tari-wallet-address": "Tari 지갑 주소",
   "task-tray": {
-    "description": "Tari universe will be minimized to task tray after closing",
-    "title": "Run app from task tray on close"
+    "description": "닫은 후 Tari Universe가 작업 트레이로 최소화됩니다",
+    "title": "닫을 때 작업 트레이에서 앱 실행"
   },
   "terms-and-conditions": "이용 약관",
   "theme": "테마",
@@ -270,5 +261,31 @@
   "waiting-for-data": "체인 데이터 대기 중...",
   "yes": "예",
   "your-feedback": "문제를 설명해 주세요",
-  "your-reference": "귀하의 참조"
+  "your-reference": "참조 번호:<br/><bold>{{logRef}}</bold>",
+  "l2": {
+    "status": "레이어 2",
+    "pin-required": "레이어 2를 사용하려면 PIN을 설정해야 합니다",
+    "set-pin": "PIN 설정",
+    "enable-description": "레이어 2는 기존 시드 구문으로 만든 지갑을 사용합니다. PIN 입력을 요청받게 됩니다.",
+    "enable": "레이어 2 활성화",
+    "enable-error": "레이어 2를 활성화하지 못했습니다: ",
+    "unlock-description": "레이어 2가 잠겨 있습니다.\nPIN을 입력하여 여세요.",
+    "unlock": "레이어 2 잠금 해제",
+    "unlock-error": "레이어 2 잠금을 해제하지 못했습니다: ",
+    "indexer": "인덱서",
+    "indexer-error": "잘못된 인덱서 URL: {{reason}}",
+    "seed-words": "시드 구문",
+    "seed-note-l1": "Ootle 지갑은 Tari 지갑과 동일한 시드 구문을 사용합니다.",
+    "seed-note-imported": "Ootle 지갑은 별도로 가져온 시드 구문을 사용합니다. 따로 백업하세요.",
+    "use-l1-seed": "내 Tari 지갑 시드 사용",
+    "confirm-import": "레이어 2 시드 구문 가져오기",
+    "seed-change-error": "레이어 2 시드 구문을 변경하지 못했습니다",
+    "confirm-replace-copy": "현재 레이어 2 지갑이 대체됩니다.\n해당 시드 구문이 있어야만 되찾을 수 있습니다.",
+    "address": "Ootle 지갑 주소",
+    "address-description": "Ootle에서 XTR을 받으려면 이 주소를 공유하세요.",
+    "public-key": "Ootle 소유자 공개 키",
+    "public-key-description": "Tari 지갑에서 소각한 자금을 청구하는 키입니다. L2로 소각 시 자동으로 입력됩니다.",
+    "side-by-side": "지갑 나란히 표시 허용",
+    "side-by-side-description": "Tari 지갑과 Ootle 지갑을 나란히 표시합니다. 끄면 각 탐색 버튼이 해당 지갑만 따로 엽니다."
+  }
 }
