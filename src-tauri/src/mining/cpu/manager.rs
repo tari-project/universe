@@ -227,10 +227,11 @@ impl CpuManager {
                 };
                 self.process_watcher.adapter.address = tari_address.to_base58();
             } else {
+                let monero_address =
+                    solo_mining_address(ConfigWallet::content().await.monero_address().clone())?;
                 let host_name = "127.0.0.1".to_string();
                 let mmproxy_port = mmproxy_manager.get_monero_port().await?;
                 let local_proxy_url = format!("{host_name}:{mmproxy_port}");
-                let monero_address = ConfigWallet::content().await.monero_address().clone();
 
                 self.process_watcher.adapter.connection_type =
                     CpuConnectionType::LocalMMProxy { local_proxy_url };
@@ -410,5 +411,40 @@ impl CpuManager {
     #[allow(dead_code)]
     pub fn handle_mining_pool_change(_enabled: bool) {
         todo!()
+    }
+}
+
+/// Solo CPU mining pays out to the Monero address, which may be blank: refuse with a message the
+/// "Could not start CPU mining" toast shows as is.
+fn solo_mining_address(monero_address: String) -> Result<String, anyhow::Error> {
+    if monero_address.trim().is_empty() {
+        return Err(anyhow::anyhow!(
+            "No Monero address is set. Add one under Settings > Advanced > Monero address to mine solo."
+        ));
+    }
+    Ok(monero_address)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::solo_mining_address;
+
+    #[test]
+    fn test_solo_mining_address_blank_address_errors_with_where_to_set_it() {
+        let error = solo_mining_address(String::new())
+            .expect_err("solo mining needs a Monero address")
+            .to_string();
+        assert!(error.contains("Monero address"), "{error}");
+        assert!(error.contains("Settings"), "{error}");
+        assert!(error.contains("Advanced"), "{error}");
+    }
+
+    #[test]
+    fn test_solo_mining_address_set_address_is_passed_through() {
+        let address = "4".repeat(95);
+        assert_eq!(
+            solo_mining_address(address.clone()).expect("a set address mines"),
+            address
+        );
     }
 }
