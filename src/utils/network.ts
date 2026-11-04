@@ -21,9 +21,9 @@ export function isLocalNet(): boolean {
     return storedNetwork === Network.LocalNet;
 }
 
-/** L2 (and burning to it) only exists on Esmeralda today. Mirrors network_supports_l2 on the backend. */
+/** Networks that support L2 and burning to it. Mirrors network_supports_l2 on the backend. */
 export function networkSupportsL2(network: string | undefined): boolean {
-    return network === Network.Esmeralda;
+    return network === Network.Esmeralda || network === Network.MainNet;
 }
 
 export function isMainNet(): boolean {

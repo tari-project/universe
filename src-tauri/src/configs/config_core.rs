@@ -103,7 +103,8 @@ pub struct ConfigCoreContent {
 
 fn default_ootle_indexer_url(network: Network) -> Option<Url> {
     match network {
-        Network::Esmeralda => Url::parse("https://ootle-indexer-a.tari.com/").ok(),
+        Network::Esmeralda => Url::parse("https://esme-indexer-a.ootle.tari.com/").ok(),
+        Network::MainNet => Url::parse("https://indexer-a.ootle.tari.com/").ok(),
         _ => None,
     }
 }
@@ -151,6 +152,63 @@ pub fn canonicalise_ootle_indexer_url(input: &str) -> Result<Url, anyhow::Error>
         url.set_path(&path);
     }
     Ok(url)
+}
+
+/// Refuse an indexer serving another network before opening a wallet or saving an override.
+pub async fn check_ootle_indexer_network(
+    indexer: &Url,
+    network: Network,
+) -> Result<(), anyhow::Error> {
+    #[derive(Deserialize)]
+    struct IndexerNetwork {
+        network: String,
+    }
+
+    let indexer = canonicalise_ootle_indexer_url(indexer.as_str())?;
+    // Check this endpoint itself; a redirect could report another indexer's network.
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .timeout(std::time::Duration::from_secs(10))
+        .build()?;
+    let mut response = client
+        .get(indexer.join("network")?)
+        .send()
+        .await
+        .and_then(reqwest::Response::error_for_status)
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "indexer could not be reached at {indexer}: {}",
+                e.without_url()
+            )
+        })?;
+    if !response.status().is_success() {
+        anyhow::bail!(
+            "Indexer network endpoint must return a successful response without redirects"
+        );
+    }
+    // The identity is tiny; stop a hostile indexer from buffering an unlimited body.
+    let mut body = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(|e| {
+        anyhow::anyhow!(
+            "Invalid network response from indexer at {indexer}: {}",
+            e.without_url()
+        )
+    })? {
+        if chunk.len() > 4096 - body.len() {
+            anyhow::bail!("Network response from indexer at {indexer} exceeds 4096 bytes");
+        }
+        body.extend_from_slice(&chunk);
+    }
+    let identity: IndexerNetwork = serde_json::from_slice(&body)
+        .map_err(|_| anyhow::anyhow!("Invalid network response from indexer at {indexer}"))?;
+    if identity.network != network.as_key_str() {
+        anyhow::bail!(
+            "indexer at {indexer} serves {}, this wallet is on {}",
+            identity.network.escape_default(),
+            network.as_key_str()
+        );
+    }
+    Ok(())
 }
 
 /// Defaults that have since been taken down. A copy of one in a config file is stale, not
@@ -327,14 +385,130 @@ impl ConfigImpl for ConfigCore {
 mod tests {
     use super::*;
 
+    async fn stub_indexer(body: &str) -> Url {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = Url::parse(&format!("http://{}/proxy/", listener.local_addr().unwrap())).unwrap();
+        let body = body.to_string();
+        tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut request = [0; 2048];
+            let count = stream.read(&mut request).await.unwrap();
+            assert!(String::from_utf8_lossy(&request[..count]).starts_with("GET /proxy/network "));
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream.write_all(response.as_bytes()).await.unwrap();
+        });
+        url
+    }
+
+    #[tokio::test]
+    async fn test_indexer_network_rejects_credentials_without_exposing_them() {
+        let secret = ["fixture", "password"].concat();
+        for url in [
+            format!("https://user:{secret}@indexer.example/"),
+            format!("https://indexer.example/?token={secret}"),
+            format!("https://indexer.example/#{secret}"),
+        ] {
+            let error = check_ootle_indexer_network(&Url::parse(&url).unwrap(), Network::MainNet)
+                .await
+                .unwrap_err();
+            let output = format!("{error:?}");
+            assert!(!output.contains(&secret), "validation exposed a secret");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_indexer_network_rejects_redirects() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = Url::parse(&format!("http://{}/", listener.local_addr().unwrap())).unwrap();
+        tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut request = [0; 2048];
+            stream.read(&mut request).await.unwrap();
+            stream.write_all(
+                b"HTTP/1.1 302 Found\r\nLocation: https://indexer.example/network\r\nContent-Length: 21\r\nConnection: close\r\n\r\n{\"network\":\"mainnet\"}",
+            ).await.unwrap();
+        });
+        let error = check_ootle_indexer_network(&url, Network::MainNet)
+            .await
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("without redirects"), "{error}");
+    }
+
+    #[tokio::test]
+    async fn test_indexer_network_matching_returns_ok() {
+        for network in [Network::MainNet, Network::Esmeralda] {
+            let url = stub_indexer(&format!(r#"{{"network":"{}"}}"#, network.as_key_str())).await;
+            check_ootle_indexer_network(&url, network).await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn test_indexer_network_mismatch_names_both_networks() {
+        let url = stub_indexer(r#"{"network":"esmeralda"}"#).await;
+        let error = check_ootle_indexer_network(&url, Network::MainNet)
+            .await
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("serves esmeralda"), "{error}");
+        assert!(error.contains("wallet is on mainnet"), "{error}");
+    }
+
+    #[tokio::test]
+    async fn test_indexer_network_invalid_response_returns_err() {
+        for body in ["not JSON", "{}", r#"{"network":0}"#] {
+            let url = stub_indexer(body).await;
+            assert!(
+                check_ootle_indexer_network(&url, Network::MainNet)
+                    .await
+                    .is_err()
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_indexer_network_rejects_oversized_response() {
+        let body = format!(
+            r#"{{"network":"mainnet","padding":"{}"}}"#,
+            "x".repeat(4096)
+        );
+        let url = stub_indexer(&body).await;
+        let error = check_ootle_indexer_network(&url, Network::MainNet)
+            .await
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("exceeds 4096 bytes"), "{error}");
+    }
+
+    #[tokio::test]
+    async fn test_indexer_network_unreachable_returns_readable_error() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = Url::parse(&format!("http://{}/", listener.local_addr().unwrap())).unwrap();
+        drop(listener);
+        let error = check_ootle_indexer_network(&url, Network::MainNet)
+            .await
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("indexer could not be reached"), "{error}");
+    }
+
     #[test]
-    fn only_esmeralda_has_a_default_ootle_indexer() {
+    fn test_supported_networks_have_their_own_default_ootle_indexer() {
         assert_eq!(
             default_ootle_indexer_url(Network::Esmeralda).map(String::from),
-            Some("https://ootle-indexer-a.tari.com/".to_string())
+            Some("https://esme-indexer-a.ootle.tari.com/".to_string())
+        );
+        assert_eq!(
+            default_ootle_indexer_url(Network::MainNet).map(String::from),
+            Some("https://indexer-a.ootle.tari.com/".to_string())
         );
         for network in [
-            Network::MainNet,
             Network::StageNet,
             Network::NextNet,
             Network::LocalNet,
@@ -352,7 +526,11 @@ mod tests {
             resolve_ootle_indexer_url(None, Network::Esmeralda),
             default_ootle_indexer_url(Network::Esmeralda)
         );
-        let custom = Url::parse("https://indexer.example:443").ok();
+        let loaded: ConfigCoreContent =
+            serde_json::from_str(r#"{"ootle_indexer_url":"https://ootle-indexer-a.tari.com/"}"#)
+                .expect("json");
+        let custom = Url::parse("https://ootle-indexer-a.tari.com/").ok();
+        assert_eq!(loaded.ootle_indexer_url, custom);
         assert_eq!(
             resolve_ootle_indexer_url(custom.clone(), Network::Esmeralda),
             custom
@@ -394,7 +572,10 @@ mod tests {
             resolve_ootle_indexer_url(file_url.clone(), Network::Esmeralda),
             default_ootle_indexer_url(Network::Esmeralda)
         );
-        assert_eq!(resolve_ootle_indexer_url(file_url, Network::MainNet), None);
+        assert_eq!(
+            resolve_ootle_indexer_url(file_url, Network::MainNet),
+            default_ootle_indexer_url(Network::MainNet)
+        );
 
         let loaded: ConfigCoreContent =
             serde_json::from_str(r#"{"ootle_indexer_url":"file:///etc/passwd"}"#).expect("json");
