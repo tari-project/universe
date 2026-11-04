@@ -34,6 +34,11 @@ pub fn launch_child_process(
     args: &[String],
     allow_output: bool,
 ) -> Result<tokio::process::Child, anyhow::Error> {
+    let network = tari_common::configuration::Network::get_current_or_user_setting_or_default()
+        .to_string()
+        .to_lowercase();
+    crate::executable_integrity::verify_launch_path(file_path, &network)?;
+
     let stdout = if allow_output {
         std::process::Stdio::piped()
     } else {
@@ -45,15 +50,16 @@ pub fn launch_child_process(
         std::process::Stdio::null()
     };
 
-    let (actual_binary, actual_args) =
-        if let Some(wrapper_path) = process_wrapper::get_wrapper_path() {
-            let parent_pid = std::process::id().to_string();
-            let mut wrapper_args = vec![parent_pid, file_path.to_string_lossy().to_string()];
-            wrapper_args.extend(args.iter().cloned());
-            (wrapper_path, wrapper_args)
-        } else {
-            (file_path.to_path_buf(), args.to_vec())
-        };
+    let (actual_binary, actual_args) = if let Some(wrapper_path) =
+        process_wrapper::get_wrapper_path()
+    {
+        let parent_pid = std::process::id().to_string();
+        let mut wrapper_args = vec![parent_pid, network, file_path.to_string_lossy().to_string()];
+        wrapper_args.extend(args.iter().cloned());
+        (wrapper_path, wrapper_args)
+    } else {
+        (file_path.to_path_buf(), args.to_vec())
+    };
 
     #[cfg(not(target_os = "windows"))]
     {

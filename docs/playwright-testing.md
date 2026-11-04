@@ -10,7 +10,7 @@ The app launches with `--headless` (test-mode builds only):
 2. **Vite dev server** — serves the frontend at `localhost:1420` with import aliases that redirect `@tauri-apps/api/*` to shim files. These shims bridge `invoke()` and `listen()` calls over the remote-ui WebSocket instead of Tauri's native IPC.
 3. **Playwright's Chromium** connects to `localhost:1420`, loads the React app, and interacts with it like a user would.
 
-The backend runs a real localnet node, wallet, merge mining proxy, and xmrig. Mining produces real blocks. Wallet balances are real. Nothing is mocked except the OS keychain (file-backed credential store).
+The backend runs a real localnet node, wallet, merge mining proxy, and xmrig. Mining produces real blocks. Wallet balances are real. Two things are stubbed: the OS keychain (file-backed credential store) and the proxy's upstream Monero node — an in-process stub (`helpers/monerod-stub.ts`) that serves one captured mainnet block template, so the suite needs no outbound Monero access. Localnet Tari difficulty is 1, so the fixed template keeps producing valid Tari blocks for the whole run.
 
 ### State replay — how fresh pages see current state
 
@@ -167,7 +167,7 @@ SKIP_BUILD=1 pnpm run playwright:ui
 Global setup wipes the test profile, then writes config files to the localnet app config dir before launching the backend:
 
 - `config_pools.json` — pools disabled (solo mining only)
-- `config_core.json` — local node, auto-update off, tor disabled
+- `config_core.json` — local node, auto-update off, tor disabled, merge-mining proxy pointed at the local Monero stub (public-node failover off)
 - `config_mining.json` — CPU mining enabled, GPU disabled, `mine_on_app_start: false`
 - `config_wallet.json` + credential file — the known `TEST_WALLET` fixture (canonical copy in `helpers/test-wallet.ts`)
 
@@ -196,8 +196,9 @@ playwright/
 ├── tsconfig.json
 ├── helpers/
 │   ├── fixtures.ts            # appPage fixture — fresh context per test
-│   ├── global-setup.ts        # builds binary, wipes profile, seeds config, starts vite + backend
-│   ├── global-teardown.ts     # process-group kill
+│   ├── global-setup.ts        # builds binary, wipes profile, seeds config, starts vite + backend + monerod stub
+│   ├── global-teardown.ts     # process-group kill + stops the monerod stub
+│   ├── monerod-stub.ts        # in-process Monero RPC stub (fixtures/ holds the captured block template)
 │   ├── app-dirs.ts            # test profile identifier + data dir paths
 │   ├── test-wallet.ts         # canonical TEST_WALLET fixture
 │   ├── selectors.ts           # data-testid → CSS selector map

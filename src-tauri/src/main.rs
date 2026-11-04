@@ -93,6 +93,7 @@ mod event_scheduler_test;
 mod events;
 mod events_emitter;
 mod events_manager;
+mod executable_integrity;
 mod feedback;
 #[cfg(test)]
 mod feedback_test;
@@ -114,6 +115,7 @@ mod node;
 mod ootle;
 mod pin;
 mod port_allocator;
+mod private_directory;
 mod process_adapter;
 mod process_killer;
 mod process_stats_collector;
@@ -473,7 +475,6 @@ fn main() {
             commands::get_application_language,
             commands::get_monero_seed_words,
             commands::get_network,
-            commands::get_paper_wallet_details,
             commands::get_seed_words,
             commands::get_tor_config,
             commands::import_seed_words,
@@ -523,6 +524,8 @@ fn main() {
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::send_one_sided_from_tapplet,
+            commands::estimate_l1_send_fee,
+            commands::effective_l1_payment_id,
             commands::burn_to_l2,
             commands::enable_l2_wallet,
             commands::unlock_l2_wallet,
@@ -539,6 +542,9 @@ fn main() {
             commands::l2_validate_address,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
+            commands::get_max_sendable_amount,
+            commands::get_stalled_transactions,
+            commands::abandon_stalled_transaction,
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_remote_base_node_address,
@@ -549,6 +555,7 @@ fn main() {
             commands::parse_tari_address,
             commands::refresh_wallet_history,
             commands::get_wallet_transaction_history,
+            commands::get_wallet_output_statuses,
             commands::get_base_node_status,
             commands::get_local_block_stats,
             commands::create_pin,

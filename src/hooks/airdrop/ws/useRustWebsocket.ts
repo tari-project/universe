@@ -1,5 +1,5 @@
 import { useAirdropStore } from '@app/store';
-import { listen } from '@tauri-apps/api/event';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
 import { useHandleWsUserIdEvent } from './useHandleWsUserIdEvent';
 import { GLOBAL_EVENT_NAME, WebsocketGlobalEvent, WebsocketUserEvent } from '@app/types/ws';
@@ -19,17 +19,32 @@ export default function useAirdropWebsocket() {
     const globalEventHandler = useHandleWsGlobalEvent();
 
     useEffect(() => {
-        const unlistenPromise = listen('ws-status-change', (event) => {
-            console.info(`websocket status changed: `, event);
+        let cancelled = false;
+        let unlistenFn: UnlistenFn | null = null;
+
+        listen('ws-status-change', (event) => {
+            if (cancelled) return;
+            console.info('websocket status changed:', event.payload);
+        }).then((unlisten) => {
+            if (cancelled) {
+                unlisten();
+            } else {
+                unlistenFn = unlisten;
+            }
         });
 
         return () => {
-            unlistenPromise.then((unlisten) => unlisten());
+            cancelled = true;
+            unlistenFn?.();
         };
     }, []);
 
     useEffect(() => {
-        const unlistenPromise = listen<unknown>('ws-rx', (event) => {
+        let cancelled = false;
+        let unlistenFn: UnlistenFn | null = null;
+
+        listen<unknown>('ws-rx', (event) => {
+            if (cancelled) return;
             const payload: WebsocketEventType = event.payload as WebsocketEventType;
             // Handle both string and object data
             let data;
@@ -53,10 +68,17 @@ export default function useAirdropWebsocket() {
                     break;
                 }
             }
+        }).then((unlisten) => {
+            if (cancelled) {
+                unlisten();
+            } else {
+                unlistenFn = unlisten;
+            }
         });
 
         return () => {
-            unlistenPromise.then((unlisten) => unlisten());
+            cancelled = true;
+            unlistenFn?.();
         };
     }, [globalEventHandler, userEventHandler, userId]);
 }

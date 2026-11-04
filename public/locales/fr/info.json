@@ -7,6 +7,9 @@
     "step-5": "Rien ! Une fois synchronisé, vous commencerez à miner du XTM automatiquement. Gagnez des XTM bonus en invitant des amis.",
     "step-6": "Tari est pro-humain, pro-liberté et open-source. Il est alimenté et sécurisé par tous ceux qui exécutent Tari Universe. Tari existe grâce à vous. {{emoji}}"
   },
+  "footer": {
+    "heading": "je suis un pied de page"
+  },
   "heading": {
     "step-1": "Bienvenue dans l\"Univers Tari !",
     "step-2": "Qu\"est-ce que Tari ?",
@@ -14,8 +17,5 @@
     "step-4": "Tari est-il en direct maintenant ?",
     "step-5": "Que dois-je faire ensuite ?",
     "step-6": "Vous êtes Tari"
-  },
-  "footer": {
-    "heading": "je suis un pied de page"
   }
 }

@@ -23,7 +23,7 @@
 use anyhow::{Error, anyhow};
 use log::{info, warn};
 use std::os::windows::process::CommandExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::LOG_TARGET_APP_LOGIC;
@@ -32,21 +32,35 @@ use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
 
 pub struct WindowsDefenderExclusions {}
 
+fn build_add_exclusion_command(path: &Path) -> Result<(String, String), Error> {
+    let path_str = path
+        .to_str()
+        .ok_or_else(|| anyhow!("Failed to convert path to string: {:?}", path))?;
+    if path_str.is_empty() || path_str.contains(['\0', '\r', '\n']) {
+        return Err(anyhow!(
+            "Refusing to pass invalid or control-character path to PowerShell: {:?}",
+            path
+        ));
+    }
+    let escaped = path_str.replace('\'', "''");
+    Ok((
+        path_str.to_string(),
+        format!("Add-MpPreference -ExclusionPath '{escaped}'"),
+    ))
+}
+
 impl WindowsDefenderExclusions {
     /// Adds a specific binary file to Windows Defender exclusions. If the file is already excluded, it logs this and
     /// returns Ok(()). If the command fails for other reasons, it returns an error.
     fn add_binary_to_exclusions(binary_path: &PathBuf) -> Result<(), Error> {
-        let path_str = binary_path
-            .to_str()
-            .ok_or_else(|| anyhow!("Failed to convert path to string: {:?}", binary_path))?;
+        let (path_str, ps_command) = build_add_exclusion_command(binary_path)?;
+
+        let path_str = path_str.replace('\'', "''");
 
         info!(target: LOG_TARGET_APP_LOGIC, "Adding binary to Windows Defender exclusions: {path_str}");
 
         let output = Command::new("powershell")
-            .args([
-                "-Command",
-                &format!("Add-MpPreference -ExclusionPath '{path_str}'"),
-            ])
+            .args(["-NoProfile", "-NonInteractive", "-Command", &ps_command])
             .creation_flags(PROCESS_CREATION_NO_WINDOW)
             .output()
             .map_err(|e| anyhow!("Failed to execute PowerShell command: {e}"))?;
@@ -71,47 +85,12 @@ impl WindowsDefenderExclusions {
         }
     }
 
-    /// Adds a directory to Windows Defender exclusions. If the directory is already excluded, it logs this and returns Ok(()).
-    /// If the command fails for other reasons, it returns an error.
-    fn add_directory_to_exclusions(dir_path: &PathBuf) -> Result<(), Error> {
-        let path_str = dir_path
-            .to_str()
-            .ok_or_else(|| anyhow!("Failed to convert directory path to string: {:?}", dir_path))?;
-
-        info!(target: LOG_TARGET_APP_LOGIC, "Adding directory to Windows Defender exclusions: {path_str}");
-
-        let output = Command::new("powershell")
-            .args([
-                "-Command",
-                &format!("Add-MpPreference -ExclusionPath '{path_str}'"),
-            ])
-            .creation_flags(PROCESS_CREATION_NO_WINDOW)
-            .output()
-            .map_err(|e| anyhow!("Failed to execute PowerShell command: {e}"))?;
-
-        if output.status.success() {
-            info!(target: LOG_TARGET_APP_LOGIC, "Successfully added directory to Windows Defender exclusions: {path_str}");
-            Ok(())
-        } else {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
-
-            if stderr.contains("already exists") || stdout.contains("already exists") {
-                info!(target: LOG_TARGET_APP_LOGIC, "Directory already in Windows Defender exclusions: {path_str}");
-                return Ok(());
-            }
-
-            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to add directory to Windows Defender exclusions. stdout: {stdout}, stderr: {stderr}");
-            Err(anyhow!(
-                "Failed to add directory to Windows Defender exclusions: {path_str}. Error: {stderr}",
-            ))
-        }
-    }
-
     /// Checks if Windows Defender is available by running a PowerShell command.
     fn is_windows_defender_available() -> bool {
         let output = Command::new("powershell")
             .args([
+                "-NoProfile",
+                "-NonInteractive",
                 "-Command",
                 "Get-MpComputerStatus | Select-Object -ExpandProperty AntivirusEnabled",
             ])
@@ -130,9 +109,9 @@ impl WindowsDefenderExclusions {
         }
     }
 
-    /// Windows Only: Adds comprehensive exclusions for the specified binary and its parent directory to Windows Defender.
+    /// Adds only an existing verified final executable to Windows Defender exclusions.
     /// If Windows Defender is not available or the OS is not Windows, the function will log this and return Ok(()).
-    pub fn add_comprehensive_exclusions(binary_path: &PathBuf) -> Result<(), Error> {
+    pub fn add_verified_binary_exclusion(binary_path: &PathBuf) -> Result<(), Error> {
         if !matches!(
             PlatformUtils::detect_current_os(),
             CurrentOperatingSystem::Windows
@@ -141,24 +120,59 @@ impl WindowsDefenderExclusions {
             return Ok(());
         }
 
+        let network = tari_common::configuration::Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .to_lowercase();
+        crate::executable_integrity::verify_launch_path(binary_path, &network)?;
+
         // Check if Windows Defender is available
         if !Self::is_windows_defender_available() {
             info!(target: LOG_TARGET_APP_LOGIC, "Windows Defender is not available or disabled");
             return Ok(());
         }
 
-        // Add the specific binary file
-        if let Err(e) = Self::add_binary_to_exclusions(binary_path) {
-            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to add binary exclusion for {}: {e}", binary_path.display());
-        }
+        Self::add_binary_to_exclusions(binary_path)
+    }
+}
 
-        // Add the parent directory
-        if let Some(parent_dir) = binary_path.parent() {
-            if let Err(e) = Self::add_directory_to_exclusions(&parent_dir.to_path_buf()) {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to add directory exclusion for {}: {e}", parent_dir.display());
-            }
-        }
+#[cfg(test)]
+mod tests {
+    use super::{WindowsDefenderExclusions, build_add_exclusion_command};
+    use std::path::Path;
 
-        Ok(())
+    #[test]
+    fn unpinned_file_cannot_receive_defender_exclusion() {
+        let file = tempfile::NamedTempFile::new().expect("create unpinned fixture");
+        assert!(
+            WindowsDefenderExclusions::add_verified_binary_exclusion(&file.path().to_path_buf())
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn escapes_single_quotes_in_windows_paths() {
+        let path = Path::new(r"C:\Users\O'Connor\AppData\Local\tari\minotari_node.exe");
+        let (_, cmd) = build_add_exclusion_command(path).expect("valid path");
+        assert_eq!(
+            cmd,
+            r"Add-MpPreference -ExclusionPath 'C:\Users\O''Connor\AppData\Local\tari\minotari_node.exe'"
+        );
+    }
+
+    #[test]
+    fn neutralizes_single_quote_command_injection_breakout() {
+        let path = Path::new("C:\\temp\\pwn'; Start-Process calc.exe; #");
+        let (_, cmd) = build_add_exclusion_command(path).expect("escaped path");
+        assert_eq!(
+            cmd,
+            "Add-MpPreference -ExclusionPath 'C:\\temp\\pwn''; Start-Process calc.exe; #'"
+        );
+    }
+
+    #[test]
+    fn rejects_control_characters_and_empty_paths() {
+        assert!(build_add_exclusion_command(Path::new("")).is_err());
+        assert!(build_add_exclusion_command(Path::new("C:\\temp\\bad\npath")).is_err());
+        assert!(build_add_exclusion_command(Path::new("C:\\temp\\bad\rpath")).is_err());
     }
 }

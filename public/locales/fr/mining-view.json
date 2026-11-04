@@ -12,26 +12,26 @@
   "connection-to-node-lost": "Connexion au mineur perdue. Attends que le mineur se reconnecte ou redémarre le mineur.",
   "cpu-power": "Puissance CPU",
   "current-block-time": "Temps actuelle du bloc",
-  "day": "day",
+  "day": "jour",
   "estimated-day": "Est XTM/jour",
   "estimated-earnings": "Gains estimés",
   "floor": "Étage",
   "gpu-power": "Puissance GPU",
   "mining-button-text": {
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
+    "state-pause": "Mettre le minage en pause",
+    "state-resume": "Reprendre le minage",
     "state-start": "Démarrer le minage"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "Voir tous les modes",
+      "alert_cta-turbo": "Utiliser le mode Turbo",
+      "alert_text": "Le mode Éco n'utilise qu'un faible pourcentage des ressources système.",
+      "alert_text_extra": "Essayez d'augmenter le mode de puissance.",
+      "alert_title": "Vous ne gagnez pas assez de récompenses ?"
     },
     "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode-long": "Mode du mineur"
   },
   "orphan-chain-tooltip": {
     "heading": "Choses à essayer :",
@@ -43,8 +43,8 @@
     "step_6": "Essayez de réinitialiser l\"application (dans les paramètres)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "Pause pendant <strong>{{duration}}</strong>",
+    "until-restart": "Pause jusqu'à mon<strong> redémarrage</strong>"
   },
   "pool": {
     "accepted_shares": "Parts acceptées",
@@ -53,16 +53,16 @@
     "unpaid": "Non payé"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "Enregistrer la planification",
+    "cta-save-complete": "Enregistré !",
+    "current": "Votre planification actuelle",
+    "mining-schedule": "Planification du minage",
+    "mining-schedule-copy": "Définissez des horaires précis pour démarrer automatiquement le minage.",
+    "mining-schedule-setup": "Configurer la planification du minage",
+    "scheduled-to-mine": "Minage planifié à",
+    "scheduled-to-pause": "Pause du minage planifiée à",
+    "time-label-end": "Heure de fin quotidienne",
+    "time-label-start": "Heure de début quotidienne"
   },
   "you-earn-rewards-separately": "Vous gagnez des récompenses pour le minage CPU et GPU séparément",
   "you-won-block": "Vous avez gagné le <span>bloc #{{ blockHeight }}</span>",

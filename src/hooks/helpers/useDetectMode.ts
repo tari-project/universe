@@ -1,20 +1,31 @@
 import { useEffect } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { Theme } from '@app/theme/types.ts';
 import { setUITheme, useConfigUIStore } from '@app/store';
 
 export function useDetectMode() {
-    const configTheme = useConfigUIStore((s) => s.display_mode);
-
     useEffect(() => {
-        const listener = listen('tauri://theme-changed', async ({ payload }) => {
+        let cancelled = false;
+        let unlistenFn: UnlistenFn | null = null;
+
+        listen('tauri://theme-changed', async ({ payload }) => {
+            if (cancelled) return;
+            const configTheme = useConfigUIStore.getState().display_mode;
             if (payload && configTheme?.toLowerCase() === 'system') {
                 const themePayload = payload as Theme;
                 setUITheme(themePayload);
             }
+        }).then((unlisten) => {
+            if (cancelled) {
+                unlisten();
+            } else {
+                unlistenFn = unlisten;
+            }
         });
+
         return () => {
-            listener.then((unlisten) => unlisten());
+            cancelled = true;
+            unlistenFn?.();
         };
-    }, [configTheme]);
+    }, []);
 }

@@ -118,7 +118,6 @@ impl BinaryResolver {
                 // bridge, so a substituted archive is arbitrary code next to the wallet.
                 // Upstream ships `bridge-v<version>.zip.sha256` next to the archive on
                 // every release, so validation is required, like every other binary.
-                true,
             ),
         );
 
@@ -128,7 +127,6 @@ impl BinaryResolver {
                 Binaries::Xmrig.name().to_string(),
                 None,
                 Box::new(XmrigVersionApiAdapter {}),
-                true,
             ),
         );
 
@@ -140,9 +138,8 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "lolMiner-releases".to_string(),
                     owner: "Lolliedieb".to_string(),
-                    checksum_source: ChecksumSource::PerAssetSidecar,
+                    checksum_source: ChecksumSource::ReleaseAssetDigest,
                 }),
-                false,
             ),
         );
 
@@ -159,7 +156,6 @@ impl BinaryResolver {
                     // party miners there is no reason to skip verifying it.
                     checksum_source: ChecksumSource::SharedManifest("SHA256SUMS.txt"),
                 }),
-                true,
             ),
         );
 
@@ -173,7 +169,6 @@ impl BinaryResolver {
                     owner: "tari-project".to_string(),
                     checksum_source: ChecksumSource::PerAssetSidecar,
                 }),
-                true,
             ),
         );
 
@@ -187,7 +182,6 @@ impl BinaryResolver {
                     owner: "tari-project".to_string(),
                     checksum_source: ChecksumSource::PerAssetSidecar,
                 }),
-                true,
             ),
         );
 
@@ -197,7 +191,6 @@ impl BinaryResolver {
                 Binaries::Tor.name().to_string(),
                 Some("tor".to_string()),
                 Box::new(TorReleaseAdapter {}),
-                true,
             ),
         );
 
@@ -231,6 +224,8 @@ impl BinaryResolver {
         // For bridge tapplet, we return the base dir as it's a folder, not a binary file
         // Skip the rest of the checks
         if binary.eq(&Binaries::BridgeTapplet) {
+            crate::executable_integrity::verify_bridge_directory(&base_dir)
+                .map_err(|e| BinaryResolveError::Other(e.into()))?;
             return Ok(base_dir);
         }
 
@@ -243,6 +238,13 @@ impl BinaryResolver {
         };
 
         if binary_path.exists() {
+            crate::executable_integrity::verify_launch_path(
+                &binary_path,
+                &tari_common::configuration::Network::get_current_or_user_setting_or_default()
+                    .to_string()
+                    .to_lowercase(),
+            )
+            .map_err(|e| BinaryResolveError::Other(e.into()))?;
             debug!(target: LOG_TARGET_APP_LOGIC, "Binary found at: {}", binary_path.display());
             return Ok(binary_path);
         }

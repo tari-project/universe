@@ -44,7 +44,9 @@ export function ViewSeedPhrase({ words, onContinue }: ViewSeedPhraseProps) {
     const [checked, setChecked] = useState(false);
 
     function handleCopy() {
-        copyToClipboard(words.join(' '));
+        // Seed words are the wallet's whole secret; don't leave them sitting on the
+        // clipboard for the next app to read.
+        copyToClipboard(words.join(' '), undefined, { clearAfterMs: 60_000 });
     }
 
     function handleCheckboxClick() {

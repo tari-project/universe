@@ -49,6 +49,7 @@ use tari_ootle_app_utilities::burn_claim_proof::claim_proof_from_l1;
 use tari_ootle_common_types::{Epoch, optional::Optional};
 use tari_ootle_transaction::{Transaction, TransactionId};
 use tari_ootle_wallet_sdk::{
+    apis::substate::SubstateApiError,
     crypto::{OutputWitness, StealthInputWitness, StealthOutputWitness, memo::Memo},
     models::{
         AccountWithAddress, KeyBranch, TransactionContext, TransactionContextKind,
@@ -96,7 +97,8 @@ pub struct L2Burn {
     pub proof_file: Option<String>,
     /// "pending" until the burn is mined and its proof written, then "claimable", then
     /// "claimed" once a claim is accepted on L2. "foreign" instead of "claimable" when
-    /// the claim key isn't one of this wallet's L2 accounts.
+    /// the claim key isn't one of this wallet's L2 accounts. "abandoned" instead of
+    /// "pending" once the user abandoned it: it may still be mined, and then turns claimable.
     pub status: &'static str,
     /// The L1 height the burn was mined at, once its proof is written. The L2 can't
     /// accept its claim until it has imported that block.
@@ -235,23 +237,6 @@ fn is_burn_not_yet_claimable(reject: &RejectReason) -> bool {
     reject.execution_failure_code() == Some(ExecutionFailureCode::NotYetValid)
 }
 
-/// True if a claim was rejected because the burn commitment has already been claimed on L2.
-fn is_burn_already_claimed(reject: &RejectReason) -> bool {
-    match reject {
-        RejectReason::ExecutionFailure { message, .. } => {
-            message.contains("Duplicate substate")
-                || message.contains("already exists")
-                || message.contains("already claimed")
-        }
-        RejectReason::FailedToLockOutputs(msg) | RejectReason::FailedToLockInputs(msg) => {
-            msg.contains("already UP")
-                || msg.contains("exists or is being created")
-                || msg.contains("already claimed")
-        }
-        _ => false,
-    }
-}
-
 /// The claimable proof for `commitment` and its file name.
 pub fn find_claimable(dir: &Path, commitment: &str) -> Result<(String, BurnProof), anyhow::Error> {
     let file = read_burns(dir, "claimable")?
@@ -304,7 +289,7 @@ fn read_burns(dir: &Path, status: &'static str) -> Result<Vec<L2Burn>, anyhow::E
                     .duration_since(SystemTime::UNIX_EPOCH)?
                     .as_secs(),
             }),
-            Err(e) => warn!(target: LOG_TARGET, "Skipping burn proof {file}: {e}"),
+            Err(e) => warn!(target: LOG_TARGET, "Skipping an unreadable burn proof: {e}"),
         }
     }
     Ok(burns)
@@ -381,13 +366,8 @@ fn mark_claimed(dir: &Path, file: &str) {
     let moved = std::fs::create_dir_all(dir.join(CLAIMED_DIR))
         .and_then(|()| std::fs::rename(dir.join(file), dir.join(CLAIMED_DIR).join(file)));
     if let Err(e) = moved {
-        warn!(target: LOG_TARGET, "Could not mark {file} claimed: {e}");
+        warn!(target: LOG_TARGET, "Could not mark a burn proof claimed: {e}");
     }
-}
-
-/// Moves a proof file into the claimed directory once L2 confirms its burn commitment was claimed.
-pub fn mark_proof_claimed(dir: &Path, file: &str) {
-    mark_claimed(dir, file);
 }
 
 /// Settles a tracked transaction once it's finalized or invalid: an accepted claim's
@@ -401,8 +381,8 @@ fn settle(
 ) -> L2ClaimResult {
     match (&file, accepted) {
         (Some(file), true) => mark_claimed(dir, file),
-        (Some(file), false) => {
-            warn!(target: LOG_TARGET, "Claim of {file} was rejected, it stays claimable: {reason:?}")
+        (Some(_), false) => {
+            warn!(target: LOG_TARGET, "An L2 claim was rejected, its burn stays claimable: {reason:?}")
         }
         (None, true) => {}
         (None, false) => warn!(target: LOG_TARGET, "An L2 send was rejected: {reason:?}"),
@@ -434,12 +414,12 @@ pub fn reconcile_claims(
                 {
                     ended.push((file.take(), true));
                 } else {
-                    warn!(target: LOG_TARGET, "The wallet has no record of {id} ({file:?}), no longer tracking it");
+                    warn!(target: LOG_TARGET, "The wallet has no record of {id}, no longer tracking it");
                 }
                 false
             }
             Err(e) => {
-                warn!(target: LOG_TARGET, "Could not look up {id} ({file:?}): {e}");
+                warn!(target: LOG_TARGET, "Could not look up {id}: {e}");
                 true
             }
         });
@@ -471,12 +451,30 @@ pub fn track_claim(dir: &Path, event: &WalletEvent) -> Option<L2ClaimResult> {
         None if invalid => Some("The transaction is invalid".to_string()),
         None => None,
     };
-    let already_claimed = reject.is_some_and(is_burn_already_claimed);
     let not_yet = reject.is_some_and(is_burn_not_yet_claimable);
     let file = update_tracked(dir, |tracked| tracked.remove(&id))?;
-    let accepted = reason.is_none() || (file.is_some() && already_claimed);
-    let reason = if accepted { None } else { reason };
-    Some(settle(dir, file, accepted, reason, not_yet))
+    Some(settle(dir, file, reason.is_none(), reason, not_yet))
+}
+
+/// The wallet SDK verifies this read against a trusted validator committee.
+/// A missing or unverified tombstone must leave the proof claimable.
+async fn verified_claim_tombstone_exists(
+    sdk: &OotleSdk,
+    proof: &BurnProof,
+) -> Result<bool, anyhow::Error> {
+    let tombstone = SubstateId::ClaimedOutputTombstone(
+        ClaimedOutputTombstoneAddress::from_commitment(proof.claim_proof.commitment),
+    );
+    match with_indexer_timeout(
+        sdk.substate_api()
+            .fetch_substate_from_network(&tombstone, None),
+    )
+    .await?
+    {
+        Ok(_) => Ok(true),
+        Err(SubstateApiError::SubstateDoesNotExist { .. }) => Ok(false),
+        Err(error) => Err(error.into()),
+    }
 }
 
 /// Claims the burn in `proof` into the wallet account its claim key belongs to and
@@ -502,18 +500,8 @@ pub async fn claim_burn(
         .ok_or_else(|| {
             anyhow!("The claim key {claim_key} isn't one of this wallet's L2 accounts")
         })?;
-    let tombstone = SubstateId::ClaimedOutputTombstone(
-        ClaimedOutputTombstoneAddress::from_commitment(proof.claim_proof.commitment),
-    );
-    if with_indexer_timeout(
-        sdk.get_network_interface()
-            .query_substate(&tombstone, None, false, false),
-    )
-    .await?
-    .optional()?
-    .is_some()
-    {
-        mark_proof_claimed(&proof_dir, &file_name);
+    if verified_claim_tombstone_exists(sdk, &proof).await? {
+        mark_claimed(&proof_dir, &file_name);
         bail!("This burn has already been claimed on Layer 2.");
     }
     let epoch = with_indexer_timeout(sdk.get_network_interface().get_current_epoch()).await??;
@@ -536,8 +524,8 @@ pub async fn claim_burn(
         .await?
         .map_err(|e| anyhow!("The claim fee estimate failed: {e}"))?;
     if let Some(reason) = result.finalize.any_reject() {
-        if is_burn_already_claimed(reason) {
-            mark_proof_claimed(&proof_dir, &file_name);
+        if verified_claim_tombstone_exists(sdk, &proof).await? {
+            mark_claimed(&proof_dir, &file_name);
             bail!("This burn has already been claimed on Layer 2: {reason}");
         }
         bail!("The claim would be rejected: {reason}");
@@ -805,6 +793,30 @@ mod tests {
         assert_eq!(hex::encode(proof.account_key.as_bytes()), CLAIM_KEY);
         assert_eq!(proof.claim_proof.value, 1_000_000_000);
         assert_eq!(proof.mined_height, 12_345);
+    }
+
+    #[test]
+    fn reads_a_proof_in_the_shape_minotari_writes() {
+        // minotari's BurnProofWorker writes the published tari_sidechain type with
+        // serde_json::to_vec_pretty. The claim code reads it with ootle's own type.
+        let written: tari_sidechain_l1::CompleteClaimBurnProof =
+            serde_json::from_str(PROOF).expect("the published format");
+        let json = serde_json::to_vec_pretty(&written).expect("json");
+        assert_eq!(
+            String::from_utf8(json.clone()).expect("utf8").trim_end(),
+            PROOF.trim_end(),
+            "the fixture is exactly what the worker writes"
+        );
+
+        let proof = BurnProof::from_json(&json).expect("converted by claim_proof_from_l1");
+        assert_eq!(
+            hex::encode(proof.claim_proof.commitment.as_bytes()),
+            COMMITMENT
+        );
+        assert_eq!(hex::encode(proof.account_key.as_bytes()), CLAIM_KEY);
+        assert_eq!(proof.claim_proof.value, 1_000_000_000);
+        assert_eq!(proof.mined_height, 12_345);
+        assert_eq!(proof.mined_in_epoch, written.mined_in_epoch);
     }
 
     #[test]
@@ -1082,7 +1094,7 @@ mod tests {
     }
 
     #[test]
-    fn already_claimed_rejections_reconcile_proof_into_claimed_dir() {
+    fn unverified_duplicate_rejection_keeps_burn_proof_claimable() {
         let dir = tempfile::tempdir().expect("temp dir");
         let dir = dir.path();
         let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
@@ -1092,12 +1104,6 @@ mod tests {
             code: ExecutionFailureCode::EngineInvariant,
             message: format!("At instruction #0: Duplicate substate tombstone_{COMMITMENT}"),
         };
-        let lock_conflict = RejectReason::FailedToLockOutputs(
-            "Substate is already UP and conflicts with an existing output".to_string(),
-        );
-        assert!(is_burn_already_claimed(&duplicate));
-        assert!(is_burn_already_claimed(&lock_conflict));
-
         let id = TransactionId::from([9; 32]);
         track(dir, id, Some(file.clone()));
         let finalized = WalletEvent::TransactionFinalized(
@@ -1105,15 +1111,15 @@ mod tests {
                 transaction_id: id,
                 finalize: tari_engine_types::commit_result::FinalizeResult::new_rejected(
                     Default::default(),
-                    lock_conflict,
+                    duplicate,
                 ),
-                final_fee: 0.into(),
+                final_fee: 0,
                 status: TransactionStatus::Rejected,
             },
         );
         let res = track_claim(dir, &finalized).expect("settled claim");
-        assert!(res.accepted);
-        assert!(dir.join(CLAIMED_DIR).join(&file).is_file());
-        assert!(!dir.join(&file).exists());
+        assert!(!res.accepted);
+        assert!(dir.join(&file).is_file());
+        assert!(!dir.join(CLAIMED_DIR).join(&file).exists());
     }
 }

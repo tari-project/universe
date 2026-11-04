@@ -6,6 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { APP_ID, getAppConfigDir, getAppDataDir, getAppDataRoots, getAppCacheDir } from './app-dirs';
 import { TEST_WALLET, TEST_MONERO } from './test-wallet';
+import { startMonerodStub } from './monerod-stub';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,7 +85,7 @@ function getPoolsConfig() {
   };
 }
 
-function getCoreConfig() {
+function getCoreConfig(moneroStubUrl: string) {
   return {
     version_counter: 2,
     use_tor: false,
@@ -97,6 +98,9 @@ function getCoreConfig() {
     // otherwise show() the blank.html window during e2e runs.
     show_window_on_startup: false,
     remote_base_node_address: 'http://127.0.0.1:18142',
+    // Only the local monerod stub: no failover to the public default nodes.
+    mmproxy_monero_nodes: [moneroStubUrl],
+    mmproxy_use_monero_failover: false,
   };
 }
 
@@ -144,13 +148,13 @@ function getWalletConfig() {
   };
 }
 
-function preSeedConfig(configDir?: string): void {
+function preSeedConfig(moneroStubUrl: string, configDir?: string): void {
   const targetDir = configDir ?? getConfigDir();
   fs.mkdirSync(targetDir, { recursive: true });
   console.log(`Pre-seeding config directory: ${targetDir}`);
 
   fs.writeFileSync(path.join(targetDir, 'config_pools.json'), JSON.stringify(getPoolsConfig()));
-  fs.writeFileSync(path.join(targetDir, 'config_core.json'), JSON.stringify(getCoreConfig()));
+  fs.writeFileSync(path.join(targetDir, 'config_core.json'), JSON.stringify(getCoreConfig(moneroStubUrl)));
   fs.writeFileSync(path.join(targetDir, 'config_mining.json'), JSON.stringify(getMiningConfig()));
   fs.writeFileSync(path.join(targetDir, 'config_wallet.json'), JSON.stringify(getWalletConfig()));
   console.log('Config files written: config_pools.json, config_core.json, config_mining.json, config_wallet.json');
@@ -298,7 +302,9 @@ async function runGlobalSetup() {
     console.log('SKIP_BACKEND set: assuming backend is already running.');
   } else {
     wipeTestData();
-    preSeedConfig();
+    const moneroStubUrl = await startMonerodStub();
+    console.log(`Playwright Monero RPC: local stub at ${moneroStubUrl}`);
+    preSeedConfig(moneroStubUrl);
     preSeedCredentials();
 
     const binaryPath = process.env.TARI_UNIVERSE_BINARY || getBinaryPath(projectRoot);

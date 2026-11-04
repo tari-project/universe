@@ -76,10 +76,21 @@ export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()(
 }));
 
 export const updateWalletScanningProgress = (payload: WalletScanningProgressUpdatePayload) => {
-    useWalletStore.setState((c) => ({
-        ...c,
-        wallet_scanning: {
-            ...payload,
-        },
-    }));
+    useWalletStore.setState((c) => {
+        const prev = c.wallet_scanning;
+        if (
+            prev.scanned_height === payload.scanned_height &&
+            prev.total_height === payload.total_height &&
+            prev.progress === payload.progress &&
+            prev.is_initial_scan_complete === payload.is_initial_scan_complete
+        ) {
+            return c;
+        }
+        return {
+            ...c,
+            wallet_scanning: {
+                ...payload,
+            },
+        };
+    });
 };

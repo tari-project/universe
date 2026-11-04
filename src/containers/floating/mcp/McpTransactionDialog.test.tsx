@@ -87,6 +87,40 @@ describe('McpTransactionDialog', () => {
         expect(screen.queryByText('send.destination-address')).not.toBeInTheDocument();
     });
 
+    it('warns about an abandon without a change output when the user accepted it', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_abandon',
+            kind: 'abandon',
+            origin: 'app',
+            destination: '12',
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+            accept_unreconcilable: true,
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('abandon.unreconcilable-note')).toBeInTheDocument();
+        });
+        expect(screen.queryByText('abandon.note')).not.toBeInTheDocument();
+    });
+
+    it('warns that an abandoned burn may still land', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_abandon_burn',
+            kind: 'abandon',
+            origin: 'app',
+            destination: '12',
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+            is_burn: true,
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('abandon.burn-note')).toBeInTheDocument();
+        });
+        expect(screen.queryByText('abandon.note')).not.toBeInTheDocument();
+    });
+
     it('labels an L2 send with the L2 address and XTR', async () => {
         setMcpPendingTransaction({
             request_id: 'app_tx_l2',
@@ -160,6 +194,38 @@ describe('McpTransactionDialog', () => {
         await waitFor(() => {
             expect(screen.getByText('shortAddr')).toBeInTheDocument();
         });
+    });
+
+    it('shows the address payment id and warns when it replaces the message', async () => {
+        setMcpPendingTransaction({
+            request_id: 'mcp_tx_embedded',
+            destination: '5AexampleAddress',
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+            payment_id: 'embedded-id',
+            payment_id_overridden: true,
+        });
+        const { unmount } = render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('embedded-id')).toBeInTheDocument();
+        });
+        expect(screen.getByTestId('payment-id-overridden')).toHaveTextContent('send.payment-id-overridden');
+        unmount();
+
+        setMcpPendingTransaction({
+            request_id: 'app_tx_embedded',
+            origin: 'app',
+            destination: '5AexampleAddress',
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+            payment_id: 'aa'.repeat(8),
+            payment_id_overridden: true,
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('aa'.repeat(8))).toBeInTheDocument();
+        });
+        expect(screen.getByTestId('payment-id-overridden')).toBeInTheDocument();
     });
 
     it('shows countdown timer text', async () => {

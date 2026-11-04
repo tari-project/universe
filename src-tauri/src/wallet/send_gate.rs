@@ -50,8 +50,13 @@ use std::sync::LazyLock;
 use std::time::Duration;
 
 use log::{info, warn};
+use minotari_wallet::transactions::{
+    abandon::AbandonSendError, input_selector::UtxoSelectionError, one_sided_transaction::Recipient,
+};
+use serde::Serialize;
 use tari_common::configuration::Network;
-use tari_ootle_wallet_sdk::{OotleAddress, PayRef, crypto::memo::Memo};
+use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
+use tari_ootle_wallet_sdk::{DestinationTag, OotleAddress, crypto::memo::Memo};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
 use crate::LOG_TARGET_APP_LOGIC;
@@ -60,8 +65,11 @@ use crate::events::PinPromptContext;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::ootle::OotleWalletManager;
-use crate::pin::PinManager;
-use crate::wallet::minotari_wallet::{BurnReceipt, MinotariWalletManager};
+use crate::pin::{PinCancelled, PinManager};
+use crate::wallet::minotari_wallet::transaction::parse_destination_address;
+use crate::wallet::minotari_wallet::{
+    BurnReceipt, MinotariWalletManager, SendReceipt, StalledTransaction,
+};
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
 
@@ -76,6 +84,70 @@ pub enum TransactionError {
     Timeout(String),
     WalletError(String),
     InternalError(String),
+    /// The user closed the PIN prompt.
+    PinCancelled(String),
+    /// The funds cover the amount and fee, but not the change output every send keeps.
+    ChangeNotAffordable(String),
+    /// The wallet refused to abandon a send; `code` says why.
+    AbandonRefused {
+        code: &'static str,
+        message: String,
+    },
+}
+
+impl TransactionError {
+    /// A stable code the frontend switches on. It comes from the error's type, never
+    /// from its text, which can carry what a base node said.
+    pub fn code(&self) -> &'static str {
+        match self {
+            TransactionError::Disabled(_) => "disabled",
+            TransactionError::NoPinConfigured(_) => "no_pin",
+            TransactionError::InvalidAmount(_) => "invalid_amount",
+            TransactionError::InvalidAddress(_) => "invalid_address",
+            TransactionError::RateLimited(_) => "rate_limited",
+            TransactionError::Denied(_) => "denied",
+            TransactionError::Timeout(_) => "timeout",
+            TransactionError::WalletError(_) => "wallet_error",
+            TransactionError::InternalError(_) => "internal_error",
+            TransactionError::PinCancelled(_) => "pin_cancelled",
+            TransactionError::ChangeNotAffordable(_) => "change_not_affordable",
+            TransactionError::AbandonRefused { code, .. } => code,
+        }
+    }
+
+    /// The error as a Tauri command returns it: `[code] message`. The code always
+    /// leads, so text from a node inside the message cannot pass for one.
+    pub fn to_command_error(&self) -> String {
+        format!("[{}] {}", self.code(), self)
+    }
+}
+
+/// A wallet failure, classified by the error types in its chain.
+fn wallet_failure(context: &str, error: anyhow::Error) -> TransactionError {
+    let message = format!("{context}: {error:#}");
+    for cause in error.chain() {
+        if cause.is::<PinCancelled>() {
+            return TransactionError::PinCancelled(message);
+        }
+        if let Some(UtxoSelectionError::ChangeNotAffordable { .. }) = cause.downcast_ref() {
+            return TransactionError::ChangeNotAffordable(message);
+        }
+        if let Some(refused) = cause.downcast_ref::<AbandonSendError>() {
+            let code = match refused {
+                // Not found / not stalled only happen if it changed since the pre-check.
+                AbandonSendError::NotFound(_)
+                | AbandonSendError::NotPending { .. }
+                | AbandonSendError::NotStalled { .. } => "abandon_not_pending",
+                AbandonSendError::InputSpent { .. } => "abandon_input_spent",
+                AbandonSendError::ChangeInUse { .. } => "abandon_change_in_use",
+                AbandonSendError::ChangeAlreadyMined { .. } => "abandon_change_already_mined",
+                AbandonSendError::NoChangeOutput { .. } => "abandon_no_change_output",
+                AbandonSendError::Db(_) => break,
+            };
+            return TransactionError::AbandonRefused { code, message };
+        }
+    }
+    TransactionError::WalletError(message)
 }
 
 impl fmt::Display for TransactionError {
@@ -89,7 +161,10 @@ impl fmt::Display for TransactionError {
             | TransactionError::Denied(msg)
             | TransactionError::Timeout(msg)
             | TransactionError::WalletError(msg)
-            | TransactionError::InternalError(msg) => write!(f, "{}", msg),
+            | TransactionError::InternalError(msg)
+            | TransactionError::PinCancelled(msg)
+            | TransactionError::ChangeNotAffordable(msg)
+            | TransactionError::AbandonRefused { message: msg, .. } => write!(f, "{}", msg),
         }
     }
 }
@@ -201,6 +276,13 @@ pub enum SpendKind {
     L2Claim {
         commitment: String,
     },
+    /// Giving up stalled send or burn `tx_id`, which hands its inputs back.
+    Abandon {
+        tx_id: String,
+        /// The user accepted that it has no change output to recognise it by.
+        accept_unreconcilable: bool,
+        is_burn: bool,
+    },
 }
 
 impl SpendKind {
@@ -210,6 +292,7 @@ impl SpendKind {
             SpendKind::Burn { .. } => "burn",
             SpendKind::L2Send { .. } => "l2_send",
             SpendKind::L2Claim { .. } => "l2_claim",
+            SpendKind::Abandon { .. } => "abandon",
         }
     }
 
@@ -222,6 +305,7 @@ impl SpendKind {
             SpendKind::Send { destination } | SpendKind::L2Send { destination, .. } => destination,
             SpendKind::Burn { claim_public_key } => claim_public_key,
             SpendKind::L2Claim { commitment } => commitment,
+            SpendKind::Abandon { tx_id, .. } => tx_id,
         }
     }
 
@@ -230,13 +314,16 @@ impl SpendKind {
         origin: SendOrigin,
         amount_micro_minotari: u64,
         payment_id: Option<String>,
+        payment_id_overridden: bool,
     ) -> PinPromptContext {
         match self {
             SpendKind::Send { destination } => PinPromptContext::Send {
                 amount_micro_minotari,
                 destination: destination.clone(),
                 payment_id,
+                payment_id_overridden,
                 origin: origin.as_str().to_string(),
+                fee_micro_minotari: None,
             },
             SpendKind::Burn { claim_public_key } => PinPromptContext::Burn {
                 amount_micro_minotari,
@@ -260,6 +347,16 @@ impl SpendKind {
                 commitment: commitment.clone(),
                 fee_micro_minotari: None,
             },
+            SpendKind::Abandon {
+                tx_id,
+                accept_unreconcilable,
+                is_burn,
+            } => PinPromptContext::Abandon {
+                amount_micro_minotari,
+                tx_id: tx_id.clone(),
+                accept_unreconcilable: *accept_unreconcilable,
+                is_burn: *is_burn,
+            },
         }
     }
 
@@ -267,8 +364,84 @@ impl SpendKind {
     fn currency(&self) -> &'static str {
         match self {
             SpendKind::L2Send { .. } | SpendKind::L2Claim { .. } => "XTR",
-            SpendKind::Send { .. } | SpendKind::Burn { .. } => "XTM",
+            SpendKind::Send { .. } | SpendKind::Burn { .. } | SpendKind::Abandon { .. } => "XTM",
         }
+    }
+}
+
+/// Payment id an L1 send will actually carry, in the form the consent screens show.
+///
+/// Since minotari 0.3.0 an address with the payment-id feature replaces the caller's
+/// Message: [`Recipient::payment_id_bytes`] sends the address's bytes as they are, text
+/// or not. Printable ASCII is shown as text. Anything else is `0x` hex, so a binary exchange reference
+/// is visible instead of the Message the caller typed.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EffectivePaymentId {
+    /// `None` when the output carries no payment id.
+    pub payment_id: Option<String>,
+    /// The address's embedded id is what will be sent, and it is not the Message the
+    /// caller typed. An empty Message still differs from an embedded id.
+    pub payment_id_overridden: bool,
+}
+
+/// Decode the payment id [`Recipient::payment_id_bytes`] will put on chain.
+pub fn effective_payment_id(
+    address: &TariAddress,
+    typed_payment_id: Option<&str>,
+) -> EffectivePaymentId {
+    let typed = typed_payment_id.filter(|id| !id.is_empty());
+    let recipient = Recipient {
+        address: address.clone(),
+        amount: MicroMinotari(0),
+        payment_id: typed.map(str::to_string),
+    };
+    let bytes = recipient
+        .payment_id_bytes()
+        .filter(|bytes| !bytes.is_empty());
+    let embedded = address.features().contains(TariAddressFeatures::PAYMENT_ID);
+    EffectivePaymentId {
+        // Bytes, not display strings: typing the hex of a binary id is not sending it.
+        payment_id_overridden: embedded && bytes.as_deref() != typed.map(str::as_bytes),
+        payment_id: bytes.as_deref().map(display_payment_id_bytes),
+    }
+}
+
+/// Printable ASCII is shown as text, anything else as `0x` hex, so a consent screen can't
+/// show a lookalike (bidi, zero-width, confusable) of the bytes that are sent.
+fn display_payment_id_bytes(bytes: &[u8]) -> String {
+    if bytes.iter().all(|b| b.is_ascii_graphic() || *b == b' ') {
+        String::from_utf8_lossy(bytes).into_owned()
+    } else {
+        format!("0x{}", hex::encode(bytes))
+    }
+}
+
+/// [`effective_payment_id`] for a destination string, parsed the same way the send is.
+pub fn resolve_effective_payment_id(
+    destination: &str,
+    typed_payment_id: Option<&str>,
+) -> Result<EffectivePaymentId, TransactionError> {
+    let address = parse_destination_address(destination)
+        .map_err(|e| TransactionError::InvalidAddress(e.to_string()))?;
+    Ok(effective_payment_id(&address, typed_payment_id))
+}
+
+/// Payment id fields for the confirmation payload and the PIN prompt.
+///
+/// Only an L1 send can have an id embedded in the address. Burns and L2 spends show the
+/// caller's own reference.
+fn consent_payment_id(
+    kind: &SpendKind,
+    typed_payment_id: Option<&str>,
+) -> Result<EffectivePaymentId, TransactionError> {
+    match kind {
+        SpendKind::Send { destination } => {
+            resolve_effective_payment_id(destination, typed_payment_id)
+        }
+        _ => Ok(EffectivePaymentId {
+            payment_id: typed_payment_id.map(str::to_string),
+            payment_id_overridden: false,
+        }),
     }
 }
 
@@ -281,6 +454,15 @@ struct GatePass {
 
 static TXN_DIALOG_GATE: LazyLock<tokio::sync::Semaphore> =
     LazyLock::new(|| tokio::sync::Semaphore::new(1));
+
+/// The gate permit, for work that must not overlap any spend: a wallet reset deletes
+/// the folder a burn records its claim proof in. Fails instead of waiting, so a reset
+/// doesn't sit behind a dialog the user has open.
+pub fn try_exclusive_permit() -> Result<tokio::sync::SemaphorePermit<'static>, anyhow::Error> {
+    TXN_DIALOG_GATE.try_acquire().map_err(|_| {
+        anyhow::anyhow!("A transaction is in progress. Try again once it has finished.")
+    })
+}
 
 static INFLIGHT: LazyLock<tokio::sync::Mutex<Option<InFlightTxn>>> =
     LazyLock::new(|| tokio::sync::Mutex::new(None));
@@ -305,7 +487,7 @@ pub struct TxnDialogResponse {
 /// Parse an XTM amount string into µT, rejecting unparseable and zero amounts.
 pub fn parse_amount(amount: &str) -> Result<u64, TransactionError> {
     let minotari_amount = Minotari::from_str(amount)
-        .map_err(|e| TransactionError::InvalidAmount(format!("Invalid amount '{amount}': {e}")))?;
+        .map_err(|e| TransactionError::InvalidAmount(format!("Invalid amount: {e}")))?;
     let amount_u64 = MicroMinotari::from(minotari_amount).as_u64();
 
     if amount_u64 == 0 {
@@ -317,11 +499,24 @@ pub fn parse_amount(amount: &str) -> Result<u64, TransactionError> {
     Ok(amount_u64)
 }
 
+/// `amount` µT as the decimal string a user would type for it.
+fn micro_to_decimal(amount: u64) -> String {
+    format!("{}.{:06}", amount / 1_000_000, amount % 1_000_000)
+}
+
 /// Send funds behind the user-consent gates described in the module docs.
 ///
-/// Returns as soon as the transaction has been signed and broadcast; emitting result
-/// events / balance refreshes is left to the caller.
-pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionError> {
+/// Returns as soon as the transaction has been signed, recorded and broadcast, saying
+/// whether the node accepted it; emitting result events / balance refreshes is left to
+/// the caller.
+pub async fn gated_send(request: GatedSendRequest) -> Result<SendReceipt, TransactionError> {
+    gated_send_with_cancel(request, None).await
+}
+
+pub async fn gated_send_with_cancel(
+    request: GatedSendRequest,
+    request_cancel: Option<tokio_util::sync::CancellationToken>,
+) -> Result<SendReceipt, TransactionError> {
     let GatedSendRequest {
         origin,
         request_id,
@@ -332,7 +527,16 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
 
     let amount_u64 = parse_amount(&amount)?;
     let kind = SpendKind::Send { destination };
-    let pass = pass_gates(origin, request_id, &amount, amount_u64, &kind, &payment_id).await?;
+    let gates = pass_gates(origin, request_id, &amount, amount_u64, &kind, &payment_id);
+    let pass = if let Some(cancel) = &request_cancel {
+        tokio::select! {
+            biased;
+            _ = cancel.cancelled() => return Err(TransactionError::Denied("MCP server stopped".to_string())),
+            result = gates => result?,
+        }
+    } else {
+        gates.await?
+    };
 
     // The PIN dialog (when a PIN is configured) is raised from here on, before the
     // minotari transaction is created, and carries the amount/destination.
@@ -349,10 +553,10 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
         amount_u64,
         payment_id,
         Some(pass.pin_context),
+        request_cancel,
     )
     .await
-    .map(|_| ())
-    .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {e}")))
+    .map_err(|e| wallet_failure("Transaction failed", e))
 }
 
 /// Networks with an L2 Universe can use. A burn anywhere else would just destroy funds.
@@ -405,8 +609,7 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing burn (claim_public_key={}, amount={amount})",
-        kind.counterparty()
+        "send gate: executing burn"
     );
     let SpendKind::Burn { claim_public_key } = kind else {
         unreachable!("gated_burn builds a Burn kind")
@@ -418,7 +621,79 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
         Some(pass.pin_context),
     )
     .await
-    .map_err(|e| TransactionError::WalletError(format!("Burn failed: {e}")))
+    .map_err(|e| wallet_failure("Burn failed", e))
+}
+
+/// Abandon a stalled send or burn behind the same gates as [`gated_send`]: it hands
+/// the inputs back, and if the original still lands, a later spend of them fails.
+pub async fn gated_abandon(
+    request_id: String,
+    tx_id: String,
+    accept_unreconcilable: bool,
+) -> Result<(), TransactionError> {
+    // Burns have no history entry until mined, so the amount comes from the stalled list.
+    let stalled = MinotariWalletManager::stalled_transactions()
+        .await
+        .map_err(|e| wallet_failure("Abandon failed", e))?;
+    let Some(entry) = stalled.iter().find(|s| s.tx_id == tx_id) else {
+        // Mined, rejected or already abandoned since the UI last looked: say that, not "try later".
+        return Err(TransactionError::AbandonRefused {
+            code: "abandon_not_pending",
+            message: format!("Transaction {tx_id} is not stalled"),
+        });
+    };
+    check_abandon(entry, accept_unreconcilable)?;
+    let amount_u64 = entry.amount;
+    let is_burn = entry.burn_commitment.is_some();
+    let amount = micro_to_decimal(amount_u64);
+    let kind = SpendKind::Abandon {
+        tx_id,
+        accept_unreconcilable,
+        is_burn,
+    };
+    let pass = pass_gates(
+        SendOrigin::App,
+        request_id,
+        &amount,
+        amount_u64,
+        &kind,
+        &None,
+    )
+    .await?;
+
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "send gate: executing abandon (tx_id={})",
+        kind.counterparty()
+    );
+    let SpendKind::Abandon { tx_id, .. } = kind else {
+        unreachable!("gated_abandon builds an Abandon kind")
+    };
+    MinotariWalletManager::abandon_stalled_transaction(
+        &tx_id,
+        accept_unreconcilable,
+        Some(pass.pin_context),
+    )
+    .await
+    .map_err(|e| wallet_failure("Abandon failed", e))
+}
+
+/// A burn is never abandoned without a change output: once it landed, the scan couldn't
+/// tell that from its inputs going elsewhere, and the wallet would drop its only proof.
+fn check_abandon(
+    entry: &StalledTransaction,
+    accept_unreconcilable: bool,
+) -> Result<(), TransactionError> {
+    if accept_unreconcilable && entry.burn_commitment.is_some() {
+        return Err(TransactionError::AbandonRefused {
+            code: "abandon_burn_unreconcilable",
+            message: format!(
+                "Burn {} has no change output, so it can't be abandoned safely",
+                entry.tx_id
+            ),
+        });
+    }
+    Ok(())
 }
 
 /// Send XTR on L2 behind the same gates as [`gated_send`]. Refused without a PIN or off
@@ -479,7 +754,7 @@ fn l2_send_memo(
     pay_ref: Option<&str>,
     destination: &OotleAddress,
 ) -> Result<Option<(String, Memo)>, TransactionError> {
-    let embedded = destination.pay_ref().map(|p| p.as_bytes());
+    let embedded = destination.destination_tag().map(|tag| tag.as_bytes());
     let bytes = match (pay_ref.map(str::as_bytes), embedded) {
         (Some(explicit), Some(embedded)) if explicit != embedded => {
             return Err(TransactionError::InvalidAddress(
@@ -489,21 +764,15 @@ fn l2_send_memo(
         (Some(bytes), _) | (None, Some(bytes)) => bytes,
         (None, None) => return Ok(None),
     };
-    let memo = PayRef::new_checked(bytes)
-        .and_then(|_| Memo::new_pay_ref_and_message(bytes, ""))
+    let memo = DestinationTag::new_checked(bytes)
+        .and_then(|_| Memo::new_destination_tag_and_message(bytes, ""))
         .ok_or_else(|| {
             TransactionError::InvalidAddress(format!(
                 "Pay reference must be 1 to {} bytes",
-                PayRef::MAX_LEN
+                DestinationTag::MAX_LEN
             ))
         })?;
-    // Only printable ASCII is shown as text, so the PIN prompt can't show a lookalike of what is sent.
-    let shown = if bytes.iter().all(|b| b.is_ascii_graphic() || *b == b' ') {
-        String::from_utf8_lossy(bytes).into_owned()
-    } else {
-        format!("0x{}", hex::encode(bytes))
-    };
-    Ok(Some((shown, memo)))
+    Ok(Some((display_payment_id_bytes(bytes), memo)))
 }
 
 /// The PIN prompt shows the amount as a JS number divided by 10^6. Above 2^52 micro units that
@@ -552,7 +821,7 @@ pub async fn gated_l2_claim(
     )?;
     let (file_name, proof) = OotleWalletManager::find_claimable_burn(&commitment)?;
     let amount_u64 = proof.claim_proof.value;
-    let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
+    let amount = micro_to_decimal(amount_u64);
     let kind = SpendKind::L2Claim { commitment };
     let pass = pass_gates(
         SendOrigin::App,
@@ -566,8 +835,7 @@ pub async fn gated_l2_claim(
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing L2 claim (commitment={}, amount={amount})",
-        kind.counterparty()
+        "send gate: executing L2 claim"
     );
     OotleWalletManager::claim_burn(&app_handle, file_name, proof, pass.pin_context).await
 }
@@ -575,6 +843,7 @@ pub async fn gated_l2_claim(
 /// Run the consent gates for one spend: serialise on the gate permit, then show the
 /// approve/deny dialog when the origin requires it. On success the returned
 /// [`GatePass`] carries the permit and the PIN context to sign under.
+#[allow(clippy::too_many_lines)]
 async fn pass_gates(
     origin: SendOrigin,
     request_id: String,
@@ -586,6 +855,9 @@ async fn pass_gates(
     if origin == SendOrigin::Tapplet {
         check_tapplet_amount(amount_u64)?;
     }
+    // Before any dialog: a bad address fails here, and the screens below show the id
+    // that will go on chain rather than the Message the caller typed.
+    let consent = consent_payment_id(kind, payment_id.as_deref())?;
     let pin_configured = PinManager::pin_locked().await;
     let needs_confirmation = origin.requires_confirmation(pin_configured);
     let destination = kind.counterparty();
@@ -635,14 +907,17 @@ async fn pass_gates(
 
     if needs_confirmation {
         let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
-        {
+        let _cleanup_guard = {
             let mut inflight = INFLIGHT.lock().await;
             *inflight = Some(InFlightTxn {
                 origin,
                 request_id: request_id.clone(),
                 tx,
             });
-        }
+            InFlightCleanupGuard {
+                request_id: request_id.clone(),
+            }
+        };
 
         let amount_display = format!("{amount} {}", kind.currency());
         info!(
@@ -651,14 +926,41 @@ async fn pass_gates(
             origin.as_str()
         );
 
+        let fee_micro_minotari = if matches!(kind, SpendKind::Send { .. }) {
+            // The typed Message: the estimator resolves the bytes the output carries itself.
+            Some(
+                MinotariWalletManager::estimate_one_sided_fee(
+                    destination,
+                    amount_u64,
+                    payment_id.clone(),
+                )
+                .await
+                .map_err(|err| TransactionError::InternalError(err.to_string()))?,
+            )
+        } else {
+            None
+        };
+
         EventsEmitter::emit_mcp_transaction_confirmation(McpTransactionConfirmationPayload {
-            request_id,
+            request_id: request_id.clone(),
             kind: kind.as_str().to_string(),
             destination: destination.to_string(),
             amount_micro_minotari: amount_u64,
             amount_display,
             origin: origin.as_str().to_string(),
-            payment_id: payment_id.clone(),
+            payment_id: consent.payment_id.clone(),
+            payment_id_overridden: consent.payment_id_overridden,
+
+            accept_unreconcilable: matches!(
+                kind,
+                SpendKind::Abandon {
+                    accept_unreconcilable: true,
+                    ..
+                }
+            ),
+            is_burn: matches!(kind, SpendKind::Abandon { is_burn: true, .. }),
+
+            fee_micro_minotari,
         })
         .await;
 
@@ -668,8 +970,45 @@ async fn pass_gates(
 
     Ok(GatePass {
         _permit: permit,
-        pin_context: kind.pin_context(origin, amount_u64, payment_id.clone()),
+        pin_context: kind.pin_context(
+            origin,
+            amount_u64,
+            consent.payment_id,
+            consent.payment_id_overridden,
+        ),
     })
+}
+
+struct InFlightCleanupGuard {
+    request_id: String,
+}
+
+impl Drop for InFlightCleanupGuard {
+    fn drop(&mut self) {
+        let request_id = std::mem::take(&mut self.request_id);
+        if let Ok(mut guard) = INFLIGHT.try_lock() {
+            if guard
+                .as_ref()
+                .is_some_and(|txn| txn.request_id == request_id)
+                && let Some(txn) = guard.take()
+            {
+                deny_and_log(txn);
+            }
+        } else if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(async move {
+                let mut guard = INFLIGHT.lock().await;
+                if guard
+                    .as_ref()
+                    .is_some_and(|txn| txn.request_id == request_id)
+                    && let Some(txn) = guard.take()
+                {
+                    deny_and_log(txn);
+                }
+            });
+        } else {
+            warn!(target: LOG_TARGET_APP_LOGIC, "send gate: in-flight transaction left uncleared, lock busy and no runtime");
+        }
+    }
 }
 
 async fn await_confirmation(
@@ -709,7 +1048,12 @@ pub async fn respond_to_transaction(request_id: String, approved: bool) -> Resul
                 *inflight = Some(txn);
                 return Err("Request ID mismatch — stale or invalid response".to_string());
             }
-            drop(txn.tx.send(TxnDialogResponse { approved }));
+            if txn.tx.send(TxnDialogResponse { approved }).is_err() {
+                return Err(
+                    "Transaction confirmation channel closed — request is no longer active"
+                        .to_string(),
+                );
+            }
             Ok(())
         }
         None => Err("No transaction awaiting confirmation".to_string()),
@@ -752,6 +1096,75 @@ fn deny_and_log(txn: InFlightTxn) {
 mod tests {
     use super::*;
     use serial_test::serial;
+    use tari_transaction_components::tari_amount::MicroMinotari;
+
+    // =========================================================================
+    // Error codes
+    // =========================================================================
+
+    #[test]
+    fn a_burn_is_never_abandoned_without_a_change_output() {
+        let burn = StalledTransaction {
+            tx_id: "12".to_string(),
+            amount: 1,
+            burn_commitment: Some("ab".repeat(32)),
+        };
+        let error = check_abandon(&burn, true).expect_err("refused");
+        assert_eq!(error.code(), "abandon_burn_unreconcilable");
+        assert!(check_abandon(&burn, false).is_ok());
+
+        let send = StalledTransaction {
+            burn_commitment: None,
+            ..burn
+        };
+        assert!(check_abandon(&send, true).is_ok());
+    }
+
+    #[test]
+    fn node_text_cannot_pass_for_an_error_code() {
+        let from_node = anyhow::anyhow!(
+            "Transaction not accepted: denied by user; PIN entry cancelled; Not enough funds for a change output"
+        );
+        let error = wallet_failure("Burn failed", from_node);
+        assert_eq!(error.code(), "wallet_error");
+        assert!(
+            error.to_command_error().starts_with("[wallet_error] "),
+            "{}",
+            error.to_command_error()
+        );
+    }
+
+    #[test]
+    fn error_codes_come_from_the_error_types() {
+        let cancelled = anyhow::Error::new(PinCancelled).context("Failed to sign");
+        assert_eq!(
+            wallet_failure("Transaction failed", cancelled).code(),
+            "pin_cancelled"
+        );
+
+        let no_change = anyhow::Error::new(UtxoSelectionError::ChangeNotAffordable {
+            shortfall: MicroMinotari(61),
+        })
+        .context("Failed to create unsigned transaction");
+        let error = wallet_failure("Transaction failed", no_change);
+        assert_eq!(error.code(), "change_not_affordable");
+        assert!(error.to_string().contains("change output"), "{error}");
+
+        let not_stalled = anyhow::Error::new(AbandonSendError::NotStalled {
+            tx_id: 12u64.into(),
+            attempts: 1,
+        });
+        assert_eq!(
+            wallet_failure("Abandon failed", not_stalled).code(),
+            "abandon_not_pending"
+        );
+
+        let denied = TransactionError::Denied("Transaction denied by user".to_string());
+        assert_eq!(
+            denied.to_command_error(),
+            "[denied] Transaction denied by user"
+        );
+    }
 
     // =========================================================================
     // Gate policy
@@ -801,18 +1214,20 @@ mod tests {
         assert_eq!(send.counterparty(), "addr");
         assert_eq!(burn.counterparty(), "claimkey");
         assert!(matches!(
-            send.pin_context(SendOrigin::App, 1, None),
+            send.pin_context(SendOrigin::App, 1, None, false)
+                .with_fee(25),
             PinPromptContext::Send {
                 amount_micro_minotari: 1,
+                fee_micro_minotari: Some(25),
                 ..
             }
         ));
         assert!(matches!(
-            send.pin_context(SendOrigin::Tapplet, 1, None),
+            send.pin_context(SendOrigin::Tapplet, 1, None, false),
             PinPromptContext::Send { origin, .. } if origin == "tapplet"
         ));
         assert!(matches!(
-            burn.pin_context(SendOrigin::App, 2, Some("memo".to_string())),
+            burn.pin_context(SendOrigin::App, 2, Some("memo".to_string()), false),
             PinPromptContext::Burn { amount_micro_minotari: 2, ref claim_public_key, payment_id: Some(_) }
                 if claim_public_key == "claimkey"
         ));
@@ -836,7 +1251,7 @@ mod tests {
             "XTM"
         );
         assert!(matches!(
-            send.pin_context(SendOrigin::App, 3, None),
+            send.pin_context(SendOrigin::App, 3, None, false),
             PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account, pay_ref: None, ref origin, fee_micro_minotari: None }
                 if destination == "otl_esm_addr" && account == "component_abc" && origin == "app"
         ));
@@ -850,7 +1265,7 @@ mod tests {
             pay_ref: Some("bridge-ref".to_string()),
         };
         assert!(matches!(
-            send.pin_context(SendOrigin::Tapplet, 3, None),
+            send.pin_context(SendOrigin::Tapplet, 3, None, false),
             PinPromptContext::L2Send { pay_ref: Some(ref pay_ref), ref origin, .. }
                 if pay_ref == "bridge-ref" && origin == "tapplet"
         ));
@@ -865,7 +1280,7 @@ mod tests {
         assert_eq!(claim.counterparty(), "dae29ac8");
         assert_eq!(claim.currency(), "XTR");
         assert!(matches!(
-            claim.pin_context(SendOrigin::App, 4, None).with_fee(7),
+            claim.pin_context(SendOrigin::App, 4, None, false).with_fee(7),
             PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment, fee_micro_minotari: Some(7) }
                 if commitment == "dae29ac8"
         ));
@@ -917,6 +1332,200 @@ mod tests {
         );
     }
 
+    // Same Esmeralda address the send-validation tests use: no embedded payment id.
+    const ESME_ONE_SIDED_ADDRESS: &str = "f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g";
+    // Exchange-style fixtures from the wallet send tests. They are not this wallet's
+    // network, so the payload builder rejects them; the decoder still has to agree
+    // with `Recipient::payment_id_bytes`.
+    const MAINNET_MEXC_DEPOSIT_ADDRESS: &str = "165DUuzQoKG9BaBqprN3ZmsMRfvGHMwNwCpehJUqGoGLsSDtB535XA3PPzfRZhu2uYM9xfT8JsKoXEquWMr6XVwKK46oQHdBBjJg3sveDnoiE4cr2HBSyGx8qdxRoUEsbKsZD9f";
+    const LOCALNET_DEPOSIT_ADDRESS: &str = "H6BhBUPxTJWtZVxhbExYLz623LRHXLKSaaVYZWXK2Yvn5jP4nufiUQzKo6fgHp2t3VuY6PiGGPubmynEDzxyXDXjAXPedBhZFgJT4dAVXEW1re";
+
+    fn address_with_payment_id(payment_id: &[u8]) -> String {
+        TariAddress::from_str(ESME_ONE_SIDED_ADDRESS)
+            .unwrap()
+            .with_memo_field_payment_id(payment_id.to_vec())
+            .unwrap()
+            .to_base58()
+    }
+
+    #[test]
+    fn consent_keeps_the_typed_message_when_the_address_has_no_payment_id() {
+        let kind = SpendKind::Send {
+            destination: ESME_ONE_SIDED_ADDRESS.to_string(),
+        };
+        let consent = consent_payment_id(&kind, Some("invoice-42")).unwrap();
+        assert_eq!(consent.payment_id.as_deref(), Some("invoice-42"));
+        assert!(!consent.payment_id_overridden);
+        assert!(matches!(
+            kind.pin_context(
+                SendOrigin::App,
+                1,
+                consent.payment_id.clone(),
+                consent.payment_id_overridden,
+            ),
+            PinPromptContext::Send {
+                payment_id: Some(ref id),
+                payment_id_overridden: false,
+                ..
+            } if id == "invoice-42"
+        ));
+
+        let empty = consent_payment_id(&kind, Some("")).unwrap();
+        assert_eq!(empty.payment_id, None);
+        assert!(!empty.payment_id_overridden);
+    }
+
+    #[test]
+    fn consent_shows_an_embedded_payment_id_and_flags_a_different_message() {
+        let kind = SpendKind::Send {
+            destination: address_with_payment_id(b"PW-DEPOSIT-123"),
+        };
+        let replaced = consent_payment_id(&kind, Some("harmless note")).unwrap();
+        assert_eq!(replaced.payment_id.as_deref(), Some("PW-DEPOSIT-123"));
+        assert!(replaced.payment_id_overridden);
+        assert!(matches!(
+            kind.pin_context(
+                SendOrigin::Mcp,
+                9,
+                replaced.payment_id.clone(),
+                replaced.payment_id_overridden,
+            ),
+            PinPromptContext::Send {
+                payment_id: Some(ref id),
+                payment_id_overridden: true,
+                ..
+            } if id == "PW-DEPOSIT-123"
+        ));
+
+        // A blank Message is not what the address embeds, so the screen still says so.
+        let blank = consent_payment_id(&kind, None).unwrap();
+        assert_eq!(blank.payment_id.as_deref(), Some("PW-DEPOSIT-123"));
+        assert!(blank.payment_id_overridden);
+
+        let same = consent_payment_id(&kind, Some("PW-DEPOSIT-123")).unwrap();
+        assert_eq!(same.payment_id.as_deref(), Some("PW-DEPOSIT-123"));
+        assert!(!same.payment_id_overridden);
+    }
+
+    #[test]
+    fn consent_shows_a_binary_embedded_payment_id_as_hex() {
+        let bytes = vec![0xff; 32];
+        let destination = address_with_payment_id(&bytes);
+        let kind = SpendKind::Send {
+            destination: destination.clone(),
+        };
+        let consent = consent_payment_id(&kind, Some("typed")).unwrap();
+        let expected = format!("0x{}", hex::encode(&bytes));
+        assert_eq!(consent.payment_id.as_deref(), Some(expected.as_str()));
+        assert!(consent.payment_id_overridden);
+
+        let recipient = Recipient {
+            address: TariAddress::from_str(&destination).unwrap(),
+            amount: MicroMinotari(1_000),
+            payment_id: Some("typed".to_string()),
+        };
+        assert_eq!(
+            recipient.payment_id_bytes().as_deref(),
+            Some(bytes.as_slice())
+        );
+    }
+
+    #[test]
+    fn typing_the_hex_of_a_binary_payment_id_still_flags_the_override() {
+        let bytes = vec![0xde, 0xad, 0xbe, 0xef];
+        let kind = SpendKind::Send {
+            destination: address_with_payment_id(&bytes),
+        };
+        let consent = consent_payment_id(&kind, Some("0xdeadbeef")).unwrap();
+        assert_eq!(consent.payment_id.as_deref(), Some("0xdeadbeef"));
+        assert!(consent.payment_id_overridden);
+    }
+
+    #[test]
+    fn a_text_payment_id_that_reads_as_hex_is_shown_as_text() {
+        // UTF-8 "deadbeef" must not look like the binary bytes de ad be ef.
+        let kind = SpendKind::Send {
+            destination: address_with_payment_id(b"deadbeef"),
+        };
+        let consent = consent_payment_id(&kind, Some("deadbeef")).unwrap();
+        assert_eq!(consent.payment_id.as_deref(), Some("deadbeef"));
+        assert!(!consent.payment_id_overridden);
+    }
+
+    #[test]
+    fn payment_id_text_that_is_not_printable_ascii_is_shown_as_hex() {
+        for text in [
+            "PW\u{202E}321",
+            "PW\u{2066}ID",
+            "PW\nID",
+            "PW\u{200F}ID",
+            "invoice-123\u{200B}",
+            "invoice-123\u{200C}",
+            "invoice-123\u{2060}",
+            "invoice-123\u{E0041}",
+            "café",
+        ] {
+            let kind = SpendKind::Send {
+                destination: address_with_payment_id(text.as_bytes()),
+            };
+            let consent = consent_payment_id(&kind, None).unwrap();
+            let expected = format!("0x{}", hex::encode(text.as_bytes()));
+            assert_eq!(
+                consent.payment_id.as_deref(),
+                Some(expected.as_str()),
+                "{text:?}"
+            );
+            assert!(consent.payment_id_overridden);
+        }
+    }
+
+    #[test]
+    fn a_real_exchange_address_payment_id_is_what_consent_shows() {
+        let mexc = TariAddress::from_str(MAINNET_MEXC_DEPOSIT_ADDRESS).unwrap();
+        let embedded = mexc.get_memo_field_payment_id_bytes();
+        assert_eq!(embedded.len(), 32);
+        let effective = effective_payment_id(&mexc, Some("typed message"));
+        let expected = format!("0x{}", hex::encode(&embedded));
+        assert_eq!(effective.payment_id.as_deref(), Some(expected.as_str()));
+        assert!(effective.payment_id_overridden);
+
+        let localnet = TariAddress::from_str(LOCALNET_DEPOSIT_ADDRESS).unwrap();
+        let effective = effective_payment_id(&localnet, None);
+        assert_eq!(effective.payment_id.as_deref(), Some("PW-DEPOSIT-123"));
+        assert!(effective.payment_id_overridden);
+
+        // The payload builder refuses an address the send itself would refuse.
+        let kind = SpendKind::Send {
+            destination: MAINNET_MEXC_DEPOSIT_ADDRESS.to_string(),
+        };
+        assert!(matches!(
+            consent_payment_id(&kind, Some("typed")),
+            Err(TransactionError::InvalidAddress(_))
+        ));
+    }
+
+    #[test]
+    fn burns_still_show_the_typed_payment_id() {
+        let kind = SpendKind::Burn {
+            claim_public_key: "ab".repeat(32),
+        };
+        let consent = consent_payment_id(&kind, Some("memo")).unwrap();
+        assert_eq!(consent.payment_id.as_deref(), Some("memo"));
+        assert!(!consent.payment_id_overridden);
+        assert!(matches!(
+            kind.pin_context(
+                SendOrigin::App,
+                2,
+                consent.payment_id.clone(),
+                consent.payment_id_overridden,
+            ),
+            PinPromptContext::Burn {
+                payment_id: Some(ref id),
+                ..
+            } if id == "memo"
+        ));
+    }
+
     // =========================================================================
     // parse_amount
     // =========================================================================
@@ -961,7 +1570,9 @@ mod tests {
     }
 
     fn memo_pay_ref(memo: &Memo) -> Vec<u8> {
-        memo.as_pay_ref().expect("memo has a pay ref").to_vec()
+        memo.as_destination_tag()
+            .expect("memo has a pay ref")
+            .to_vec()
     }
 
     #[test]
@@ -976,8 +1587,8 @@ mod tests {
 
     #[test]
     fn l2_send_memo_falls_back_to_the_address_pay_ref() {
-        let embedded = PayRef::new_checked(b"from-address".as_slice()).expect("pay ref");
-        let address = ootle_address().with_pay_ref(embedded);
+        let embedded = DestinationTag::new_checked(b"from-address".as_slice()).expect("pay ref");
+        let address = ootle_address().with_destination_tag(embedded);
 
         let (shown, memo) = l2_send_memo(None, &address)
             .expect("no pay ref")
@@ -993,8 +1604,8 @@ mod tests {
 
     #[test]
     fn l2_send_memo_rejects_a_pay_ref_that_differs_from_the_address_one() {
-        let embedded = PayRef::new_checked(b"from-address".as_slice()).expect("pay ref");
-        let address = ootle_address().with_pay_ref(embedded);
+        let embedded = DestinationTag::new_checked(b"from-address".as_slice()).expect("pay ref");
+        let address = ootle_address().with_destination_tag(embedded);
         let err = l2_send_memo(Some("explicit"), &address).expect_err("rejected");
         assert!(matches!(err, TransactionError::InvalidAddress(_)));
     }
@@ -1007,8 +1618,8 @@ mod tests {
             "ref\u{200D}".as_bytes().to_vec(),
             "line\nbreak".as_bytes().to_vec(),
         ] {
-            let embedded = PayRef::new_checked(bytes.clone()).expect("pay ref");
-            let address = ootle_address().with_pay_ref(embedded);
+            let embedded = DestinationTag::new_checked(bytes.clone()).expect("pay ref");
+            let address = ootle_address().with_destination_tag(embedded);
             let (shown, memo) = l2_send_memo(None, &address)
                 .expect("the recipient's bytes are sent")
                 .expect("a memo");
@@ -1053,12 +1664,12 @@ mod tests {
 
     #[test]
     fn l2_send_memo_rejects_an_empty_or_oversized_pay_ref() {
-        let too_long = "a".repeat(PayRef::MAX_LEN + 1);
+        let too_long = "a".repeat(DestinationTag::MAX_LEN + 1);
         for pay_ref in ["", too_long.as_str()] {
             let err = l2_send_memo(Some(pay_ref), &ootle_address()).expect_err("rejected");
             assert!(matches!(err, TransactionError::InvalidAddress(_)));
         }
-        let longest = "a".repeat(PayRef::MAX_LEN);
+        let longest = "a".repeat(DestinationTag::MAX_LEN);
         assert!(l2_send_memo(Some(&longest), &ootle_address()).is_ok());
     }
 
@@ -1150,6 +1761,65 @@ mod tests {
 
         let err = await_confirmation(rx).await.expect_err("denied");
         assert!(matches!(err, TransactionError::Denied(_)));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn stopped_mcp_send_does_not_wait_for_consent_gate() {
+        let permit = TXN_DIALOG_GATE.acquire().await.expect("gate open");
+        let cancel = tokio_util::sync::CancellationToken::new();
+        cancel.cancel();
+        let result = tokio::time::timeout(
+            Duration::from_secs(1),
+            gated_send_with_cancel(
+                GatedSendRequest {
+                    origin: SendOrigin::Mcp,
+                    request_id: "stopped_request".to_string(),
+                    amount: "1".to_string(),
+                    destination: "unused".to_string(),
+                    payment_id: None,
+                },
+                Some(cancel),
+            ),
+        )
+        .await
+        .expect("cancelled sends don't wait for the gate");
+        assert!(matches!(result, Err(TransactionError::Denied(_))));
+        drop(permit);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn cancelled_confirmation_clears_matching_dialog() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
+        {
+            let mut inflight = INFLIGHT.lock().await;
+            *inflight = Some(InFlightTxn {
+                origin: SendOrigin::Mcp,
+                request_id: "cancelled_request".to_string(),
+                tx,
+            });
+        }
+
+        let cleanup_guard = InFlightCleanupGuard {
+            request_id: "cancelled_request".to_string(),
+        };
+        let future = await_confirmation(rx);
+        let mut future = Box::pin(future);
+        assert!(
+            tokio::time::timeout(Duration::from_millis(20), future.as_mut())
+                .await
+                .is_err()
+        );
+        drop(future);
+        drop(cleanup_guard);
+
+        assert!(INFLIGHT.lock().await.is_none());
+        assert!(
+            respond_to_transaction("cancelled_request".to_string(), true)
+                .await
+                .is_err()
+        );
     }
 
     #[tokio::test]
@@ -1280,5 +1950,20 @@ mod tests {
             .expect("permit released")
             .expect("gate open");
         drop(reacquired);
+    }
+
+    /// A wallet reset must not start while a spend (a burn writing its proof) holds the permit.
+    #[tokio::test]
+    #[serial]
+    async fn exclusive_permit_refused_while_a_spend_holds_the_gate() {
+        let spend = TXN_DIALOG_GATE.acquire().await.expect("gate open");
+        assert!(try_exclusive_permit().is_err());
+        drop(spend);
+        let reset = try_exclusive_permit().expect("gate free");
+        assert!(
+            TXN_DIALOG_GATE.try_acquire().is_err(),
+            "reset holds the gate"
+        );
+        drop(reset);
     }
 }

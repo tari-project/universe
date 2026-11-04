@@ -1,13 +1,13 @@
 {
   "bubbles": {
     "active-nodes": "nút đang hoạt động",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
+    "ago": "trước",
+    "block": "khối",
+    "got-rewarded": "đã nhận thưởng",
+    "miners": "thợ đào",
     "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "solved": "đã giải",
+    "solving": "đang được giải"
   },
   "connection-to-node-lost": "Mất kết nối với miner. Vui lòng chờ miner kết nối lại hoặc khởi động lại miner.",
   "cpu-power": "Sức mạnh CPU",
@@ -18,26 +18,20 @@
   "floor": "Sàn",
   "gpu-power": "Sức mạnh GPU",
   "mining-button-text": {
-    "cancel-mining": "Hủy đào",
-    "changing-mode": "Đang chuyển chế độ",
-    "started-auto-mining": "Đã tự động đào",
-    "starting-mining": "Đang bắt đầu đào",
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
-    "state-start": "Bắt đầu đào",
-    "stop-mining": "Dừng đào",
-    "waiting-for-idle": "Đang chờ rảnh"
+    "state-pause": "Tạm dừng đào",
+    "state-resume": "Tiếp tục đào",
+    "state-start": "Bắt đầu đào"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "Xem tất cả chế độ",
+      "alert_cta-turbo": "Dùng Turbo️",
+      "alert_text": "Chế độ Eco chỉ sử dụng một phần nhỏ tài nguyên hệ thống.",
+      "alert_text_extra": "Hãy thử tăng chế độ năng lượng.",
+      "alert_title": "Không kiếm đủ phần thưởng?"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "Chế độ",
+    "mode-long": "Chế độ đào"
   },
   "orphan-chain-tooltip": {
     "heading": "Bạn có thể thử:",
@@ -49,8 +43,8 @@
     "step_6": "Thử đặt lại ứng dụng (trong Cài đặt)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "Tạm dừng trong <strong>{{duration}}</strong>",
+    "until-restart": "Tạm dừng cho đến khi tôi<strong> khởi động lại</strong>"
   },
   "pool": {
     "accepted_shares": "Số share chấp nhận",
@@ -59,16 +53,16 @@
     "unpaid": "Chưa thanh toán"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "Lưu lịch",
+    "cta-save-complete": "Đã lưu!",
+    "current": "Lịch hiện tại của bạn",
+    "mining-schedule": "Lịch đào",
+    "mining-schedule-copy": "Đặt thời gian cụ thể để tự động bắt đầu đào.",
+    "mining-schedule-setup": "Thiết lập lịch đào",
+    "scheduled-to-mine": "Đã lên lịch đào lúc",
+    "scheduled-to-pause": "Đã lên lịch tạm dừng đào lúc",
+    "time-label-end": "Giờ kết thúc hằng ngày",
+    "time-label-start": "Giờ bắt đầu hằng ngày"
   },
   "you-earn-rewards-separately": "Bạn nhận phần thưởng đào CPU và GPU riêng biệt",
   "you-won-block": "Bạn là người thắng <span>block #{{ blockHeight }}</span>",

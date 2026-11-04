@@ -3,7 +3,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusList, StatusListEntry } from '../components/StatusList/StatusList';
 import TariPurpleLogo from './SendReview/icons/TariPurpleLogo';
-import { Amount, Currency, WhiteBox, WhiteBoxLabel, WhiteBoxValue, Wrapper } from './SendReview/styles';
+import { Amount, Currency, OverrideNotice, WhiteBox, WhiteBoxLabel, WhiteBoxValue, Wrapper } from './SendReview/styles';
 import type { SpendKind } from '@app/types/events-payloads.ts';
 
 interface Props {
@@ -11,9 +11,13 @@ interface Props {
     /** Recipient address for a send, L2 claim public key for a burn, Ootle address for an L2 send, burn commitment for an L2 claim. */
     destination: string;
     paymentId?: string | null;
+    /** The destination address replaced the typed message with its own payment id. */
+    paymentIdOverridden?: boolean;
     feeMicroMinotari?: number | null;
     subtitle?: string;
     kind?: SpendKind;
+    /** For an abandon: picks the warning shown in place of `subtitle`. */
+    abandon?: { accept_unreconcilable?: boolean; is_burn?: boolean };
 }
 
 /**
@@ -25,20 +29,33 @@ export function TransactionContextSummary({
     amountMicroMinotari,
     destination,
     paymentId,
+    paymentIdOverridden,
     feeMicroMinotari,
     subtitle,
     kind = 'send',
+    abandon,
 }: Props) {
     const { t } = useTranslation('wallet');
     const isBurn = kind === 'burn';
+    const isAbandon = kind === 'abandon';
+    const note =
+        !isAbandon || !abandon
+            ? subtitle
+            : abandon.accept_unreconcilable
+              ? t('abandon.unreconcilable-note')
+              : abandon.is_burn
+                ? t('abandon.burn-note')
+                : t('abandon.note');
     const isL2 = kind === 'l2_send' || kind === 'l2_claim';
     const destinationLabel = isBurn
         ? t('burn.claim-public-key')
-        : kind === 'l2_claim'
-          ? t('l2.claim.commitment')
-          : isL2
-            ? t('l2.send.address')
-            : t('send.destination-address');
+        : isAbandon
+          ? t('send.transaction-id')
+          : kind === 'l2_claim'
+            ? t('l2.claim.commitment')
+            : isL2
+              ? t('l2.send.address')
+              : t('send.destination-address');
 
     const entries: StatusListEntry[] = [
         {
@@ -54,7 +71,9 @@ export function TransactionContextSummary({
             value:
                 feeMicroMinotari != null
                     ? `${formatNumber(feeMicroMinotari, FormatPreset.XTM_DECIMALS)} ${isL2 ? 'XTR' : 'XTM'}`
-                    : null,
+                    : kind === 'send'
+                      ? t('send.fee-unavailable')
+                      : null,
         },
     ];
 
@@ -64,9 +83,11 @@ export function TransactionContextSummary({
                 <WhiteBoxLabel>
                     {isBurn
                         ? t('burn.review-label')
-                        : kind === 'l2_claim'
-                          ? t('l2.claim.review-label')
-                          : t('send.review-label')}
+                        : isAbandon
+                          ? t('abandon.review-label')
+                          : kind === 'l2_claim'
+                            ? t('l2.claim.review-label')
+                            : t('send.review-label')}
                 </WhiteBoxLabel>
                 <WhiteBoxValue>
                     <TariPurpleLogo />
@@ -78,9 +99,12 @@ export function TransactionContextSummary({
                 </WhiteBoxValue>
             </WhiteBox>
             <StatusList entries={entries} />
-            {subtitle && (
+            {paymentIdOverridden && (
+                <OverrideNotice data-testid="payment-id-overridden">{t('send.payment-id-overridden')}</OverrideNotice>
+            )}
+            {note && (
                 <Typography variant="p" style={{ opacity: 0.5, fontSize: 12 }}>
-                    {subtitle}
+                    {note}
                 </Typography>
             )}
         </Wrapper>

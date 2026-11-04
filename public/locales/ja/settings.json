@@ -43,20 +43,23 @@
   "gpu-device-enabled": "GPUマイニングデバイス",
   "gpu-device-enabled-description": "特定のGPUデバイスを有効または無効にします。",
   "gpu-device-no-found": "⚠️ GPUデバイスが見つかりません",
-  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
+  "gpu-device-single-device-note": "{{miner}}は一度に1つのGPUでのみマイニングします。最初に有効になっているデバイスが使用されます。",
   "gpu-engine": "GPUエンジン",
   "gpu-miner-description": {
-    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
-    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+    "LolMiner": "AMDおよびNVIDIA GPU向けのクローズドソースC29マイナー",
+    "TariMiner": "NVIDIA GPU向けのオープンソースC29マイナー"
   },
-  "gpu-miner-failed-with": "Failed with: {{error}}",
-  "gpu-miner-select-placeholder": "Select GPU miner",
+  "gpu-miner-failed-with": "失敗しました：{{error}}",
+  "gpu-miner-select-placeholder": "GPUマイナーを選択",
   "gpu-miners": "GPUマイナー",
   "gpu-miners-not-found": "GPUマイナーが見つかりません",
   "gpu-mining-enabled": "GPUマイニング",
-  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
-  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-mining-not-recommended": "ローエンドのハードウェアが検出されました。GPUマイニングは推奨されません",
+  "gpu-not-available-on-macos": "⚠️ macOSではGPUマイニングを利用できません",
+  "gpu-solo-mining-unavailable": "⚠️ インストール済みのGPUマイナーがソロマイニングに対応していないため必須です",
   "gpu-unavailable": "⚠️ ハードウェアがサポートしていないため、GPUが無効です",
+  "gpu-cannot-mine": "⚠️ お使いのGPUではTariをマイニングできません：{{reason}}",
+  "gpu-cannot-mine-unknown": "マイナーがこのデバイスに対応していません",
   "hardware-status": "ハードウェアの状態",
   "idle-timeout": {
     "max": "最大は21600秒",
@@ -80,69 +83,50 @@
   "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",
   "mcp": {
     "advanced": {
-      "control-tier": "Control Tier",
-      "expiry-days": "Token Expiry (days)",
-      "port": "Server Port",
-      "rate-limit": "Transaction Rate Limit (per minute)",
-      "read-tier": "Read Tier",
-      "title": "Advanced Settings"
+      "control-tier": "制御レベル",
+      "port": "サーバーポート",
+      "read-tier": "読み取りレベル"
     },
     "agent-config": {
-      "copied": "Copied!",
-      "copy": "Copy Configuration",
-      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
-      "or-add-to-settings-json": "Or add this to your settings JSON:",
-      "title": "Agent Configuration"
+      "copied": "コピーしました！",
+      "copy": "設定をコピー",
+      "description": "以下の設定をコピーして、AIエージェントをTari Universeに接続します",
+      "or-add-to-settings-json": "または、設定JSONに以下を追加してください：",
+      "title": "エージェント設定"
     },
     "audit-log": {
-      "description": "Recent MCP tool calls",
-      "duration-ms": "{{ms}}ms",
-      "empty": "No audit entries yet",
-      "export": "Export Log",
-      "title": "Audit Log"
+      "description": "最近のMCPツール呼び出し",
+      "duration-ms": "{{ms}}ミリ秒",
+      "empty": "監査エントリーはまだありません",
+      "export": "ログをエクスポート",
+      "title": "監査ログ"
     },
     "server-toggle": {
-      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
-      "status-running": "Running on port {{port}}",
-      "status-stopped": "Stopped",
-      "title": "MCP Server"
+      "description": "MCPサーバーを有効にして、AIエージェントがTari Universeとやり取りできるようにします",
+      "status-running": "ポート{{port}}で実行中",
+      "status-stopped": "停止中",
+      "title": "MCPサーバー"
     },
-    "title": "MCP Server",
     "token-display": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "copied": "Copied!",
-      "copy": "Copy",
-      "created": "Created",
-      "days-remaining": "{{days}} days remaining",
-      "description": "Use this token to authenticate MCP clients",
-      "expires": "Expires",
-      "hide": "Hide",
-      "no-token": "No token generated",
-      "refresh-expiry": "Refresh Expiry",
-      "reveal": "Reveal",
-      "revoke": "Revoke Token",
-      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
-      "title": "Bearer Token"
+      "copied": "コピーしました！",
+      "copy": "コピー",
+      "created": "作成日",
+      "days-remaining": "残り{{days}}日",
+      "description": "このトークンを使用してMCPクライアントを認証します",
+      "expires": "有効期限",
+      "hide": "非表示",
+      "refresh-expiry": "有効期限を更新",
+      "reveal": "表示",
+      "revoke": "トークンを取り消す",
+      "revoke-confirm": "よろしいですか？MCPサーバーが停止し、新しいトークンの生成が必要になります。",
+      "title": "ベアラートークン"
     },
     "transaction-dialog": {
-      "amount": "Amount",
-      "approve": "Approve",
-      "deny": "Deny",
-      "destination": "Destination",
-      "enter-pin": "Enter PIN to approve",
-      "micro-minotari": "({{amount}} µT)",
-      "remaining": "{{countdown}}s remaining",
-      "title": "MCP Transaction Confirmation"
+      "remaining": "残り{{countdown}}秒"
     },
     "transactions": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "description": "Allow MCP clients to send transactions (requires PIN)",
-      "max-amount": "Max Transaction Amount (µT)",
-      "max-amount-description": "Leave empty for no limit",
-      "pin-required": "PIN must be configured to enable transactions",
-      "title": "Transactions"
+      "description": "MCPクライアントによる取引の送信を許可する（PINが必要）",
+      "title": "取引"
     }
   },
   "mine-on-app-start": {
@@ -161,12 +145,14 @@
   "no-entry-guard": "エントリーガードが接続されていません！",
   "no-pool-configuration-available": "利用可能なプール設定がありません",
   "node": {
-    "confirm-title": "Confirm node data location change",
-    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
-    "data-cta": "Change location",
-    "data-subtitle": "Set a custom location to store the base node data",
-    "data-title": "Node data settings"
+    "confirm-title": "ノードデータの保存場所の変更を確認",
+    "confirm-warning": "ベースノードの保存場所を移動すると、既存のチェーンデータが失われる可能性があります。その場合は再同期が必要になります。",
+    "data-cta": "保存場所を変更",
+    "data-subtitle": "ベースノードのデータを保存するカスタムの場所を設定します",
+    "data-title": "ノードデータの設定"
   },
+  "custom-remote-node-address": "カスタムリモートノードアドレス（gRPC）",
+  "custom-remote-node-address-error": "無効なアドレス：{{reason}}",
   "node-configuration": "ノード設定",
   "node-configuration-description": "ローカルが使用可能になるまで、リモート、ローカル、または両方で接続します",
   "node-connection-address": "接続アドレス",
@@ -175,16 +161,9 @@
   "node-type": "タイプ",
   "not-connected-to-tari": "Tariネットワークに接続されていません",
   "open-logs-directory": "ログディレクトリを開く",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "Tari Universeウォレットを電話に接続",
-    "do-not-share-this-code": "このコードを誰とも共有しないでください",
-    "link-tari-aurora": "Tari Universe Mobileをリンク",
-    "load-qr-code": "QRコードを読み込む",
-    "passphrase": "パスフレーズ"
-  },
   "pause-on-battery-mode": {
-    "description": "Pause mining when device is disconnected from charging",
-    "title": "Pause on Battery Mode"
+    "description": "デバイスが充電から外れたときにマイニングを一時停止します",
+    "title": "バッテリーモード時に一時停止"
   },
   "pin": "ピン",
   "pool-configuration": "プール設定",
@@ -231,6 +210,10 @@
     "description": "有効にすると、コンピュータにログインしたときにアプリが自動的に起動します。",
     "title": "システム起動時に自動開始"
   },
+  "show-window-on-startup": {
+    "description": "有効にすると、Tari Universeは起動後にメインウィンドウを表示します。オフにすると、タスクトレイで起動します。",
+    "title": "起動時にウィンドウを表示"
+  },
   "should-use-system-language": "システム言語を使用",
   "stable-version-note": "アプリケーションのプレリリース版をオフにすると、信頼性と一貫性を重視した安定版に戻ります。最新の機能や改善を逃す可能性があります。",
   "stats-server-port": "統計サーバーポート",
@@ -238,11 +221,12 @@
   "sync-incomplete": "同期中...",
   "sync-status": "同期ステータス",
   "tabs": {
-    "airdrop": "Airdrop Claim",
+    "airdrop": "エアドロップの請求",
     "connections": "接続",
     "experimental": "実験的",
     "general": "一般",
-    "mcp": "MCP Server",
+    "l2": "Ootle",
+    "mcp": "MCPサーバー",
     "mining": "マイニング",
     "p2p": "プールマイニング",
     "pools": "マイニングプール",
@@ -252,8 +236,8 @@
   },
   "tari-wallet-address": "Tariウォレットアドレス",
   "task-tray": {
-    "description": "Tari universe will be minimized to task tray after closing",
-    "title": "Run app from task tray on close"
+    "description": "Tari Universeは閉じた後にタスクトレイに最小化されます",
+    "title": "閉じたときにタスクトレイからアプリを実行"
   },
   "terms-and-conditions": "利用規約",
   "theme": "テーマ",
@@ -277,5 +261,31 @@
   "waiting-for-data": "チェーンデータを待っています...",
   "yes": "はい",
   "your-feedback": "問題を説明してください",
-  "your-reference": "あなたの参照"
+  "your-reference": "あなたの参照：<br/><bold>{{logRef}}</bold>",
+  "l2": {
+    "status": "レイヤー2",
+    "pin-required": "レイヤー2を使用するにはPINを設定する必要があります",
+    "set-pin": "PINを設定",
+    "enable-description": "レイヤー2は既存のシードワードから作成されたウォレットを使用します。PINの入力を求められます。",
+    "enable": "レイヤー2を有効にする",
+    "enable-error": "レイヤー2を有効にできませんでした：",
+    "unlock-description": "レイヤー2はロックされています。\nPINを入力して開いてください。",
+    "unlock": "レイヤー2のロックを解除",
+    "unlock-error": "レイヤー2のロックを解除できませんでした：",
+    "indexer": "インデクサー",
+    "indexer-error": "無効なインデクサーURL：{{reason}}",
+    "seed-words": "シードワード",
+    "seed-note-l1": "OotleウォレットはTariウォレットと同じシードワードを使用します。",
+    "seed-note-imported": "Ootleウォレットは独自にインポートしたシードワードを使用します。別途バックアップしてください。",
+    "use-l1-seed": "Tariウォレットのシードを使用",
+    "confirm-import": "レイヤー2のシードワードをインポート",
+    "seed-change-error": "レイヤー2のシードワードを変更できませんでした",
+    "confirm-replace-copy": "現在のレイヤー2ウォレットは置き換えられます。\n元に戻すにはそのシードワードが必要です。",
+    "address": "Ootleウォレットアドレス",
+    "address-description": "OotleでXTRを受け取るにはこれを共有してください。",
+    "public-key": "Ootle所有者公開鍵",
+    "public-key-description": "Tariウォレットからのバーンの請求キーです。「L2へバーン」で自動的に入力されます。",
+    "side-by-side": "ウォレットを並べて表示できるようにする",
+    "side-by-side-description": "TariウォレットとOotleウォレットを並べて表示します。オフの場合、各ナビボタンはそれぞれのウォレットを単独で開きます。"
+  }
 }

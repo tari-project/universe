@@ -22,28 +22,30 @@
 
 use anyhow::anyhow;
 use futures::StreamExt;
-use log::{debug, error, info, warn};
+use log::{debug, info, warn};
 use std::path::PathBuf;
+use std::time::Duration;
 use tokio::fs::create_dir_all;
 use tokio::sync::watch;
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::binaries::binaries_resolver::BinaryDownloadError;
-use crate::download_utils::extract;
-use crate::requests::utils::{create_exponential_timeout, get_content_size_from_file};
+use crate::requests::utils::{
+    create_exponential_timeout, create_user_agent, get_content_size_from_file,
+};
 use crate::requests::{
     cache::cloudflare::CloudFlareCache, utils::get_content_length_from_head_response,
 };
 use crate::utils::network_status::NetworkStatus;
 
-use super::http_client::{HttpClient, classify_status_error};
+use super::http_client::classify_status_error;
 
 const MAX_RETRIES: u32 = 5;
 
 struct FileClientConfig {
     progress_status_sender: Option<watch::Sender<f64>>,
-    should_extract: bool,
+    exclusive_create: bool,
     should_use_range_header: bool,
     should_check_cloudflare_cache: bool,
 }
@@ -56,7 +58,7 @@ impl FileClientBuilder {
         FileClientBuilder {
             config: FileClientConfig {
                 progress_status_sender: None,
-                should_extract: false,
+                exclusive_create: false,
                 should_use_range_header: false,
                 should_check_cloudflare_cache: false,
             },
@@ -68,8 +70,9 @@ impl FileClientBuilder {
         self
     }
 
-    pub fn with_file_extract(mut self) -> Self {
-        self.config.should_extract = true;
+    #[cfg(target_os = "windows")]
+    pub fn with_exclusive_create(mut self) -> Self {
+        self.config.exclusive_create = true;
         self
     }
 
@@ -84,18 +87,18 @@ impl FileClientBuilder {
     }
 
     pub fn build(self, url: String, destination: PathBuf) -> Result<HttpFileClient, anyhow::Error> {
+        if self.config.exclusive_create {
+            crate::private_directory::validate_https_source(&url)?;
+            if self.config.should_use_range_header {
+                return Err(anyhow!("Exclusive installer downloads cannot resume"));
+            }
+        }
         if destination.exists() && !destination.is_dir() {
             return Err(anyhow!(
                 "Destination path already exists and is not a directory: {}",
                 destination.display()
             ));
         }
-
-        let archive_destination = if self.config.should_extract {
-            Some(destination.join("archive"))
-        } else {
-            None
-        };
 
         let file_name = url
             .clone()
@@ -108,13 +111,7 @@ impl FileClientBuilder {
             url,
             destination,
             file_name,
-            archive_destination,
-            config: FileClientConfig {
-                progress_status_sender: self.config.progress_status_sender,
-                should_extract: self.config.should_extract,
-                should_use_range_header: self.config.should_use_range_header,
-                should_check_cloudflare_cache: self.config.should_check_cloudflare_cache,
-            },
+            config: self.config,
         })
     }
 }
@@ -123,7 +120,6 @@ pub struct HttpFileClient {
     url: String,
     file_name: String,
     destination: PathBuf,
-    archive_destination: Option<PathBuf>,
     config: FileClientConfig,
 }
 
@@ -132,17 +128,7 @@ impl HttpFileClient {
         FileClientBuilder::new()
     }
 
-    fn get_destination(&self) -> &PathBuf {
-        if let Some(archive_destination) = &self.archive_destination {
-            info!(target: LOG_TARGET_APP_LOGIC, "Using archive destination: {}", archive_destination.display());
-            archive_destination
-        } else {
-            info!(target: LOG_TARGET_APP_LOGIC, "Using destination: {}", self.destination.display());
-            &self.destination
-        }
-    }
-
-    pub async fn execute(&self) -> Result<PathBuf, anyhow::Error> {
+    pub async fn download(&self) -> Result<PathBuf, anyhow::Error> {
         if self.config.should_check_cloudflare_cache {
             CloudFlareCache::check_if_cache_hits(&self.url).await?;
         }
@@ -153,21 +139,63 @@ impl HttpFileClient {
             self.handle_default_flow().await?;
         }
 
-        if self.config.should_extract {
-            self.extract().await?;
-        }
+        Ok(self.destination.join(&self.file_name))
+    }
 
-        Ok(self.get_destination().join(&self.file_name))
+    pub async fn execute(&self) -> Result<PathBuf, anyhow::Error> {
+        self.download().await
+    }
+
+    fn request_client(
+        &self,
+        head: bool,
+    ) -> Result<reqwest_middleware::ClientWithMiddleware, anyhow::Error> {
+        // The checksum-order test uses an in-process HTTP server. Never let
+        // that exception apply to release builds, non-loopback URLs, or redirects.
+        let test_loopback_http = !self.config.exclusive_create
+            && cfg!(test)
+            && reqwest::Url::parse(&self.url).is_ok_and(|url| {
+                url.scheme() == "http"
+                    && url.host_str() == Some("127.0.0.1")
+                    && url.username().is_empty()
+                    && url.password().is_none()
+            });
+        let mut builder = reqwest::Client::builder().https_only(!test_loopback_http);
+        if !self.config.exclusive_create {
+            builder = builder.user_agent(create_user_agent());
+        }
+        if head {
+            builder = builder.timeout(Duration::from_secs(30));
+        }
+        if test_loopback_http {
+            builder = builder.redirect(reqwest::redirect::Policy::none());
+        }
+        Ok(reqwest_middleware::ClientBuilder::new(builder.build()?).build())
+    }
+
+    async fn send_head_request(&self) -> Result<reqwest::Response, anyhow::Error> {
+        let response = self
+            .request_client(true)?
+            .head(&self.url)
+            .send()
+            .await
+            .map_err(|e| {
+                BinaryDownloadError::NetworkError(format!("HEAD request failed with error: {e}"))
+            })?;
+        if !response.status().is_success() {
+            return Err(classify_status_error("HEAD", response.status()));
+        }
+        Ok(response)
     }
 
     pub async fn handle_default_flow(&self) -> Result<(), anyhow::Error> {
-        let head_response = HttpClient::default().send_head_request(&self.url).await?;
+        let head_response = self.send_head_request().await?;
         let expected_size = get_content_length_from_head_response(&head_response);
 
-        let destination = self.get_destination();
+        let destination = &self.destination;
         let destination_file = destination.join(&self.file_name);
 
-        if destination_file.exists() {
+        if !self.config.exclusive_create && destination_file.exists() {
             std::fs::remove_file(destination_file.clone())
                 .map_err(|e| Self::classify_fs_error("Failed to remove file", &e))?;
         }
@@ -178,15 +206,25 @@ impl HttpFileClient {
                 .map_err(|e| Self::classify_fs_error("Failed to create directory", &e))?;
         }
 
-        let mut file = File::options()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(destination_file)
-            .await
-            .map_err(|e| Self::classify_fs_error("Failed to create file", &e))?;
+        let mut file = if self.config.exclusive_create {
+            File::from_std(
+                crate::private_directory::create_new_file(&destination_file)
+                    .map_err(|e| Self::classify_fs_error("Failed to create fresh installer", &e))?,
+            )
+        } else {
+            File::options()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(destination_file)
+                .await
+                .map_err(|e| Self::classify_fs_error("Failed to create file", &e))?
+        };
 
         self.download_file(expected_size, &mut file, false).await?;
+
+        file.flush().await?;
+        file.sync_all().await?;
 
         let file_size = get_content_size_from_file(&file)
             .await
@@ -205,9 +243,9 @@ impl HttpFileClient {
 
     #[allow(clippy::too_many_lines)]
     pub async fn handle_resume_flow(&self) -> Result<(), anyhow::Error> {
-        let head_response = HttpClient::default().send_head_request(&self.url).await?;
+        let head_response = self.send_head_request().await?;
         let expected_size = get_content_length_from_head_response(&head_response);
-        let destination = self.get_destination();
+        let destination = &self.destination;
         let destination_file = destination.join(&self.file_name);
 
         info!(target: LOG_TARGET_APP_LOGIC, "Destination directory: {}", destination.display());
@@ -334,8 +372,8 @@ impl HttpFileClient {
         file: &mut File,
         resume: bool,
     ) -> Result<(), anyhow::Error> {
-        let mut request = HttpClient::default()
-            .client
+        let client = self.request_client(false)?;
+        let mut request = client
             .get(&self.url)
             .header(reqwest::header::ACCEPT, "application/octet-stream");
 
@@ -401,44 +439,6 @@ impl HttpFileClient {
         Ok(())
     }
 
-    pub async fn extract(&self) -> Result<(), anyhow::Error> {
-        const MAX_RETRIES: u32 = 3;
-        let mut attempt = 0;
-
-        loop {
-            attempt += 1;
-            match self.extract_inner().await {
-                Ok(_) => {
-                    info!(target: LOG_TARGET_APP_LOGIC, "Extraction completed successfully.");
-                    break;
-                }
-                Err(e) => {
-                    if attempt >= MAX_RETRIES {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Extraction failed after {} attempts: {}", attempt, e);
-                        let classified = Self::classify_extraction_error(&e);
-                        return Err(classified.into());
-                    } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Extraction attempt {} failed: {}. Retrying...", attempt, e);
-                        tokio::time::sleep(create_exponential_timeout(attempt)).await;
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn classify_extraction_error(e: &anyhow::Error) -> BinaryDownloadError {
-        for cause in e.chain() {
-            if let Some(io_err) = cause.downcast_ref::<std::io::Error>()
-                && io_err.kind() == std::io::ErrorKind::PermissionDenied
-            {
-                return BinaryDownloadError::FileAccessDenied(format!("Extraction failed: {}", e));
-            }
-        }
-        BinaryDownloadError::CorruptDownload(format!("Extraction failed: {}", e))
-    }
-
     /// Classify a filesystem error hit while preparing download targets
     /// (creating directories/files, removing stale files). Permission denied
     /// (AV quarantine, Windows file locks) and already-exists (concurrent
@@ -452,44 +452,5 @@ impl HttpFileClient {
             }
             _ => anyhow::anyhow!("{context}: {e}"),
         }
-    }
-
-    async fn extract_inner(&self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET_APP_LOGIC, "Extracting file to {}", self.destination.display());
-        if let Some(archive_destination) = &self.archive_destination {
-            if archive_destination.exists() {
-                let archive_file = archive_destination.join(&self.file_name);
-                // There can be case where extracted dir already exists on this stage and windows will throw an error if we try to extract to it
-                if self.destination.exists() {
-                    info!(target: LOG_TARGET_APP_LOGIC, "Destination directory already exists, removing old entries.");
-                    info!(target: LOG_TARGET_APP_LOGIC, "Archive file: {}", archive_destination.display());
-                    for entry in std::fs::read_dir(&self.destination)? {
-                        let entry = entry?;
-                        let path = entry.path();
-                        if path != *archive_destination {
-                            info!(target: LOG_TARGET_APP_LOGIC, "Removing old entry: {}", path.display());
-                            if path.is_dir() {
-                                std::fs::remove_dir_all(&path).unwrap_or_else(|e| {
-                                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to remove directory: {e}");
-                                });
-                            } else {
-                                std::fs::remove_file(&path).unwrap_or_else(|e| {
-                                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to remove file: {e}");
-                                });
-                            }
-                        }
-                    }
-                }
-                info!(target: LOG_TARGET_APP_LOGIC, "Extracting archive file: {}", archive_file.display());
-                extract(&archive_file, &self.destination).await?;
-            } else {
-                return Err(anyhow::anyhow!(
-                    "Archive destination does not exist: {}",
-                    archive_destination.display()
-                ));
-            }
-        }
-
-        Ok(())
     }
 }

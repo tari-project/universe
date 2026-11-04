@@ -48,11 +48,8 @@ against networks, or any physical or electronic attempts against property and/or
 
 Please report any **non-sensitive** issue **unrelated to security** as a Github issue in the relevant repository.
 
-Security issues can be disclosed using one of the following channels, in decreasing order of preference:
-
-- [HackerOne Bug Bounty Programme](https://hackerone.com/tari_labs)
-- A [Private Security Disclosure](https://github.com/tari-project/tari/security/advisories/new) on Github
-- [The Tari Labs Security mailing list](mailto:security@tari.com)
+Security issues must be disclosed as
+a [Private Security Advisory](https://github.com/tari-project/universe/security/advisories/new) on GitHub.
 
 Please follow the [requirements](#submission-requirements) below when making your submission.
 
@@ -71,10 +68,6 @@ If your report qualifies for a bounty reward, we will:
 - Set a risk level of severity and the reward size;
 - Notify you once an issue has been resolved; and
 - Provide a time window for the lifting of restrictions around public disclosure.
-
-Disclosures made through the [HackerOne bounty programme](https://hackerone.com/tari_labs) will be acknowledged
-and triaged faster than via the other channels, typically within 7 days. Disclosures made via GitHub or email may
-take longer.
 
 ## Our Expectations
 
@@ -128,9 +121,6 @@ submit a report through one of our [Disclosure Channels](#disclosure) before goi
 **Note:** Multiple vulnerabilities caused by one underlying issue will be awarded one bounty.
 
 ### Token-based bounties
-
-It is preferred, but it is not an absolute requirement to make use of the HackerOne bounty programme to claim
-Minotari token rewards.
 
 | Severity | Bounty Range\*            |
 | -------- | ------------------------- |
@@ -216,7 +206,9 @@ a [GitHub issue here](https://github.com/tari-project/tari/issues/new?assignees=
 - XSS that does not allow for the execution of arbitrary code, such as reflected or non-persistent XSS
 - Reports resulting from automated scanning utilities without additional details or a PoC demonstrating a specific
   exploit
-- Attacks requiring physical access to a user’s device
+- Attacks requiring physical access to a user’s device, or access to an already unlocked user session on it
+- Attacks that depend on a script being pasted or run by hand inside the app's webview. A webview vector qualifies
+  only when the report shows how the script gets into the window without the user's help
 - Attacks dependent upon social engineering of Tari Labs staff, contractors, or vendors
 - Attacks dependent upon social engineering of Tari open source volunteers
 - Attacks dependent upon social engineering of Tari users

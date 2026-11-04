@@ -1,8 +1,8 @@
 {
   "feedback": {
-    "chip_text": "Feedback",
-    "optional_label": "(optional)",
-    "submit_cta": "Send Feedback",
-    "text_placeholder": "Add any other details here"
+    "chip_text": "Phản hồi",
+    "optional_label": "(không bắt buộc)",
+    "submit_cta": "Gửi phản hồi",
+    "text_placeholder": "Thêm bất kỳ chi tiết nào khác tại đây"
   }
 }

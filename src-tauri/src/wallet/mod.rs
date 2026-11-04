@@ -48,3 +48,61 @@ pub async fn clean_wallet_data_folders(base_path: &Path) -> Result<(), anyhow::E
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod log_redaction_tests {
+    use std::path::Path;
+
+    const SCANNED_DIRS: [&str; 3] = ["src/wallet", "src/mcp/tools", "src/ootle"];
+    const FORBIDDEN: [&str; 5] = [
+        "{amount",
+        "{destination",
+        "{payment_id",
+        "{claim",
+        "{commitment",
+    ];
+
+    fn rust_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
+        for entry in std::fs::read_dir(dir).expect("read source dir") {
+            let path = entry.expect("dir entry").path();
+            if path.is_dir() {
+                rust_files(&path, out);
+                continue;
+            }
+            if path.extension().is_some_and(|ext| ext == "rs") {
+                out.push(path);
+            }
+        }
+    }
+
+    /// App logs ship in support bundles, so send/burn/claim log lines must not
+    /// interpolate amounts, addresses, payment IDs, claim keys or commitments.
+    // ponytail: catches inline `{name}` captures only, not positional `"{}", name` args.
+    #[test]
+    fn send_paths_do_not_log_transaction_details() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut files = Vec::new();
+        for dir in SCANNED_DIRS {
+            rust_files(&root.join(dir), &mut files);
+        }
+        let mut leaks = Vec::new();
+        for file in files {
+            let source = std::fs::read_to_string(&file).expect("read source file");
+            for mac in ["info!(", "debug!(", "warn!("] {
+                for (start, _) in source.match_indices(mac) {
+                    let rest = &source[start..];
+                    let call = &rest[..rest.find(");").unwrap_or(rest.len())];
+                    for field in FORBIDDEN.iter().filter(|field| call.contains(**field)) {
+                        let line = source[..start].matches('\n').count() + 1;
+                        leaks.push(format!("{}:{line} logs {field}", file.display()));
+                    }
+                }
+            }
+        }
+        assert!(
+            leaks.is_empty(),
+            "transaction details in logs:\n{}",
+            leaks.join("\n")
+        );
+    }
+}

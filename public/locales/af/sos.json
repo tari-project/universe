@@ -13,43 +13,5 @@
       "linkCopied": "Skakel gekopieer!",
       "growCrew": "groei jou span"
     }
-  },
-  "superCharger": {
-    "title": "Superlaaier",
-    "placeholder": "Voer jou kode in",
-    "success": "Tydsbonus bygevoeg {{time}}.",
-    "error": "Ongeldige kode.",
-    "submit": "Gaan"
-  },
-  "mainTimer": {
-    "title": "Jou Timer",
-    "days": "DAE",
-    "hours": "URE",
-    "minutes": "MINUTE",
-    "seconds": "SEKONDES"
-  },
-  "progress": {
-    "message": "Jy is <span>{{hours}} ure</span> weg van die volgende rang. Hou aan myn!"
-  },
-  "leaserboardEntry": {
-    "mining": "Nou aan die myn",
-    "idle": "Laas gemyn {{time}} gelede"
-  },
-  "leaderboard": {
-    "title": "Leierbord",
-    "viewFull": "SIEN volledige LEIERBORD"
-  },
-  "member": {
-    "new": "Nuut",
-    "nudge": "Stootjie",
-    "minHr": "min/uur"
-  },
-  "crewMining": {
-    "title": "Spanmyn",
-    "rate": "+{{rate}}min/uur",
-    "mining": "{{current}}/{{total}} Myn"
-  },
-  "crewList": {
-    "placeholder": "Nooi jou eerste spanlid"
   }
 }

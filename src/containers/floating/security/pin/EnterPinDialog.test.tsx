@@ -32,6 +32,27 @@ describe('EnterPinDialog', () => {
     });
 
     it.each([
+        [false, false, 'abandon.note'],
+        [true, false, 'abandon.burn-note'],
+        [false, true, 'abandon.unreconcilable-note'],
+    ])('warns about abandoning (burn: %s, no change output: %s)', (isBurn, acceptUnreconcilable, note) => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinContext: {
+                kind: 'abandon',
+                amount_micro_minotari: 1_000_000,
+                tx_id: '12',
+                accept_unreconcilable: acceptUnreconcilable,
+                is_burn: isBurn,
+            },
+            pinPromptId: 1,
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText(note)).toBeInTheDocument();
+        expect(screen.getByText('abandon.approve')).toBeInTheDocument();
+    });
+
+    it.each([
         ['tapplet', true],
         ['app', false],
     ] as const)(
@@ -126,6 +147,59 @@ describe('EnterPinDialog', () => {
         expect(useSecurityStore.getState().modal).toBe('enter_pin');
         closePinPrompt(7);
         expect(useSecurityStore.getState().modal).toBeNull();
+    });
+
+    it('renders the network fee in the L1 send PIN prompt summary', () => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 9,
+            pinContext: {
+                kind: 'send',
+                amount_micro_minotari: 2_000_000,
+                destination: 'f4destination',
+                payment_id: 'invoice-1',
+                origin: 'app',
+                fee_micro_minotari: 1_250,
+            },
+        });
+        const { unmount } = render(<EnterPinDialog />);
+        expect(screen.getByText('send.network-fee')).toBeInTheDocument();
+        expect(screen.getByText('0.001250 XTM')).toBeInTheDocument();
+        unmount();
+
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 10,
+            pinContext: {
+                kind: 'send',
+                amount_micro_minotari: 2_000_000,
+                destination: 'f4destination',
+                payment_id: 'invoice-1',
+                origin: 'app',
+            },
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText('send.network-fee')).toBeInTheDocument();
+        expect(screen.getByText('send.fee-unavailable')).toBeInTheDocument();
+    });
+
+    it('shows the address payment id and warns when it replaces the message', () => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 11,
+            pinContext: {
+                kind: 'send',
+                amount_micro_minotari: 2_000_000,
+                destination: 'f4destination',
+                payment_id: 'aa'.repeat(16),
+                payment_id_overridden: true,
+                origin: 'app',
+                fee_micro_minotari: 1_250,
+            },
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText('aa'.repeat(16))).toBeInTheDocument();
+        expect(screen.getByTestId('payment-id-overridden')).toHaveTextContent('send.payment-id-overridden');
     });
 });
 

@@ -12,26 +12,26 @@
   "connection-to-node-lost": "Koneksi ke penambang terputus. Harap tunggu penambang untuk menyambung kembali atau mulai ulang penambang.",
   "cpu-power": "Daya CPU",
   "current-block-time": "Waktu blok saat ini",
-  "day": "day",
+  "day": "hari",
   "estimated-day": "Perkiraan XTM/hari",
   "estimated-earnings": "Perkiraan penghasilan",
   "floor": "Batas Bawah",
   "gpu-power": "Daya GPU",
   "mining-button-text": {
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
+    "state-pause": "Jeda Penambangan",
+    "state-resume": "Lanjutkan Penambangan",
     "state-start": "Mulai Menambang"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "Lihat semua mode",
+      "alert_cta-turbo": "Gunakan Turbo️",
+      "alert_text": "Mode Eco hanya menggunakan sebagian kecil sumber daya sistem.",
+      "alert_text_extra": "Coba naikkan mode daya.",
+      "alert_title": "Hadiah yang didapat kurang banyak?"
     },
     "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode-long": "Mode Penambang"
   },
   "orphan-chain-tooltip": {
     "heading": "Hal-hal yang bisa dicoba:",
@@ -43,8 +43,8 @@
     "step_6": "Coba atur ulang aplikasi (di Pengaturan)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "Jeda selama <strong>{{duration}}</strong>",
+    "until-restart": "Jeda hingga saya<strong> Memulai Ulang</strong>"
   },
   "pool": {
     "accepted_shares": "Saham Diterima",
@@ -53,16 +53,16 @@
     "unpaid": "Belum Dibayar"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "Simpan Jadwal",
+    "cta-save-complete": "Tersimpan!",
+    "current": "Jadwal Anda saat ini",
+    "mining-schedule": "Jadwal Penambangan",
+    "mining-schedule-copy": "Atur waktu tertentu untuk memulai penambangan secara otomatis.",
+    "mining-schedule-setup": "Atur Jadwal Penambangan",
+    "scheduled-to-mine": "Dijadwalkan menambang pada",
+    "scheduled-to-pause": "Dijadwalkan menjeda penambangan pada",
+    "time-label-end": "Waktu Selesai Harian",
+    "time-label-start": "Waktu Mulai Harian"
   },
   "you-earn-rewards-separately": "Anda mendapatkan hadiah untuk menambang CPU dan GPU secara terpisah",
   "you-won-block": "Anda adalah pemenang dari <span>blok #{{ blockHeight }}</span>",

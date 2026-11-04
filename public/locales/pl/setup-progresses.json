@@ -13,10 +13,10 @@
   "critical-initialization-failure": "Krytyczny błąd inicjalizacji",
   "error": {
     "description": {
-      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+      "space": "Zwolnij miejsce na urządzeniu. Tari Universe nie może utworzyć potrzebnych plików PID z powodu braku miejsca."
     },
     "title": {
-      "space": "No space left on device"
+      "space": "Brak miejsca na urządzeniu"
     }
   },
   "failed-to-complete-step": "Nie udało się ukończyć kroku",
@@ -45,8 +45,8 @@
     "binaries-cpu-miner-download": "Przygotowywanie binariów kopacza CPU | Pobieranie: {{ progress }}%",
     "binaries-gpu-miner": "Przygotowywanie Pliku Wykonywalnego Koparki GPU",
     "binaries-gpu-miner-download": "Przygotowywanie binariów kopacza GPU | Pobieranie: {{ progress }}%",
-    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
-    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
+    "binaries-tari-miner": "Przygotowywanie pliku binarnego koparki GPU o otwartym kodzie",
+    "binaries-tari-miner-download": "Przygotowywanie pliku binarnego koparki GPU o otwartym kodzie | Pobieranie: {{ progress }}%",
     "binaries-merge-mining-proxy": "Przygotowywanie Pliku Wykonywalnego Proxy Do Merge Mining",
     "binaries-merge-mining-proxy-download": "Przygotowywanie binariów proxy do kopania łączonego | Pobieranie: {{ progress }}%",
     "binaries-node": "Przygotowywanie Pliku Wykonywalnego Węzła",
@@ -54,7 +54,6 @@
     "binaries-tor": "Przygotowywanie Pliku Wykonywalnego Tor",
     "binaries-tor-download": "Przygotowywanie binariów Tor | Pobieranie: {{ progress }}%",
     "detect-gpu": "Wykrywanie GPU",
-    "done": "Gotowe",
     "initialize-application-modules": "Inicjalizacja Wymagań Wstępnych Platformy",
     "initialize-cpu-hardware": "Inicjalizuj sprzęt CPU",
     "initialize-gpu-hardware": "Inicjalizuj sprzęt GPU",
@@ -62,13 +61,13 @@
     "migrating-database": "Migracja bazy danych z wersji {{current_db_version}} do {{target_db_version}} postęp: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Uruchamianie Proxy Do Merge Mining",
     "network-speed-test": "Test Prędkości Sieci",
-    "platform-prequisites": "Inicjalizacja Wymagań Wstępnych Platformy",
+    "ootle-wallet": "Uruchamianie portfela Layer 2",
     "setup-bridge": "Przygotowywanie mostu",
     "setup-bridge-download": "Przygotowywanie mostu | Pobieranie: {{ progress }}%",
     "start-tor": "Uruchamianie Tor",
     "starting-node": "Uruchamianie Węzła Minotari",
-    "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
-    "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
+    "waiting-for-block-sync": "Oczekiwanie na synchronizację bloków. Zsynchronizowano {{local_header_height}}/{{tip_header_height}} nagłówków i {{local_block_height}}/{{tip_block_height}} bloków.",
+    "waiting-for-header-sync": "Oczekiwanie na synchronizację nagłówków. Zsynchronizowano {{local_header_height}}/{{tip_header_height}} nagłówków i {{local_block_height}}/{{tip_block_height}} bloków. ",
     "waiting-for-initial-sync": "Łączenie z węzłami sieci {{initial_connected_peers}}/{{required_peers}}"
   }
 }

@@ -22,7 +22,7 @@
 
 use std::time::SystemTime;
 
-use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent, SECONDS_PER_DAY};
+use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent, compute_token_expiry};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::audit::AuditLog;
@@ -51,19 +51,13 @@ pub async fn get_mcp_token(pin: Option<String>) -> Result<Option<String>, String
 pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
     {
         let mut config = ConfigMcp::current().write().await;
-        let content = config._get_content_mut();
-        if enabled && content.bearer_token().is_none() {
-            let token = ConfigMcpContent::generate_token();
-            let now = SystemTime::now();
-            let expiry_days = *content.token_expiry_days();
-            let expiry =
-                now + std::time::Duration::from_secs(u64::from(expiry_days) * SECONDS_PER_DAY);
-            content.set_bearer_token(Some(token));
-            content.set_token_created_at(Some(now));
-            content.set_token_expires_at(Some(expiry));
+        let mut updated = config._get_content().clone();
+        if enabled && updated.bearer_token().is_none() {
+            updated.ensure_token();
         }
-        content.set_enabled(enabled);
-        ConfigMcp::_save_config(content.clone()).map_err(|e| e.to_string())?;
+        updated.set_enabled(enabled);
+        ConfigMcp::_save_config(updated.clone()).map_err(|e| e.to_string())?;
+        *config._get_content_mut() = updated;
     }
 
     if enabled {
@@ -82,7 +76,7 @@ pub async fn refresh_mcp_token_expiry() -> Result<(), String> {
     if ConfigMcp::content().await.bearer_token().is_some() {
         let now = SystemTime::now();
         let expiry_days = *ConfigMcp::content().await.token_expiry_days();
-        let expiry = now + std::time::Duration::from_secs(u64::from(expiry_days) * SECONDS_PER_DAY);
+        let expiry = compute_token_expiry(now, expiry_days);
         ConfigMcp::update_field(ConfigMcpContent::set_token_expires_at, Some(expiry))
             .await
             .map_err(|e| e.to_string())?;
@@ -127,7 +121,13 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn set_mcp_max_transaction_amount(amount: Option<u64>) -> Result<(), String> {
+pub async fn set_mcp_max_transaction_amount(
+    amount: Option<u64>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    let _validated_pin = crate::pin::PinManager::get_validated_pin_if_defined(&app_handle, None)
+        .await
+        .map_err(|e| e.to_string())?;
     ConfigMcp::update_field(ConfigMcpContent::set_max_transaction_amount, amount)
         .await
         .map_err(|e| e.to_string())?;
