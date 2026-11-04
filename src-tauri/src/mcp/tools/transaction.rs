@@ -27,7 +27,7 @@ use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::pin::PinManager;
-use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
+use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send_with_cancel};
 use log::info;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
@@ -37,8 +37,7 @@ fn validate_amount(
     amount: &str,
     config: &crate::configs::config_mcp::ConfigMcpContent,
 ) -> Result<u64, String> {
-    let minotari_amount =
-        Minotari::from_str(amount).map_err(|e| format!("Invalid amount '{}': {}", amount, e))?;
+    let minotari_amount = Minotari::from_str(amount).map_err(|e| format!("Invalid amount: {e}"))?;
     let micro_minotari_amount = MicroMinotari::from(minotari_amount);
     let amount_u64 = micro_minotari_amount.as_u64();
 
@@ -64,12 +63,18 @@ struct SendTransactionSuccess {
     destination: String,
     amount: String,
     amount_micro_minotari: u64,
+    /// False when the node hasn't accepted the send yet: it is recorded and
+    /// rebroadcast automatically, so it must not be sent again.
+    accepted_by_node: bool,
+    /// To follow the send in the transaction history, especially one not accepted yet.
+    tx_id: String,
 }
 
 pub async fn send_transaction(
     destination: String,
     amount: String,
     payment_id: Option<String>,
+    request_cancel: tokio_util::sync::CancellationToken,
 ) -> Result<String, TransactionError> {
     // MCP-specific policy. The user-consent gates (confirmation dialog, rate limiter and
     // the PIN prompt raised while signing) live in `wallet::send_gate::gated_send`, which
@@ -96,20 +101,24 @@ pub async fn send_transaction(
     let amount_display = format!("{} XTM", amount);
     let request_id = SendOrigin::Mcp.new_request_id();
 
-    info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction requested (destination={}, amount={})", destination, amount_display);
+    // No amount or destination in app logs: log bundles are included in support feedback archives.
+    info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction requested (request_id={request_id})");
 
     // 4. Rate limit, confirmation dialog, PIN and the actual send
-    let result = gated_send(GatedSendRequest {
-        origin: SendOrigin::Mcp,
-        request_id: request_id.clone(),
-        amount,
-        destination: destination.clone(),
-        payment_id,
-    })
+    let result = gated_send_with_cancel(
+        GatedSendRequest {
+            origin: SendOrigin::Mcp,
+            request_id: request_id.clone(),
+            amount,
+            destination: destination.clone(),
+            payment_id,
+        },
+        Some(request_cancel),
+    )
     .await;
 
     match result {
-        Ok(()) => {
+        Ok(receipt) => {
             EventsEmitter::emit_mcp_transaction_result(
                 crate::events::McpTransactionResultPayload {
                     request_id,
@@ -124,6 +133,8 @@ pub async fn send_transaction(
                 destination,
                 amount: amount_display,
                 amount_micro_minotari: amount_u64,
+                accepted_by_node: receipt.accepted_by_node,
+                tx_id: receipt.tx_id,
             };
             serde_json::to_string(&result)
                 .map_err(|e| TransactionError::InternalError(e.to_string()))

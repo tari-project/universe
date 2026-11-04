@@ -24,7 +24,7 @@ use std::path::PathBuf;
 
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
-use log::{error, info};
+use log::info;
 use regex::Regex;
 use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
@@ -44,6 +44,8 @@ pub enum ChecksumSource {
     PerAssetSidecar,
     /// One manifest for the whole release, listing `<hash>  <asset>` per line.
     SharedManifest(&'static str),
+    /// SHA-256 digest attached to the exact asset by the GitHub release API.
+    ReleaseAssetDigest,
 }
 
 pub struct GithubReleasesAdapter {
@@ -53,7 +55,7 @@ pub struct GithubReleasesAdapter {
 }
 
 /// Swaps the asset at the end of a release download url for another file in the same release.
-fn sibling_release_file(asset_url: &str, file_name: &str) -> String {
+pub(super) fn sibling_release_file(asset_url: &str, file_name: &str) -> String {
     match asset_url.rsplit_once('/') {
         Some((release_url, _)) => format!("{release_url}/{file_name}"),
         None => file_name.to_string(),
@@ -67,9 +69,14 @@ fn sibling_release_file(asset_url: &str, file_name: &str) -> String {
 /// shared manifest lists every asset in the release, so an unanchored pattern also matches a
 /// sibling entry like `<asset>.sig` - and taking the wrong hash fails validation for everyone,
 /// with no way to fix it except shipping a new build.
-fn parse_expected_checksum(contents: &str, asset_name: &str) -> Result<String, Error> {
+pub(super) fn parse_expected_checksum(contents: &str, asset_name: &str) -> Result<String, Error> {
+    if contents.contains(['<', '>']) {
+        return Err(anyhow!(
+            "Expected a plaintext checksum manifest, received markup"
+        ));
+    }
     let regex = Regex::new(&format!(
-        r"^([a-f0-9]{{64}})\s+\*?{}$",
+        r"^([a-fA-F0-9]{{64}})\s+\*?{}$",
         regex::escape(asset_name)
     ))
     .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
@@ -80,8 +87,28 @@ fn parse_expected_checksum(contents: &str, asset_name: &str) -> Result<String, E
         // otherwise reject: a lone carriage return, or trailing spaces.
         .map(str::trim)
         .find_map(|line| regex.captures(line))
-        .and_then(|caps| caps.get(1).map(|hash| hash.as_str().to_string()))
+        .and_then(|caps| caps.get(1).map(|hash| hash.as_str().to_ascii_lowercase()))
         .ok_or_else(|| anyhow!("The checksum file does not list an entry for {asset_name}"))
+}
+
+fn parse_release_asset_digest(
+    release: &serde_json::Value,
+    asset_name: &str,
+) -> Result<String, Error> {
+    let digest = release
+        .get("assets")
+        .and_then(serde_json::Value::as_array)
+        .and_then(|assets| {
+            assets.iter().find(|asset| {
+                asset.get("name").and_then(serde_json::Value::as_str) == Some(asset_name)
+            })
+        })
+        .and_then(|asset| asset.get("digest"))
+        .and_then(serde_json::Value::as_str)
+        .and_then(|digest| digest.strip_prefix("sha256:"))
+        .filter(|digest| digest.len() == 64 && digest.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        .ok_or_else(|| anyhow!("GitHub release has no valid SHA-256 digest for {asset_name}"))?;
+    Ok(digest.to_ascii_lowercase())
 }
 
 #[async_trait]
@@ -99,6 +126,9 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         // status at all - a hang instead of a download error.
         let contents = String::from_utf8_lossy(&buffer_sha256);
 
+        if matches!(self.checksum_source, ChecksumSource::ReleaseAssetDigest) {
+            return parse_release_asset_digest(&serde_json::from_str(&contents)?, asset_name);
+        }
         parse_expected_checksum(&contents, asset_name)
     }
     async fn download_and_get_checksum_path(
@@ -106,11 +136,31 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         directory: PathBuf,
         download_info: BinaryDownloadInfo,
     ) -> Result<PathBuf, Error> {
+        if matches!(self.checksum_source, ChecksumSource::ReleaseAssetDigest) {
+            let tag = download_info
+                .fallback_url
+                .rsplit('/')
+                .nth(1)
+                .ok_or_else(|| anyhow!("Release URL has no version tag"))?;
+            let url = format!(
+                "https://api.github.com/repos/{}/{}/releases/tags/{tag}",
+                self.owner, self.repo
+            );
+            let response = crate::requests::clients::http_client::HttpClient::default()
+                .send_get_request(&url)
+                .await?;
+            let release: serde_json::Value = response.json().await?;
+            parse_release_asset_digest(&release, &download_info.name)?;
+            let path = directory.join("release.json");
+            tokio::fs::write(&path, serde_json::to_vec(&release)?).await?;
+            return Ok(path);
+        }
         let (checksum_url, checksum_fallback_url) = match self.checksum_source {
             ChecksumSource::PerAssetSidecar => (
                 format!("{}.sha256", download_info.main_url),
                 format!("{}.sha256", download_info.fallback_url),
             ),
+            ChecksumSource::ReleaseAssetDigest => unreachable!(),
             ChecksumSource::SharedManifest(file_name) => (
                 sibling_release_file(&download_info.main_url, file_name),
                 sibling_release_file(&download_info.fallback_url, file_name),
@@ -148,11 +198,8 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
                     .to_lowercase(),
             );
 
-        if !binary_folder_path.exists() {
-            std::fs::create_dir_all(&binary_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET_APP_LOGIC, "Failed to create directory: {e}");
-            });
-        };
+        std::fs::create_dir_all(&binary_folder_path)?;
+        crate::private_directory::restrict_directory(&binary_folder_path)?;
 
         Ok(binary_folder_path)
     }
@@ -183,6 +230,38 @@ fn release_tag(version: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_checksum_html_embedded_entry_rejected() {
+        let response = format!("<html>\n{}  asset.zip\n</html>", "ab".repeat(32));
+        assert!(parse_expected_checksum(&response, "asset.zip").is_err());
+    }
+
+    #[test]
+    fn test_checksum_uppercase_digest_normalized() {
+        assert_eq!(
+            parse_expected_checksum(&format!("{}  asset.zip", "AB".repeat(32)), "asset.zip")
+                .expect("test fixture succeeds"),
+            "ab".repeat(32)
+        );
+    }
+
+    #[test]
+    fn test_release_digest_exact_asset_and_missing_digest_rejected() {
+        let release = serde_json::json!({"assets": [{"name":"miner.zip", "digest":format!("sha256:{}", "AB".repeat(32))}]});
+        assert_eq!(
+            parse_release_asset_digest(&release, "miner.zip").expect("test fixture succeeds"),
+            "ab".repeat(32)
+        );
+        assert!(parse_release_asset_digest(&release, "miner.zip.sig").is_err());
+        assert!(
+            parse_release_asset_digest(
+                &serde_json::json!({"assets":[{"name":"miner.zip","digest":null}]}),
+                "miner.zip"
+            )
+            .is_err()
+        );
+    }
 
     #[test]
     fn release_tag_prefixes_a_bare_version() {

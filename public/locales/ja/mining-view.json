@@ -12,26 +12,26 @@
   "connection-to-node-lost": "マイナーへの接続が失われました。マイナーが再接続するか、再起動するのをお待ちください。",
   "cpu-power": "CPUパワー",
   "current-block-time": "現在のブロック時間",
-  "day": "day",
+  "day": "日",
   "estimated-day": "推定 XTM/日",
   "estimated-earnings": "推定収益",
   "floor": "フロア",
   "gpu-power": "GPUパワー",
   "mining-button-text": {
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
+    "state-pause": "マイニングを一時停止",
+    "state-resume": "マイニングを再開",
     "state-start": "マイニングを開始"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "すべてのモードを見る",
+      "alert_cta-turbo": "ターボを使う️",
+      "alert_text": "エコモードはシステムリソースのごく一部しか使用しません。",
+      "alert_text_extra": "パワーモードを上げてみてください。",
+      "alert_title": "報酬が足りませんか？"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "モード",
+    "mode-long": "マイナーモード"
   },
   "orphan-chain-tooltip": {
     "heading": "試すべきこと:",
@@ -43,8 +43,8 @@
     "step_6": "アプリをリセットしてみてください（設定で）"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "<strong>{{duration}}</strong>一時停止",
+    "until-restart": "<strong>再起動</strong>するまで一時停止"
   },
   "pool": {
     "accepted_shares": "受け入れられたシェア",
@@ -53,16 +53,16 @@
     "unpaid": "未払い"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "スケジュールを保存",
+    "cta-save-complete": "保存しました！",
+    "current": "現在のスケジュール",
+    "mining-schedule": "マイニングスケジュール",
+    "mining-schedule-copy": "マイニングを自動的に開始する時間を設定します。",
+    "mining-schedule-setup": "マイニングスケジュールを設定",
+    "scheduled-to-mine": "マイニング開始予定時刻",
+    "scheduled-to-pause": "マイニング一時停止予定時刻",
+    "time-label-end": "毎日の終了時刻",
+    "time-label-start": "毎日の開始時刻"
   },
   "you-earn-rewards-separately": "CPUとGPUのマイニングで別々に報酬を得ます",
   "you-won-block": "<span>ブロック #{{ blockHeight }}</span> の勝者です",

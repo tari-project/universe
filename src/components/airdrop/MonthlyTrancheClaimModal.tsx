@@ -39,7 +39,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     } = useTrancheClaimSubmission();
 
     const { refreshTranches } = useTrancheAutoRefresh({
-        enabled: showModal,
+        enabled: false,
         notifyOnNewTranches: false, // Don't show notifications in modal
     });
 

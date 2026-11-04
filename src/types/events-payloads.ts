@@ -138,8 +138,18 @@ export interface SendPinPromptContext {
     kind: 'send';
     amount_micro_minotari: number;
     destination: string;
+    /** Payment id that will be sent: the address's embedded id when it has one. */
     payment_id?: string | null;
+    /** The address replaced the typed message with its own payment id. */
+    payment_id_overridden?: boolean;
     origin: TransactionOrigin;
+    fee_micro_minotari?: number | null;
+}
+
+/** What an L1 send will carry. `payment_id` is the address's embedded id when it has one. */
+export interface EffectiveL1PaymentId {
+    payment_id: string | null;
+    payment_id_overridden: boolean;
 }
 
 /** The wallet details were missing from the config and are being rebuilt from the stored seed. */
@@ -150,6 +160,11 @@ export interface RestoreWalletDetailsPinPromptContext {
 /** The stored seed is PIN-protected although the settings say no PIN is set. */
 export interface SeedNeedsPinPromptContext {
     kind: 'seed_needs_pin';
+}
+
+/** One-time startup ask: the stored Monero seed needs the PIN to move to the current encryption. */
+export interface SecurityUpgradePinPromptContext {
+    kind: 'security_upgrade';
 }
 
 /** Unlocking (or first enabling) the L2 wallet, revealing, importing or resetting its seed. */
@@ -185,13 +200,25 @@ export interface L2ClaimPinPromptContext {
     fee_micro_minotari: number | null;
 }
 
+/** Abandoning stalled send or burn `tx_id`, which hands its inputs back. */
+export interface AbandonPinPromptContext {
+    kind: 'abandon';
+    amount_micro_minotari: number;
+    tx_id: string;
+    /** The user accepted that it has no change output to recognise it by. */
+    accept_unreconcilable: boolean;
+    is_burn: boolean;
+}
+
 export type PinPromptContext =
     | SendPinPromptContext
+    | AbandonPinPromptContext
     | BurnPinPromptContext
     | L2SendPinPromptContext
     | L2ClaimPinPromptContext
     | RestoreWalletDetailsPinPromptContext
     | SeedNeedsPinPromptContext
+    | SecurityUpgradePinPromptContext
     | L2SeedPinPromptContext;
 
 /** Payload of `CreatePin` and `EnterPin`. `id` goes back in the `pin-dialog-response`. */
@@ -200,7 +227,7 @@ export interface PinPromptPayload {
     context?: PinPromptContext | null;
 }
 
-export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim';
+export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim' | 'abandon';
 
 /** XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs. */
 export interface L2Balance {
@@ -246,7 +273,8 @@ export interface L2Burn {
     claim_public_key: string;
     amount: number;
     proof_file: string | null;
-    status: 'pending' | 'claimable' | 'claimed' | 'foreign';
+    /** 'abandoned': the user abandoned it while pending; it may still be mined. */
+    status: 'pending' | 'abandoned' | 'claimable' | 'claimed' | 'foreign';
     /** The L1 height the burn was mined at, null when the L1 wallet doesn't know it. */
     mined_height: number | null;
     /** Unix seconds, when the burn was made. */

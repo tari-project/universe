@@ -121,12 +121,11 @@ impl AuditLog {
             if let Some(parent) = log_path.parent() {
                 let _unused = tokio::fs::create_dir_all(parent).await;
             }
-            match tokio::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&log_path)
-                .await
-            {
+            let mut options = tokio::fs::OpenOptions::new();
+            options.create(true).append(true);
+            #[cfg(unix)]
+            options.mode(0o600);
+            match options.open(&log_path).await {
                 Ok(mut file) => {
                     let line = format!("{serialized}\n");
                     if file.write_all(line.as_bytes()).await.is_ok() {

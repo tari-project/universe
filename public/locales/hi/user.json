@@ -1,8 +1,8 @@
 {
   "feedback": {
-    "chip_text": "Feedback",
-    "optional_label": "(optional)",
-    "submit_cta": "Send Feedback",
-    "text_placeholder": "Add any other details here"
+    "chip_text": "प्रतिक्रिया",
+    "optional_label": "(वैकल्पिक)",
+    "submit_cta": "प्रतिक्रिया भेजें",
+    "text_placeholder": "कोई अन्य विवरण यहाँ जोड़ें"
   }
 }

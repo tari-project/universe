@@ -13,10 +13,10 @@
   "critical-initialization-failure": "Kritik başlatma hatası",
   "error": {
     "description": {
-      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+      "space": "Lütfen cihazınızda yer açın. Tari Universe, alan kısıtlamaları nedeniyle gerekli PID dosyalarını oluşturamıyor."
     },
     "title": {
-      "space": "No space left on device"
+      "space": "Cihazda yer kalmadı"
     }
   },
   "failed-to-complete-step": "Adım tamamlanamadı",
@@ -45,8 +45,8 @@
     "binaries-cpu-miner-download": "CPU Madenci İkili Dosyası Hazırlanıyor | İndiriliyor: {{ progress }}%",
     "binaries-gpu-miner": "GPU Madenci İkili Dosyası Hazırlanıyor",
     "binaries-gpu-miner-download": "GPU Madenci İkili Dosyası Hazırlanıyor | İndiriliyor: {{ progress }}%",
-    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
-    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
+    "binaries-tari-miner": "Açık kaynaklı GPU Madenci İkili Dosyası hazırlanıyor",
+    "binaries-tari-miner-download": "Açık kaynaklı GPU Madenci İkili Dosyası hazırlanıyor | İndiriliyor: {{ progress }}%",
     "binaries-merge-mining-proxy": "Birleştirme Madenciliği Proxy İkili Dosyası Hazırlanıyor",
     "binaries-merge-mining-proxy-download": "Birleştirme Madenciliği Proxy İkili Dosyası Hazırlanıyor | İndiriliyor: {{ progress }}%",
     "binaries-node": "Düğüm İkili Dosyası Hazırlanıyor",
@@ -54,7 +54,6 @@
     "binaries-tor": "Tor İkili Dosyası Hazırlanıyor",
     "binaries-tor-download": "Tor İkili Dosyası Hazırlanıyor | İndiriliyor: {{ progress }}%",
     "detect-gpu": "GPU\"lar Tespit Ediliyor",
-    "done": "Tamamlandı",
     "initialize-application-modules": "Platform Ön Koşulları Başlatılıyor",
     "initialize-cpu-hardware": "CPU Donanımını Başlat",
     "initialize-gpu-hardware": "GPU Donanımını Başlat",
@@ -62,13 +61,13 @@
     "migrating-database": "Veritabanı sürüm {{current_db_version}}\"den {{target_db_version}}\"e taşınıyor ilerleme: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Birleştirme Madenciliği Proxy\"si Başlatılıyor",
     "network-speed-test": "Ağ Hız Testi",
-    "platform-prequisites": "Platform Ön Koşulları Başlatılıyor",
+    "ootle-wallet": "Katman 2 Cüzdanı Başlatılıyor",
     "setup-bridge": "Köprü Hazırlanıyor",
     "setup-bridge-download": "Köprü Hazırlanıyor | İndiriliyor: {{ progress }}%",
     "start-tor": "Tor Başlatılıyor",
     "starting-node": "Minotari Düğümü Başlatılıyor",
-    "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
-    "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
+    "waiting-for-block-sync": "Blok senkronizasyonu bekleniyor. {{local_header_height}}/{{tip_header_height}} üstbilgi ve {{local_block_height}}/{{tip_block_height}} blok senkronize edildi.",
+    "waiting-for-header-sync": "Üstbilgi senkronizasyonu bekleniyor. {{local_header_height}}/{{tip_header_height}} üstbilgi ve {{local_block_height}}/{{tip_block_height}} blok senkronize edildi. ",
     "waiting-for-initial-sync": "Ağ eşlerine bağlanılıyor {{initial_connected_peers}}/{{required_peers}}"
   }
 }

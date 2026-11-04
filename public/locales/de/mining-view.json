@@ -12,26 +12,26 @@
   "connection-to-node-lost": "Verbindung zum Miner verloren. Bitte warte, bis der Miner sich wieder verbindet, oder starte den Miner neu.",
   "cpu-power": "CPU-Leistung",
   "current-block-time": "Aktuelle Blockzeit",
-  "day": "day",
+  "day": "Tag",
   "estimated-day": "Geschätzte XTM/Tag",
   "estimated-earnings": "Geschätzte Einnahmen",
   "floor": "Stockwerk",
   "gpu-power": "GPU-Leistung",
   "mining-button-text": {
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
+    "state-pause": "Mining pausieren",
+    "state-resume": "Mining fortsetzen",
     "state-start": "Mining starten"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "Alle Modi anzeigen",
+      "alert_cta-turbo": "Turbo verwenden",
+      "alert_text": "Der Eco-Modus nutzt nur einen geringen Anteil der Systemressourcen.",
+      "alert_text_extra": "Versuche, den Leistungsmodus zu erhöhen.",
+      "alert_title": "Verdienst du nicht genug Belohnungen?"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "Modus",
+    "mode-long": "Miner-Modus"
   },
   "orphan-chain-tooltip": {
     "heading": "Dinge, die du versuchen kannst:",
@@ -43,8 +43,8 @@
     "step_6": "Versuche einen App-Reset (in den Einstellungen)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "Pausieren für <strong>{{duration}}</strong>",
+    "until-restart": "Pausieren bis zum<strong> Neustart</strong>"
   },
   "pool": {
     "accepted_shares": "Akzeptierte Anteile",
@@ -53,16 +53,16 @@
     "unpaid": "Unbezahlt"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "Zeitplan speichern",
+    "cta-save-complete": "Gespeichert!",
+    "current": "Dein aktueller Zeitplan",
+    "mining-schedule": "Mining-Zeitplan",
+    "mining-schedule-copy": "Lege bestimmte Zeiten fest, zu denen das Mining automatisch startet.",
+    "mining-schedule-setup": "Mining-Zeitplan einrichten",
+    "scheduled-to-mine": "Mining geplant um",
+    "scheduled-to-pause": "Mining-Pause geplant um",
+    "time-label-end": "Tägliche Endzeit",
+    "time-label-start": "Tägliche Startzeit"
   },
   "you-earn-rewards-separately": "Sie verdienen Belohnungen für das Mining von CPU und GPU separat",
   "you-won-block": "Sie waren der Gewinner von <span>Block #{{ blockHeight }}</span>",

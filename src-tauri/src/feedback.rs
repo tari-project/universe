@@ -202,7 +202,12 @@ pub fn create_support_archive(
     let directories_and_filters =
         vec![(logs_dir.to_path_buf(), log_regex_filter, "logs".to_string())];
 
-    zip_create_from_directories(&archive_file, &directories_and_filters, &diagnostics_json)?;
+    if let Err(err) =
+        zip_create_from_directories(&archive_file, &directories_and_filters, &diagnostics_json)
+    {
+        let _unused = std::fs::remove_file(&archive_file);
+        return Err(err);
+    }
 
     Ok((archive_file, zip_filename))
 }
@@ -241,7 +246,15 @@ fn zip_create_from_directories(
 
             for entry in directory_entry_iterator {
                 let entry_path = entry?.path();
-                let entry_metadata = std::fs::metadata(entry_path.clone())?;
+                let entry_metadata = std::fs::symlink_metadata(&entry_path)?;
+                if entry_metadata.file_type().is_symlink() {
+                    info!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Skipping symlink {:?} during support archive creation",
+                        entry_path
+                    );
+                    continue;
+                }
                 let entry_file_name_as_str = entry_path
                     .file_name()
                     .and_then(|name| name.to_str())
@@ -315,25 +328,23 @@ impl Feedback {
             .text("feedback", feedback_message.clone())
             .text("appId", anon_id.clone());
 
-        let upload_zip_path = if include_logs {
+        if include_logs {
             let diagnostics = SupportDiagnostics::collect().await;
             let (archive_file, zip_filename) = create_support_archive(&app_log_dir, &diagnostics)?;
-            let metadata = std::fs::metadata(&archive_file)?;
-            let file_size = metadata.len();
-            info!(target: LOG_TARGET_APP_LOGIC, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
-            let mut file = File::open(&archive_file)?;
-            let mut file_contents = Vec::new();
-            file.read_to_end(&mut file_contents)?;
-            form = form.part(
-                "logs",
-                multipart::Part::bytes(file_contents)
+            let read_res: Result<multipart::Part> = (|| {
+                let metadata = std::fs::metadata(&archive_file)?;
+                let file_size = metadata.len();
+                info!(target: LOG_TARGET_APP_LOGIC, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
+                let file_contents = std::fs::read(&archive_file)?;
+                Ok(multipart::Part::bytes(file_contents)
                     .file_name(zip_filename.clone())
-                    .mime_str("application/x-compressed")?,
-            );
-            Some(archive_file)
-        } else {
-            None
-        };
+                    .mime_str("application/x-compressed")?)
+            })();
+            // The multipart body owns the bytes, so remove the archive before any await
+            // can be cancelled or an upload can stall.
+            let _unused = std::fs::remove_file(&archive_file);
+            form = form.part("logs", read_res?);
+        }
 
         let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
         let jwt = airdrop_tokens.map(|tokens| tokens.token);
@@ -344,17 +355,48 @@ impl Feedback {
             req = req.header("Authorization", format!("Bearer {jwt}"));
         }
         let response = req.send().await?;
-
-        // Delete the ZIP file
-        if let Some(archive_file) = upload_zip_path {
-            std::fs::remove_file(archive_file)?;
-        }
         if response.status().is_success() {
             info!(target: LOG_TARGET_APP_LOGIC, "Feedback sent successfully");
             Ok(response.text().await?)
         } else {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to upload file: {}", response.status());
             Err(anyhow!("Failed to upload file: {}", response.status()))
+        }
+    }
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn support_archive_skips_symlinks_to_files_outside_log_directory() {
+        let temporary = tempfile::tempdir().expect("temporary directory");
+        let logs = temporary.path().join("logs");
+        std::fs::create_dir_all(&logs).expect("logs directory");
+        let secret = temporary.path().join("outside.log");
+        std::fs::write(&secret, "outside secret").expect("outside file");
+        std::fs::write(logs.join("inside.log"), "safe log").expect("inside file");
+        symlink(&secret, logs.join("linked.log")).expect("symlink");
+
+        let archive_path = temporary.path().join("support.zip");
+        let filter = Regex::new(r".*\.log$").expect("log filter");
+        zip_create_from_directories(&archive_path, &[(logs, filter, "logs".to_string())], "{}")
+            .expect("archive creation");
+
+        let archive_file = File::open(&archive_path).expect("archive file");
+        let mut archive = zip::ZipArchive::new(archive_file).expect("valid archive");
+        assert!(archive.by_name("logs/inside.log").is_ok());
+        assert!(archive.by_name("logs/linked.log").is_err());
+        for index in 0..archive.len() {
+            let mut contents = String::new();
+            archive
+                .by_index(index)
+                .expect("archive member")
+                .read_to_string(&mut contents)
+                .expect("text member");
+            assert!(!contents.contains("outside secret"));
         }
     }
 }

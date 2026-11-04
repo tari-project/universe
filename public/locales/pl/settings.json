@@ -14,7 +14,6 @@
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Połączone węzły",
   "connected-to-tari": "Połączono z siecią Tari",
-  "connected-to-tari-network": null,
   "control-port": "Port kontrolny",
   "cpu-mining-enabled": "Wydobycie CPU",
   "custom-power-levels": {
@@ -44,20 +43,23 @@
   "gpu-device-enabled": "Urządzenia do kopania GPU",
   "gpu-device-enabled-description": "Włącz lub wyłącz konkretne urządzenie GPU.",
   "gpu-device-no-found": "⚠️ Nie znaleziono urządzeń GPU",
-  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
+  "gpu-device-single-device-note": "{{miner}} kopie na jednym GPU naraz — używane jest pierwsze włączone urządzenie.",
   "gpu-engine": "Silnik GPU",
   "gpu-miner-description": {
-    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
-    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+    "LolMiner": "Koparka C29 o zamkniętym kodzie dla GPU AMD i NVIDIA",
+    "TariMiner": "Koparka C29 o otwartym kodzie dla GPU NVIDIA"
   },
-  "gpu-miner-failed-with": "Failed with: {{error}}",
-  "gpu-miner-select-placeholder": "Select GPU miner",
+  "gpu-miner-failed-with": "Błąd: {{error}}",
+  "gpu-miner-select-placeholder": "Wybierz koparkę GPU",
   "gpu-miners": "Kopacze GPU",
   "gpu-miners-not-found": "Nie znaleziono kopaczy GPU",
   "gpu-mining-enabled": "Wydobycie GPU",
-  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
-  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-mining-not-recommended": "Wykryto słaby sprzęt, kopanie na GPU nie jest zalecane",
+  "gpu-not-available-on-macos": "⚠️ Kopanie na GPU nie jest dostępne w systemie macOS",
+  "gpu-solo-mining-unavailable": "⚠️ Wymagane, ponieważ żadna zainstalowana koparka GPU nie obsługuje kopania solo",
   "gpu-unavailable": "⚠️ Kopanie GPU niedostępne ponieważ Twój sprzęt go nie obsługuje",
+  "gpu-cannot-mine": "⚠️ Twoje GPU nie może kopać Tari: {{reason}}",
+  "gpu-cannot-mine-unknown": "koparka nie obsługuje tego urządzenia",
   "hardware-status": "Status sprzętu",
   "idle-timeout": {
     "max": "Maksymalny czas to 21600 sekund",
@@ -81,69 +83,50 @@
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
   "mcp": {
     "advanced": {
-      "control-tier": "Control Tier",
-      "expiry-days": "Token Expiry (days)",
-      "port": "Server Port",
-      "rate-limit": "Transaction Rate Limit (per minute)",
-      "read-tier": "Read Tier",
-      "title": "Advanced Settings"
+      "control-tier": "Poziom kontroli",
+      "port": "Port serwera",
+      "read-tier": "Poziom odczytu"
     },
     "agent-config": {
-      "copied": "Copied!",
-      "copy": "Copy Configuration",
-      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
-      "or-add-to-settings-json": "Or add this to your settings JSON:",
-      "title": "Agent Configuration"
+      "copied": "Skopiowano!",
+      "copy": "Kopiuj konfigurację",
+      "description": "Skopiuj poniższą konfigurację, aby połączyć agenta AI z Tari Universe",
+      "or-add-to-settings-json": "Lub dodaj to do pliku JSON z ustawieniami:",
+      "title": "Konfiguracja agenta"
     },
     "audit-log": {
-      "description": "Recent MCP tool calls",
+      "description": "Ostatnie wywołania narzędzi MCP",
       "duration-ms": "{{ms}}ms",
-      "empty": "No audit entries yet",
-      "export": "Export Log",
-      "title": "Audit Log"
+      "empty": "Brak wpisów w dzienniku audytu",
+      "export": "Eksportuj dziennik",
+      "title": "Dziennik audytu"
     },
     "server-toggle": {
-      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
-      "status-running": "Running on port {{port}}",
-      "status-stopped": "Stopped",
-      "title": "MCP Server"
+      "description": "Włącz serwer MCP, aby umożliwić agentom AI interakcję z Tari Universe",
+      "status-running": "Działa na porcie {{port}}",
+      "status-stopped": "Zatrzymany",
+      "title": "Serwer MCP"
     },
-    "title": "MCP Server",
     "token-display": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "copied": "Copied!",
-      "copy": "Copy",
-      "created": "Created",
-      "days-remaining": "{{days}} days remaining",
-      "description": "Use this token to authenticate MCP clients",
-      "expires": "Expires",
-      "hide": "Hide",
-      "no-token": "No token generated",
-      "refresh-expiry": "Refresh Expiry",
-      "reveal": "Reveal",
-      "revoke": "Revoke Token",
-      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
-      "title": "Bearer Token"
+      "copied": "Skopiowano!",
+      "copy": "Kopiuj",
+      "created": "Utworzono",
+      "days-remaining": "Pozostało dni: {{days}}",
+      "description": "Użyj tego tokenu do uwierzytelniania klientów MCP",
+      "expires": "Wygasa",
+      "hide": "Ukryj",
+      "refresh-expiry": "Odśwież ważność",
+      "reveal": "Pokaż",
+      "revoke": "Unieważnij token",
+      "revoke-confirm": "Czy na pewno? Spowoduje to zatrzymanie serwera MCP i konieczność wygenerowania nowego tokenu.",
+      "title": "Token okaziciela (Bearer)"
     },
     "transaction-dialog": {
-      "amount": "Amount",
-      "approve": "Approve",
-      "deny": "Deny",
-      "destination": "Destination",
-      "enter-pin": "Enter PIN to approve",
-      "micro-minotari": "({{amount}} µT)",
-      "remaining": "{{countdown}}s remaining",
-      "title": "MCP Transaction Confirmation"
+      "remaining": "Pozostało {{countdown}} s"
     },
     "transactions": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "description": "Allow MCP clients to send transactions (requires PIN)",
-      "max-amount": "Max Transaction Amount (µT)",
-      "max-amount-description": "Leave empty for no limit",
-      "pin-required": "PIN must be configured to enable transactions",
-      "title": "Transactions"
+      "description": "Zezwól klientom MCP na wysyłanie transakcji (wymaga PIN-u)",
+      "title": "Transakcje"
     }
   },
   "mine-on-app-start": {
@@ -162,12 +145,14 @@
   "no-entry-guard": "Brak połączenia z Entry Guardami!",
   "no-pool-configuration-available": "Brak dostępnej konfiguracji puli",
   "node": {
-    "confirm-title": "Confirm node data location change",
-    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
-    "data-cta": "Change location",
-    "data-subtitle": "Set a custom location to store the base node data",
-    "data-title": "Node data settings"
+    "confirm-title": "Potwierdź zmianę lokalizacji danych węzła",
+    "confirm-warning": "Przeniesienie lokalizacji węzła bazowego może spowodować utratę istniejących danych łańcucha. W takim przypadku konieczna będzie ponowna synchronizacja.",
+    "data-cta": "Zmień lokalizację",
+    "data-subtitle": "Ustaw własną lokalizację przechowywania danych węzła bazowego",
+    "data-title": "Ustawienia danych węzła"
   },
+  "custom-remote-node-address": "Własny adres zdalnego węzła (gRPC)",
+  "custom-remote-node-address-error": "Nieprawidłowy adres: {{reason}}",
   "node-configuration": "Konfiguracja węzła",
   "node-configuration-description": "Połącz zdalnie, lokalnie lub obie opcje, dopóki Twój lokalny węzeł nie będzie gotowy do użycia",
   "node-connection-address": "Adres połączenia",
@@ -175,20 +160,12 @@
   "node-public-key": "Klucz publiczny",
   "node-type": "Typ",
   "not-connected-to-tari": "Nie połączono z siecią Tari",
-  "not-connected-to-tari-network": null,
   "open-logs-directory": "Otwórz katalog logów",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "Połącz swój portfel Tari Universe z telefonem",
-    "do-not-share-this-code": "Nie udostępniaj tego kodu nikomu",
-    "link-tari-aurora": "Połącz z Tari Universe Mobile",
-    "load-qr-code": "Załaduj kod QR",
-    "passphrase": "Hasło"
-  },
   "pause-on-battery-mode": {
-    "description": "Pause mining when device is disconnected from charging",
-    "title": "Pause on Battery Mode"
+    "description": "Wstrzymaj kopanie, gdy urządzenie zostanie odłączone od ładowania",
+    "title": "Wstrzymaj w trybie bateryjnym"
   },
-  "pin": "Pin",
+  "pin": "PIN",
   "pool-configuration": "Konfiguracja puli",
   "pool-mining": "Kopanie w puli",
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
@@ -233,6 +210,10 @@
     "description": "Po włączeniu aplikacja uruchomi się automatycznie po zalogowaniu się do komputera.",
     "title": "Automatyczne uruchamianie przy starcie systemu"
   },
+  "show-window-on-startup": {
+    "description": "Gdy ta opcja jest włączona, Tari Universe wyświetli główne okno po uruchomieniu. Wyłącz ją, aby uruchamiać aplikację w zasobniku systemowym.",
+    "title": "Pokaż okno przy uruchomieniu"
+  },
   "should-use-system-language": "Użyj języka systemowego",
   "stable-version-note": "Wyłączając wersję przedpremierową aplikacji, powrócisz do stabilnego wydania, które priorytetowo traktuje niezawodność i spójność. Możesz jednak przegapić najnowsze funkcje i ulepszenia.",
   "stats-server-port": "Port serwera statystyk",
@@ -240,11 +221,12 @@
   "sync-incomplete": "Synchronizowanie...",
   "sync-status": "Status synchronizacji",
   "tabs": {
-    "airdrop": "Airdrop Claim",
+    "airdrop": "Odbiór airdropu",
     "connections": "Połączenia",
     "experimental": "Eksperymentalne",
     "general": "Ogólne",
-    "mcp": "MCP Server",
+    "l2": "Ootle",
+    "mcp": "Serwer MCP",
     "mining": "Wydobycie",
     "p2p": "Kopanie w puli",
     "pools": "Pule wydobywcze",
@@ -254,8 +236,8 @@
   },
   "tari-wallet-address": "Adres portfela Tari",
   "task-tray": {
-    "description": "Tari universe will be minimized to task tray after closing",
-    "title": "Run app from task tray on close"
+    "description": "Tari Universe zostanie zminimalizowane do zasobnika systemowego po zamknięciu",
+    "title": "Uruchamiaj aplikację z zasobnika po zamknięciu"
   },
   "terms-and-conditions": "Warunki i zasady",
   "theme": "Motyw",
@@ -279,5 +261,31 @@
   "waiting-for-data": "Oczekiwanie na dane łańcucha...",
   "yes": "Tak",
   "your-feedback": "Proszę opisać swój problem",
-  "your-reference": "Twoje odniesienie"
+  "your-reference": "Twoje odniesienie:<br/><bold>{{logRef}}</bold>",
+  "l2": {
+    "status": "Warstwa 2",
+    "pin-required": "Aby korzystać z Layer 2, musisz ustawić PIN",
+    "set-pin": "Ustaw PIN",
+    "enable-description": "Layer 2 korzysta z portfela utworzonego z Twojej istniejącej frazy kluczowej. Zostaniesz poproszony o PIN.",
+    "enable": "Włącz Layer 2",
+    "enable-error": "Nie udało się włączyć Layer 2: ",
+    "unlock-description": "Layer 2 jest zablokowany.\nWprowadź PIN, aby go otworzyć.",
+    "unlock": "Odblokuj Layer 2",
+    "unlock-error": "Nie udało się odblokować Layer 2: ",
+    "indexer": "Indekser",
+    "indexer-error": "Nieprawidłowy adres URL indeksera: {{reason}}",
+    "seed-words": "Fraza kluczowa",
+    "seed-note-l1": "Twój portfel Ootle używa tej samej frazy kluczowej co portfel Tari.",
+    "seed-note-imported": "Twój portfel Ootle używa własnej zaimportowanej frazy kluczowej. Zrób jej osobną kopię zapasową.",
+    "use-l1-seed": "Użyj frazy kluczowej mojego portfela Tari",
+    "confirm-import": "Importuj frazę kluczową Layer 2",
+    "seed-change-error": "Nie udało się zmienić frazy kluczowej Layer 2",
+    "confirm-replace-copy": "Twój obecny portfel Layer 2 zostanie zastąpiony.\nOdzyskasz go tylko za pomocą jego frazy kluczowej.",
+    "address": "Adres portfela Ootle",
+    "address-description": "Udostępnij go, aby otrzymywać XTR w Ootle.",
+    "public-key": "Klucz publiczny właściciela Ootle",
+    "public-key-description": "Klucz odbioru dla spaleń z Twojego portfela Tari. Funkcja Spal do L2 uzupełnia go za Ciebie.",
+    "side-by-side": "Zezwól na wyświetlanie portfeli obok siebie",
+    "side-by-side-description": "Wyświetlaj portfele Tari i Ootle obok siebie. Po wyłączeniu każdy przycisk nawigacji otwiera swój portfel osobno."
+  }
 }

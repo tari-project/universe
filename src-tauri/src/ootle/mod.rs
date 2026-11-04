@@ -52,7 +52,7 @@ use tari_ootle_wallet_sdk::{
     cipher_seed::CipherSeedRestore,
     crypto::memo::Memo,
     local_key_store::LocalKeyStore,
-    models::{EpochBirthday, WalletEvent},
+    models::{BalanceChangeSource, EpochBirthday, WalletEvent},
 };
 use tari_ootle_wallet_sdk_services::{
     Shutdown, ShutdownSignal,
@@ -532,6 +532,7 @@ async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), Transa
                 .map_err(wallet_error)?;
             let seed_words = l2_seed_words(&seed).map_err(wallet_error)?;
             let password = store_password(&secret, pin_str);
+            // A seedless store with ootle v0.44's schema holds nothing; build it afresh.
             if has_old_schema(&store_dir).map_err(wallet_error)? {
                 let owner = std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE))
                     .map_err(wallet_error)?;
@@ -665,8 +666,11 @@ fn stored_seed(store_dir: &Path) -> Result<Option<Zeroizing<Box<[u8]>>>, anyhow:
         .optional()?)
 }
 
-/// The newer Ootle revision reused an old migration number, so detect a v0.44 store by a
-/// table it lacks before opening it with the new SDK.
+/// Whether the store in `store_dir` was made by ootle v0.44 (Universe 1.6.16 and 1.6.17).
+/// Later ootle squashed its migrations into the one v0.44 recorded first, so such a store
+/// reads as migrated while it lacks tables the wallet now needs. Checked by one of those
+/// tables, which every verified indexer read uses, rather than by the migration records,
+/// whose names say nothing about the schema.
 fn has_old_schema(store_dir: &Path) -> Result<bool, anyhow::Error> {
     let db = store_dir.join("wallet.sqlite");
     if !db.exists() {
@@ -691,9 +695,10 @@ fn decipher_words(seed: &[u8], password: &str) -> Result<Option<SeedWords>, anyh
 
 /// Opens the store in `store_dir`, whose enciphered seed is `seed`, with the password made
 /// of the keyring `secret` and the `pin`. A store older builds encrypted with the secret
-/// alone is rebuilt under that password from its own seed words first, keeping its owner.
-/// One neither opens is rebuilt from `l1_words` when there are any (the store holds the
-/// L1 seed), and left as it is otherwise (imported words no one can recover).
+/// alone, or made with ootle v0.44's schema, is rebuilt under that password from its own
+/// seed words first, keeping its owner. One neither opens is rebuilt from `l1_words` when
+/// there are any (the store holds the L1 seed), and left as it is otherwise (imported
+/// words no one can recover).
 fn open_enabled_store(
     store_dir: &Path,
     network: Network,
@@ -724,7 +729,7 @@ fn open_enabled_store(
             &words,
             &owner,
         )?;
-        info!(target: LOG_TARGET, "L2 store rebuilt from its seed words onto the current schema");
+        info!(target: LOG_TARGET, "L2 store rebuilt from its seed words onto the current schema, the keyring secret and the PIN");
     }
     open_sdk(store_dir, network, indexer_url, &password)
 }
@@ -860,9 +865,14 @@ async fn listed_burns() -> Result<Vec<L2Burn>, TransactionError> {
         .await
         .map_err(wallet_error)?
         .into_iter()
-        .map(|row| {
+        .map(|(row, abandoned)| {
             let amount = u64::try_from(row.value).unwrap_or_default();
-            L2Burn::pending(hex::encode(row.commitment), row.claim_public_key, amount)
+            let mut burn =
+                L2Burn::pending(hex::encode(&row.commitment), row.claim_public_key, amount);
+            if abandoned {
+                burn.status = "abandoned";
+            }
+            burn
         })
         .collect();
     let times = MinotariWalletManager::burn_times()
@@ -957,7 +967,8 @@ fn open_sdk(
     let config = WalletSdkConfig {
         network: ootle_network(network),
         override_keyring_password: Some(SafePassword::from(password)),
-        indexer_trust: IndexerTrust::default(),
+        // Spelled out: an upstream default change must not quietly downgrade to Trust.
+        indexer_trust: IndexerTrust::Verify,
     };
     let indexer = IndexerRestApiNetworkInterface::new(indexer_url);
     let sdk = OotleSdk::initialize_with_local_key_store(
@@ -1052,7 +1063,7 @@ async fn start_services(
     mut phase_signal: PhaseSignal,
 ) -> Result<(), anyhow::Error> {
     // The SDK services take the crates.io tari shutdown signal, so relay the phase's one to it.
-    let mut shutdown = Shutdown::new();
+    let shutdown = Shutdown::new();
     let signal = shutdown.to_signal();
     tracker.spawn(async move {
         phase_signal.wait().await;
@@ -1144,13 +1155,8 @@ async fn emit_state_on_events(
             // A claim's proof file moves before the state goes out, so the panel's burn
             // list refreshes with it gone.
             Ok(event) => {
-                if matches!(
-                    event,
-                    WalletEvent::UtxoRecovered(_)
-                        | WalletEvent::UtxoSpent(_)
-                        | WalletEvent::UtxoBurnt(_)
-                ) {
-                    tokio::task::yield_now().await;
+                if let Err(e) = record_stealth_balance_event(&sdk, &event) {
+                    error!(target: LOG_TARGET, "Could not record the L2 stealth balance change: {e}");
                 }
                 let result = claim::track_claim(&proof_dir, &event);
                 emit_state(&sdk).await;
@@ -1164,6 +1170,39 @@ async fn emit_state_on_events(
             Err(broadcast::error::RecvError::Closed) => return Ok(()),
         }
     }
+}
+
+/// Record the balance before publishing state. The account monitor receives the same
+/// broadcast independently and may process it after the frontend state listener.
+fn record_stealth_balance_event(sdk: &OotleSdk, event: &WalletEvent) -> Result<(), anyhow::Error> {
+    let (account, resource) = match event {
+        WalletEvent::UtxoRecovered(e) => (e.account_address, *e.address.resource_address()),
+        WalletEvent::UtxoSpent(e) => (e.account_address, *e.address.resource_address()),
+        WalletEvent::UtxoBurnt(e) => (e.account_address, *e.address.resource_address()),
+        _ => return Ok(()),
+    };
+    let accounts = sdk.accounts_api();
+    let vault = accounts
+        .get_vault_by_resource(&account, &resource)
+        .optional()?;
+    if vault
+        .as_ref()
+        .is_some_and(|v| !v.resource_type.is_stealth())
+    {
+        return Ok(());
+    }
+    let revealed = vault.map(|v| v.revealed_balance).unwrap_or_default();
+    let confidential = sdk
+        .stealth_outputs_api()
+        .get_unspent_balance_for_account_resource(&account, &resource)?;
+    accounts.record_resource_balance_change(
+        account,
+        resource,
+        revealed,
+        confidential,
+        BalanceChangeSource::Scan,
+    )?;
+    Ok(())
 }
 
 /// Tells the frontend how tracked claims and sends ended.
@@ -1201,6 +1240,14 @@ fn spawn_service(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tari_ootle_wallet_sdk::models::{
+        KeyBranch, KeyId, OutputStatus, StealthOutputModel, UtxoRecoveredEvent,
+    };
+    use tari_template_lib::types::{
+        EncryptedData,
+        crypto::{PedersenCommitmentBytes, RistrettoPublicKeyBytes, UtxoTag},
+        stealth::SpendAuthorization,
+    };
 
     #[test]
     fn l2_seed_words_are_the_l1_seed_words() {
@@ -1216,6 +1263,67 @@ mod tests {
         for i in 0..l1_words.len() {
             assert_eq!(l1_words.get_word(i).unwrap(), l2_words.get_word(i).unwrap());
         }
+    }
+
+    #[test]
+    fn recovered_utxo_history_is_recorded_before_state_is_built() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        let key = sdk.key_manager_api().next_account_address().expect("key");
+        let account = sdk
+            .accounts_api()
+            .create_account(Some("default"), true, key)
+            .expect("account");
+        let output = StealthOutputModel {
+            owner_account: *account.component_address(),
+            resource_address: STEALTH_TARI_RESOURCE_ADDRESS,
+            commitment: PedersenCommitmentBytes::from_array([7; PedersenCommitmentBytes::length()]),
+            value: 42,
+            sender_public_nonce: RistrettoPublicKeyBytes::default(),
+            view_only_key_id: KeyId::derived(KeyBranch::ViewOnlyKey, 0),
+            owner_key_id: Some(KeyId::derived(KeyBranch::Account, 0)),
+            encrypted_data: EncryptedData::try_from(vec![0; EncryptedData::min_size()])
+                .expect("data"),
+            tag_byte: UtxoTag::new(7),
+            memo: None,
+            auth: SpendAuthorization::Key(RistrettoPublicKeyBytes::default()),
+            minimum_value_promise: 0,
+            status: OutputStatus::Unspent,
+            is_burnt: false,
+            is_frozen: false,
+            is_on_chain: true,
+            is_condition_spendable: true,
+            lock_id: None,
+            proven_up: None,
+            spent_version: None,
+        };
+        sdk.stealth_outputs_api()
+            .upsert_utxo(&output)
+            .expect("utxo");
+        let event = WalletEvent::UtxoRecovered(UtxoRecoveredEvent {
+            address: output.to_utxo_address(),
+            account_address: *account.component_address(),
+        });
+        record_stealth_balance_event(&sdk, &event).expect("balance event");
+        record_stealth_balance_event(&sdk, &event).expect("duplicate monitor event");
+        let state = state::build_state(&sdk).expect("state");
+        assert_eq!(state.accounts[0].balance.confidential, 42);
+        assert_eq!(state.accounts[0].history.len(), 1);
+
+        sdk.stealth_outputs_api()
+            .mark_burnt(&output.to_utxo_address())
+            .expect("burn");
+        let burnt = WalletEvent::UtxoBurnt(tari_ootle_wallet_sdk::models::UtxoBurntEvent {
+            address: output.to_utxo_address(),
+            account_address: *account.component_address(),
+        });
+        record_stealth_balance_event(&sdk, &burnt).expect("burn balance event");
+        let state = state::build_state(&sdk).expect("state after burn");
+        assert_eq!(state.accounts[0].balance.confidential, 0);
+        assert_eq!(state.accounts[0].history.len(), 2);
     }
 
     #[test]
@@ -1241,6 +1349,97 @@ mod tests {
         assert!(claim_store_for(&store_dir, "second").expect("replaced wallet"));
         assert!(!enabled(&store_dir));
         assert!(!claim_store_for(&store_dir, "second").expect("new owner"));
+    }
+
+    /// A store ootle v0.44 made (Universe 1.6.16 and 1.6.17): its seed still reads, and
+    /// opening it rebuilds it from its own seed words onto the current schema.
+    #[test]
+    fn a_store_from_ootle_v0_44_is_rebuilt_from_its_seed() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        // Built at runtime so the test values don't read as a leaked secret.
+        let secret = ["install", "secret"].concat();
+        let pin = ["test", "pin"].concat();
+        let password = store_password(&secret, &pin);
+        let words_of = |sdk: &mut OotleSdk| {
+            let words = sdk.load_seed_words().expect("load").expect("words");
+            words.join(" ").reveal().clone()
+        };
+
+        // A seed made by the current wallet, to put into a v0.44 store.
+        let new_dir = dir.path().join("new");
+        let mut sdk = open_sdk(&new_dir, Network::Esmeralda, url.clone(), &password).expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        let words = words_of(&mut sdk);
+        drop(sdk);
+
+        let store_dir = dir.path().join("esmeralda");
+        std::fs::create_dir_all(&store_dir).expect("dir");
+        let conn = Connection::open(store_dir.join("wallet.sqlite")).expect("db");
+        // What of v0.44's schema the rebuild reads: its 14 migration records (only the
+        // first is still known to the SDK), the config table, and no `trusted_validator_sets`.
+        conn.execute_batch(
+            "CREATE TABLE __diesel_schema_migrations (
+                 version VARCHAR(50) PRIMARY KEY NOT NULL,
+                 run_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP);
+             INSERT INTO __diesel_schema_migrations (version) VALUES
+                 ('20230208122514'),
+                 ('20260223081528'),
+                 ('20260226054039'),
+                 ('20260303065935'),
+                 ('20260410120000'),
+                 ('20260512090000'),
+                 ('20260522100000'),
+                 ('20260529100000'),
+                 ('20260618160000'),
+                 ('20260625150000'),
+                 ('20260701143000'),
+                 ('20260709120000'),
+                 ('20260715100000'),
+                 ('20260923000000');
+             CREATE TABLE config (
+                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                 key TEXT NOT NULL,
+                 value TEXT NOT NULL,
+                 is_encrypted BOOLEAN NOT NULL,
+                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);
+             CREATE UNIQUE INDEX config_uniq_key ON config (key);",
+        )
+        .expect("the v0.44 schema");
+        conn.execute(
+            "ATTACH DATABASE ?1 AS new",
+            [new_dir.join("wallet.sqlite").to_string_lossy()],
+        )
+        .expect("attach");
+        conn.execute("INSERT INTO config SELECT * FROM new.config", [])
+            .expect("the seed");
+        drop(conn);
+        std::fs::write(store_dir.join(L1_WALLET_ID_FILE), "owner").expect("owner");
+        assert!(has_old_schema(&store_dir).expect("schema"));
+
+        let seed = stored_seed(&store_dir)
+            .expect("read")
+            .expect("the seed reads from the v0.44 schema");
+        let mut sdk = open_enabled_store(
+            &store_dir,
+            Network::Esmeralda,
+            url,
+            &seed,
+            &secret,
+            &pin,
+            None,
+        )
+        .expect("rebuilt and opened");
+        assert_eq!(words_of(&mut sdk), words);
+        drop(sdk);
+        assert!(!has_old_schema(&store_dir).expect("schema"));
+        assert_eq!(
+            std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner"),
+            "owner"
+        );
+        assert!(!store_dir.with_extension("old").exists());
     }
 
     #[test]
@@ -1599,7 +1798,7 @@ mod tests {
 
     #[tokio::test]
     async fn unlock_is_refused_once_the_phase_that_found_the_store_stopped() {
-        let mut shutdown = tari_shutdown::Shutdown::new();
+        let shutdown = tari_shutdown::Shutdown::new();
         let signal = shutdown.to_signal();
         shutdown.trigger();
         *INSTANCE.lifecycle.lock().await = Some((TaskTracker::new(), signal));

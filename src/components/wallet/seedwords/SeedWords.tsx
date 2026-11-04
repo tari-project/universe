@@ -23,7 +23,7 @@ import { useCountdown } from './utils.ts';
 
 // Controller component for edit/view seed words (both Tari & Monero)
 
-const SEED_WORDS_COUNTDOWN_DURATION = 300; // 5mins (same as in paper wallet)
+const SEED_WORDS_COUNTDOWN_DURATION = 300; // 5mins
 
 interface SeedWordsProps {
     isMonero?: boolean;
@@ -116,12 +116,14 @@ export default function SeedWords({ isMonero = false, isL2 = false }: SeedWordsP
     }
     const handleCopyClick = useCallback(() => {
         startTransition(async () => {
+            // Seed words are the wallet's whole secret; don't leave them sitting on the
+            // clipboard for the next app to read.
             if (seedWords?.length && seedWordsFetched) {
-                copyToClipboard(seedWords.join(' '));
+                copyToClipboard(seedWords.join(' '), undefined, { clearAfterMs: 60_000 });
             } else {
                 getSeedWords().then((r) => {
                     if (r?.length) {
-                        copyToClipboard(r.join(' '));
+                        copyToClipboard(r.join(' '), undefined, { clearAfterMs: 60_000 });
                         setSeedWords([]);
                     }
                 });

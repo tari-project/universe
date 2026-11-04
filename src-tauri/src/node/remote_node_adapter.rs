@@ -145,7 +145,11 @@ impl NodeAdapter for RemoteNodeAdapter {
         self.ab_group = ab_group;
     }
 
-    fn set_tor_control_port(&mut self, _tor_control_port: Option<u16>) {
+    fn set_tor_control_port(
+        &mut self,
+        _tor_control_port: Option<u16>,
+        _cookie_path: Option<PathBuf>,
+    ) {
         log::info!(target: LOG_TARGET_APP_LOGIC, "RemoteNodeAdapter doesn't use tor_control_port");
     }
 

@@ -95,7 +95,8 @@ pub struct L2Burn {
     pub proof_file: Option<String>,
     /// "pending" until the burn is mined and its proof written, then "claimable", then
     /// "claimed" once a claim is accepted on L2. "foreign" instead of "claimable" when
-    /// the claim key isn't one of this wallet's L2 accounts.
+    /// the claim key isn't one of this wallet's L2 accounts. "abandoned" instead of
+    /// "pending" once the user abandoned it: it may still be mined, and then turns claimable.
     pub status: &'static str,
     /// The L1 height the burn was mined at, once its proof is written. The L2 can't
     /// accept its claim until it has imported that block.
@@ -286,7 +287,7 @@ fn read_burns(dir: &Path, status: &'static str) -> Result<Vec<L2Burn>, anyhow::E
                     .duration_since(SystemTime::UNIX_EPOCH)?
                     .as_secs(),
             }),
-            Err(e) => warn!(target: LOG_TARGET, "Skipping burn proof {file}: {e}"),
+            Err(e) => warn!(target: LOG_TARGET, "Skipping an unreadable burn proof: {e}"),
         }
     }
     Ok(burns)
@@ -363,7 +364,7 @@ fn mark_claimed(dir: &Path, file: &str) {
     let moved = std::fs::create_dir_all(dir.join(CLAIMED_DIR))
         .and_then(|()| std::fs::rename(dir.join(file), dir.join(CLAIMED_DIR).join(file)));
     if let Err(e) = moved {
-        warn!(target: LOG_TARGET, "Could not mark {file} claimed: {e}");
+        warn!(target: LOG_TARGET, "Could not mark a burn proof claimed: {e}");
     }
 }
 
@@ -378,8 +379,8 @@ fn settle(
 ) -> L2ClaimResult {
     match (&file, accepted) {
         (Some(file), true) => mark_claimed(dir, file),
-        (Some(file), false) => {
-            warn!(target: LOG_TARGET, "Claim of {file} was rejected, it stays claimable: {reason:?}")
+        (Some(_), false) => {
+            warn!(target: LOG_TARGET, "An L2 claim was rejected, its burn stays claimable: {reason:?}")
         }
         (None, true) => {}
         (None, false) => warn!(target: LOG_TARGET, "An L2 send was rejected: {reason:?}"),
@@ -405,11 +406,11 @@ pub fn reconcile_claims(
                 false
             }
             Ok(None) => {
-                warn!(target: LOG_TARGET, "The wallet has no record of {id} ({file:?}), no longer tracking it");
+                warn!(target: LOG_TARGET, "The wallet has no record of {id}, no longer tracking it");
                 false
             }
             Err(e) => {
-                warn!(target: LOG_TARGET, "Could not look up {id} ({file:?}): {e}");
+                warn!(target: LOG_TARGET, "Could not look up {id}: {e}");
                 true
             }
         });
@@ -753,6 +754,30 @@ mod tests {
         assert_eq!(hex::encode(proof.account_key.as_bytes()), CLAIM_KEY);
         assert_eq!(proof.claim_proof.value, 1_000_000_000);
         assert_eq!(proof.mined_height, 12_345);
+    }
+
+    #[test]
+    fn reads_a_proof_in_the_shape_minotari_writes() {
+        // minotari's BurnProofWorker writes the published tari_sidechain type with
+        // serde_json::to_vec_pretty. The claim code reads it with ootle's own type.
+        let written: tari_sidechain_l1::CompleteClaimBurnProof =
+            serde_json::from_str(PROOF).expect("the published format");
+        let json = serde_json::to_vec_pretty(&written).expect("json");
+        assert_eq!(
+            String::from_utf8(json.clone()).expect("utf8").trim_end(),
+            PROOF.trim_end(),
+            "the fixture is exactly what the worker writes"
+        );
+
+        let proof = BurnProof::from_json(&json).expect("converted by claim_proof_from_l1");
+        assert_eq!(
+            hex::encode(proof.claim_proof.commitment.as_bytes()),
+            COMMITMENT
+        );
+        assert_eq!(hex::encode(proof.account_key.as_bytes()), CLAIM_KEY);
+        assert_eq!(proof.claim_proof.value, 1_000_000_000);
+        assert_eq!(proof.mined_height, 12_345);
+        assert_eq!(proof.mined_in_epoch, written.mined_in_epoch);
     }
 
     #[test]

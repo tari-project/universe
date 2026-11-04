@@ -27,17 +27,32 @@ use std::{
 
 use serde::Deserialize;
 use tari_utilities::SafePassword;
-use tauri::{AppHandle, Listener};
+use tauri::{AppHandle, Emitter, Listener};
 use tokio::sync::oneshot;
 
 use crate::{
     LOG_TARGET_APP_LOGIC,
-    configs::{config_wallet::ConfigWallet, trait_config::ConfigImpl},
+    configs::{
+        config_wallet::{ConfigWallet, ConfigWalletContent},
+        trait_config::ConfigImpl,
+    },
     events::PinPromptContext,
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     pin::pin_locker::PinLocker,
 };
+
+/// The user closed the PIN prompt or let it time out. Typed so callers can tell it apart
+/// from a failure without reading the message.
+#[derive(Debug)]
+pub struct PinCancelled;
+
+impl std::fmt::Display for PinCancelled {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("PIN entry cancelled")
+    }
+}
+impl std::error::Error for PinCancelled {}
 
 pub struct PinManager {}
 
@@ -79,6 +94,7 @@ impl PinManager {
     }
 
     pub async fn validate_pin(pin_password: SafePassword) -> Result<(), anyhow::Error> {
+        let _guard = PIN_VALIDATION_LOCK.lock().await;
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         let mut pin_locker = PinLocker::new(pin_locker_state);
         if let Some(remaining_seconds) = pin_locker.locked_out_seconds().await {
@@ -116,13 +132,19 @@ impl PinManager {
             }
         } else {
             log::error!(target: LOG_TARGET_APP_LOGIC, "Neither Tari Seed nor Monero Seed available to validate against.");
-            panic!("Neither Tari Seed nor Monero Seed available to validate against.");
-            // Edge case, we can't actually validate the pin
-            // because we don't have neither a Tari wallet nor a Monero wallet
-            // to check against.
+            return Err(anyhow::anyhow!(
+                "Neither Tari Seed nor Monero Seed available to validate against."
+            ));
         }
 
         pin_locker.reset_pin_attempts().await?;
+
+        // A verified PIN is the one moment a legacy-enciphered Monero seed can be rewritten.
+        // Failing here must not fail the unlock: the legacy blob still reads, and the next
+        // validation tries again.
+        if let Err(e) = InternalWallet::upgrade_monero_seed_cipher(&pin_password).await {
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "Monero seed cipher upgrade failed: {e}");
+        }
         Ok(())
     }
 
@@ -132,13 +154,50 @@ impl PinManager {
     }
 
     pub async fn set_pin_locked() -> Result<(), anyhow::Error> {
+        let _guard = PIN_VALIDATION_LOCK.lock().await;
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         let mut pin_locker = PinLocker::new(pin_locker_state);
         pin_locker.set_pin_locked(true).await
     }
+
+    /// Keep PIN validation paused until a failed config save has restored both
+    /// credentials and the previous PIN state.
+    pub async fn set_pin_locked_with_rollback<F, Fut>(rollback: F) -> Result<(), anyhow::Error>
+    where
+        F: FnOnce() -> Fut,
+        Fut: std::future::Future<Output = Result<(), anyhow::Error>>,
+    {
+        let _guard = PIN_VALIDATION_LOCK.lock().await;
+        let previous_state = ConfigWallet::content().await.pin_locker_state().clone();
+        let mut pin_locker = PinLocker::new(previous_state.clone());
+        if let Err(pin_error) = pin_locker.set_pin_locked(true).await {
+            let credential_rollback = rollback().await;
+            let config_rollback = ConfigWallet::update_field(
+                ConfigWalletContent::set_pin_locker_state,
+                previous_state,
+            )
+            .await;
+            if let Err(rollback_error) = credential_rollback {
+                return Err(anyhow::anyhow!(
+                    "PIN-state write failed: {pin_error}; credential rollback failed: {rollback_error}"
+                ));
+            }
+            if let Err(rollback_error) = config_rollback {
+                return Err(anyhow::anyhow!(
+                    "PIN-state write failed: {pin_error}; config rollback failed: {rollback_error}"
+                ));
+            }
+            return Err(pin_error);
+        }
+        Ok(())
+    }
 }
 
 // Utils
+
+/// Serialises PIN validation and lockout state updates so concurrent callers
+/// cannot race on `PinLockerState` attempt counters.
+static PIN_VALIDATION_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 /// Only one PIN prompt at a time, so the user always knows which dialog they are
 /// answering. Held only for a single emit-and-wait, never across prompts, so a caller
@@ -194,20 +253,39 @@ where
             let _unused = tx.send(pin);
         }
     });
+    // MCP shutdown can drop this future while it waits for a PIN.
+    let mut listener_guard = PinDialogListener(app_handle, listener, Some(id));
     emit_fn(id).await;
 
     let response = tokio::time::timeout(PIN_PROMPT_TIMEOUT, rx).await;
-    app_handle.unlisten(listener);
+    listener_guard.2 = None;
     match response {
         Ok(Ok(Some(pin))) => Ok(pin),
         Err(_elapsed) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "PIN entry timed out");
             EventsEmitter::emit_close_pin_dialog(id).await;
-            Err(anyhow::anyhow!("PIN entry cancelled"))
+            Err(PinCancelled.into())
         }
         Ok(_) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "PIN entry cancelled");
-            Err(anyhow::anyhow!("PIN entry cancelled"))
+            Err(PinCancelled.into())
+        }
+    }
+}
+
+struct PinDialogListener<'a>(&'a AppHandle, tauri::EventId, Option<u64>);
+
+impl Drop for PinDialogListener<'_> {
+    fn drop(&mut self) {
+        self.0.unlisten(self.1);
+        if let Some(id) = self.2 {
+            let event = crate::events::Event {
+                event_type: crate::events::EventType::ClosePinDialog,
+                payload: id,
+            };
+            if let Err(err) = self.0.emit("backend_state_update", event) {
+                log::error!(target: LOG_TARGET_APP_LOGIC, "Failed to close cancelled PIN dialog: {err}");
+            }
         }
     }
 }

@@ -6,7 +6,7 @@
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "block-height": "Blok Hoogte",
   "block-reward": "Blok Beloning",
-  "cancel": "Cancel",
+  "cancel": "Kanselleer",
   "change-language": "Verander taal",
   "confirm": "Bevestig",
   "confirm-action": "Bevestig aksie",
@@ -43,20 +43,23 @@
   "gpu-device-enabled": "GPU Myn toestelle",
   "gpu-device-enabled-description": "Aktiveer of deaktiveer spesifieke GPU toestel.",
   "gpu-device-no-found": "⚠️ Geen GPU toestelle gevind nie",
-  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
+  "gpu-device-single-device-note": "{{miner}} myn op een GPU op 'n slag — die eerste geaktiveerde toestel word gebruik.",
   "gpu-engine": "Gpu Enjin",
   "gpu-miner-description": {
-    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
-    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+    "LolMiner": "Geslote-bron C29-myner vir AMD- en NVIDIA-GPU's",
+    "TariMiner": "Oopbron C29-myner vir NVIDIA-GPU's"
   },
-  "gpu-miner-failed-with": "Failed with: {{error}}",
-  "gpu-miner-select-placeholder": "Select GPU miner",
+  "gpu-miner-failed-with": "Het misluk met: {{error}}",
+  "gpu-miner-select-placeholder": "Kies GPU-myner",
   "gpu-miners": "GPU Myners",
   "gpu-miners-not-found": "Geen GPU Myners gevind nie",
   "gpu-mining-enabled": "GPU Mynbou",
-  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
-  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-mining-not-recommended": "Laevlak-hardeware bespeur, GPU-mynbou word nie aanbeveel nie",
+  "gpu-not-available-on-macos": "⚠️ GPU-mynbou is nie op macOS beskikbaar nie",
+  "gpu-solo-mining-unavailable": "⚠️ Vereis omdat geen geïnstalleerde GPU-myner solo-mynbou ondersteun nie",
   "gpu-unavailable": "⚠️ GPU gedeaktiveer omdat jou hardeware dit nie ondersteun nie",
+  "gpu-cannot-mine": "⚠️ Jou GPU kan nie Tari myn nie: {{reason}}",
+  "gpu-cannot-mine-unknown": "die myner ondersteun nie hierdie toestel nie",
   "hardware-status": "Hardeware status",
   "idle-timeout": {
     "max": "Maksimum is 21600 sekondes",
@@ -80,69 +83,50 @@
   "low-hash-rate-warning": "Jou hash rate is baie laag. Probeer om alle toepassings behalwe Tari Universe te sluit",
   "mcp": {
     "advanced": {
-      "control-tier": "Control Tier",
-      "expiry-days": "Token Expiry (days)",
-      "port": "Server Port",
-      "rate-limit": "Transaction Rate Limit (per minute)",
-      "read-tier": "Read Tier",
-      "title": "Advanced Settings"
+      "control-tier": "Beheervlak",
+      "port": "Bedienerpoort",
+      "read-tier": "Leesvlak"
     },
     "agent-config": {
-      "copied": "Copied!",
-      "copy": "Copy Configuration",
-      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
-      "or-add-to-settings-json": "Or add this to your settings JSON:",
-      "title": "Agent Configuration"
+      "copied": "Gekopieer!",
+      "copy": "Kopieer konfigurasie",
+      "description": "Kopieer die konfigurasie hieronder om 'n KI-agent aan Tari Universe te koppel",
+      "or-add-to-settings-json": "Of voeg dit by jou instellings-JSON:",
+      "title": "Agentkonfigurasie"
     },
     "audit-log": {
-      "description": "Recent MCP tool calls",
+      "description": "Onlangse MCP-hulpmiddeloproepe",
       "duration-ms": "{{ms}}ms",
-      "empty": "No audit entries yet",
-      "export": "Export Log",
-      "title": "Audit Log"
+      "empty": "Nog geen ouditinskrywings nie",
+      "export": "Voer log uit",
+      "title": "Ouditlog"
     },
     "server-toggle": {
-      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
-      "status-running": "Running on port {{port}}",
-      "status-stopped": "Stopped",
-      "title": "MCP Server"
+      "description": "Aktiveer die MCP-bediener sodat KI-agente met Tari Universe kan interaksie hê",
+      "status-running": "Loop op poort {{port}}",
+      "status-stopped": "Gestop",
+      "title": "MCP-bediener"
     },
-    "title": "MCP Server",
     "token-display": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "copied": "Copied!",
-      "copy": "Copy",
-      "created": "Created",
-      "days-remaining": "{{days}} days remaining",
-      "description": "Use this token to authenticate MCP clients",
-      "expires": "Expires",
-      "hide": "Hide",
-      "no-token": "No token generated",
-      "refresh-expiry": "Refresh Expiry",
-      "reveal": "Reveal",
-      "revoke": "Revoke Token",
-      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
-      "title": "Bearer Token"
+      "copied": "Gekopieer!",
+      "copy": "Kopieer",
+      "created": "Geskep",
+      "days-remaining": "{{days}} dae oor",
+      "description": "Gebruik hierdie token om MCP-kliënte te verifieer",
+      "expires": "Verval",
+      "hide": "Versteek",
+      "refresh-expiry": "Verfris vervaldatum",
+      "reveal": "Wys",
+      "revoke": "Herroep token",
+      "revoke-confirm": "Is jy seker? Dit sal die MCP-bediener stop en vereis dat 'n nuwe token gegenereer word.",
+      "title": "Draertoken"
     },
     "transaction-dialog": {
-      "amount": "Amount",
-      "approve": "Approve",
-      "deny": "Deny",
-      "destination": "Destination",
-      "enter-pin": "Enter PIN to approve",
-      "micro-minotari": "({{amount}} µT)",
-      "remaining": "{{countdown}}s remaining",
-      "title": "MCP Transaction Confirmation"
+      "remaining": "{{countdown}}s oor"
     },
     "transactions": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "description": "Allow MCP clients to send transactions (requires PIN)",
-      "max-amount": "Max Transaction Amount (µT)",
-      "max-amount-description": "Leave empty for no limit",
-      "pin-required": "PIN must be configured to enable transactions",
-      "title": "Transactions"
+      "description": "Laat MCP-kliënte toe om transaksies te stuur (vereis PIN)",
+      "title": "Transaksies"
     }
   },
   "mine-on-app-start": {
@@ -161,12 +145,14 @@
   "no-entry-guard": "Geen Toegangsbewaarder verbind nie!",
   "no-pool-configuration-available": "Geen swembadkonfigurasie beskikbaar nie",
   "node": {
-    "confirm-title": "Confirm node data location change",
-    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
-    "data-cta": "Change location",
-    "data-subtitle": "Set a custom location to store the base node data",
-    "data-title": "Node data settings"
+    "confirm-title": "Bevestig verandering van nodusdata-ligging",
+    "confirm-warning": "Om jou basisnodus-ligging te skuif kan daartoe lei dat jy jou bestaande kettingdata verloor. As dit gebeur, sal jy weer moet sinchroniseer.",
+    "data-cta": "Verander ligging",
+    "data-subtitle": "Stel 'n pasgemaakte ligging om die basisnodusdata te stoor",
+    "data-title": "Nodusdata-instellings"
   },
+  "custom-remote-node-address": "Pasgemaakte afgeleë nodusadres (gRPC)",
+  "custom-remote-node-address-error": "Ongeldige adres: {{reason}}",
   "node-configuration": "Node-konfigurasie",
   "node-configuration-description": "Koppel met Afstand, Plaaslik of albei totdat jou Plaaslike gereed is om te gebruik",
   "node-connection-address": "Verbindingsadres",
@@ -175,18 +161,11 @@
   "node-type": "Tipe",
   "not-connected-to-tari": "Nie aan die Tari Netwerk gekoppel nie",
   "open-logs-directory": "Maak verslag lêer oop",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "Koppel jou Tari Universe beursie aan jou foon",
-    "do-not-share-this-code": "Moenie hierdie kode met enigiemand deel nie",
-    "link-tari-aurora": "Koppel Tari Universe Mobile",
-    "load-qr-code": "Laai QR-kode",
-    "passphrase": "Wagwoordfrase"
-  },
   "pause-on-battery-mode": {
-    "description": "Pause mining when device is disconnected from charging",
-    "title": "Pause on Battery Mode"
+    "description": "Pouseer mynbou wanneer die toestel van die laaier ontkoppel word",
+    "title": "Pouseer op batterymodus"
   },
-  "pin": "Pin",
+  "pin": "PIN",
   "pool-configuration": "Swembadkonfigurasie",
   "pool-mining": "Poel Mynbou",
   "pool-mining-description": "Wanneer geaktiveer, sal u in \"n poel myn en by \"n groep mynwerkers aansluit.",
@@ -231,6 +210,10 @@
     "description": "Wanneer geaktiveer, sal die app outomaties begin wanneer jy by jou rekenaar aanmeld.",
     "title": "Outomatiese begin by stelsel opstart"
   },
+  "show-window-on-startup": {
+    "description": "Wanneer geaktiveer, sal Tari Universe sy hoofvenster na opstart wys. Skakel dit af om na die taakbalk te begin.",
+    "title": "Wys venster by opstart"
+  },
   "should-use-system-language": "Gebruik stelsel taal",
   "stable-version-note": "Deur die voorafvrystelling weergawe van die toepassing af te skakel, sal jy terugkeer na die stabiele weergawe, wat betroubaarheid en konsekwentheid prioritiseer. Jy mag dalk die nuutste kenmerke en verbeterings mis.",
   "stats-server-port": "Statistieke bedienerpoort",
@@ -238,11 +221,12 @@
   "sync-incomplete": "Sinchroniseer...",
   "sync-status": "Sinchronisasie Status",
   "tabs": {
-    "airdrop": "Airdrop Claim",
+    "airdrop": "Airdrop-eis",
     "connections": "Verbindings",
     "experimental": "Eksperimenteel",
     "general": "Algemeen",
-    "mcp": "MCP Server",
+    "l2": "Ootle",
+    "mcp": "MCP-bediener",
     "mining": "Mynbou",
     "p2p": "Poel Mynbou",
     "pools": "Mynpoele",
@@ -252,8 +236,8 @@
   },
   "tari-wallet-address": "Tari Beursie Adres",
   "task-tray": {
-    "description": "Tari universe will be minimized to task tray after closing",
-    "title": "Run app from task tray on close"
+    "description": "Tari Universe sal na die taakbalk geminimaliseer word na sluiting",
+    "title": "Laat toepassing vanaf taakbalk loop wanneer gesluit"
   },
   "terms-and-conditions": "Bepalings & Voorwaardes",
   "theme": "Tema",
@@ -275,7 +259,33 @@
   "user-agreement": "Gebruikersooreenkoms",
   "visual-mode": "Visuele modus",
   "waiting-for-data": "Wag vir kettingdata...",
-  "yes": "Yes",
+  "yes": "Ja",
   "your-feedback": "Beskryf asseblief u probleem",
-  "your-reference": "U verwysing"
+  "your-reference": "Jou verwysing:<br/><bold>{{logRef}}</bold>",
+  "l2": {
+    "status": "Laag 2",
+    "pin-required": "Jy moet 'n PIN stel om Laag 2 te gebruik",
+    "set-pin": "Stel 'n PIN",
+    "enable-description": "Laag 2 gebruik 'n beursie wat van jou bestaande saadwoorde gemaak is. Jy sal vir jou PIN gevra word.",
+    "enable": "Aktiveer Laag 2",
+    "enable-error": "Kon nie Laag 2 aktiveer nie: ",
+    "unlock-description": "Laag 2 is gesluit.\nVoer jou PIN in om dit oop te maak.",
+    "unlock": "Ontsluit Laag 2",
+    "unlock-error": "Kon nie Laag 2 ontsluit nie: ",
+    "indexer": "Indekseerder",
+    "indexer-error": "Ongeldige indekseerder-URL: {{reason}}",
+    "seed-words": "Saadwoorde",
+    "seed-note-l1": "Jou Ootle-beursie gebruik dieselfde saadwoorde as jou Tari-beursie.",
+    "seed-note-imported": "Jou Ootle-beursie gebruik sy eie ingevoerde saadwoorde. Rugsteun hulle afsonderlik.",
+    "use-l1-seed": "Gebruik my Tari-beursiesaad",
+    "confirm-import": "Voer Laag 2-saadwoorde in",
+    "seed-change-error": "Kon nie die Laag 2-saadwoorde verander nie",
+    "confirm-replace-copy": "Jou huidige Laag 2-beursie sal vervang word.\nJy kan dit slegs met sy saadwoorde terugkry.",
+    "address": "Ootle-beursieadres",
+    "address-description": "Deel dit om XTR op Ootle te ontvang.",
+    "public-key": "Ootle-eienaar se publieke sleutel",
+    "public-key-description": "Die eissleutel vir verbrandings vanaf jou Tari-beursie. Verbrand na L2 vul dit vir jou in.",
+    "side-by-side": "Laat beursies langs mekaar toe",
+    "side-by-side-description": "Wys die Tari- en Ootle-beursies langs mekaar. Wanneer af, open elke navigasieknoppie sy beursie op sy eie."
+  }
 }

@@ -20,6 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#[path = "src/pin_manifest.rs"]
+mod pin_manifest;
+
 use std::fs;
 use std::path::Path;
 
@@ -90,6 +93,10 @@ fn copy_process_wrapper() {
 }
 
 fn main() {
+    for name in ["mainnet", "testnets", "nextnet"] {
+        println!("cargo::rerun-if-changed=binaries-versions/binaries_versions_{name}.json");
+    }
+    pin_manifest::validate_version_records().expect("Binary version/hash maintenance check failed");
     copy_process_wrapper();
     // Allow the use of unstable features in tokio
     println!("cargo::rustc-check-cfg=cfg(tokio_unstable)");

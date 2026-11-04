@@ -210,14 +210,19 @@ impl WindowsDependenciesResolver {
             }
 
             let url = &dependency.universal_data.download_url;
-            let destination = temp_dir().join("executables".to_string());
+            crate::private_directory::validate_https_source(url)?;
+            let staging = crate::private_directory::create_private_dir(&temp_dir())?;
+            let destination = staging.path().to_path_buf();
             let file_path = HttpFileClient::builder()
+                .with_exclusive_create()
                 .build(url.clone(), destination.clone())?
                 .execute()
                 .await?;
 
-            // Execute the installer
+            let downloaded_digest = crate::executable_integrity::file_digest(&file_path)?;
             use crate::consts::PROCESS_CREATION_NO_WINDOW;
+            // Same-user replacement remains possible between this check and launch (#3471).
+            crate::executable_integrity::verify_file(&file_path, &downloaded_digest)?;
             let status = std::process::Command::new(&file_path)
                 .creation_flags(PROCESS_CREATION_NO_WINDOW)
                 .status()?;

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import { render, screen } from '@app/test/test-utils';
 import { List } from './List';
@@ -26,10 +26,13 @@ vi.mock('@app/store/actions/walletStoreActions.ts', () => ({
 }));
 vi.mock('virtua', () => ({ VList: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock('./transactionHistoryItem/HistoryItem.tsx', () => ({
-    HistoryListItem: () => <div data-testid="transaction" />,
+    HistoryListItem: ({ isStalled }: { isStalled?: boolean }) => (
+        <div data-testid="transaction" data-stalled={String(Boolean(isStalled))} />
+    ),
 }));
 
 const list = () => <List setIsScrolled={vi.fn()} />;
+const invokeMock = () => invoke as unknown as Mock<(cmd: string) => Promise<unknown>>;
 
 describe('transaction history empty state', () => {
     beforeEach(() => {
@@ -48,7 +51,7 @@ describe('transaction history empty state', () => {
         unmount();
 
         render(list());
-        expect(invoke).toHaveBeenCalledTimes(1);
+        expect(invokeMock().mock.calls.filter(([cmd]) => cmd === 'get_wallet_transaction_history')).toHaveLength(1);
     });
 
     it('shows the empty state once there is nothing to wait for', () => {
@@ -69,6 +72,56 @@ describe('transaction history empty state', () => {
         wallet.is_wallet_importing = false;
         rerender(list());
         expect(screen.getByTestId('tx-list-empty')).toBeInTheDocument();
+    });
+
+    it('marks a stalled transaction in its row', async () => {
+        // 14 is still in the stalled list from before it was mined.
+        wallet.wallet_transactions = [
+            { id: 12, source: 'Transfer', status: 'pending' },
+            { id: 13, source: 'Transfer', status: 'pending' },
+            { id: 14, source: 'Transfer', status: 'unconfirmed' },
+        ];
+        vi.mocked(invoke).mockImplementation((async (cmd: string) =>
+            cmd === 'get_stalled_transactions'
+                ? [
+                      { tx_id: '12', amount: 5, burn_commitment: null },
+                      { tx_id: '14', amount: 5, burn_commitment: null },
+                  ]
+                : []) as typeof invoke);
+        render(list());
+
+        await vi.waitFor(() =>
+            expect(screen.getAllByTestId('transaction').map((row) => row.dataset.stalled)).toEqual([
+                'true',
+                'false',
+                'false',
+            ])
+        );
+        invokeMock().mockResolvedValue([]);
+    });
+
+    it('looks for stalled transactions only when the pending ones change, and not while scanning', async () => {
+        const stalledCalls = () => invokeMock().mock.calls.filter(([cmd]) => cmd === 'get_stalled_transactions');
+        wallet.wallet_scanning.is_initial_scan_complete = false;
+        wallet.wallet_transactions = [{ id: 12, source: 'Transfer', status: 'pending' }];
+        const { rerender } = render(list());
+        expect(stalledCalls()).toHaveLength(0);
+
+        wallet.wallet_scanning.is_initial_scan_complete = true;
+        rerender(list());
+        await vi.waitFor(() => expect(stalledCalls()).toHaveLength(1));
+
+        // A scan batch replaces the array; the pending ones stay the same.
+        wallet.wallet_transactions = [
+            { id: 12, source: 'Transfer', status: 'pending' },
+            { id: 13, source: 'Coinbase', status: 'confirmed' },
+        ];
+        rerender(list());
+        expect(stalledCalls()).toHaveLength(1);
+
+        wallet.wallet_transactions = [{ id: 12, source: 'Transfer', status: 'rejected' }];
+        rerender(list());
+        await vi.waitFor(() => expect(stalledCalls()).toHaveLength(2));
     });
 
     it('hides the empty state when transactions exist', () => {

@@ -19,11 +19,9 @@
   "this-might-take-a-few-minutes": "Isso pode levar alguns minutos",
   "title": {
     "application-started": "Aplicativos iniciados",
-    "benchmarking-network": "Benchmark de Rede",
     "checking-latest-version-gpuminer": "Verificando a versão mais recente do xtrgpuminer",
     "checking-latest-version-mmproxy": "Verificando a versão mais recente do mmproxy",
     "checking-latest-version-node": "Verificando a versão mais recente do nó",
-    "checking-latest-version-sha-p2pool": "Verificando a versão mais recente do sha-p2pool",
     "checking-latest-version-tor": "Verificando a versão mais recente do tor",
     "checking-latest-version-wallet": "Verificando a versão mais recente da carteira",
     "checking-latest-version-xmrig": "Verificando a versão mais recente do xmrig",
@@ -32,7 +30,6 @@
     "minotari-node-restarting": "Os dados do nó Minotari estavam corrompidos, limpando dados antigos",
     "preparing-for-initial-sync": "Conectando-se a pares da rede {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Iniciando proxy de mineração de fusão",
-    "starting-p2pool": "Iniciando P2Pool",
     "starting-up": "Iniciando",
     "waiting-for-block-sync": "Aguardando sincronização de bloco. {{local_header_height}}/{{tip_header_height}} cabeçalhos e {{local_block_height}}/{{tip_block_height}} blocos sincronizados.",
     "waiting-for-header-sync": "Aguardando sincronização de cabeçalho. {{local_header_height}}/{{tip_header_height}} cabeçalhos e {{local_block_height}}/{{tip_block_height}} blocos sincronizados. ",
@@ -41,6 +38,7 @@
     "waiting-for-wallet": "Aguardando carteira",
     "wallet-started": "Carteira iniciada"
   },
+  "updated-downloaded": "Atualização baixada: reiniciando o Tari Universe",
   "would-you-like-to-install": "Gostaria de instalar o Tari Universe {{version}} agora?",
   "yes": "Sim"
 }

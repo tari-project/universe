@@ -1,0 +1,17 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "即将到来的奖励 / MacBook Pro 16’"
+    },
+    "timer": {
+      "gettingClose": "您快到了",
+      "days": "天",
+      "hours": "小时"
+    },
+    "friends": {
+      "reduceTimer": "通过邀请朋友来减少计时器",
+      "linkCopied": "链接已复制！",
+      "growCrew": "扩大您的团队"
+    }
+  }
+}

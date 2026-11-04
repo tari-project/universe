@@ -20,10 +20,19 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::time::Duration;
+
 use anyhow::anyhow;
 
 use crate::binaries::binaries_resolver::BinaryDownloadError;
 use crate::requests::utils::create_user_agent;
+
+// Total per-request timeout for the shared client. It only serves small
+// requests (HEAD probes, pool-status JSON, GitHub release listings); the large
+// binary download builds its own client in http_file_client, so this bound does
+// not apply there. Without it a slow or silent pool API would stall the
+// pool-status polling task forever.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub struct HttpClient {
     pub client: reqwest_middleware::ClientWithMiddleware,
@@ -33,6 +42,7 @@ impl HttpClient {
     pub fn default() -> Self {
         let inner_client = reqwest::ClientBuilder::new()
             .user_agent(create_user_agent())
+            .timeout(REQUEST_TIMEOUT)
             .build()
             .expect("Failed to create reqwest client");
         let client = reqwest_middleware::ClientBuilder::new(inner_client).build();
@@ -52,6 +62,7 @@ impl HttpClient {
 
         let inner_client = reqwest::ClientBuilder::new()
             .user_agent(create_user_agent())
+            .timeout(REQUEST_TIMEOUT)
             .build()
             .expect("Failed to create reqwest client");
 

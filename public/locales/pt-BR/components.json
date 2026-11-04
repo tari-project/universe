@@ -5,17 +5,17 @@
     "is-live": "está ao vivo"
   },
   "battery-alert-dialog": {
-    "auto-resume-info": "Mining will automatically resume when AC power is connected",
-    "description": "We've noticed your device is running on battery power. To help preserve your battery life and ensure optimal performance, we've temporarily paused mining. Mining will automatically resume when your device is connected to a power source.",
-    "title": "Mining Paused - Battery Mode Detected",
-    "understood": "I Understand"
+    "auto-resume-info": "A mineração será retomada automaticamente quando a energia elétrica for conectada",
+    "description": "Notamos que seu dispositivo está funcionando na bateria. Para ajudar a preservar a vida útil da bateria e garantir o melhor desempenho, pausamos a mineração temporariamente. A mineração será retomada automaticamente quando seu dispositivo for conectado a uma fonte de energia.",
+    "title": "Mineração Pausada - Modo Bateria Detectado",
+    "understood": "Entendi"
   },
   "close-experience-dialog": {
-    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
-    "dont-ask-again": "Don't ask me again",
-    "exit-completely": "Exit Completely",
-    "run-in-background": "Run in Background",
-    "title": "Choose how to close Tari Universe"
+    "description": "Você pode minimizar o aplicativo para a bandeja do sistema para continuar minerando em segundo plano, ou sair completamente para encerrar todos os processos.",
+    "dont-ask-again": "Não perguntar novamente",
+    "exit-completely": "Sair Completamente",
+    "run-in-background": "Executar em Segundo Plano",
+    "title": "Escolha como fechar o Tari Universe"
   },
   "field-error-message": {
     "integers-only": "Apenas números inteiros permitidos",
@@ -42,7 +42,6 @@
     "resuming-all-processes": "Retomando todos os processos...",
     "resuming-mm-proxy": "Retomando MM Proxy...",
     "resuming-node": "Retomando Nó...",
-    "resuming-p2pool": "Retomando P2Pool...",
     "resuming-tor": "Retomando Tor...",
     "resuming-wallet": "Retomando Carteira...",
     "syncing-node": "Sincronizando Nó...",

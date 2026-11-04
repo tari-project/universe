@@ -70,7 +70,9 @@
                 'burn_to_l2',
                 'discard_unreadable_wallet_config',
                 'download_and_start_installer',
+                'effective_l1_payment_id',
                 'enable_l2_wallet',
+                'estimate_l1_send_fee',
                 'exit_application',
                 'fetch_tor_bridges',
                 'get_app_in_memory_config',
@@ -90,7 +92,6 @@
                 'get_application_language',
                 'get_monero_seed_words',
                 'get_network',
-                'get_paper_wallet_details',
                 'get_seed_words',
                 'get_tor_config',
                 'import_seed_words',
@@ -142,6 +143,9 @@
                 'send_one_sided_from_tapplet',
                 'verify_address_for_send',
                 'validate_minotari_amount',
+                'get_max_sendable_amount',
+                'get_stalled_transactions',
+                'abandon_stalled_transaction',
                 'trigger_phases_restart',
                 'set_node_type',
                 'set_remote_base_node_address',
@@ -152,6 +156,7 @@
                 'parse_tari_address',
                 'refresh_wallet_history',
                 'get_wallet_transaction_history',
+                'get_wallet_output_statuses',
                 'get_base_node_status',
                 'get_local_block_stats',
                 'create_pin',
@@ -214,6 +219,7 @@
                 'plugin:shell|open', // @tauri-apps/plugin-shell open() - external links + tapplet links
                 'plugin:clipboard-manager|read_text', // @tauri-apps/plugin-clipboard-manager readText()
                 'plugin:clipboard-manager|write_text', // @tauri-apps/plugin-clipboard-manager writeText()
+                'plugin:clipboard-manager|clear', // @tauri-apps/plugin-clipboard-manager clear() - wipes copied seed phrase
                 'plugin:dialog|open', // @tauri-apps/plugin-dialog open() - file picker
                 'plugin:os|type', // @tauri-apps/plugin-os type() - settings screens branch on OS
                 'plugin:os|platform', // @tauri-apps/plugin-os platform() - feedback survey

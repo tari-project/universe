@@ -17,6 +17,7 @@ test-mode = ["tauri-remote-ui"]
 [build-dependencies]
 dotenvy = "0.15.7"
 embed-resource = "2.5.0"
+serde_json = "1"
 tauri-build = { version = "2", features = ["isolation"] }
 
 [dependencies]
@@ -53,14 +54,14 @@ keyring = { version = "3.0.5", features = [
 tauri-remote-ui = { path = "tauri-remote-ui-patched", optional = true }
 log = "0.4.22"
 log4rs = "1.3.0"
+mime_guess = "2"
 minotari_node_grpc_client = "=6.3.0-pre.2"
 minotari_node_wallet_client = "=6.3.0-pre.2"
-minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", tag = "v0.5.2" }
+minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", rev = "e695b6f4ae6568c1eac64cb99ef76580700efa58" }
 monero-address-creator = { git = "https://github.com/tari-project/monero-address-creator.git", rev = "6129ca0" }
 nix = { version = "0.29.0", features = ["signal"] }
 nvml-wrapper = "0.10.0"
 open = "5"
-phraze = "0.3.15"
 psp = { git = "https://github.com/tari-project/psp.git", rev = "ddef0c6" }
 r2d2 = "0.8.10"
 r2d2_sqlite = "0.34.0"
@@ -87,6 +88,7 @@ sha2 = "0.10.8"
 starship-battery = "0.12"
 sys-locale = "0.3.1"
 sysinfo = "0.31.2"
+tempfile = "3.10"
 tar = "0.4.26"
 tari_common = "=6.3.0-pre.2"
 tari_common_types = "=6.3.0-pre.2"
@@ -94,18 +96,20 @@ tari_crypto = "0.24.1"
 tari_shutdown = "=6.3.0-pre.2"
 tari_transaction_components = "=6.3.0-pre.2"
 tari_utilities = "0.10.0"
-tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
-tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
-tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408", features = [
+tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90" }
+tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle.git", rev = "aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90" }
+tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle.git", rev = "aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90", features = [
   "indexer_client",
 ] }
-tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
-tari_ootle_transaction = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
-tari_engine_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
-tari_template_lib = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
+tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle.git", rev = "aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90" }
+tari_ootle_transaction = { git = "https://github.com/tari-project/tari-ootle.git", rev = "aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90" }
+tari_engine_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90" }
+tari_template_lib = { git = "https://github.com/tari-project/tari-ootle.git", rev = "aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90" }
 # Converts the L1 burn proof file into the Ootle claim proof. No `execution`, which pulls in the engine.
-tari_ootle_app_utilities = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408", default-features = false }
-tari_sidechain = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
+tari_ootle_app_utilities = { git = "https://github.com/tari-project/tari-ootle.git", rev = "aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90", default-features = false }
+# Ootle's tari_sidechain: its CompleteClaimBurnProof reads the proof files minotari writes
+# with the published tari_sidechain (same JSON).
+tari_sidechain = { git = "https://github.com/tari-project/tari-ootle.git", rev = "aa7b0c81719e5c3cfaf9bf3b5fb87bd83180cb90" }
 tauri = { version = "2", features = [
   "protocol-asset",
   "isolation",
@@ -131,7 +135,6 @@ tokio = { version = "1", features = ["full"] }
 tokio-tungstenite = { version = "0.26.2", features = ["native-tls"] }
 tokio-util = { version = "0.7.14", features = ["compat", "rt"] }
 tonic = { version = "0.13.1", features = ["tls-webpki-roots"] }
-tower-http = { version = "0.6.2", default-features = false, features = ["fs"] }
 tungstenite = "0.26.2"
 url = { version = "2.5.4", features = ["default", "serde"] }
 urlencoding = "2.1.3"
@@ -166,6 +169,11 @@ planif = "1.0.0"
 whoami = "1.5.2"
 windows-sys = { version = "0.52", features = [
   "Win32_Storage_FileSystem",
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  "Win32_System_Memory",
+  "Win32_System_Threading",
   "Win32_System_WindowsProgramming",
 ] } # GetDriveTypeW for SMB-mapped drive-letter detection in data_location
 winreg = "0.52.0"
@@ -174,7 +182,9 @@ winreg = "0.52.0"
 [dev-dependencies]
 mockall = "0.13"
 serial_test = "3.0"
-tempfile = "3.10"
+tari_script = "=6.3.0-pre.2"
 test-case = "3.3"
 tokio-test = "0.4"
 wiremock = "0.6"
+# The published tari_sidechain minotari writes burn proofs with, to build test proofs.
+tari_sidechain_l1 = { package = "tari_sidechain", version = "8.0.0" }

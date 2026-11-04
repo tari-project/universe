@@ -21,7 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU16, Ordering};
 use std::time::Duration;
 
 use anyhow::{Error, anyhow};
@@ -37,7 +38,9 @@ use tokio::time::timeout;
 
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HandleUnhealthyResult;
-use crate::tor_control_client::{TorControlClient, TorStatus};
+use crate::tor_control_client::{
+    TorControlClient, TorStatus, control_auth_cookie_path, read_authentication_command,
+};
 use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use crate::{
     process_adapter::{
@@ -46,21 +49,42 @@ use crate::{
     utils::file_utils::convert_to_string,
 };
 
+const TOR_CONTROL_TIMEOUT: Duration = Duration::from_secs(5);
+
 pub(crate) struct TorAdapter {
     socks_port: u16,
     config_file: Option<PathBuf>,
     config: TorConfig,
+    active_control_port: AtomicU16,
+    cookie_path: std::sync::RwLock<Option<PathBuf>>,
     status_broadcast: watch::Sender<TorStatus>,
+}
+
+fn prepare_tor_working_dir(data_dir: &Path, is_first_start: bool) -> Result<PathBuf, Error> {
+    let working_dir: PathBuf = data_dir.join("tor-data");
+    if is_first_start {
+        info!(target: LOG_TARGET_APP_LOGIC, "Clearing tor data directory on first start");
+        if std::fs::exists(&working_dir)? {
+            std::fs::remove_dir_all(&working_dir)?;
+            info!(target: LOG_TARGET_APP_LOGIC, "Removed tor data directory");
+        }
+    }
+    std::fs::create_dir_all(&working_dir)?;
+    Ok(working_dir)
 }
 
 impl TorAdapter {
     pub fn new(status_broadcast: watch::Sender<TorStatus>) -> Self {
         let port = PortAllocator::new().assign_port_with_fallback();
+        let config = TorConfig::default();
+        let initial_control_port = config.control_port;
 
         Self {
             socks_port: port,
             config_file: None,
-            config: TorConfig::default(),
+            config,
+            active_control_port: AtomicU16::new(initial_control_port),
+            cookie_path: std::sync::RwLock::new(None),
             status_broadcast,
         }
     }
@@ -91,6 +115,8 @@ impl TorAdapter {
             conf.version = 1;
         }
 
+        self.active_control_port
+            .store(conf.control_port, Ordering::Relaxed);
         self.config = conf;
     }
 
@@ -112,88 +138,71 @@ impl TorAdapter {
     }
 
     pub async fn set_tor_config(&mut self, config: TorConfig) -> Result<TorConfig, Error> {
+        self.active_control_port
+            .store(config.control_port, Ordering::Relaxed);
         self.config = config.clone();
-
-        // match self.apply_tor_config_changes(config.clone()).await {
-        //     Ok(_) => info!(target: LOG_TARGET, "Tor config changes applied successfully"),
-        //     Err(e) => {
-        //         warn!(target: LOG_TARGET, "Failed to apply Tor config changes: {:?}", e);
-        //         return Err(e);
-        //     }
-        // }
 
         self.update_config_file().await?;
         Ok(config)
     }
 
-    // pub async fn apply_tor_config_changes(&self, config: TorConfig) -> Result<(), Error> {
-    //     let mut setconf_commands: Vec<String> = vec![];
-    //     let control_port_address = "127.0.0.1:9051";
-
-    //     // Establish a TCP connection
-    //     let mut stream = TcpStream::connect(control_port_address)?;
-
-    //     // Authenticate
-    //     setconf_commands.push(format!("AUTHENTICATE \"{}\"\n", self.password.clone()));
-
-    //     setconf_commands.push("SETCONF".to_string());
-
-    //     // Set Bridge instances
-    //     if config.use_bridges {
-    //         for bridge in config.bridges {
-    //             setconf_commands.push(format!("Bridge=\"{}\"", bridge))
-    //         }
-    //     }
-    //     // Set UseBridges
-    //     setconf_commands.push(format!("UseBridges={}", config.use_bridges as u8));
-    //     // Set ControlPort
-    //     setconf_commands.push(format!("ControlPort=127.0.0.1:{}", config.control_port));
-
-    //     stream.write_all(setconf_commands.join(" ").as_bytes())?;
-
-    //     Ok(())
-    // }
-
     pub async fn get_entry_guards(&self) -> Result<Vec<String>, Error> {
-        let control_port_address = format!("127.0.0.1:{}", self.config.control_port);
-        let stream = TcpStream::connect(control_port_address.clone()).await?;
-        let mut reader = BufReader::new(stream);
-
-        // AUTHENTICATE
-        let auth_command = "AUTHENTICATE\n";
-        reader.get_mut().write_all(auth_command.as_bytes()).await?;
-        let mut response = String::new();
-        reader.read_line(&mut response).await?;
-        if !response.starts_with("250 OK") {
-            error!(target: LOG_TARGET_APP_LOGIC, "Tor AUTHENTICATE failed for: {control_port_address:?}");
-            return Err(Error::msg("Authentication failed"));
+        let control_port = self.active_control_port.load(Ordering::Relaxed);
+        if control_port == 0 {
+            return Err(anyhow!("Tor control port is not initialized"));
         }
+        let cookie_path = self
+            .cookie_path
+            .read()
+            .map_err(|_| anyhow!("Tor cookie path lock poisoned"))?
+            .clone()
+            .ok_or_else(|| anyhow!("Tor cookie path is not initialized"))?;
+        let control_port_address = format!("127.0.0.1:{control_port}");
 
-        // GETINFO entry-guards
-        let getinfo_command = "GETINFO entry-guards\n";
-        reader
-            .get_mut()
-            .write_all(getinfo_command.as_bytes())
-            .await?;
-        response.clear();
-        reader.read_line(&mut response).await?;
+        timeout(TOR_CONTROL_TIMEOUT, async move {
+            let auth_command = read_authentication_command(&cookie_path).await?;
+            let stream = TcpStream::connect(&control_port_address).await?;
+            let mut reader = BufReader::new(stream);
 
-        if response.starts_with("250+entry-guards=") {
-            let mut entry_guards: Vec<String> = vec![];
-            loop {
-                response.clear();
-                reader.read_line(&mut response).await?;
-                if response == ".\r\n" || response.is_empty() {
-                    break;
-                }
-                entry_guards.push(response.trim().to_string());
+            reader.get_mut().write_all(auth_command.as_bytes()).await?;
+            let mut response = String::new();
+            reader.read_line(&mut response).await?;
+            if response != "250 OK\r\n" {
+                error!(target: LOG_TARGET_APP_LOGIC, "Tor AUTHENTICATE failed for: {control_port_address:?}");
+                return Err(Error::msg("Authentication failed"));
             }
 
-            Ok(entry_guards)
-        } else {
-            error!(target: LOG_TARGET_APP_LOGIC, "Tor GETINFO entry-guards with response: {response:?}");
-            Err(Error::msg("Failed to get entry guards"))
-        }
+            // GETINFO entry-guards
+            let getinfo_command = "GETINFO entry-guards\r\n";
+            reader
+                .get_mut()
+                .write_all(getinfo_command.as_bytes())
+                .await?;
+            response.clear();
+            reader.read_line(&mut response).await?;
+
+            if response.starts_with("250+entry-guards=") || response.starts_with("250-entry-guards=") {
+                let mut entry_guards: Vec<String> = vec![];
+                loop {
+                    response.clear();
+                    let bytes_read = reader.read_line(&mut response).await?;
+                    if bytes_read == 0 || response.trim() == "." {
+                        break;
+                    }
+                    if response.starts_with("250 OK") {
+                        break;
+                    }
+                    entry_guards.push(response.trim().to_string());
+                }
+
+                Ok(entry_guards)
+            } else {
+                error!(target: LOG_TARGET_APP_LOGIC, "Tor GETINFO entry-guards failed");
+                Err(Error::msg("Failed to get entry guards"))
+            }
+        })
+        .await
+        .map_err(|_| anyhow!("Timed out reading Tor entry guards"))?
     }
 }
 
@@ -213,8 +222,13 @@ impl ProcessAdapter for TorAdapter {
         let inner_shutdown = Shutdown::new();
 
         info!(target: LOG_TARGET_APP_LOGIC, "Starting tor");
-        let working_dir: PathBuf = data_dir.join("tor-data");
-        std::fs::create_dir_all(&working_dir)?;
+        let data_dir = std::path::absolute(data_dir)?;
+        let working_dir = prepare_tor_working_dir(&data_dir, is_first_start)?;
+        let cookie_path = control_auth_cookie_path(&data_dir);
+        *self
+            .cookie_path
+            .write()
+            .map_err(|_| anyhow!("Tor cookie path lock poisoned"))? = Some(cookie_path.clone());
 
         let working_dir_string = convert_to_string(working_dir)?;
         let log_dir_string = convert_to_string(log_dir.join("tor.log"))?;
@@ -230,17 +244,8 @@ impl ProcessAdapter for TorAdapter {
         if control_port == 0 {
             control_port = PortAllocator::new().assign_port_with_fallback();
         }
-        if is_first_start {
-            info!(target: LOG_TARGET_APP_LOGIC, "Clearing tor data directory on first start");
-            if std::fs::exists(data_dir.join("tor-data"))? {
-                match std::fs::remove_dir_all(data_dir.join("tor-data")) {
-                    Ok(_) => info!(target: LOG_TARGET_APP_LOGIC, "Removed tor data directory"),
-                    Err(e) => {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove tor data directory: {e}");
-                    }
-                }
-            }
-        }
+        self.active_control_port
+            .store(control_port, Ordering::Relaxed);
 
         let mut args: Vec<String> = vec![
             "-f".to_string(),
@@ -253,9 +258,10 @@ impl ProcessAdapter for TorAdapter {
             self.socks_port.to_string(),
             "--controlport".to_string(),
             format!("127.0.0.1:{}", control_port),
-            // TODO: Put hashed password back
-            // "--HashedControlPassword".to_string(),
-            // EncryptedKey::hash_password(&self.password).to_string(),
+            "--CookieAuthentication".to_string(),
+            "1".to_string(),
+            "--CookieAuthFile".to_string(),
+            convert_to_string(cookie_path)?,
             "--clientuseipv6".to_string(),
             "1".to_string(),
             "--DataDirectory".to_string(),
@@ -322,10 +328,16 @@ pub(crate) struct TorStatusMonitor {
     base_path: PathBuf,
 }
 
+impl TorStatusMonitor {
+    pub fn cookie_path(&self) -> PathBuf {
+        control_auth_cookie_path(&self.base_path)
+    }
+}
+
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
-        let client = TorControlClient::new(self.control_port);
+        let client = TorControlClient::new(self.control_port, self.cookie_path());
         match timeout(timeout_duration, client.get_info()).await {
             Ok(Ok(status)) => {
                 let _res = self.status_broadcast.send(status);
@@ -397,4 +409,143 @@ fn get_libevent_envs(_binary_version_path: &std::path::Path) -> Option<HashMap<S
 fn get_libevent_envs(_binary_version_path: &std::path::Path) -> Option<HashMap<String, String>> {
     // For non-Linux, return None
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::net::TcpListener;
+
+    #[test]
+    fn test_spawn_args_require_cookie_authentication_under_tor_data() {
+        let temp = tempfile::tempdir().expect("test setup succeeds");
+        let (tx, _rx) = watch::channel(TorStatus::default());
+        let adapter = TorAdapter::new(tx);
+        let (process, _) = adapter
+            .spawn_inner(
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().join("tor"),
+                false,
+            )
+            .expect("test setup succeeds");
+        let args = &process.startup_spec.args;
+        assert!(
+            args.windows(2)
+                .any(|pair| pair == ["--CookieAuthentication", "1"])
+        );
+        let expected = temp.path().join("tor-data/control_auth_cookie");
+        assert!(args.windows(2).any(|pair| pair[0] == "--CookieAuthFile"
+            && pair[1] == expected.to_str().expect("test setup succeeds")));
+        assert!(!args.iter().any(|arg| arg == "--HashedControlPassword"));
+    }
+
+    #[test]
+    fn prepare_tor_working_dir_clears_stale_files_and_recreates_dir_on_first_start() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let stale_dir = temp.path().join("tor-data");
+        std::fs::create_dir_all(&stale_dir).expect("create stale dir");
+        let stale_file = stale_dir.join("stale_state");
+        std::fs::write(&stale_file, b"old").expect("write stale file");
+
+        let working_dir =
+            prepare_tor_working_dir(temp.path(), true).expect("prepare_tor_working_dir");
+        assert!(
+            working_dir.is_dir(),
+            "tor-data must exist after first-start reset"
+        );
+        assert!(
+            !stale_file.exists(),
+            "stale files inside tor-data must be cleared"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn first_start_fails_if_stale_tor_directory_cannot_be_removed() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp = tempfile::tempdir().expect("tempdir");
+        let stale_dir = temp.path().join("tor-data");
+        std::fs::create_dir_all(&stale_dir).expect("create stale dir");
+        let stale_file = stale_dir.join("stale_state");
+        std::fs::write(&stale_file, b"old").expect("write stale file");
+        std::fs::set_permissions(temp.path(), std::fs::Permissions::from_mode(0o555))
+            .expect("make parent read-only");
+
+        let result = prepare_tor_working_dir(temp.path(), true);
+        std::fs::set_permissions(temp.path(), std::fs::Permissions::from_mode(0o755))
+            .expect("restore parent permissions");
+        assert!(result.is_err(), "Tor must not start with stale state");
+    }
+
+    #[tokio::test]
+    async fn get_entry_guards_uses_allocated_active_control_port_and_crlf() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+        let port = listener.local_addr().expect("addr").port();
+
+        let server = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let mut reader = BufReader::new(stream);
+            let mut line = String::new();
+            reader.read_line(&mut line).await.expect("read auth");
+            assert_eq!(line, format!("AUTHENTICATE {}\r\n", "ab".repeat(32)));
+            reader
+                .get_mut()
+                .write_all(b"250 OK\r\n")
+                .await
+                .expect("write auth ok");
+
+            line.clear();
+            reader.read_line(&mut line).await.expect("read getinfo");
+            assert_eq!(line, "GETINFO entry-guards\r\n");
+            reader
+                .get_mut()
+                .write_all(b"250+entry-guards=\r\n$AAA~guard1 up\r\n.\r\n250 OK\r\n")
+                .await
+                .expect("write guards");
+        });
+
+        let (tx, _rx) = watch::channel(TorStatus::default());
+        let adapter = TorAdapter::new(tx);
+        adapter.active_control_port.store(port, Ordering::Relaxed);
+        let temp = tempfile::tempdir().expect("test setup succeeds");
+        let cookie_path = temp.path().join("cookie");
+        std::fs::write(&cookie_path, [0xab; 32]).expect("test setup succeeds");
+        *adapter.cookie_path.write().expect("test setup succeeds") = Some(cookie_path);
+
+        let guards = adapter.get_entry_guards().await.expect("entry guards");
+        assert_eq!(guards, vec!["$AAA~guard1 up".to_string()]);
+        server.await.expect("server join");
+    }
+
+    #[tokio::test]
+    async fn get_entry_guards_rejects_failed_or_malformed_authentication() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cookie_path = temp.path().join("cookie");
+        std::fs::write(&cookie_path, [0xab; 32]).expect("write cookie");
+        for reply in ["515 Authentication failed\r\n", "250 OK unexpected\r\n", ""] {
+            let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+            let (tx, _rx) = watch::channel(TorStatus::default());
+            let adapter = TorAdapter::new(tx);
+            adapter.active_control_port.store(
+                listener.local_addr().expect("addr").port(),
+                Ordering::Relaxed,
+            );
+            *adapter.cookie_path.write().expect("cookie lock") = Some(cookie_path.clone());
+            let (result, ()) = tokio::join!(adapter.get_entry_guards(), async {
+                let (stream, _) = listener.accept().await.expect("accept");
+                let mut reader = BufReader::new(stream);
+                let mut line = String::new();
+                reader.read_line(&mut line).await.expect("read auth");
+                reader
+                    .get_mut()
+                    .write_all(reply.as_bytes())
+                    .await
+                    .expect("auth reply");
+            });
+            assert!(result.is_err(), "must reject {reply:?}");
+        }
+    }
 }

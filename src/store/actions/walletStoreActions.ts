@@ -68,7 +68,7 @@ export const importSeedWords = async (seedWords: string[]) => {
 export const setExternalTariAddress = async (newAddress: string) => {
     await invoke('set_external_tari_address', { address: newAddress })
         .then(() => {
-            console.info('New Tari address set successfully to:', newAddress);
+            console.info('New external Tari address set');
         })
         .catch((e) => {
             console.error('Could not set external tari address', e);

@@ -26,6 +26,8 @@ use thiserror::Error;
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Bridge content integrity verification failed: {0}")]
+    IntegrityError(std::io::Error),
     #[error(transparent)]
     IOError(#[from] IOError),
     #[error(transparent)]

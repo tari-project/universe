@@ -8,7 +8,7 @@ export enum Language {
     PL = 'pl',
     AF = 'af',
     TR = 'tr',
-    CN = 'cn', // Chinese, folder is 'cn'
+    CN = 'zh', // Simplified Chinese, folder is 'zh'
     HI = 'hi',
     ID = 'id',
     JA = 'ja',
@@ -47,14 +47,14 @@ export const resolveI18nLanguage = (languageCode: string): Language => {
         case 'tr':
         case 'tr-TR':
             return Language.TR;
-        case 'cn':
+        case 'cn': // legacy saved value from before the folder was renamed to 'zh'
         case 'zh':
         case 'zh-CN':
         case 'zh-HK':
         case 'zh-MO':
         case 'zh-SG':
         case 'zh-TW':
-            return Language.CN; // Map to 'cn' folder
+            return Language.CN; // Map to 'zh' folder
         case 'hi':
         case 'hi-IN':
             return Language.HI;
