@@ -33,6 +33,13 @@ export const WhiteBoxValue = styled.div`
     align-items: center;
 `;
 
+export const OverrideNotice = styled.p`
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: ${({ theme }) => theme.palette.error.main};
+`;
+
 export const Amount = styled.div`
     font-size: 30px;
     font-style: normal;

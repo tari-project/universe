@@ -1,0 +1,168 @@
+{
+  "auth": {
+    "url-error": "无法打开 URL",
+    "url-error-copy": "已复制到剪贴板，请直接访问链接以登录"
+  },
+  "bonus-gems-earned": "获得的奖励宝石",
+  "claimGems": "领取宝石",
+  "claimModalFieldLabel": "可选",
+  "claimModalFieldPlaceholder": "输入推荐码",
+  "claimModalFinePrint": "<strong>请注意：</strong> 领取宝石会开启分析功能，以便我们改进 Universe",
+  "claimModalText": "通过挖矿和邀请朋友赚取奖励XTM。",
+  "claimModalTitle": "在测试网挖矿赚取奖励",
+  "claimReferralCode": "领取您的推荐码<span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span>宝石。",
+  "claimReferralGifts": "领取您的推荐码并赚取{{gems}}个宝石。一旦您连接账户，您将获得宝石。",
+  "copied": "已复制！",
+  "copyFailed": "复制失败",
+  "copying": "正在复制...",
+  "crewRewards": {
+    "actions": {
+      "claim": "领取 {{amount}} XTM",
+      "claimed": "已领取",
+      "nudge": "提醒"
+    },
+    "activeMinersStat": "活跃矿工",
+    "bonusXTMEarned": "获得的奖励 XTM",
+    "copied": "已复制！",
+    "crewEmpty": {
+      "description": "您有 <strong>{{inactiveCount}}</strong> 位不活跃的好友。提醒他们一下，或邀请更多好友。",
+      "descriptionSingular": "您有 <strong>{{inactiveCount}}</strong> 位不活跃的好友。提醒他们一下，或邀请更多好友。",
+      "descriptionZero": "邀请好友，一起开始赚取额外奖励！",
+      "nudgeButton": "提醒您的好友",
+      "nudgeButtonSingular": "提醒您的好友",
+      "title": "您的好友在偷懒！",
+      "titleSingular": "您的好友在偷懒！",
+      "titleZero": "开始组建您的团队！"
+    },
+    "crewStatus": {
+      "completed": "已完成",
+      "inProgress": "进行中",
+      "needsNudge": "需要提醒"
+    },
+    "earnDescription": "每当您的朋友挖矿 <strong>{{daysRequired}} 天</strong>，您将获得 <strong>{{userReward}} XTM</strong>。您的朋友也将获得 <strong>{{friendReward}} XTM</strong>。",
+    "errorLoadingData": "加载团队数据时出错。请重试。",
+    "feedback": {
+      "nudgeSent": "提醒已发送！",
+      "rewardClaimed": "奖励已领取！"
+    },
+    "filters": {
+      "active": "活跃",
+      "all": "全部",
+      "complete": "完成",
+      "inactive": "不活跃"
+    },
+    "inviteFriends": "邀请朋友",
+    "inviteFriendsMessage": "邀请朋友并开始赚取 <strong>奖励 XTM！</strong>",
+    "login": {
+      "bonusText": "每次邀请可赚取最多 {{maxWeeks}} 周的奖励",
+      "description": "当您和您的朋友都在挖矿时，您将获得 <strong>{{userReward}} 奖励 XTM/周</strong>，您的朋友也将获得 <strong>{{friendReward}} 奖励 XTM/周</strong>",
+      "loginButton": "登录并开始赚取！",
+      "title": "与朋友一起挖矿。<strong>共同赚取。</strong>"
+    },
+    "manageYourCrew": "管理您的团队",
+    "myCrew": "我的团队",
+    "of": "的",
+    "streak": {
+      "day": "天",
+      "dayStreak": "{{days}} 天连胜",
+      "daysToMinimum": "还需 {{days}} 天才能满足最低要求！",
+      "keepStreak": "保持连胜以继续赚取奖励！",
+      "loadingStreak": "加载连胜中...",
+      "mineConsecutiveDays": "每周至少连续挖矿 <strong>{{streakDaysRequired}} 天</strong> 以赚取您的奖励 XTM。",
+      "minimumRequirementsMet": "您已满足最低要求。继续加油！",
+      "multiDayStreak": "{{days}} 天连胜",
+      "oneDayStreak": "1 天连胜",
+      "startMiningMessage": "开始挖矿以开始您的连胜并赚取奖励！",
+      "startYourStreak": "开始您的连胜！",
+      "unlockBonusRewards": "解锁您的奖励"
+    },
+    "title": "奖励"
+  },
+  "doLater": "我稍后再做",
+  "earnBonusXTM": "奖励 XTM",
+  "gems": "宝石",
+  "giftReferralCode": "邀请朋友加入Tari Universe即可获得奖励XTM。一旦他们连接账户并开始挖矿，您就会开始获得奖励。",
+  "giftReferralCodeHeader": "领取您的推荐码<span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span>宝石。",
+  "invite": "邀请",
+  "invite-friends-gems": "每当有朋友使用您的邀请链接，您都会获得奖励XTM。",
+  "inviteFriends": "邀请朋友",
+  "inviteFriendsText": "复制链接并分享",
+  "invitedAmount": "您已邀请<span>{{count}}</span>位朋友",
+  "joinAirdrop": "加入空投",
+  "joinAirdropButtonAriaLabel": "加入空投游戏并赚取宝石。右键单击以复制链接",
+  "keep-mining-to-earn-rewards": "继续挖矿以赚取更多XTM奖励！",
+  "linkCopied": "链接已复制！",
+  "live": "实时",
+  "logged-in-as": "登录为 <strong>@{{twitter}}</strong>",
+  "loggedInTitle": "空投分期",
+  "loggedOutTitle": "邀请朋友赚取宝石",
+  "login": "登录",
+  "loginButton": "登录以领取宝石",
+  "logout": "登出",
+  "nextTierBonus": "邀请<strong>{{count}}位朋友</strong>并赚取{{bonusGems}}个奖励宝石",
+  "permissionNoGems": {
+    "text": "Tari Universe 希望使用分析数据来改善您的体验。",
+    "title": "让 Tari Universe 更好"
+  },
+  "push-notifications": {
+    "text": "Tari Universe希望能够向您的连接设备发送通知",
+    "title": "允许Tari Universe发送通知"
+  },
+  "referral": "邀请朋友",
+  "rightClickToCopy": "右键单击以复制链接",
+  "success": "成功",
+  "topTooltipText": "通过邀请朋友赚取奖励XTM。",
+  "topTooltipTitle": "测试网奖励",
+  "tranche": {
+    "claim-modal": {
+      "claim-button": "领取",
+      "claiming": "正在领取...",
+      "description": "感谢您成为 Tari 社区的一员。Tari 的存在只有一个理由：您 {{emojis}}",
+      "description-complete": "您已领取本月的奖励。可能需要几个小时才会显示在您的余额中。",
+      "eyebrow": "可领取的空投",
+      "eyebrow-future": "下个月的空投",
+      "remaining-allocation": "您剩余的空投为 <span>{{amount}} XTM</span>",
+      "title": "是时候领取您的空投了",
+      "title-complete": "已领取！",
+      "title-future": "空投详情",
+      "waiting-verification": "等待验证..."
+    },
+    "notifications": {
+      "claim-failed": "领取失败",
+      "claim-success": "成功！您已领取 {{amount}} XTM。",
+      "claim-success-message": "已成功从分期中领取 {{amount}} XTM",
+      "new-tranche-available": "有新的分期可领取",
+      "new-tranches-available": "{{count}} 个新{{plural}}可领取！"
+    },
+    "status": {
+      "available": "可领取",
+      "available-in": "下一个领取窗口开启于",
+      "available-in-compact": "可领取时间 ",
+      "balance-summary": "XTM 余额摘要",
+      "claimed": "已领取",
+      "closes-prefix": "领取窗口关闭于",
+      "error": "加载分期状态失败",
+      "expired": "已过期",
+      "ineligible": "您没有领取资格",
+      "loading": "正在加载分期状态...",
+      "next-available": "下一个可领取分期：",
+      "next-reward": "下一期",
+      "no-active-claims": "没有可进行的领取",
+      "no-data": "暂无分期数据",
+      "overall-rewards": "您的空投总奖励为",
+      "pending": "待处理",
+      "progress-title": "空投进度",
+      "total-airdrop": "您的空投总额为 ",
+      "total-allocation": "总分配额",
+      "total-claimed": "已领取总额",
+      "total-due": "应付总额",
+      "tranches": "分期"
+    }
+  },
+  "unclaimedGems": "未领取的宝石",
+  "update-username": "更新用户名",
+  "username-error": "用户名必须为 3-20 个字符，并且只能包含字母、数字、下划线或连字符",
+  "username-update-success": "用户名更新成功",
+  "you-reached-your-giftinh-goal": "您达到了赠送目标！",
+  "your-friend-accepted-gift": "您的朋友之一接受了您的礼物！"
+}

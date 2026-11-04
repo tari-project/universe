@@ -5,17 +5,17 @@
     "is-live": "लाइव है"
   },
   "battery-alert-dialog": {
-    "auto-resume-info": "Mining will automatically resume when AC power is connected",
-    "description": "We've noticed your device is running on battery power. To help preserve your battery life and ensure optimal performance, we've temporarily paused mining. Mining will automatically resume when your device is connected to a power source.",
-    "title": "Mining Paused - Battery Mode Detected",
-    "understood": "I Understand"
+    "auto-resume-info": "AC पावर कनेक्ट होने पर माइनिंग स्वचालित रूप से फिर से शुरू हो जाएगी",
+    "description": "हमने देखा है कि आपका डिवाइस बैटरी पावर पर चल रहा है। आपकी बैटरी लाइफ बचाने और बेहतर प्रदर्शन सुनिश्चित करने के लिए, हमने माइनिंग को अस्थायी रूप से रोक दिया है। आपका डिवाइस पावर स्रोत से कनेक्ट होने पर माइनिंग स्वचालित रूप से फिर से शुरू हो जाएगी।",
+    "title": "माइनिंग रोकी गई - बैटरी मोड का पता चला",
+    "understood": "मैं समझता हूँ"
   },
   "close-experience-dialog": {
-    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
-    "dont-ask-again": "Don't ask me again",
-    "exit-completely": "Exit Completely",
-    "run-in-background": "Run in Background",
-    "title": "Choose how to close Tari Universe"
+    "description": "आप बैकग्राउंड में माइनिंग जारी रखने के लिए ऐप को सिस्टम ट्रे में छोटा कर सकते हैं, या सभी प्रक्रियाओं को रोकने के लिए पूरी तरह से बाहर निकल सकते हैं।",
+    "dont-ask-again": "मुझसे दोबारा न पूछें",
+    "exit-completely": "पूरी तरह से बाहर निकलें",
+    "run-in-background": "बैकग्राउंड में चलाएँ",
+    "title": "चुनें कि Tari Universe को कैसे बंद करना है"
   },
   "field-error-message": {
     "integers-only": "केवल पूर्णांक की अनुमति है",

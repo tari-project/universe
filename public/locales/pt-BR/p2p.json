@@ -18,6 +18,7 @@
     "earned": "Você ganhou",
     "tile-heading": "Recompensas em Andamento",
     "tile-heading-zero": "Recompensas começam em ~30 minutos",
+    "tile-disabled-heading": "{{unit}} está desativado",
     "tile-loading": "Pool está aquecendo",
     "tooltip-copy": "“Em Andamento” até você ganhar um mínimo de <strong>{{amount}}</strong>. Pode haver um atraso entre o envio do seu pagamento e a exibição nas transações e saldo da sua carteira.",
     "tooltip-tile-heading": "Limite de recompensas"

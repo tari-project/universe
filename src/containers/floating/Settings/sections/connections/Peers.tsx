@@ -31,15 +31,15 @@ const Count = styled.div<{ $count: number }>`
 export default function Peers() {
     const { t } = useTranslation('settings');
     const isConnectedToTariNetwork = useNodeStore((state) => state.isNodeConnected);
-    const nodeIdentity = useNodeStore((state) => state.node_identity);
-    const baseNodeStatus = useNodeStore((state) => state.base_node_status);
+    const nodePublicKey = useNodeStore((state) => state.node_identity?.public_key);
+    const numConnections = useNodeStore((state) => state.base_node_status?.num_connections);
     const nodeType = useNodeStore((state) => state.node_type);
     const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
     const listMarkup = connectedPeers.map((peer, i) => <li key={`peer-${peer}:${i}`}>{peer}</li>);
 
     useEffect(() => {
         invoke('list_connected_peers').then((peers) => setConnectedPeers(peers));
-    }, [nodeIdentity?.public_key, baseNodeStatus?.num_connections]);
+    }, [nodePublicKey, numConnections]);
 
     useEffect(() => {
         setConnectedPeers([]);

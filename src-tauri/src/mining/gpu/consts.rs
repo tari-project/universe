@@ -52,7 +52,7 @@ impl GpuMinerStatus {
 pub enum GpuMinerType {
     #[default]
     LolMiner,
-    /// The open source CUDA C29 miner: <https://github.com/tari-project/TARI.Miner>
+    /// The open source CUDA/HIP C29 miner: <https://github.com/tari-project/TARI.Miner>
     TariMiner,
 }
 
@@ -96,7 +96,7 @@ impl GpuMinerType {
 
     pub fn supported_platforms(&self) -> Vec<CurrentOperatingSystem> {
         match self {
-            // TARI.Miner only ships NVIDIA CUDA backends for Windows and Linux
+            // TARI.Miner ships GPU backends for Windows and Linux
             GpuMinerType::LolMiner | GpuMinerType::TariMiner => vec![
                 CurrentOperatingSystem::Windows,
                 CurrentOperatingSystem::Linux,

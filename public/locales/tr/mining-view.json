@@ -12,32 +12,26 @@
   "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
   "cpu-power": "CPU Gücü",
   "current-block-time": "Geçerli blok zamanı",
-  "day": "day",
+  "day": "gün",
   "estimated-day": "Est XTM/gün",
   "estimated-earnings": "Tahmini kazançlar",
   "floor": "Zemin",
   "gpu-power": "GPU Gücü",
   "mining-button-text": {
-    "cancel-mining": "Madenciyi İptal Et",
-    "changing-mode": "Mod değiştirme",
-    "started-auto-mining": "Otomatik Madencilik Başladı",
-    "starting-mining": "Madenci Başlatılıyor",
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
-    "state-start": "Madenciyi Başlat",
-    "stop-mining": "Madenciliği Durdur",
-    "waiting-for-idle": "Boşta Bekliyor"
+    "state-pause": "Madenciliği Duraklat",
+    "state-resume": "Madenciliğe Devam Et",
+    "state-start": "Madenciyi Başlat"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "Tüm modları gör",
+      "alert_cta-turbo": "Turbo Kullan️",
+      "alert_text": "Eko modu sistem kaynaklarının yalnızca düşük bir yüzdesini kullanır.",
+      "alert_text_extra": "Güç modunu yükseltmeyi deneyin.",
+      "alert_title": "Yeterince ödül kazanamıyor musunuz?"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "Mod",
+    "mode-long": "Madenci Modu"
   },
   "orphan-chain-tooltip": {
     "heading": "Denenecek şeyler:",
@@ -49,8 +43,8 @@
     "step_6": "Uygulama sıfırlamayı deneyin (Ayarlar\"da)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "<strong>{{duration}}</strong> duraklat",
+    "until-restart": "<strong>Yeniden başlatana</strong> kadar duraklat"
   },
   "pool": {
     "accepted_shares": "Kabul Edilen Paylar",
@@ -59,16 +53,16 @@
     "unpaid": "Ödenmemiş"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "Programı Kaydet",
+    "cta-save-complete": "Kaydedildi!",
+    "current": "Mevcut programınız",
+    "mining-schedule": "Madencilik Programı",
+    "mining-schedule-copy": "Madenciliği otomatik olarak başlatmak için belirli zamanlar ayarlayın.",
+    "mining-schedule-setup": "Madencilik Programı Kur",
+    "scheduled-to-mine": "Madencilik başlangıç zamanı",
+    "scheduled-to-pause": "Madencilik duraklatma zamanı",
+    "time-label-end": "Günlük Bitiş Saati",
+    "time-label-start": "Günlük Başlangıç Saati"
   },
   "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
   "you-won-block": "<span>blok #{{ blockHeight }}</span> kazananı siz oldunuz",

@@ -56,6 +56,7 @@ const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
 const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
 const MINOTARI_DB_ENTRY: &str = "minotari_db_password";
 const OOTLE_KEYRING_ENTRY: &str = "ootle_keyring_password";
+const MCP_TOKEN_KEY_ENTRY: &str = "mcp_token_key";
 const MINOTARI_DB_PASSWORD_BYTES: usize = 32;
 
 pub struct CredentialManager {
@@ -115,6 +116,11 @@ impl CredentialManager {
     /// store onto the new password needs the same value.
     pub fn ootle_keyring_password() -> Result<Zeroizing<String>, CredentialError> {
         Self::install_password(OOTLE_KEYRING_ENTRY)
+    }
+
+    /// Random per-install AES key for persisted MCP bearer tokens.
+    pub fn mcp_token_key() -> Result<Zeroizing<String>, CredentialError> {
+        Self::install_password(MCP_TOKEN_KEY_ENTRY)
     }
 
     fn install_password(name: &str) -> Result<Zeroizing<String>, CredentialError> {
@@ -310,5 +316,38 @@ mod tests {
 
         let second = CredentialManager::read_or_create_password(&entry).expect("second read");
         assert_eq!(*first, *second, "a stored password must never be replaced");
+    }
+    #[cfg(feature = "test-mode")]
+    #[test]
+    fn test_headless_credential_store_persists_mcp_key_and_token() {
+        use crate::configs::config_mcp::{ConfigMcpContent, token_cipher};
+        let temp = tempfile::tempdir().expect("tempdir");
+        crate::file_credential_store::set_store_dir(temp.path().to_path_buf());
+        let builder = crate::file_credential_store::default_credential_builder();
+        let entry = Entry::new_with_credential(
+            builder
+                .build(None, "mcp-test", MCP_TOKEN_KEY_ENTRY)
+                .expect("file credential"),
+        );
+        let first = CredentialManager::read_or_create_password(&entry).expect("create key");
+        let mut bytes = [0u8; 32];
+        hex::decode_to_slice(first.as_str(), &mut bytes).expect("32-byte key");
+        let _key = token_cipher::test_key(Some(bytes));
+        let mut content = ConfigMcpContent::default();
+        content.set_enabled(true);
+        let token = content.ensure_token().to_string();
+        let config_path = temp.path().join("config_mcp.json");
+        std::fs::write(
+            &config_path,
+            serde_json::to_vec(&content).expect("serialize"),
+        )
+        .expect("save config");
+        let second = CredentialManager::read_or_create_password(&entry).expect("reload key");
+        assert_eq!(*first, *second);
+        let loaded: ConfigMcpContent =
+            serde_json::from_slice(&std::fs::read(config_path).expect("read config"))
+                .expect("load config");
+        assert!(*loaded.enabled());
+        assert_eq!(loaded.bearer_token().as_deref(), Some(token.as_str()));
     }
 }

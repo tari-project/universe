@@ -58,10 +58,11 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
         setUITheme(configTheme as displayMode);
     }
     try {
-        if (i18next.language !== uiConfig.application_language) {
+        const configLanguage = resolveI18nLanguage(uiConfig.application_language);
+        if (i18next.language !== configLanguage) {
             console.info('Current language is', i18next.language);
-            console.info('Changing language to', uiConfig.application_language);
-            await changeLanguage(uiConfig.application_language);
+            console.info('Changing language to', configLanguage);
+            await changeLanguage(configLanguage);
         }
     } catch (e) {
         console.error('Could not set UI config:', e);
@@ -93,7 +94,7 @@ const rollbackLanguageConfig = async (
 ): Promise<void> => {
     useConfigUIStore.setState((c) => ({ ...c, ...previousUIConfig }));
     if (previousUIConfig.application_language) {
-        await changeLanguage(previousUIConfig.application_language);
+        await changeLanguage(resolveI18nLanguage(previousUIConfig.application_language));
     }
 };
 
@@ -310,9 +311,9 @@ export const updateCustomMiningMode = async (customCpuUsage: number, customGpuUs
 };
 
 export const setMoneroAddress = async (moneroAddress: string) => {
-    const prevMoneroAddress = useConfigWalletStore.getState().monero_address;
-    useConfigWalletStore.setState((c) => ({ ...c, monero_address: moneroAddress }));
-    useConfigWalletStore.setState((c) => ({ ...c, monero_address_is_generated: false }));
+    const { monero_address: prevMoneroAddress, monero_address_is_generated: prevIsGenerated } =
+        useConfigWalletStore.getState();
+    useConfigWalletStore.setState((c) => ({ ...c, monero_address: moneroAddress, monero_address_is_generated: false }));
     invoke('set_monero_address', { moneroAddress })
         .then(() => {
             // Backend handles mining restart via restart_phases
@@ -320,7 +321,12 @@ export const setMoneroAddress = async (moneroAddress: string) => {
         .catch((e) => {
             console.error('Could not set Monero address', e);
             setError('Could not change Monero address');
-            useConfigWalletStore.setState((c) => ({ ...c, monero_address: prevMoneroAddress }));
+            // A rejected PIN leaves the backend untouched, so undo the whole optimistic update.
+            useConfigWalletStore.setState((c) => ({
+                ...c,
+                monero_address: prevMoneroAddress,
+                monero_address_is_generated: prevIsGenerated,
+            }));
         });
 };
 

@@ -12,26 +12,26 @@
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
   "cpu-power": "Moc CPU",
   "current-block-time": "Aktualny czas bloku",
-  "day": "day",
+  "day": "dzień",
   "estimated-day": "Est XTM/dzień",
   "estimated-earnings": "Szacowane zarobki",
   "floor": "Poziom",
   "gpu-power": "Moc GPU",
   "mining-button-text": {
-    "state-pause": "Pause Mining",
-    "state-resume": "Resume Mining",
+    "state-pause": "Wstrzymaj kopanie",
+    "state-resume": "Wznów kopanie",
     "state-start": "Uruchom kopanie"
   },
   "modes": {
     "eco": {
-      "alert_cta-all": "See all modes",
-      "alert_cta-turbo": "Use Turbo️",
-      "alert_text": "Eco mode only uses a low percentage of system resources.",
-      "alert_text_extra": "Try turning the power mode up.",
-      "alert_title": "Not earning enough rewards?"
+      "alert_cta-all": "Zobacz wszystkie tryby",
+      "alert_cta-turbo": "Użyj trybu Turbo️",
+      "alert_text": "Tryb Eco wykorzystuje tylko niewielki procent zasobów systemu.",
+      "alert_text_extra": "Spróbuj zwiększyć tryb zasilania.",
+      "alert_title": "Zarabiasz za mało nagród?"
     },
-    "mode": "Mode",
-    "mode-long": "Miner Mode"
+    "mode": "Tryb",
+    "mode-long": "Tryb kopania"
   },
   "orphan-chain-tooltip": {
     "heading": "Rzeczy do wypróbowania:",
@@ -43,8 +43,8 @@
     "step_6": "Spróbuj zresetować aplikację (w Ustawieniach)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}</strong>",
-    "until-restart": "Pause until I<strong> Restart</strong>"
+    "for-duration": "Wstrzymaj na <strong>{{duration}}</strong>",
+    "until-restart": "Wstrzymaj do<strong> ponownego uruchomienia</strong>"
   },
   "pool": {
     "accepted_shares": "Zaakceptowane udziały",
@@ -53,16 +53,16 @@
     "unpaid": "Niezapłacone"
   },
   "schedule": {
-    "cta-save": "Save Schedule",
-    "cta-save-complete": "Saved!",
-    "current": "Your current schedule",
-    "mining-schedule": "Mining Schedule",
-    "mining-schedule-copy": "Set specific times to automatically start mining.",
-    "mining-schedule-setup": "Setup Mining Schedule",
-    "scheduled-to-mine": "Scheduled to mine at",
-    "scheduled-to-pause": "Scheduled to pause mining at",
-    "time-label-end": "Daily End Time",
-    "time-label-start": "Daily Start Time"
+    "cta-save": "Zapisz harmonogram",
+    "cta-save-complete": "Zapisano!",
+    "current": "Twój obecny harmonogram",
+    "mining-schedule": "Harmonogram kopania",
+    "mining-schedule-copy": "Ustaw konkretne godziny automatycznego rozpoczęcia kopania.",
+    "mining-schedule-setup": "Skonfiguruj harmonogram kopania",
+    "scheduled-to-mine": "Zaplanowano kopanie o",
+    "scheduled-to-pause": "Zaplanowano wstrzymanie kopania o",
+    "time-label-end": "Codzienna godzina zakończenia",
+    "time-label-start": "Codzienna godzina rozpoczęcia"
   },
   "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
   "you-won-block": "Byłeś zwycięzcą <span>bloku #{{ blockHeight }}</span>",

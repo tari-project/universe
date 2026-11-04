@@ -14,10 +14,15 @@ import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
-import { MiningModeType, PauseOnBatteryModeState } from '@app/types/configs';
+import { ConfigUI, MiningModeType, PauseOnBatteryModeState } from '@app/types/configs';
 import { setError } from './appStateStoreActions.ts';
-import { setApplicationLanguage, setShouldAlwaysUseSystemLanguage } from './appConfigStoreActions.ts';
-import { useConfigUIStore } from '../useAppConfigStore.ts';
+import {
+    handleConfigUILoaded,
+    setApplicationLanguage,
+    setMoneroAddress,
+    setShouldAlwaysUseSystemLanguage,
+} from './appConfigStoreActions.ts';
+import { useConfigUIStore, useConfigWalletStore } from '../useAppConfigStore.ts';
 
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: vi.fn(),
@@ -46,6 +51,10 @@ vi.mock('@app/i18initializer.ts', () => ({
     resolveI18nLanguage: vi.fn((languageCode: string) => {
         if (languageCode.startsWith('en')) {
             return 'en';
+        }
+
+        if (languageCode === 'cn' || languageCode.startsWith('zh')) {
+            return 'zh';
         }
 
         if (languageCode.startsWith('fr')) {
@@ -401,6 +410,42 @@ describe('appConfigStoreActions', () => {
         });
     });
 
+    describe('setMoneroAddress', () => {
+        const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
+        const setErrorMock = setError as unknown as ReturnType<typeof vi.fn>;
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            useConfigWalletStore.setState((state) => ({
+                ...state,
+                monero_address: 'generated-address',
+                monero_address_is_generated: true,
+            }));
+        });
+
+        it('restores the previous Monero address when the PIN is rejected', async () => {
+            invokeMock.mockRejectedValue('PIN entry cancelled');
+
+            await setMoneroAddress('attacker-address');
+            await vi.waitFor(() => expect(setErrorMock).toHaveBeenCalledWith('Could not change Monero address'));
+
+            expect(invokeMock).toHaveBeenCalledWith('set_monero_address', { moneroAddress: 'attacker-address' });
+            expect(useConfigWalletStore.getState().monero_address).toBe('generated-address');
+            expect(useConfigWalletStore.getState().monero_address_is_generated).toBe(true);
+        });
+
+        it('keeps the new Monero address when the backend accepts it', async () => {
+            invokeMock.mockResolvedValue(undefined);
+
+            await setMoneroAddress('user-address');
+            await Promise.resolve();
+
+            expect(setErrorMock).not.toHaveBeenCalled();
+            expect(useConfigWalletStore.getState().monero_address).toBe('user-address');
+            expect(useConfigWalletStore.getState().monero_address_is_generated).toBe(false);
+        });
+    });
+
     describe('language settings actions', () => {
         const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
         const changeLanguageMock = changeLanguage as unknown as ReturnType<typeof vi.fn>;
@@ -460,7 +505,8 @@ describe('appConfigStoreActions', () => {
             expect(invokeMock).toHaveBeenCalledWith('set_application_language', { applicationLanguage: 'en-US' });
             expect(useConfigUIStore.getState().application_language).toBe('en-US');
             expect(useConfigUIStore.getState().should_always_use_system_language).toBe(true);
-            expect(changeLanguageMock).toHaveBeenCalledWith('en-US');
+            expect(changeLanguageMock).toHaveBeenCalledWith(Language.EN);
+            expect(changeLanguageMock).not.toHaveBeenCalledWith('en-US');
             expect(setErrorMock).toHaveBeenCalledWith('Could not change application language');
         });
 
@@ -489,6 +535,48 @@ describe('appConfigStoreActions', () => {
             expect(useConfigUIStore.getState().application_language).toBe('en');
             expect(changeLanguageMock).not.toHaveBeenCalled();
             expect(setErrorMock).toHaveBeenCalledWith('Could not resolve system language');
+        });
+    });
+
+    describe('handleConfigUILoaded language resolution', () => {
+        const changeLanguageMock = changeLanguage as unknown as ReturnType<typeof vi.fn>;
+        const loadUIConfig = (applicationLanguage: string) =>
+            handleConfigUILoaded({ application_language: applicationLanguage } as ConfigUI);
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            i18next.language = 'en';
+        });
+
+        it('resolves a legacy stored cn language to zh on startup', async () => {
+            await loadUIConfig('cn');
+
+            expect(changeLanguageMock).toHaveBeenCalledTimes(1);
+            expect(changeLanguageMock).toHaveBeenCalledWith('zh');
+        });
+
+        it('resolves a stored zh-CN system locale to zh on startup', async () => {
+            await loadUIConfig('zh-CN');
+
+            expect(changeLanguageMock).toHaveBeenCalledTimes(1);
+            expect(changeLanguageMock).toHaveBeenCalledWith('zh');
+        });
+
+        it('resolves a stored en-GB system locale to en on startup', async () => {
+            i18next.language = 'fr';
+
+            await loadUIConfig('en-GB');
+
+            expect(changeLanguageMock).toHaveBeenCalledTimes(1);
+            expect(changeLanguageMock).toHaveBeenCalledWith('en');
+        });
+
+        it('skips changeLanguage when the resolved stored language is already active', async () => {
+            i18next.language = 'zh';
+
+            await loadUIConfig('cn');
+
+            expect(changeLanguageMock).not.toHaveBeenCalled();
         });
     });
 

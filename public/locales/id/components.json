@@ -5,17 +5,17 @@
     "is-live": "sedang aktif"
   },
   "battery-alert-dialog": {
-    "auto-resume-info": "Mining will automatically resume when AC power is connected",
-    "description": "We've noticed your device is running on battery power. To help preserve your battery life and ensure optimal performance, we've temporarily paused mining. Mining will automatically resume when your device is connected to a power source.",
-    "title": "Mining Paused - Battery Mode Detected",
-    "understood": "I Understand"
+    "auto-resume-info": "Penambangan akan dilanjutkan secara otomatis saat daya AC tersambung",
+    "description": "Kami mendeteksi perangkat Anda berjalan dengan daya baterai. Untuk membantu menjaga daya tahan baterai dan memastikan kinerja optimal, kami menjeda penambangan untuk sementara. Penambangan akan dilanjutkan secara otomatis saat perangkat Anda tersambung ke sumber daya.",
+    "title": "Penambangan Dijeda - Mode Baterai Terdeteksi",
+    "understood": "Saya Mengerti"
   },
   "close-experience-dialog": {
-    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
-    "dont-ask-again": "Don't ask me again",
-    "exit-completely": "Exit Completely",
-    "run-in-background": "Run in Background",
-    "title": "Choose how to close Tari Universe"
+    "description": "Anda dapat meminimalkan aplikasi ke baki sistem agar tetap menambang di latar belakang, atau keluar sepenuhnya untuk menghentikan semua proses.",
+    "dont-ask-again": "Jangan tanya lagi",
+    "exit-completely": "Keluar Sepenuhnya",
+    "run-in-background": "Jalankan di Latar Belakang",
+    "title": "Pilih cara menutup Tari Universe"
   },
   "field-error-message": {
     "integers-only": "Hanya bilangan bulat yang diizinkan",

@@ -73,7 +73,6 @@ export const convertEthAddressToTariAddress = async (ethAddress: string, exchang
             tariAddress: walletAddress,
             paymentId: paymentId,
         });
-        console.info('Converted ETH address to Tari address:', encodedTariAddress);
         await invoke('save_wxtm_address', {
             address: ethAddress,
             exchangeId: exchangeId,

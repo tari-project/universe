@@ -23,7 +23,10 @@ interface ClaimSubmissionResponse {
 
 async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult | undefined> {
     try {
-        console.info('📝 Submitting claim with body:', JSON.stringify(claimRequest, null, 2));
+        console.info('📝 Submitting claim', {
+            claimTarget: claimRequest.claimTarget,
+            trancheId: claimRequest.trancheId,
+        });
 
         const response = await handleAirdropRequest<ClaimSubmissionResponse>({
             path: '/tari/claim-airdrop',
@@ -34,7 +37,7 @@ async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult | un
             },
         });
 
-        console.info('📥 Claim response:', response);
+        console.info('📥 Claim response received', { success: response?.success });
 
         if (!response?.success || !response?.data) {
             console.error(response?.error || 'Failed to submit claim');
@@ -108,7 +111,6 @@ export function useBackgroundClaimSubmission() {
             ...(trancheId && { trancheId }),
         };
 
-        console.info('🔍 Constructed ClaimRequest:', JSON.stringify(claimRequest, null, 2));
         claimMutation.mutate(claimRequest, {
             onSuccess: (result) => {
                 pendingClaim.resolve({

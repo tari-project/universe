@@ -1,7 +1,9 @@
 import { FormProvider, useForm } from 'react-hook-form';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
-import type { SendInputs } from '@app/components/transactions/send/types.ts';
-import { useCallback, useState } from 'react';
+
+import { commandErrorMessage, sendErrorKey, type SendInputs } from '@app/components/transactions/send/types.ts';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SendForm } from './SendForm.tsx';
 import { SendReview } from './SendReview/SendReview.tsx';
@@ -9,9 +11,9 @@ import { StyledForm, Wrapper } from './Send.styles.ts';
 import { FormRootError } from './FormRootError.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { setError as setStoreError } from '@app/store';
-import { PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+import type { EffectiveL1PaymentId } from '@app/types/events-payloads.ts';
 
 interface SendModalProps {
     section: string;
@@ -24,6 +26,11 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const { t } = useTranslation('wallet');
     const [status, setStatus] = useState<SendStatus>('fields');
     const [isBack, setIsBack] = useState(false);
+
+    const [notAcceptedYet, setNotAcceptedYet] = useState(false);
+
+    const [feeMicroMinotari, setFeeMicroMinotari] = useState<number | null>(null);
+    const [resolvedPaymentId, setResolvedPaymentId] = useState<EffectiveL1PaymentId | null>(null);
     // Without a PIN the backend's confirmation dialog is the review step.
     const hasReviewStep = useWalletStore((s) => s.is_pin_locked);
 
@@ -33,10 +40,23 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     });
 
     const { reset } = methods;
+    const estimateRequestIdRef = useRef(0);
+
+    useEffect(() => {
+        if (section !== 'send') {
+            estimateRequestIdRef.current += 1;
+        }
+    }, [section]);
 
     const resetForm = () => {
+        estimateRequestIdRef.current += 1;
         reset();
         setIsBack(false);
+
+        setNotAcceptedYet(false);
+
+        setFeeMicroMinotari(null);
+        setResolvedPaymentId(null);
         setStatus('fields');
     };
 
@@ -46,6 +66,8 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     }
 
     function handleBack() {
+        estimateRequestIdRef.current += 1;
+        setResolvedPaymentId(null);
         setStatus('fields');
         setIsBack(true);
     }
@@ -54,9 +76,50 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
+            const effectivePaymentId = () =>
+                invoke('effective_l1_payment_id', { destination: data.address, paymentId: data.message });
+
             if (status === 'fields' && hasReviewStep) {
+                const requestId = ++estimateRequestIdRef.current;
+                const [fee, effective] = await Promise.allSettled([
+                    data.amount
+                        ? invoke('estimate_l1_send_fee', {
+                              destination: data.address,
+                              amount: data.amount.toString(),
+                              paymentId: data.message,
+                          })
+                        : Promise.resolve(null),
+                    effectivePaymentId(),
+                ]);
+                if (estimateRequestIdRef.current !== requestId) {
+                    return;
+                }
+                if (fee.status === 'rejected') {
+                    setFeeMicroMinotari(null);
+                    setError('amount', { message: `${fee.reason}` });
+                    return;
+                }
+                if (effective.status === 'rejected') {
+                    setResolvedPaymentId(null);
+                    setError('address', { message: `${effective.reason}` });
+                    return;
+                }
+                setFeeMicroMinotari(typeof fee.value === 'number' ? fee.value : null);
+                setResolvedPaymentId(effective.value);
                 setStatus('reviewing');
                 return;
+            }
+
+            // No PIN: the backend dialog is the review, but the status screens below still
+            // show the payment id that is sent, not the typed Message.
+            if (!hasReviewStep) {
+                try {
+                    setResolvedPaymentId(await effectivePaymentId());
+                } catch (error) {
+                    setResolvedPaymentId(null);
+                    setError('address', { message: `${error}` });
+                    return;
+                }
             }
 
             setStatus('processing');
@@ -76,28 +139,25 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     destination: data.address,
                     paymentId: data.message,
                 };
-                await invoke('send_one_sided_to_stealth_address', {
+                const receipt = await invoke('send_one_sided_to_stealth_address', {
                     ...payload,
                     amount: payload.amount.toString(),
                 });
+                setNotAcceptedYet(receipt?.accepted_by_node === false);
                 await queryClient.invalidateQueries({ queryKey: ['transactions'] });
                 setStatus('completed');
             } catch (error) {
                 // The backend gates the send itself (PIN dialog, or an approve/deny dialog
                 // when no PIN is set), so "the user said no" and "nobody answered in time"
                 // are normal outcomes here, not failures worth a scary error toast.
-                const message = `${error}`;
-                const wasCancelled = PIN_CANCELLED_RE.test(message);
-                const timedOut = /timed out waiting for confirmation/i.test(message);
-
-                if (wasCancelled || timedOut) {
-                    setError(`root.invoke_error`, {
-                        message: wasCancelled ? t('send.error-denied') : t('send.error-timeout'),
-                    });
+                const knownKey = sendErrorKey(error);
+                if (knownKey) {
+                    setError(`root.invoke_error`, { message: t(knownKey) });
                 } else {
-                    setStoreError(`Error sending transaction: ${error}`);
+                    const message = commandErrorMessage(error);
+                    setStoreError(`Error sending transaction: ${message}`);
                     setError(`root.invoke_error`, {
-                        message: `${t('send.error-message')} ${error}`,
+                        message: `${t('send.error-message')} ${message}`,
                     });
                 }
                 setStatus('fields');
@@ -125,9 +185,10 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 setStatus={setStatus}
                 amount={methods.getValues().amount}
                 address={methods.getValues().address}
-                message={methods.getValues().message}
-                networkFee={0.06}
-                feePercentage={0.02}
+                message={resolvedPaymentId ? (resolvedPaymentId.payment_id ?? undefined) : methods.getValues().message}
+                paymentIdOverridden={resolvedPaymentId?.payment_id_overridden}
+                notAcceptedYet={notAcceptedYet}
+                feeMicroMinotari={feeMicroMinotari}
                 handleClose={handleClose}
             />
         );

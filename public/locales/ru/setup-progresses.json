@@ -13,10 +13,10 @@
   "critical-initialization-failure": "Критическая ошибка инициализации",
   "error": {
     "description": {
-      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+      "space": "Освободите место на устройстве. Tari Universe не может создать необходимые PID-файлы из-за нехватки места."
     },
     "title": {
-      "space": "No space left on device"
+      "space": "На устройстве не осталось места"
     }
   },
   "failed-to-complete-step": "Не удалось завершить шаг",
@@ -45,8 +45,8 @@
     "binaries-cpu-miner-download": "Подготовка бинарного файла майнера на CPU | Загрузка: {{ progress }}%",
     "binaries-gpu-miner": "Подготовка бинарного файла майнера для GPU",
     "binaries-gpu-miner-download": "Подготовка бинарного файла майнера на GPU | Загрузка: {{ progress }}%",
-    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
-    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
+    "binaries-tari-miner": "Подготовка бинарного файла GPU-майнера с открытым исходным кодом",
+    "binaries-tari-miner-download": "Подготовка бинарного файла GPU-майнера с открытым исходным кодом | Загрузка: {{ progress }}%",
     "binaries-merge-mining-proxy": "Подготовка бинарного файла прокси для объединенного майнинга",
     "binaries-merge-mining-proxy-download": "Подготовка бинарного файла прокси для объединенного майнинга | Загрузка: {{ progress }}%",
     "binaries-node": "Подготовка бинарного файла узла",
@@ -54,7 +54,6 @@
     "binaries-tor": "Подготовка бинарного файла Tor",
     "binaries-tor-download": "Подготовка бинарного файла Tor | Загрузка: {{ progress }}%",
     "detect-gpu": "Обнаружение GPU",
-    "done": "Готово",
     "initialize-application-modules": "Инициализация предварительных условий платформы",
     "initialize-cpu-hardware": "Инициализация оборудования CPU",
     "initialize-gpu-hardware": "Инициализация оборудования GPU",
@@ -62,7 +61,7 @@
     "migrating-database": "Миграция базы данных с версии {{current_db_version}} на {{target_db_version}} прогресс: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Запуск прокси для объединенного майнинга",
     "network-speed-test": "Тест скорости сети",
-    "platform-prequisites": "Инициализация предварительных условий платформы",
+    "ootle-wallet": "Запуск кошелька Уровня 2",
     "setup-bridge": "Подготовка моста",
     "setup-bridge-download": "Подготовка моста | Загрузка: {{ progress }}%",
     "start-tor": "Запуск Tor",

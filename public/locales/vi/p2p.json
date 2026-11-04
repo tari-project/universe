@@ -17,6 +17,8 @@
   "stats": {
     "earned": "Bạn đã nhận",
     "tile-heading": "Phần thưởng đang xử lý",
+    "tile-heading-zero": "Phần thưởng bắt đầu sau ~30 phút",
+    "tile-disabled-heading": "{{unit}} đã bị tắt",
     "tile-loading": "Pool đang khởi động",
     "tooltip-copy": "Phần thưởng ở trạng thái \"Đang xử lý\" cho đến khi bạn đạt tối thiểu <strong>{{amount}}</strong>. Khi đạt ngưỡng, phần thưởng sẽ tự động chuyển vào ví Tari Universe của bạn. Có thể mất thêm 2 giờ để nhận được.",
     "tooltip-tile-heading": "Ngưỡng phần thưởng"

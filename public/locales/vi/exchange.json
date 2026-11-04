@@ -1,13 +1,13 @@
 {
+  "earn": "Kiếm thêm tới {{amount}}% XTM thưởng",
+  "help-find-address": "Giúp tôi tìm địa chỉ {{ exchange }} của tôi",
+  "main-logo-title": "Mùa\nMột",
+  "paste-from-clipboard": "Dán từ bộ nhớ tạm",
+  "season-one-reward": "Thưởng mùa một",
   "select": {
     "modal-title": "Bắt đầu đào Tari (XTM) trực tiếp vào ví của bạn trên sàn hỗ trợ"
   },
-  "earn": "Earn up to {{amount}}% in bonus XTM",
-  "help-find-address": "Help me find my {{ exchange }} address",
-  "main-logo-title": "Season\nOne",
-  "paste-from-clipboard": "Paste from clipboard",
-  "season-one-reward": "Season one bonus",
-  "selected-exchange-miner": "You're mining here",
-  "time-left": "Time left",
-  "wallet-address": "Wallet Address"
+  "selected-exchange-miner": "Bạn đang đào ở đây",
+  "time-left": "Thời gian còn lại",
+  "wallet-address": "Địa chỉ ví"
 }

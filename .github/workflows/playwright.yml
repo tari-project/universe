@@ -26,12 +26,6 @@ jobs:
   playwright:
     name: Playwright (ubuntu)
     runs-on: [self-hosted, ubuntu-high-cpu]
-    # The suite binds fixed ports (1420, 9515) and a shared test data dir,
-    # so only one playwright job may run on the runner pool at a time.
-    # Runs from other refs queue instead of colliding.
-    concurrency:
-      group: playwright-e2e-runner-mutex
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
 
