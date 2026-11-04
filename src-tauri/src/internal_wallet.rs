@@ -845,21 +845,17 @@ impl InternalWallet {
         wallet_config: ConfigWalletContent,
     ) -> Result<InternalWallet, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Internal Wallet latest version detected.");
-        let monero_address = wallet_config.monero_address().clone();
         // An inconsistent wallet config is reported, not fatal: the error reaches the critical
         // problem dialog instead of killing every launch.
-        if monero_address.is_empty() {
-            return Err(wallet_settings_problem(
-                "wallet-config-incomplete",
-                "monero_address",
-            ));
-        }
         if (*wallet_config.tari_wallets()).is_empty() {
             return Err(wallet_settings_problem(
                 "wallet-config-incomplete",
                 "tari_wallets",
             ));
         }
+        // The Monero address is optional: only solo CPU mining needs it, and refuses without it.
+        let monero_address =
+            restore_blank_monero_address(wallet_config.monero_address().clone()).await?;
 
         let (encrypted_tari_seed, tari_wallet_details) = {
             match ConfigWallet::content().await.tari_wallet_details() {
@@ -1447,6 +1443,9 @@ impl InternalWallet {
     }
 
     pub async fn set_external_monero_address(monero_address: String) -> Result<(), anyhow::Error> {
+        if monero_address.trim().is_empty() {
+            return Err(anyhow!("The Monero address cannot be empty"));
+        }
         ConfigWallet::update_field(
             ConfigWalletContent::set_user_monero_address,
             monero_address.clone(),
@@ -1841,7 +1840,7 @@ async fn restore_wallet_config_from_moved_aside() -> Result<bool, anyhow::Error>
     ConfigWallet::update_field(
         |content, (wallet_id, monero_address, generated, pin_locked): (_, Option<String>, bool, bool)| {
             content.set_tari_wallets(vec![wallet_id]);
-            // A lost Monero address stays empty: the load reports it instead of failing.
+            // A lost Monero address stays empty: the load tolerates it.
             match monero_address {
                 Some(address) if generated => content.set_generated_monero_address(address),
                 Some(address) => content.set_user_monero_address(address),
@@ -1947,32 +1946,52 @@ pub(crate) fn move_unreadable_wallet_config_to_recovery(config_dir: &Path) -> st
 /// make `refuse_if_previous_wallet_evident` block go to `recovery/`, and a Monero seed the
 /// keyring holds in plain form gets its address back, so the next launch creates a new Tari
 /// wallet without touching the Monero one. A PIN-enciphered Monero seed cannot be decoded
-/// here, so that launch still stops at the missing-config dialog.
+/// here, so its address stays blank; the wallet still loads, and solo CPU mining asks for an
+/// address when there is none.
 pub(crate) async fn discard_unreadable_wallet_config() -> Result<(), anyhow::Error> {
     let config_path = ConfigWallet::_get_config_path();
     let config_dir = config_path
         .parent()
         .ok_or_else(|| anyhow!("The wallet config path has no parent directory"))?;
     move_unreadable_wallet_config_to_recovery(config_dir)?;
-    if !ConfigWallet::content().await.monero_address().is_empty() {
-        return Ok(());
-    }
-    let Ok(credential) =
-        CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()))
-            .get_credentials()
-            .await
-    else {
-        return Ok(());
-    };
-    let Ok(seed_bytes) = <[u8; 32]>::try_from(credential.encrypted_seed.as_slice()) else {
-        log::warn!(target: LOG_TARGET_APP_LOGIC, "[discard_unreadable_wallet_config] the Monero seed is PIN-enciphered, its address cannot be restored");
-        return Ok(());
-    };
-    if let Ok(address) = MoneroSeed::new(seed_bytes).to_address::<Mainnet>() {
-        ConfigWallet::update_field(ConfigWalletContent::set_generated_monero_address, address)
-            .await?;
-    }
+    restore_blank_monero_address(ConfigWallet::content().await.monero_address().clone()).await?;
     Ok(())
+}
+
+/// Fills a blank Monero address from the seed the keyring already holds, and persists it. A set
+/// address, a missing credential or a PIN-enciphered seed leave it as it is; a new seed is never
+/// minted here.
+pub(crate) async fn restore_blank_monero_address(
+    monero_address: String,
+) -> Result<String, anyhow::Error> {
+    if !monero_address.is_empty() {
+        return Ok(monero_address);
+    }
+    let credential = CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()))
+        .get_credentials()
+        .await;
+    let Some(address) = plain_monero_seed_address(credential) else {
+        return Ok(monero_address);
+    };
+    ConfigWallet::update_field(
+        ConfigWalletContent::set_generated_monero_address,
+        address.clone(),
+    )
+    .await?;
+    Ok(address)
+}
+
+/// The address of a Monero seed stored in plain form. Enciphering changes the length, so only a
+/// 32-byte seed is derived without a PIN.
+pub(crate) fn plain_monero_seed_address(
+    credential: Result<Credential, CredentialError>,
+) -> Option<String> {
+    let credential = credential.ok()?;
+    let Ok(seed_bytes) = <[u8; 32]>::try_from(credential.encrypted_seed.as_slice()) else {
+        log::warn!(target: LOG_TARGET_APP_LOGIC, "[plain_monero_seed_address] the Monero seed is PIN-enciphered, its address cannot be restored");
+        return None;
+    };
+    MoneroSeed::new(seed_bytes).to_address::<Mainnet>().ok()
 }
 
 /// Evidence that this machine already held a Tari wallet, as an enum-like tag. Only files that

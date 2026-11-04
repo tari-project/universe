@@ -8,6 +8,7 @@ import AddressEditor from '../components/AddressEditor';
 
 const moneroAddressRegex = /^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/;
 const validationRules = {
+    required: 'Monero address is required',
     pattern: {
         value: moneroAddressRegex,
         message: 'Invalid Monero address format',

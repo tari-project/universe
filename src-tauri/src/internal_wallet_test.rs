@@ -802,3 +802,88 @@ async fn test_pin_recovery_ownership_match_returns_the_owned_details() {
     assert_eq!(captured.id, owned.id);
     assert_eq!(captured.tari_address, owned.tari_address);
 }
+
+/// A blank Monero address is filled from a plain seed the keyring already holds, never from a
+/// fresh one.
+#[test]
+fn test_plain_monero_seed_address_plain_seed_derives_the_mainnet_address() {
+    use super::credential_manager::Credential;
+    use super::internal_wallet::plain_monero_seed_address;
+    use monero_address_creator::Seed as MoneroSeed;
+    use monero_address_creator::network::Mainnet;
+
+    let expected = MoneroSeed::new([7u8; 32])
+        .to_address::<Mainnet>()
+        .expect("derive the address");
+    let credential = Credential {
+        encrypted_seed: vec![7u8; 32],
+    };
+
+    assert_eq!(plain_monero_seed_address(Ok(credential)), Some(expected));
+}
+
+#[test]
+fn test_plain_monero_seed_address_enciphered_seed_leaves_the_address_blank() {
+    use super::credential_manager::Credential;
+    use super::internal_wallet::plain_monero_seed_address;
+
+    let enciphered = super::utils::cryptography::encrypt(&[7u8; 32], &SafePassword::from("123456"))
+        .expect("encipher the seed");
+
+    assert_eq!(
+        plain_monero_seed_address(Ok(Credential {
+            encrypted_seed: enciphered
+        })),
+        None
+    );
+}
+
+#[test]
+fn test_plain_monero_seed_address_missing_credential_leaves_the_address_blank() {
+    use super::credential_manager::CredentialError;
+    use super::internal_wallet::plain_monero_seed_address;
+
+    assert_eq!(
+        plain_monero_seed_address(Err(CredentialError::NoEntry("monero".to_string()))),
+        None
+    );
+}
+
+/// A set address is returned as is, before the keyring or the config is touched.
+#[tokio::test]
+async fn test_restore_blank_monero_address_non_empty_address_is_untouched() {
+    use super::internal_wallet::restore_blank_monero_address;
+
+    let address = "4".repeat(95);
+    assert_eq!(
+        restore_blank_monero_address(address.clone())
+            .await
+            .expect("no IO for a set address"),
+        address
+    );
+}
+
+/// What the derive step persists: the address, flagged as generated so the seed stays usable.
+#[test]
+fn test_set_generated_monero_address_marks_the_address_generated() {
+    use super::configs::config_wallet::ConfigWalletContent;
+
+    let mut content = ConfigWalletContent::default();
+    content.set_generated_monero_address("4abc".to_string());
+
+    assert_eq!(content.monero_address(), "4abc");
+    assert!(*content.monero_address_is_generated());
+}
+
+/// Rejected before the config or the wallet instance is touched.
+#[tokio::test]
+async fn test_set_external_monero_address_blank_is_rejected() {
+    for blank in ["", "   "] {
+        assert!(
+            InternalWallet::set_external_monero_address(blank.to_string())
+                .await
+                .is_err(),
+            "{blank:?} must be rejected"
+        );
+    }
+}
