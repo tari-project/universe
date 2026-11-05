@@ -284,6 +284,11 @@
       "minutes": "Minutes",
       "seconds": "Seconds"
     },
+    "burn-stats": {
+      "total": "XTM burned",
+      "burns": "Burns",
+      "people": "Unique burners"
+    },
     "filter": {
       "waiting-claims": "Waiting claims"
     },
