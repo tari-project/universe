@@ -1868,7 +1868,7 @@ mod tests {
     async fn test_reset_close_database_releases_minotari_wallet_files() {
         let dir = tempfile::tempdir().expect("wallet directory");
         let wallet_dir = dir.path().join("minotari-wallet");
-        std::fs::create_dir(&wallet_dir).expect("wallet folder");
+        std::fs::create_dir_all(&wallet_dir).expect("wallet folder");
         super::INSTANCE
             .database_manager
             .initialize(
