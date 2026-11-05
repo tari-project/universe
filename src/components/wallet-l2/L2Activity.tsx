@@ -22,6 +22,7 @@ import {
     ContentWrapper,
     CurrencyText,
     ItemWrapper,
+    PlaceholderItem,
     TimeWrapper,
     TitleWrapper,
     ValueChangeWrapper,
@@ -43,6 +44,31 @@ type Row = { change: L2BalanceChange; burn?: never } | { burn: L2Burn; change?: 
 const rowTime = (row: Row) => (row.change ?? row.burn).timestamp;
 
 // History and burns in one feed, newest first. `filter` is the FilterSelect value.
+// Like the L1 list: the label floats over a couple of placeholder rows, so it sits inside the list, not over the card.
+function EmptyLabel() {
+    const { t } = useTranslation('wallet');
+    return <EmptyText data-testid="l2-history-empty">{t('l2.empty')}</EmptyText>;
+}
+
+const EmptyPlaceholders = () => (
+    <>
+        <PlaceholderItem />
+        <PlaceholderItem />
+    </>
+);
+
+/** The empty list without an account, before launch. */
+export function L2EmptyList() {
+    return (
+        <ListWrapper>
+            <EmptyLabel />
+            <ListItemWrapper>
+                <EmptyPlaceholders />
+            </ListItemWrapper>
+        </ListWrapper>
+    );
+}
+
 export default function L2Activity({ account, filter }: { account: L2Account; filter: string }) {
     const { t } = useTranslation('wallet');
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
@@ -111,7 +137,7 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
 
     return (
         <ListWrapper>
-            {!rows.length && <EmptyText data-testid="l2-history-empty">{t('l2.empty')}</EmptyText>}
+            {!rows.length && <EmptyLabel />}
             <ListItemWrapper>
                 {rows.map(({ change, burn }) =>
                     burn ? (
@@ -154,6 +180,7 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
                         </L2HistoryRow>
                     )
                 )}
+                {!rows.length && <EmptyPlaceholders />}
             </ListItemWrapper>
 
             <TransactionModal show={abandonId !== null} title={t('abandon.cta')} handleClose={() => setAbandonId(null)}>
