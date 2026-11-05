@@ -23,7 +23,7 @@ export function isLocalNet(): boolean {
 
 /** Networks that support L2 and burning to it. Mirrors network_supports_l2 on the backend. */
 export function networkSupportsL2(network: string | undefined): boolean {
-    return network === Network.Esmeralda || network === Network.MainNet;
+    return network === Network.Esmeralda || network === Network.MainNet || network === Network.LocalNet;
 }
 
 export function isMainNet(): boolean {

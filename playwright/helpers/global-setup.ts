@@ -230,7 +230,7 @@ export default async function globalSetup() {
   }
 }
 
-async function runGlobalSetup() {
+export async function runGlobalSetup(profileOverrides?: { core: Record<string, unknown>; wallet: Record<string, unknown> }) {
   const projectRoot = path.resolve(__dirname, '../..');
   const skipBackend = !!process.env.SKIP_BACKEND;
 
@@ -305,6 +305,13 @@ async function runGlobalSetup() {
     const moneroStubUrl = await startMonerodStub();
     console.log(`Playwright Monero RPC: local stub at ${moneroStubUrl}`);
     preSeedConfig(moneroStubUrl);
+    if (profileOverrides) {
+      for (const [name, overrides] of Object.entries(profileOverrides)) {
+        const configFile = path.join(getConfigDir(), `config_${name}.json`);
+        const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+        fs.writeFileSync(configFile, JSON.stringify({ ...config, ...overrides }));
+      }
+    }
     preSeedCredentials();
 
     const binaryPath = process.env.TARI_UNIVERSE_BINARY || getBinaryPath(projectRoot);

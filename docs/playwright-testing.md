@@ -10,7 +10,7 @@ The app launches with `--headless` (test-mode builds only):
 2. **Vite dev server** — serves the frontend at `localhost:1420` with import aliases that redirect `@tauri-apps/api/*` to shim files. These shims bridge `invoke()` and `listen()` calls over the remote-ui WebSocket instead of Tauri's native IPC.
 3. **Playwright's Chromium** connects to `localhost:1420`, loads the React app, and interacts with it like a user would.
 
-The backend runs a real localnet node, wallet, merge mining proxy, and xmrig. Mining produces real blocks. Wallet balances are real. Two things are stubbed: the OS keychain (file-backed credential store) and the proxy's upstream Monero node — an in-process stub (`helpers/monerod-stub.ts`) that serves one captured mainnet block template, so the suite needs no outbound Monero access. Localnet Tari difficulty is 1, so the fixed template keeps producing valid Tari blocks for the whole run.
+The common suite backend runs a real localnet node, wallet, merge mining proxy, and xmrig. Mining produces real blocks. Wallet balances are real. Two things are stubbed: the OS keychain (file-backed credential store) and the proxy's upstream Monero node — an in-process stub (`helpers/monerod-stub.ts`) that serves one captured mainnet block template, so the suite needs no outbound Monero access. Localnet Tari difficulty is 1, so the fixed template keeps producing valid Tari blocks for the whole run.
 
 ### State replay — how fresh pages see current state
 
@@ -23,7 +23,7 @@ Replayed events are real state, never synthesized. If a module failed during set
 
 ### Isolated test profile
 
-Test-mode builds use the identifier `com.tari.universe.test` (via `tauri.test.conf.json` + `APPLICATION_FOLDER_ID`), so tests never touch a real Tari Universe profile. Global setup **wipes the test profile before every run** — each run starts at block 0 with the pre-seeded wallet. Set `KEEP_TEST_DATA=1` to keep the chain between local runs while iterating.
+Test-mode builds use the identifier `com.tari.universe.test` (via `tauri.test.conf.json` + `APPLICATION_FOLDER_ID`), so tests never touch a real Tari Universe profile. Common-suite global setup **wipes the test profile before every run** — each run starts at block 0 with the pre-seeded wallet. Set `KEEP_TEST_DATA=1` to keep the common chain between local runs while iterating. The L2 suite always wipes its profile and owns a separate swarm chain.
 
 ## Application code changes
 
@@ -66,9 +66,9 @@ test('does something', async ({ appPage: page }) => {
 ```
 
 What is isolated per test: the DOM, the frontend store, the WebSocket connection.
-What persists across tests: the **backend** (node, wallet, chain state — balances only grow within a run).
+What persists across tests: the **backend** (node, wallet, chain state). Common mining flows grow balances; L2 burns and transfers also debit balances.
 
-Rules that keep tests independent:
+Rules that keep common tests independent:
 
 1. **Create your own preconditions.** Need funds? `await ensureBalance(page, 2)` — never rely on an earlier test having mined.
 2. **Assert deltas, not absolutes.** `expect(balance).toBeGreaterThan(balanceBefore)`, never `toBe(25)`.
@@ -90,7 +90,7 @@ const status = await page.evaluate(async () => {
 });
 ```
 
-The two sanctioned exceptions, both non-assertion paths: fixture teardown cleanup (`stopMiningDirect`) and the exchange-revert fallback when the UI genuinely has no affordance.
+The common suite has two sanctioned exceptions, both non-assertion paths: fixture teardown cleanup (`stopMiningDirect`) and the exchange-revert fallback when the UI genuinely has no affordance.
 
 The deposit payment ID regression in `04-send-flow.spec.ts` is an assertion exception: it sends through the UI, copies the sender's output hash from transaction details, then reads that output's scanned memo from the isolated test wallet database. The UI does not expose the recipient output memo, and the sender summary's `memo_hex` remains null after confirmation.
 
@@ -162,9 +162,35 @@ SKIP_BUILD=1 pnpm run playwright:headed
 SKIP_BUILD=1 pnpm run playwright:ui
 ```
 
-### Pre-seeded config
+### Local L2 suite (Linux)
 
-Global setup wipes the test profile, then writes config files to the localnet app config dir before launching the backend:
+The existing `pnpm playwright` command runs only the common specs in `playwright/tests/` and never starts a swarm. The L2 suite requires Linux and uses its own `playwright/playwright.l2.config.ts` and numbered specs in `playwright/tests-l2/`:
+
+```bash
+TARI_NETWORK=localnet pnpm playwright:l2
+TARI_NETWORK=localnet pnpm playwright:l2:headed
+TARI_NETWORK=localnet pnpm playwright:l2:ui
+# Equivalent workspace command:
+TARI_NETWORK=localnet pnpm --dir playwright run test:l2
+```
+
+Install Rust, the Tauri CLI, and the [Linux build dependencies](../README.md#building-from-source), plus `curl`, `tar`, `opencl-headers` and `ocl-icd-opencl-dev`. Use Node.js 22.18 or newer and pnpm; the installer runs TypeScript through Node's `--experimental-strip-types` flag. Install Chromium with `pnpm --dir playwright exec playwright install --with-deps chromium`. A Linux session without a display also needs `xvfb` and `dbus-x11`; run the suite under `xvfb-run --auto-servernum` with a D-Bus session.
+
+The first run builds the test-mode app and installs the swarm and its managed binaries at the exact Ootle SDK revision pinned in `src-tauri/Cargo.toml`. Later runs reuse `target/l2-swarm-cache/<revision>/` (override its parent with `L2_SWARM_CACHE`; relative paths resolve from the repository root). `SKIP_BUILD=1` reuses an app already built for localnet with `test-mode`.
+
+L2 setup owns a freshly wiped test profile and a local swarm: base node, miner, validators, indexer and walletd. It waits for localnet indexer readiness and validator activation, funds `TEST_WALLET`, then launches the app using the swarm's remote base node and indexer. LocalNet has no default indexer. `KEEP_TEST_DATA` and `SKIP_BACKEND` are rejected, even when set to `0`; unset them. A supplied `TARI_NETWORK` must be `localnet`. Run common and L2 suites separately on a local machine because they share the app profile and ports.
+
+For a manually configured localnet app, L2 requires a PIN and an explicit `ootle_indexer_url` in `config_core.json`. Localnet accepts `node_type: "Remote"` with `remote_base_node_address` to share an existing local chain; other solo networks still force a local node. The suite seeds these endpoints automatically.
+
+Keep ports 18080, 18140–18200, 1420 and 9515 free. Teardown stops the app and swarm process trees, including after setup failures. L2 reports are in `playwright/playwright-l2-report/`, with traces, videos, screenshots and swarm logs in `playwright/test-results-l2/`; common reports remain in `playwright/playwright-report/` and `playwright/test-results/`.
+
+The L2 specs intentionally share state in numeric order with one worker and no retries: PIN/enable, Burn, Claim, Send, Receive. App assertions use the UI; the external walletd counterparty is driven and checked through JSON-RPC. See the [L2 coverage map and local run details](../playwright/COVERAGE.md#local-l2-suite) for each flow and the helper contract test command.
+
+The Playwright GitHub Actions workflow runs separate `playwright-common` and `playwright-l2` jobs. The L2 job installs the pinned swarm before testing and uploads `playwright-l2-results` for 14 days, excluding the swarm and funding-miner data directories. Full swarm logs remain available locally.
+
+### Common pre-seeded config
+
+Common global setup wipes the test profile, then writes config files to the localnet app config dir before launching the backend:
 
 - `config_pools.json` — pools disabled (solo mining only)
 - `config_core.json` — local node, auto-update off, tor disabled, merge-mining proxy pointed at the local Monero stub (public-node failover off)
@@ -227,7 +253,7 @@ playwright/
     └── 99-shutdown.spec.ts         # quits the backend — strictly last
 ```
 
-### Suite ordering is load-bearing
+### Common suite ordering is load-bearing
 
 Files run alphabetically with `workers: 1`. Several constraints are encoded
 in the numbering, mirroring the QA suite's hard ordering rules

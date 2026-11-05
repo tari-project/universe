@@ -20,6 +20,9 @@
         "playwright": "pnpm --dir playwright run test",
         "playwright:ui": "pnpm --dir playwright run test:ui",
         "playwright:headed": "pnpm --dir playwright run test:headed",
+        "playwright:l2": "pnpm --dir playwright run test:l2",
+        "playwright:l2:ui": "pnpm --dir playwright run test:l2:ui",
+        "playwright:l2:headed": "pnpm --dir playwright run test:l2:headed",
         "playwright:install": "pnpm install && pnpm --dir playwright exec playwright install chromium"
     },
     "dependencies": {

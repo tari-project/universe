@@ -40,6 +40,7 @@ use tokio_util::task::TaskTracker;
 
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
+use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError, ReadinessStatus,
 };
@@ -72,6 +73,15 @@ pub enum NodeType {
 }
 
 impl NodeType {
+    /// A localnet developer may explicitly share an existing local chain.
+    pub fn for_network(self, network: Network) -> Self {
+        if network.is_solo_network() && !(network == Network::LocalNet && self == Self::Remote) {
+            Self::Local
+        } else {
+            self
+        }
+    }
+
     pub fn is_local(&self) -> bool {
         matches!(
             self,
