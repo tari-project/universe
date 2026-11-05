@@ -333,6 +333,16 @@ describe('L2WalletCard', () => {
             expect(screen.getByTestId('l2-loading')).toBeInTheDocument();
         });
 
+        it('renders the normal wallet on LocalNet without any flags', async () => {
+            useMiningStore.setState({ network: Network.LocalNet });
+            serve(enabledState);
+            render(<L2WalletCard />);
+
+            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 XTR');
+            expect(screen.getByTestId('l2-copy-address')).toBeInTheDocument();
+            expect(invoke).not.toHaveBeenCalledWith('l2_default_claim_public_key');
+        });
+
         it('shows the pre-launch wallet on Esmeralda too', async () => {
             useMiningStore.setState({ network: Network.Esmeralda });
             serve(noAccounts);

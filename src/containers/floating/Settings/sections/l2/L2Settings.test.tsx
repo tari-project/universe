@@ -58,6 +58,7 @@ describe('Layer 2 settings tab', () => {
         ['mainnet without the wallet-available flag', Network.MainNet, ['polling'], false],
         ['mainnet with the wallet-available flag', Network.MainNet, [FEATURE_FLAGS.FF_OOTLE_WALLET_AVAILABLE], true],
         ['mainnet with only the live flag', Network.MainNet, [FEATURE_FLAGS.FF_OOTLE_MAINNET_LIVE], true],
+        ['localnet without flags', Network.LocalNet, undefined, true],
     ])('L2 tab visibility on %s', (_, network, features, shown) => {
         useMiningStore.setState({ network });
         useAirdropStore.setState({ features: features as string[] | undefined });
@@ -75,15 +76,17 @@ describe('Layer 2 settings tab', () => {
         expect(screen.queryByTestId('settings-tab-l2')).not.toBeInTheDocument();
     });
 
-    it('hides the L2 tab on localnet', () => {
-        useMiningStore.setState({ network: Network.LocalNet });
+    it.each([Network.StageNet, Network.NextNet, Network.Igor])('hides the L2 tab on %s', (network) => {
+        useMiningStore.setState({ network });
         render(<SettingsNavigation activeSection="general" onChangeActiveSection={vi.fn()} />);
         expect(screen.queryByTestId('settings-tab-l2')).not.toBeInTheDocument();
     });
 
-    it('supports only mainnet and esmeralda', () => {
+    it('supports only mainnet, esmeralda and localnet', () => {
         for (const network of [...Object.values(Network), undefined, 'unknown', '']) {
-            expect(networkSupportsL2(network)).toBe(network === Network.MainNet || network === Network.Esmeralda);
+            expect(networkSupportsL2(network)).toBe(
+                network === Network.MainNet || network === Network.Esmeralda || network === Network.LocalNet
+            );
         }
     });
 });

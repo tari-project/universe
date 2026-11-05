@@ -1,7 +1,7 @@
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
-import { networkSupportsL2 } from '@app/utils/network.ts';
+import { Network, networkSupportsL2 } from '@app/utils/network.ts';
 
 /**
  * Whether L2 shows at all: the sidebar button, the panel and the settings tab. On every L2 network
@@ -15,5 +15,6 @@ export const useHasL2Access = () => {
                 (f) => f === FEATURE_FLAGS.FF_OOTLE_WALLET_AVAILABLE || f === FEATURE_FLAGS.FF_OOTLE_MAINNET_LIVE
             )
     );
-    return networkSupportsL2(network) && flagged;
+    // LocalNet has no flag service; a localnet dev build always shows L2.
+    return networkSupportsL2(network) && (network === Network.LocalNet || flagged);
 };

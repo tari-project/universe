@@ -7,6 +7,9 @@
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
+    "test:l2": "playwright test --config playwright.l2.config.ts",
+    "test:l2:ui": "playwright test --config playwright.l2.config.ts --ui",
+    "test:l2:headed": "playwright test --config playwright.l2.config.ts --headed",
     "report": "playwright show-report",
     "typecheck": "tsc --noEmit"
   },
