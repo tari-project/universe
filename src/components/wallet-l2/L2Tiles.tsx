@@ -57,6 +57,68 @@ function Countdown({ seconds }: { seconds: number }) {
 
 const pad = (n: number) => n.toString().padStart(2, '0');
 
+// Mirrors the tari.com launch countdown card, dark in both themes like the site.
+const CdCard = styled.div`
+    width: 100%;
+    border-radius: 20px;
+    padding: 20px 16px;
+    background: #0c0718;
+    color: #fbf7ef;
+    box-shadow: 0 30px 80px rgba(12, 7, 24, 0.35);
+`;
+
+const CdLabel = styled.div`
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(251, 247, 239, 0.55);
+    margin-bottom: 6px;
+`;
+
+const CdDate = styled.div`
+    font-family: DrukWide, sans-serif;
+    text-transform: uppercase;
+    font-size: 20px;
+    color: #813bf5;
+    margin-bottom: 16px;
+`;
+
+const CdGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+`;
+
+const CdCell = styled.div`
+    background: rgba(251, 247, 239, 0.06);
+    border: 1px solid rgba(251, 247, 239, 0.12);
+    border-radius: 12px;
+    padding: 14px 4px 10px;
+    text-align: center;
+`;
+
+const CdNum = styled.div`
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 26px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+`;
+
+const CdUnit = styled.div`
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(251, 247, 239, 0.5);
+    margin-top: 8px;
+`;
+
+const CdSoon = styled.div`
+    font-family: DrukWide, sans-serif;
+    text-transform: uppercase;
+    font-size: 18px;
+`;
+
 /** Ticks once a second off the clock toward `target` (ms), so it never drifts from the real time left. */
 function LaunchCountdown({ target }: { target: number }) {
     const { t } = useTranslation('wallet');
@@ -66,37 +128,40 @@ function LaunchCountdown({ target }: { target: number }) {
         return () => clearInterval(timer);
     }, []);
     const left = Math.ceil((target - now) / 1000);
-    if (left <= 0) return <>{t('l2.pre-launch.soon')}</>;
-    const days = Math.floor(left / 86_400);
+    if (left <= 0) return <CdSoon data-testid="l2-launch-countdown">{t('l2.pre-launch.soon')}</CdSoon>;
+    const cells = [
+        [Math.floor(left / 86_400), 'days'],
+        [Math.floor(left / 3600) % 24, 'hours'],
+        [Math.floor(left / 60) % 60, 'minutes'],
+        [left % 60, 'seconds'],
+    ] as const;
     return (
-        <>{`${days}d ${pad(Math.floor(left / 3600) % 24)}h ${pad(Math.floor(left / 60) % 60)}m ${pad(left % 60)}s`}</>
+        <CdGrid data-testid="l2-launch-countdown">
+            {cells.map(([n, unit]) => (
+                <CdCell key={unit}>
+                    <CdNum data-testid="l2-launch-digits">{pad(n)}</CdNum>
+                    <CdUnit>{t(`l2.pre-launch.${unit}`)}</CdUnit>
+                </CdCell>
+            ))}
+        </CdGrid>
     );
 }
 
 /** Stands in for the network tiles before the Ootle mainnet launch. Nothing shows without a valid launch date in the RWA config. */
 export function L2LaunchTile() {
-    const { t } = useTranslation('wallet');
+    const { t, i18n } = useTranslation('wallet');
     const launchAt = useAirdropStore((s) => s.config?.['ootle-mainnet-launch-at']);
     const target = typeof launchAt === 'string' ? new Date(launchAt).getTime() : NaN;
     if (isNaN(target)) return null;
 
     return (
-        <Wrapper data-testid="l2-launch-tiles">
-            <Tile>
-                <Inside>
-                    <HeadingRow>
-                        <LabelWrapper>
-                            <LabelText>{t('l2.pre-launch.countdown')}</LabelText>
-                        </LabelWrapper>
-                    </HeadingRow>
-                    <BigNumber>
-                        <Number $isIdle data-testid="l2-launch-countdown">
-                            <LaunchCountdown target={target} />
-                        </Number>
-                    </BigNumber>
-                </Inside>
-            </Tile>
-        </Wrapper>
+        <CdCard data-testid="l2-launch-tiles">
+            <CdLabel>{t('l2.pre-launch.countdown')}</CdLabel>
+            <CdDate>
+                {new Date(target).toLocaleDateString(i18n.language, { month: 'long', day: 'numeric', year: 'numeric' })}
+            </CdDate>
+            <LaunchCountdown target={target} />
+        </CdCard>
     );
 }
 
