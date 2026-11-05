@@ -101,7 +101,7 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
                     <BottomContent>
                         <BalanceWrapper
                             data-testid="l2-balance"
-                            data-balance={hideBalance ? undefined : account.balance.total}
+                            data-balance={hideBalance ? undefined : account?.balance.total}
                         >
                             <BalanceTextWrapper>
                                 {hideBalance ? <Hidden>{`*******`}</Hidden> : xtr(revealed + confidential)}
