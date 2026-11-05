@@ -240,7 +240,6 @@
     "address-eth": "ETH Adresini Değiştir",
     "buy-tari": "Bir borsadan Tari satın alın",
     "buy-tari-subtitle": "Seçili borsalarda mevcut.",
-    "mine-directly-to": "Bir borsaya doğrudan madencilik yap",
     "mine-directly-to-exchange": "{{exchangeName}}\"e doğrudan madencilik yap",
     "mining-here": "Burada madencilik yapılıyor",
     "or": "veya"

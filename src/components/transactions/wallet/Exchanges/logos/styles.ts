@@ -1,14 +1,11 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 
-interface Props {
-    $variant: 'primary' | 'mini';
-}
-export const Wrapper = styled.div<Props>`
+export const Wrapper = styled.div`
     position: relative;
-    height: ${({ $variant }) => ($variant === 'primary' ? `33px` : '20px')};
-    width: ${({ $variant }) => ($variant === 'primary' ? `70px` : '40px')};
+    height: 33px;
+    width: 70px;
 `;
-export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
+export const Logo = styled.div<{ $index: number; $bgColour?: string }>`
     overflow: hidden;
     border-radius: 50%;
     display: flex;
@@ -21,23 +18,8 @@ export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
         width: 100%;
     }
 
-    ${({ $variant, $index }) => {
-        switch ($variant) {
-            case 'mini': {
-                return css`
-                    width: 24px;
-                    height: 24px;
-                    right: ${`${$index * 13}px`};
-                `;
-            }
-            case 'primary':
-            default:
-                return css`
-                    width: 33px;
-                    height: 33px;
-                    border: 2px solid #fff;
-                    left: ${`${$index * 15}px`};
-                `;
-        }
-    }}
+    width: 33px;
+    height: 33px;
+    border: 2px solid #fff;
+    left: ${({ $index }) => `${$index * 15}px`};
 `;

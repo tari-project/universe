@@ -240,7 +240,6 @@
     "address-eth": "交易所 ETH 地址",
     "buy-tari": "从交易所购买 Tari",
     "buy-tari-subtitle": "在精选交易所可用。",
-    "mine-directly-to": "直接挖矿到交易所",
     "mine-directly-to-exchange": "直接挖矿到 {{exchangeName}}",
     "mining-here": "在这里挖矿",
     "or": "或"

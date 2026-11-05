@@ -240,7 +240,6 @@
     "address-eth": "Endereço ETH da Exchange",
     "buy-tari": "Comprar Tari de uma exchange",
     "buy-tari-subtitle": "Disponível em exchanges selecionadas.",
-    "mine-directly-to": "Minere diretamente para uma exchange",
     "mine-directly-to-exchange": "{{exchangeName}}",
     "mining-here": "Minerando aqui",
     "or": "ou"

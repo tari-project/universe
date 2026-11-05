@@ -122,7 +122,7 @@ reachable at all.
 
 | QA item | Status | Where |
 |---|---|---|
-| Exchange miner: switch, hidden balance, swap back, mining after | automated | `03-exchange-miner` |
+| Exchange miner: switch, hidden balance, swap back, mining after | manual | sidebar entry point removed; selector only reachable from admin UI |
 | Swaps UI (never execute) | manual | quote/wallet-connect services don't exist on localnet |
 | Bridging | manual | needs mainnet funds + MetaMask |
 | Wallet Connect / Aurora | manual | needs mobile device |

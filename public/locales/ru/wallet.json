@@ -240,7 +240,6 @@
     "address-eth": "Адрес обмена ETH",
     "buy-tari": "Купить Tari на бирже",
     "buy-tari-subtitle": "Доступно на выбранных биржах.",
-    "mine-directly-to": "Майните напрямую на биржу",
     "mine-directly-to-exchange": "Майните напрямую на {{exchangeName}}",
     "mining-here": "Майнинг здесь",
     "or": "или"

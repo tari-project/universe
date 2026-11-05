@@ -215,7 +215,6 @@ playwright/
 └── tests/
     ├── 01-wallet-integrity.spec.ts
     ├── 02-mining-flow.spec.ts
-    ├── 03-exchange-miner.spec.ts   # describe.serial — backend mode chain
     ├── 04-send-flow.spec.ts
     ├── 05-settings.spec.ts         # General tab
     ├── 06-pause-and-schedule.spec.ts

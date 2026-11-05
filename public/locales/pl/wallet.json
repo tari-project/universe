@@ -240,7 +240,6 @@
     "address-eth": "Adres wymiany ETH",
     "buy-tari": "Kup Tari na giełdzie",
     "buy-tari-subtitle": "Dostępne na wybranych giełdach.",
-    "mine-directly-to": "Kop bezpośrednio na giełdę",
     "mine-directly-to-exchange": "Kop bezpośrednio do {{exchangeName}}",
     "mining-here": "Kopanie tutaj",
     "or": "lub"

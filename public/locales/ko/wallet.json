@@ -240,7 +240,6 @@
     "address-eth": "거래소 ETH 주소",
     "buy-tari": "거래소에서 Tari 구매",
     "buy-tari-subtitle": "선택된 거래소에서 사용 가능합니다.",
-    "mine-directly-to": "거래소로 직접 채굴",
     "mine-directly-to-exchange": "{{exchangeName}}로 직접 채굴",
     "mining-here": "여기서 채굴 중",
     "or": "또는"

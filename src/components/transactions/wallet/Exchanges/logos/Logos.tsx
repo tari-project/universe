@@ -8,10 +8,9 @@ interface LogoItem {
 }
 interface LogosProps {
     exchanges: ExchangeBranding[];
-    variant?: 'primary' | 'mini';
     maxItems?: number;
 }
-export function Logos({ exchanges, variant = 'primary', maxItems = 3 }: LogosProps) {
+export function Logos({ exchanges, maxItems = 3 }: LogosProps) {
     const items = exchanges
         ?.filter((x) => x.id !== 'universal')
         ?.slice(0, maxItems)
@@ -24,10 +23,10 @@ export function Logos({ exchanges, variant = 'primary', maxItems = 3 }: LogosPro
                 }) as LogoItem
         );
     return !items?.length ? null : (
-        <Wrapper $variant={variant}>
+        <Wrapper>
             {items?.map(({ src, name, colour }, i) =>
                 src ? (
-                    <Logo $variant={variant} key={name} $index={i} $bgColour={colour}>
+                    <Logo key={name} $index={i} $bgColour={colour}>
                         <img src={src} alt={name} />
                     </Logo>
                 ) : null

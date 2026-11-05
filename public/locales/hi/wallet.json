@@ -240,7 +240,6 @@
     "address-eth": "एक्सचेंज ETH पता",
     "buy-tari": "किसी एक्सचेंज से Tari खरीदें",
     "buy-tari-subtitle": "चयनित एक्सचेंज पर उपलब्ध।",
-    "mine-directly-to": "सीधे किसी एक्सचेंज पर माइन करें",
     "mine-directly-to-exchange": "सीधे {{exchangeName}} पर माइन करें",
     "mining-here": "यहाँ माइनिंग हो रही है",
     "or": "या"
