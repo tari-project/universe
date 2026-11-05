@@ -2,13 +2,12 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Button } from '@app/components/elements/buttons/Button';
 import RadioButton from '@app/components/elements/inputs/RadioButton.tsx';
 import styled from 'styled-components';
-import { setError } from '@app/store';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 const OptionContainer = styled.div`
@@ -41,24 +40,39 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
     const { t } = useTranslation('settings', { useSuspense: false });
     const [selectedItem, setSelectedItem] = useState<string | undefined>();
     const [isPending, startTransition] = useTransition();
+    const [error, setError] = useState<string>();
+
+    const dialogRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (error !== undefined && !isPending) {
+            dialogRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+        }
+    }, [error, isPending]);
 
     function handleClose() {
         onOpenChange(false);
         setSelectedItem(undefined);
     }
-    async function resetSettingsActions() {
-        try {
-            await invoke('reset_settings', { resetWallet: selectedItem === 'config_and_wallet' });
-        } catch (e) {
-            console.error('Error when resetting settings: ', e);
-            setError('Resetting settings failed: ' + e);
-        }
-    }
-
     function handleReset() {
         startTransition(async () => {
-            await resetSettingsActions();
-            handleClose();
+            try {
+                await invoke('reset_settings', { resetWallet: selectedItem === 'config_and_wallet' });
+                handleClose();
+            } catch (e) {
+                console.error('Error when resetting settings: ', e);
+                setError(String(e));
+            }
+        });
+    }
+
+    function handleRestart() {
+        startTransition(async () => {
+            try {
+                await invoke('restart_application');
+            } catch (e) {
+                setError((previous) => `${previous}\n${String(e)}`);
+            }
         });
     }
 
@@ -68,8 +82,8 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
     ];
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange} disableClose={isPending}>
-            <DialogContent data-testid="settings-reset-dialog">
+        <Dialog open={isOpen} onOpenChange={onOpenChange} disableClose={isPending || error !== undefined}>
+            <DialogContent ref={dialogRef} data-testid="settings-reset-dialog">
                 <Stack alignItems="center" justifyContent="space-between" gap={8} style={{ width: 570, padding: 8 }}>
                     <Typography variant="h3">{t('reset-settings')}</Typography>
                     <Typography variant="p">{t('reset-restart')}</Typography>
@@ -83,6 +97,7 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
                                     variant="neutral"
                                     styleType="minimal"
                                     checked={selectedItem === id}
+                                    disabled={isPending || error !== undefined}
                                     onChange={(e) => setSelectedItem(e.target.id)}
                                 />
                             );
@@ -102,6 +117,11 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
                             )}
                         </Typography>
                     </ExplainerContainer>
+                    {error !== undefined ? (
+                        <Typography role="alert" style={{ whiteSpace: 'pre-line' }}>
+                            {error}
+                        </Typography>
+                    ) : null}
 
                     <Stack
                         direction="row"
@@ -109,26 +129,34 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
                         alignItems="center"
                         style={{ width: '70%', gap: 8 }}
                     >
-                        <Button
-                            size="medium"
-                            data-testid="settings-reset-cancel"
-                            disabled={isPending}
-                            onClick={handleClose}
-                            fluid
-                        >
-                            {t('cancel')}
-                        </Button>
-                        <Button
-                            size="medium"
-                            fluid
-                            disabled={!selectedItem || isPending}
-                            onClick={handleReset}
-                            color="warning"
-                            loader={<LoadingDots />}
-                            isLoading={isPending}
-                        >
-                            {t('reset')}
-                        </Button>
+                        {error !== undefined ? (
+                            <Button size="medium" fluid disabled={isPending} onClick={handleRestart}>
+                                {t('common:restart')}
+                            </Button>
+                        ) : (
+                            <>
+                                <Button
+                                    size="medium"
+                                    data-testid="settings-reset-cancel"
+                                    disabled={isPending}
+                                    onClick={handleClose}
+                                    fluid
+                                >
+                                    {t('cancel')}
+                                </Button>
+                                <Button
+                                    size="medium"
+                                    fluid
+                                    disabled={!selectedItem || isPending}
+                                    onClick={handleReset}
+                                    color="warning"
+                                    loader={<LoadingDots />}
+                                    isLoading={isPending}
+                                >
+                                    {t('reset')}
+                                </Button>
+                            </>
+                        )}
                     </Stack>
                 </Stack>
             </DialogContent>

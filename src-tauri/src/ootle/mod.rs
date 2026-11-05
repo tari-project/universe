@@ -166,6 +166,21 @@ pub struct OotleWalletManager {
 }
 
 impl OotleWalletManager {
+    /// Excludes opens and seed swaps until reset has removed the store and restarted.
+    pub(crate) async fn lock_lifecycle() -> MutexGuard<'static, Option<(TaskTracker, PhaseSignal)>>
+    {
+        INSTANCE.lifecycle.lock().await
+    }
+
+    /// Releases the SQLite store after the wallet phase's services have stopped. The
+    /// caller keeps the lifecycle lock through deletion so the store cannot reopen.
+    pub(crate) async fn close_database(
+        _lifecycle: &MutexGuard<'_, Option<(TaskTracker, PhaseSignal)>>,
+    ) {
+        INSTANCE.sdk.lock().await.take();
+        INSTANCE.transactions.lock().await.take();
+    }
+
     /// Finds the L2 store and notes whether L2 was enabled in it, which leaves it locked
     /// until [`Self::enable`] opens it with the PIN. Does nothing on unsupported networks.
     pub async fn initialize(data_dir: &Path) -> Result<(), anyhow::Error> {
@@ -630,9 +645,7 @@ async fn replace_store(
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
-    // Nothing may hold the store open when its directory goes.
-    INSTANCE.sdk.lock().await.take();
-    INSTANCE.transactions.lock().await.take();
+    OotleWalletManager::close_database(_lifecycle).await;
     let result = match words {
         Some(words) => restore_store(store_dir, network, indexer_url, password, words, owner),
         None => std::fs::remove_dir_all(store_dir).map_err(Into::into),
@@ -1279,6 +1292,45 @@ mod tests {
         crypto::{PedersenCommitmentBytes, RistrettoPublicKeyBytes, UtxoTag},
         stealth::SpendAuthorization,
     };
+
+    #[tokio::test]
+    async fn test_close_database_releases_enabled_store_and_holds_lifecycle() {
+        let lifecycle = OotleWalletManager::lock_lifecycle().await;
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store_dir = dir.path().join("ootle-wallet");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, url, "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("enabled seed");
+        let shutdown = Shutdown::new();
+        let (service, handle) =
+            TransactionService::new(INSTANCE.notify.clone(), sdk.clone(), shutdown.to_signal());
+        // The wallet phase has stopped its services before reset closes the database.
+        drop(service);
+        *INSTANCE.sdk.lock().await = Some(sdk);
+        *INSTANCE.transactions.lock().await = Some(handle);
+
+        #[cfg(target_os = "linux")]
+        let has_open_store_file = || {
+            std::fs::read_dir("/proc/self/fd")
+                .expect("open file descriptors")
+                .filter_map(Result::ok)
+                .filter_map(|entry| std::fs::read_link(entry.path()).ok())
+                .any(|path| path.starts_with(&store_dir))
+        };
+        #[cfg(target_os = "linux")]
+        assert!(has_open_store_file());
+
+        OotleWalletManager::close_database(&lifecycle).await;
+
+        assert!(INSTANCE.sdk.lock().await.is_none());
+        assert!(INSTANCE.transactions.lock().await.is_none());
+        assert!(INSTANCE.lifecycle.try_lock().is_err());
+        #[cfg(target_os = "linux")]
+        assert!(!has_open_store_file());
+        std::fs::remove_dir_all(&store_dir).expect("store released before removal on Windows");
+        assert!(!store_dir.exists());
+    }
 
     #[test]
     fn l2_seed_words_are_the_l1_seed_words() {

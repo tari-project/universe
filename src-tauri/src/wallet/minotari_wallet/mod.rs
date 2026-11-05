@@ -1864,6 +1864,42 @@ mod tests {
 
     const PASSWORD: &str = "pass";
 
+    #[tokio::test]
+    async fn test_reset_close_database_releases_minotari_wallet_files() {
+        let dir = tempfile::tempdir().expect("wallet directory");
+        let wallet_dir = dir.path().join("minotari-wallet");
+        std::fs::create_dir(&wallet_dir).expect("wallet folder");
+        super::INSTANCE
+            .database_manager
+            .initialize(
+                wallet_dir
+                    .join("wallet.db")
+                    .to_str()
+                    .expect("database path"),
+            )
+            .await
+            .expect("initialize wallet database");
+        assert!(super::INSTANCE.database_manager.get_pool().await.is_ok());
+
+        super::MinotariWalletManager::close_database().await;
+
+        assert!(super::INSTANCE.database_manager.get_pool().await.is_err());
+        #[cfg(target_os = "linux")]
+        for entry in std::fs::read_dir("/proc/self/fd")
+            .expect("file descriptors")
+            .flatten()
+        {
+            if let Ok(path) = std::fs::read_link(entry.path()) {
+                assert!(
+                    !path.starts_with(&wallet_dir),
+                    "wallet file still open: {path:?}"
+                );
+            }
+        }
+        std::fs::remove_dir_all(&wallet_dir).expect("wallet database must be released on Windows");
+        assert!(!wallet_dir.exists());
+    }
+
     /// An output worth `value`, told apart from others by `seed`.
     fn test_output(value: u64, seed: u8) -> WalletOutput {
         WalletOutput::new_from_parts(

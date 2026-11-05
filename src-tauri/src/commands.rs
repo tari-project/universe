@@ -89,6 +89,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fs::{File, read_dir, remove_dir_all, remove_file};
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::sleep;
@@ -740,16 +741,23 @@ async fn reset_app_configs(
         .join("app_configs")
         .join(Network::get_current().as_key_str());
 
+    reset_configs_dir(&universe_app_configs_dir, reset_wallet)
+}
+
+fn reset_configs_dir(
+    universe_app_configs_dir: &Path,
+    reset_wallet: bool,
+) -> Result<(), anyhow::Error> {
     if reset_wallet {
         log::info!(target: LOG_TARGET_APP_LOGIC, "[reset_app_configs] Resetting with wallet.");
-        remove_dir_all(&universe_app_configs_dir).map_err(|e| {
+        remove_dir_all(universe_app_configs_dir).map_err(|e| {
             error!(target: LOG_TARGET_APP_LOGIC, "[reset_app_configs] Could not remove {universe_app_configs_dir:?} directory: {e:?}");
             anyhow::anyhow!("Could not remove directory: {e}")
         })?;
     } else {
         log::info!(target: LOG_TARGET_APP_LOGIC, "[reset_app_configs] Resetting without wallet.");
         // remove all configs but not "config_wallet.json"
-        let config_files = std::fs::read_dir(&universe_app_configs_dir)?;
+        let config_files = std::fs::read_dir(universe_app_configs_dir)?;
         for entry in config_files {
             let entry = entry?;
             let path = entry.path();
@@ -788,7 +796,16 @@ pub async fn reset_settings(
 
     let _unused = GpuManager::write().await.stop_mining().await;
     let _unused = CpuManager::write().await.stop_mining().await;
+    // Match the L2 seed-swap lock order and hold both until restart, so neither
+    // enabling L2 nor restarting the wallet phase can reopen a database during deletion.
+    let l2_lifecycle = OotleWalletManager::lock_lifecycle().await;
+    let _restart = SetupManager::get_instance().restart_safe_lock().await;
+    SetupManager::get_instance()
+        .shutdown_phases(vec![SetupPhase::Wallet])
+        .await;
     TasksTrackers::current().stop_all_processes().await;
+    MinotariWalletManager::close_database().await;
+    OotleWalletManager::close_database(&l2_lifecycle).await;
 
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
     let app_config_dir = app_handle.path().app_config_dir();
@@ -817,10 +834,6 @@ pub async fn reset_settings(
         error!(target: LOG_TARGET_APP_LOGIC, "Could not get app directories for {valid_dir_paths:?}");
         return Err("Could not get app directories".to_string());
     }
-    let mut folder_block_list = Vec::new();
-    folder_block_list.push("EBWebView");
-
-    let mut files_block_list = Vec::new();
     if reset_wallet {
         // Re-checked with the wallet stopped and the gate still held, right before deletion.
         MinotariWalletManager::ensure_no_pending_burns().map_err(|e| e.to_string())?;
@@ -828,72 +841,79 @@ pub async fn reset_settings(
         InternalWallet::clear_all_wallets()
             .await
             .map_err(|e| e.to_string())?;
-    } else {
-        folder_block_list.push("minotari-wallet");
-        files_block_list.push("credentials_backup.bin");
     }
     // handle App Config reset individually
-    folder_block_list.push("app_configs");
     reset_app_configs(&app_handle, reset_wallet)
         .await
         .map_err(|e| e.to_string())?;
 
     for dir_path in dirs_to_remove.iter().flatten() {
-        if dir_path.exists() {
-            for entry in read_dir(dir_path).map_err(|e| e.to_string())? {
-                let entry = entry.map_err(|e| e.to_string())?;
-                let path = entry.path();
-                if path.is_dir() {
-                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str())
-                        && folder_block_list.contains(&file_name)
-                    {
-                        continue;
-                    }
-
-                    let contains_wallet_config =
-                        read_dir(&path)
-                            .map_err(|e| e.to_string())?
-                            .any(|inner_entry| {
-                                inner_entry
-                                    .map(|e| e.file_name() == "wallet_config.json") // legacy wallet config
-                                    .unwrap_or(false)
-                            });
-
-                    let is_network_dir = path
-                        .file_name()
-                        .and_then(|name| name.to_str())
-                        .map(|name| name == network)
-                        .unwrap_or(false);
-
-                    if !reset_wallet && contains_wallet_config {
-                        continue;
-                    }
-                    if reset_wallet && contains_wallet_config && !is_network_dir {
-                        continue;
-                    }
-
-                    remove_dir_all(path.clone()).map_err(|e| {
-                        error!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Could not remove {path:?} directory: {e:?}");
-                        format!("Could not remove directory: {e}")
-                    })?;
-                } else {
-                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str())
-                        && files_block_list.contains(&file_name)
-                    {
-                        continue;
-                    }
-
-                    remove_file(path.clone()).map_err(|e| {
-                        error!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Could not remove {path:?} file: {e:?}");
-                        format!("Could not remove file: {e}")
-                    })?;
-                }
-            }
-        }
+        reset_data_dir(dir_path, reset_wallet, network)?;
     }
 
     info!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Restarting the app");
     app_handle.restart()
+}
+
+fn reset_data_dir(dir_path: &Path, reset_wallet: bool, network: &str) -> Result<(), String> {
+    let mut folder_block_list = vec!["EBWebView", "app_configs"];
+    if !reset_wallet {
+        folder_block_list.extend(["minotari-wallet", "ootle-wallet"]);
+    }
+    if dir_path.exists() {
+        for entry in read_dir(dir_path).map_err(|e| e.to_string())? {
+            let entry = entry.map_err(|e| e.to_string())?;
+            let path = entry.path();
+            if path.is_dir() {
+                if let Some(file_name) = path.file_name().and_then(|name| name.to_str())
+                    && folder_block_list.contains(&file_name)
+                {
+                    continue;
+                }
+
+                let contains_wallet_config =
+                    read_dir(&path)
+                        .map_err(|e| e.to_string())?
+                        .any(|inner_entry| {
+                            inner_entry
+                                .map(|e| e.file_name() == "wallet_config.json") // legacy wallet config
+                                .unwrap_or(false)
+                        });
+
+                let is_network_dir = path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .map(|name| name == network)
+                    .unwrap_or(false);
+
+                if !reset_wallet && contains_wallet_config {
+                    continue;
+                }
+                if reset_wallet && contains_wallet_config && !is_network_dir {
+                    continue;
+                }
+
+                remove_dir_all(&path).map_err(|e| {
+                    error!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Could not remove {path:?} directory: {e:?}");
+                    format!("Could not remove directory: {e}")
+                })?;
+            } else {
+                if !reset_wallet
+                    && path
+                        .file_name()
+                        .is_some_and(|name| name == "credentials_backup.bin")
+                {
+                    continue;
+                }
+
+                remove_file(&path).map_err(|e| {
+                    error!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Could not remove {path:?} file: {e:?}");
+                    format!("Could not remove file: {e}")
+                })?;
+            }
+        }
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -2761,6 +2781,86 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
 #[cfg(test)]
 mod tests {
     use super::canonicalise_remote_base_node_address;
+
+    fn reset_fixture() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().expect("reset directory");
+        for (path, contents) in [
+            ("minotari-wallet/esmeralda/wallet.db", "L1 wallet"),
+            ("ootle-wallet/esmeralda/wallet.sqlite", "imported L2 seed"),
+            ("app_configs/esmeralda/config_wallet.json", "wallet config"),
+            ("app_configs/esmeralda/config_core.json", "core config"),
+            (
+                "app_configs/mainnet/config_wallet.json",
+                "other network config",
+            ),
+            ("credentials_backup.bin", "credential backup"),
+            ("EBWebView/cache", "webview"),
+            ("cache/data", "cache"),
+            ("esmeralda/wallet_config.json", "current legacy wallet"),
+            ("mainnet/wallet_config.json", "other legacy wallet"),
+        ] {
+            let path = dir.path().join(path);
+            std::fs::create_dir_all(path.parent().expect("parent")).expect("fixture folder");
+            std::fs::write(path, contents).expect("fixture file");
+        }
+        dir
+    }
+
+    #[test]
+    fn test_reset_keep_wallet_preserves_both_wallets_and_config() {
+        let dir = reset_fixture();
+        super::reset_configs_dir(&dir.path().join("app_configs/esmeralda"), false)
+            .expect("reset configs");
+        super::reset_data_dir(dir.path(), false, "esmeralda").expect("reset data");
+        for path in [
+            "minotari-wallet/esmeralda/wallet.db",
+            "ootle-wallet/esmeralda/wallet.sqlite",
+            "app_configs/esmeralda/config_wallet.json",
+            "app_configs/mainnet/config_wallet.json",
+            "credentials_backup.bin",
+            "EBWebView/cache",
+            "esmeralda/wallet_config.json",
+            "mainnet/wallet_config.json",
+        ] {
+            assert!(dir.path().join(path).exists(), "must preserve {path}");
+        }
+        assert_eq!(
+            std::fs::read_to_string(dir.path().join("ootle-wallet/esmeralda/wallet.sqlite"))
+                .expect("L2 store"),
+            "imported L2 seed"
+        );
+        assert!(!dir.path().join("cache").exists());
+        assert!(
+            !dir.path()
+                .join("app_configs/esmeralda/config_core.json")
+                .exists()
+        );
+    }
+
+    #[test]
+    fn test_reset_full_removes_both_wallets_and_preserves_other_network_config() {
+        let dir = reset_fixture();
+        super::reset_configs_dir(&dir.path().join("app_configs/esmeralda"), true)
+            .expect("reset configs");
+        super::reset_data_dir(dir.path(), true, "esmeralda").expect("reset data");
+        for path in [
+            "minotari-wallet",
+            "ootle-wallet",
+            "credentials_backup.bin",
+            "cache",
+            "esmeralda",
+            "app_configs/esmeralda",
+        ] {
+            assert!(!dir.path().join(path).exists(), "must remove {path}");
+        }
+        assert!(
+            dir.path()
+                .join("app_configs/mainnet/config_wallet.json")
+                .exists()
+        );
+        assert!(dir.path().join("mainnet/wallet_config.json").exists());
+        assert!(dir.path().join("EBWebView/cache").exists());
+    }
 
     #[test]
     fn implicit_default_https_port_survives() {
