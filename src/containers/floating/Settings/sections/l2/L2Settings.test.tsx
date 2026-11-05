@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
-import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
+import { act, fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useMiningStore } from '@app/store';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+import { FEATURE_FLAGS } from '@app/store/consts.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { Network, networkSupportsL2 } from '@app/utils/network';
 import SettingsNavigation from '../../components/Navigation.tsx';
@@ -42,10 +44,29 @@ const serve = (state: L2WalletState) =>
         .mockImplementation((async (cmd: string) => (cmd === 'l2_get_state' ? state : undefined)) as typeof invoke);
 
 describe('Layer 2 settings tab', () => {
-    it.each([Network.MainNet, Network.Esmeralda])('lists the L2 tab on %s', (network) => {
+    beforeEach(() => useAirdropStore.setState({ features: undefined }));
+
+    it.each([
+        ['esmeralda without flags', Network.Esmeralda, undefined, true],
+        ['mainnet before flags load', Network.MainNet, undefined, false],
+        ['mainnet without the pre-burn flag', Network.MainNet, ['polling'], false],
+        ['mainnet with the pre-burn flag', Network.MainNet, [FEATURE_FLAGS.FF_OOTLE_PRE_BURN], true],
+        ['mainnet with only the live flag', Network.MainNet, [FEATURE_FLAGS.FF_OOTLE_MAINNET_LIVE], true],
+    ])('L2 tab visibility on %s', (_, network, features, shown) => {
         useMiningStore.setState({ network });
+        useAirdropStore.setState({ features: features as string[] | undefined });
+        render(<SettingsNavigation activeSection="general" onChangeActiveSection={vi.fn()} />);
+        expect(!!screen.queryByTestId('settings-tab-l2')).toBe(shown);
+    });
+
+    it('drops the L2 tab when the pre-burn flag is pulled', () => {
+        useMiningStore.setState({ network: Network.MainNet });
+        useAirdropStore.setState({ features: [FEATURE_FLAGS.FF_OOTLE_PRE_BURN] });
         render(<SettingsNavigation activeSection="general" onChangeActiveSection={vi.fn()} />);
         expect(screen.getByTestId('settings-tab-l2')).toBeInTheDocument();
+
+        act(() => useAirdropStore.setState({ features: [] }));
+        expect(screen.queryByTestId('settings-tab-l2')).not.toBeInTheDocument();
     });
 
     it('hides the L2 tab on localnet', () => {
