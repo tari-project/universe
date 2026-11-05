@@ -4,6 +4,10 @@ import { fireEvent, render, screen, waitFor, within } from '@app/test/test-utils
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { FEATURE_FLAGS } from '@app/store/consts.ts';
+import { Network } from '@app/utils/network.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import L2WalletCard from './L2WalletCard';
 
@@ -40,6 +44,8 @@ describe('L2WalletCard', () => {
     beforeEach(() => {
         vi.mocked(invoke).mockReset();
         useL2WalletStore.setState({ ...initialState }, true);
+        useMiningStore.setState({ network: undefined });
+        useAirdropStore.setState({ features: undefined });
     });
 
     it('closes itself without a PIN and does not touch L2', () => {
@@ -198,5 +204,141 @@ describe('L2WalletCard', () => {
         await pick('l2.filter.waiting-claims');
         expect(await screen.findByTestId('l2-claim-row')).toBeInTheDocument();
         expect(screen.queryByTestId('l2-history-row')).not.toBeInTheDocument();
+    });
+
+    describe('before the Ootle mainnet launch', () => {
+        const CLAIM_KEY = 'cd'.repeat(32);
+        const noAccounts: L2WalletState = { ...enabledState, accounts: [] };
+        const scanned = {
+            scanned_height: 1,
+            total_height: 1,
+            progress: 100,
+            is_initial_scan_complete: true,
+        };
+        const serveWithKey = (state: L2WalletState, key: () => Promise<string>) =>
+            vi
+                .mocked(invoke)
+                .mockImplementation((async (cmd: string) =>
+                    cmd === 'l2_get_state'
+                        ? state
+                        : cmd === 'l2_default_claim_public_key'
+                          ? key()
+                          : undefined) as typeof invoke);
+
+        beforeEach(() => {
+            useMiningStore.setState({ network: Network.MainNet });
+            useWalletStore.setState({ is_pin_locked: true, wallet_scanning: scanned });
+        });
+
+        it.each([
+            ['not loaded yet', undefined],
+            ['loaded without the live flag', ['polling']],
+        ])('shows the pre-launch wallet with no accounts while features are %s', async (_, features) => {
+            useAirdropStore.setState({ features });
+            serveWithKey(noAccounts, async () => CLAIM_KEY);
+            render(<L2WalletCard />);
+
+            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('0 XTR');
+            expect(screen.queryByTestId('l2-loading')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('l2-copy-address')).not.toBeInTheDocument();
+            expect(screen.getByTestId('l2-history-empty')).toHaveTextContent('l2.empty');
+            expect(screen.queryByTestId('l2-history-row')).not.toBeInTheDocument();
+            expect(invoke).not.toHaveBeenCalledWith('l2_claimable_burns', expect.anything());
+        });
+
+        it('shows the pre-launch wallet even when L2 already has an account', async () => {
+            serveWithKey(enabledState, async () => CLAIM_KEY);
+            render(<L2WalletCard />);
+
+            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('0 XTR');
+            expect(screen.queryByTestId('l2-history-row')).not.toBeInTheDocument();
+        });
+
+        it('disables Send and Receive, and clicking them opens nothing', async () => {
+            serveWithKey(noAccounts, async () => CLAIM_KEY);
+            render(<L2WalletCard />);
+
+            const send = await screen.findByTestId('l2-send-button');
+            const receive = screen.getByTestId('l2-receive-button');
+            expect(send).toBeDisabled();
+            expect(receive).toBeDisabled();
+            fireEvent.click(send);
+            fireEvent.click(receive);
+            expect(screen.queryByText('l2.receive-title')).not.toBeInTheDocument();
+            expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+        });
+
+        it('opens the burn form with the locally derived default claim key', async () => {
+            serveWithKey(noAccounts, async () => CLAIM_KEY);
+            render(<L2WalletCard />);
+
+            const burn = await screen.findByTestId('l2-burn-button');
+            await waitFor(() => expect(burn).toBeEnabled());
+            fireEvent.click(burn);
+            expect(await screen.findByDisplayValue(CLAIM_KEY)).toBeInTheDocument();
+            expect(invoke).toHaveBeenCalledWith('l2_default_claim_public_key');
+        });
+
+        it('keeps Burn disabled until the claim key loads', async () => {
+            let resolveKey: (key: string) => void = () => undefined;
+            serveWithKey(noAccounts, () => new Promise<string>((resolve) => (resolveKey = resolve)));
+            render(<L2WalletCard />);
+
+            const burn = await screen.findByTestId('l2-burn-button');
+            expect(burn).toBeDisabled();
+            resolveKey(CLAIM_KEY);
+            await waitFor(() => expect(burn).toBeEnabled());
+        });
+
+        it('keeps Burn disabled when the claim key command fails', async () => {
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            serveWithKey(noAccounts, async () => {
+                throw 'Layer 2 is locked';
+            });
+            render(<L2WalletCard />);
+
+            const burn = await screen.findByTestId('l2-burn-button');
+            await waitFor(() => expect(warn).toHaveBeenCalled());
+            expect(burn).toBeDisabled();
+            warn.mockRestore();
+        });
+
+        it('keeps Burn disabled while the L1 wallet is still scanning', async () => {
+            useWalletStore.setState({ wallet_scanning: { ...scanned, is_initial_scan_complete: false } });
+            serveWithKey(noAccounts, async () => CLAIM_KEY);
+            render(<L2WalletCard />);
+
+            const burn = await screen.findByTestId('l2-burn-button');
+            await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_default_claim_public_key'));
+            expect(burn).toBeDisabled();
+        });
+
+        it('renders the normal wallet once the live flag is on', async () => {
+            useAirdropStore.setState({ features: [FEATURE_FLAGS.FF_OOTLE_MAINNET_LIVE] });
+            serve(enabledState);
+            render(<L2WalletCard />);
+
+            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 XTR');
+            expect(screen.getByTestId('l2-copy-address')).toBeInTheDocument();
+            expect(invoke).not.toHaveBeenCalledWith('l2_default_claim_public_key');
+        });
+
+        it('keeps the loading state with no account once the live flag is on', async () => {
+            useAirdropStore.setState({ features: [FEATURE_FLAGS.FF_OOTLE_MAINNET_LIVE] });
+            serve(noAccounts);
+            render(<L2WalletCard />);
+
+            await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_get_state'));
+            expect(screen.getByTestId('l2-loading')).toBeInTheDocument();
+        });
+
+        it('ignores the flag off MainNet', async () => {
+            useMiningStore.setState({ network: Network.Esmeralda });
+            serve(noAccounts);
+            render(<L2WalletCard />);
+
+            await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_get_state'));
+            expect(screen.getByTestId('l2-loading')).toBeInTheDocument();
+        });
     });
 });

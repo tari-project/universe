@@ -36,6 +36,7 @@ vi.mock('@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh', () => ({
 }));
 
 const mockFetchFeatures = vi.fn(async () => undefined);
+const mockFetchConfig = vi.fn(async () => undefined);
 const mockFetchCommunityMessages = vi.fn(async () => undefined);
 const mockFetchAllUserData = vi.fn(async () => undefined);
 const mockFetchLatestXSpaceEvent = vi.fn(async () => undefined);
@@ -45,6 +46,7 @@ vi.mock('@app/store/actions/airdropStoreActions', async (importOriginal) => {
     return {
         ...actual,
         fetchFeatures: () => mockFetchFeatures(),
+        fetchConfig: () => mockFetchConfig(),
         fetchCommunityMessages: () => mockFetchCommunityMessages(),
         fetchAllUserData: () => mockFetchAllUserData(),
         fetchLatestXSpaceEvent: () => mockFetchLatestXSpaceEvent(),
@@ -178,6 +180,30 @@ describe('timer and listener lifecycle fixes (#3373)', () => {
         await act(async () => {
             vi.advanceTimersByTime(60_000);
         });
+        expect(mockFetchFeatures).toHaveBeenCalledTimes(3);
+
+        unmount();
+    });
+
+    it('fetches the RWA config whenever useAirdropPolling fetches feature flags', async () => {
+        useAirdropStore.setState({ features: [] });
+        const { unmount } = renderHook(() => useAirdropPolling());
+
+        // Initial fetch
+        expect(mockFetchConfig).toHaveBeenCalledTimes(1);
+
+        // 60s interval
+        await act(async () => {
+            vi.advanceTimersByTime(60_000);
+        });
+        expect(mockFetchConfig).toHaveBeenCalledTimes(2);
+
+        // Window focus
+        const [, onFocus] = mockListen.mock.calls.find(([event]) => event === 'tauri://focus') ?? [];
+        await act(async () => {
+            (onFocus as () => void)();
+        });
+        expect(mockFetchConfig).toHaveBeenCalledTimes(3);
         expect(mockFetchFeatures).toHaveBeenCalledTimes(3);
 
         unmount();

@@ -186,6 +186,8 @@ export interface AirdropStoreState {
     uiSendRecvEnabled: boolean;
     communityMessages?: CommunityMessage[];
     features?: string[];
+    /** Public RWA /config, untyped until the endpoint settles. */
+    config?: Record<string, unknown>;
     crewMembers?: CrewMember[];
 
     crewRewards?: Reward[];

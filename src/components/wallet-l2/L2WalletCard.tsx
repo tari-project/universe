@@ -8,6 +8,7 @@ import { setL2Open } from '@app/store/actions/uiStoreActions.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { WalletWrapper } from '@app/components/wallet/sidebarWallet/wallet.styles.ts';
+import { useIsL2PreLaunch } from '@app/hooks/wallet/useIsL2PreLaunch.ts';
 import L2Wallet from './L2Wallet.tsx';
 
 const fetchL2State = () => invoke<L2WalletState>('l2_get_state').then(handleL2WalletStateUpdate);
@@ -21,6 +22,7 @@ export default function L2WalletCard() {
     const locked = useL2WalletStore((s) => s.locked);
     const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
     const account = useL2WalletStore(selectL2Account);
+    const preLaunch = useIsL2PreLaunch();
     const open = hasPin && enabled && !locked;
 
     // Events keep the store current; this catches up with whatever was sent before the card opened.
@@ -36,7 +38,9 @@ export default function L2WalletCard() {
         if (!open && !seedChangePending) setL2Open(false);
     }, [open, seedChangePending]);
 
-    if (!open || !account) {
+    // Before launch there is no L2 account to wait for (recovery can't reach the indexer),
+    // so the wallet shows a placeholder that can still burn to the default claim key.
+    if (!open || (!account && !preLaunch)) {
         return (
             <WalletWrapper style={promptStyle} data-testid="l2-loading">
                 <Typography>{t('l2.loading')}</Typography>
@@ -44,5 +48,5 @@ export default function L2WalletCard() {
         );
     }
 
-    return <L2Wallet account={account} />;
+    return <L2Wallet account={preLaunch ? undefined : account} />;
 }

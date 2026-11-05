@@ -1,4 +1,5 @@
-import L2Tiles from '@app/components/wallet-l2/L2Tiles.tsx';
+import L2Tiles, { L2LaunchTile } from '@app/components/wallet-l2/L2Tiles.tsx';
+import { useIsL2PreLaunch } from '@app/hooks/wallet/useIsL2PreLaunch.ts';
 import L2WalletCard from '@app/components/wallet-l2/L2WalletCard.tsx';
 import { SidebarContent, SidebarWrapper } from './Sidebar.styles.ts';
 
@@ -8,10 +9,11 @@ const variants = {
 };
 
 export default function SidebarL2() {
+    const preLaunch = useIsL2PreLaunch();
     return (
         <SidebarWrapper variants={variants} initial="hidden" animate="visible" exit="hidden" data-testid="sidebar-l2">
             <SidebarContent>
-                <L2Tiles />
+                {preLaunch ? <L2LaunchTile /> : <L2Tiles />}
                 <L2WalletCard />
             </SidebarContent>
         </SidebarWrapper>
