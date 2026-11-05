@@ -275,6 +275,7 @@
     "loading": "Загрузка кошелька Уровня 2...",
     "balance-split": "Открытый {{revealed}} · Конфиденциальный {{confidential}}",
     "receive-title": "Получить на Уровне 2",
+    "empty": "На Уровне 2 пока нет активности",
     "filter": {
       "waiting-claims": "Ожидают получения"
     },

@@ -275,6 +275,7 @@
     "loading": "레이어 2 지갑 불러오는 중...",
     "balance-split": "공개 {{revealed}} · 비공개 {{confidential}}",
     "receive-title": "레이어 2에서 받기",
+    "empty": "아직 레이어 2 활동이 없습니다",
     "filter": {
       "waiting-claims": "대기 중인 청구"
     },

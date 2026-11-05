@@ -275,6 +275,7 @@
     "loading": "Đang tải ví Layer 2 của bạn...",
     "balance-split": "Công khai {{revealed}} · Bảo mật {{confidential}}",
     "receive-title": "Nhận trên Layer 2",
+    "empty": "Chưa có hoạt động Layer 2 nào",
     "filter": {
       "waiting-claims": "Đang chờ nhận"
     },

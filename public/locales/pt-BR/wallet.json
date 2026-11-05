@@ -275,6 +275,7 @@
     "loading": "Carregando sua carteira da Camada 2...",
     "balance-split": "Revelado {{revealed}} · Confidencial {{confidential}}",
     "receive-title": "Receber na Camada 2",
+    "empty": "Nenhuma atividade na Camada 2 ainda",
     "filter": {
       "waiting-claims": "Reivindicações pendentes"
     },

@@ -275,6 +275,7 @@
     "loading": "Deine Layer-2-Wallet wird geladen...",
     "balance-split": "Offen {{revealed}} · Vertraulich {{confidential}}",
     "receive-title": "Auf Layer 2 empfangen",
+    "empty": "Noch keine Layer-2-Aktivität",
     "filter": {
       "waiting-claims": "Wartende Ansprüche"
     },

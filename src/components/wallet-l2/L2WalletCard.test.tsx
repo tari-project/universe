@@ -241,6 +241,7 @@ describe('L2WalletCard', () => {
             expect(await screen.findByTestId('l2-balance')).toHaveTextContent('0 XTR');
             expect(screen.queryByTestId('l2-loading')).not.toBeInTheDocument();
             expect(screen.queryByTestId('l2-copy-address')).not.toBeInTheDocument();
+            expect(screen.getByTestId('l2-history-empty')).toHaveTextContent('l2.empty');
             expect(screen.queryByTestId('l2-history-row')).not.toBeInTheDocument();
             expect(invoke).not.toHaveBeenCalledWith('l2_claimable_burns', expect.anything());
         });

@@ -34,6 +34,8 @@ const Card = styled.section<{ $heat: number }>`
     position: relative;
     isolation: isolate;
     overflow: hidden;
+    /* The sidebar is a full-height flex column; overflow: hidden would otherwise let the wallet card squeeze this one. */
+    flex-shrink: 0;
     width: 100%;
     padding: 24px 20px 16px;
     border-radius: 20px;

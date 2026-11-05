@@ -275,6 +275,7 @@
     "loading": "正在加载您的二层网络钱包...",
     "balance-split": "公开 {{revealed}} · 机密 {{confidential}}",
     "receive-title": "在二层网络上接收",
+    "empty": "暂无二层网络活动",
     "filter": {
       "waiting-claims": "待领取"
     },

@@ -59,6 +59,7 @@ const pad = (n: number) => n.toString().padStart(2, '0');
 
 // Mirrors the tari.com launch countdown card, dark in both themes like the site.
 const CdCard = styled.div`
+    flex-shrink: 0;
     width: 100%;
     border-radius: 20px;
     padding: 20px 16px;

@@ -275,6 +275,7 @@
     "loading": "Chargement de votre portefeuille de Couche 2...",
     "balance-split": "Révélé {{revealed}} · Confidentiel {{confidential}}",
     "receive-title": "Recevoir sur la Couche 2",
+    "empty": "Aucune activité sur la Couche 2 pour le moment",
     "filter": {
       "waiting-claims": "Réclamations en attente"
     },

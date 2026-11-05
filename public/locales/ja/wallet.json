@@ -275,6 +275,7 @@
     "loading": "レイヤー2ウォレットを読み込み中...",
     "balance-split": "公開 {{revealed}} · 秘匿 {{confidential}}",
     "receive-title": "レイヤー2で受け取る",
+    "empty": "レイヤー2のアクティビティはまだありません",
     "filter": {
       "waiting-claims": "請求待ち"
     },
