@@ -213,10 +213,21 @@ pub fn list_burns(
 }
 
 /// Fills in each burn's last claim rejection from `errors`, keyed by proof file.
-/// Marks claimable burns whose claim key isn't one of this wallet's L2 accounts
-/// "foreign", since claim_burn would refuse them.
+/// Marks claimable burns whose claim key is neither one of this wallet's L2 accounts nor its
+/// default claim key "foreign", since claim_burn would refuse them.
 pub fn mark_foreign(sdk: &OotleSdk, burns: &mut [L2Burn]) -> Result<(), anyhow::Error> {
-    for burn in burns.iter_mut().filter(|b| b.status == "claimable") {
+    // The default claim key is this wallet's even before its account exists, which is
+    // the case for every pre-burn: recovery can't create the account until launch.
+    let default_key = hex::encode(
+        sdk.key_manager_api()
+            .derive_account_key_pair(0)?
+            .public_key
+            .as_bytes(),
+    );
+    for burn in burns
+        .iter_mut()
+        .filter(|b| b.status == "claimable" && b.claim_public_key != default_key)
+    {
         let key =
             RistrettoPublicKeyBytes::try_from(hex::decode(&burn.claim_public_key)?.as_slice())?;
         if sdk
@@ -1139,6 +1150,30 @@ mod tests {
                 .expect("lookup")
                 .is_none()
         );
+    }
+
+    #[test]
+    fn a_pre_burn_to_the_default_claim_key_is_not_foreign_without_an_account() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = url::Url::parse("http://127.0.0.1:1").expect("url");
+        let mut sdk =
+            super::super::open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        let default_key = hex::encode(
+            sdk.key_manager_api()
+                .derive_account_key_pair(0)
+                .expect("key")
+                .public_key
+                .as_bytes(),
+        );
+        let claimable = |key: String| L2Burn {
+            status: "claimable",
+            ..L2Burn::pending(String::new(), key, 1)
+        };
+        let mut burns = [claimable(default_key), claimable(CLAIM_KEY.to_string())];
+        mark_foreign(&sdk, &mut burns).expect("mark foreign");
+        assert_eq!(burns.map(|b| b.status), ["claimable", "foreign"]);
     }
 
     #[test]

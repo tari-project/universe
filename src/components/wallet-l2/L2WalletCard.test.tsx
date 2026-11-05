@@ -243,7 +243,8 @@ describe('L2WalletCard', () => {
             expect(screen.queryByTestId('l2-copy-address')).not.toBeInTheDocument();
             expect(screen.getByTestId('l2-history-empty')).toHaveTextContent('l2.empty');
             expect(screen.queryByTestId('l2-history-row')).not.toBeInTheDocument();
-            expect(invoke).not.toHaveBeenCalledWith('l2_claimable_burns', expect.anything());
+            // Burns live on L1 and on disk, so the pre-burn list loads them without an L2 account.
+            await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_claimable_burns'));
         });
 
         it('shows the pre-launch wallet even when L2 already has an account', async () => {

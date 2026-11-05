@@ -6,6 +6,10 @@ import type { L2Account, L2Burn, L2NetworkStats } from '@app/types/events-payloa
 import L2Activity from './L2Activity';
 import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import { useToastStore } from '@app/components/ToastStack/useToastStore.tsx';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+import { FEATURE_FLAGS } from '@app/store/consts.ts';
+import { Network } from '@app/utils/network.ts';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 vi.mock('@tauri-apps/plugin-dialog', () => ({ save: vi.fn() }));
@@ -188,5 +192,54 @@ describe('L2Activity', () => {
         await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_claimable_burns'));
         expect(screen.queryByTestId('l2-claim-row')).not.toBeInTheDocument();
         expect(screen.getByTestId('l2-history-empty')).toBeInTheDocument();
+    });
+});
+
+describe('L2Activity before the Ootle launch', () => {
+    beforeEach(() => {
+        vi.mocked(invoke).mockReset();
+        serveBurns([
+            burn('aa'.repeat(32), 'claimable'),
+            burn('bb'.repeat(32), 'pending'),
+            burn('cc'.repeat(32), 'claimed'),
+        ]);
+        useMiningStore.setState({ network: Network.MainNet });
+        useAirdropStore.setState({ features: undefined });
+        useL2WalletStore.setState({ accounts: [] });
+    });
+
+    it('lists pre-burns without an L2 account, with Save proof but no Claim', async () => {
+        render(<L2Activity filter="all-activity" />);
+        const rows = await screen.findAllByTestId('l2-claim-row');
+
+        expect(rows).toHaveLength(2);
+        expect(screen.queryByTestId('l2-history-empty')).not.toBeInTheDocument();
+        expect(within(rows[0]).getByTestId('l2-claim-status')).toHaveTextContent('l2.claim.after-launch');
+        expect(within(rows[1]).getByTestId('l2-claim-status')).toHaveTextContent('l2.claim.pending');
+        expect(screen.queryByTestId('l2-claim-button')).not.toBeInTheDocument();
+        fireEvent.mouseEnter(rows[0]);
+        expect(within(rows[0]).getByTestId('l2-save-proof-button')).toBeInTheDocument();
+    });
+
+    it('refetches when a state update arrives, though there is still no account', async () => {
+        render(<L2Activity filter="all-activity" />);
+        await screen.findAllByTestId('l2-claim-row');
+
+        serveBurns([
+            burn('aa'.repeat(32), 'claimable'),
+            burn('bb'.repeat(32), 'claimable'),
+            burn('dd'.repeat(32), 'pending'),
+        ]);
+        act(() => useL2WalletStore.setState({ accounts: [] }));
+        await waitFor(() => expect(screen.getAllByTestId('l2-claim-row')).toHaveLength(3));
+    });
+
+    it('offers Claim once the live flag is on', async () => {
+        useAirdropStore.setState({ features: [FEATURE_FLAGS.FF_OOTLE_MAINNET_LIVE] });
+        render(<L2Activity account={account} filter="all-activity" />);
+        const rows = await screen.findAllByTestId('l2-claim-row');
+
+        expect(within(rows[0]).getByTestId('l2-claim-button')).toBeInTheDocument();
+        expect(within(rows[0]).getByTestId('l2-claim-status')).not.toHaveTextContent('l2.claim.after-launch');
     });
 });

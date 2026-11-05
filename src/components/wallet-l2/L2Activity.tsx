@@ -6,6 +6,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
+import { useIsL2PreLaunch } from '@app/hooks/wallet/useIsL2PreLaunch.ts';
 import type { L2Account, L2BalanceChange, L2Burn } from '@app/types/events-payloads.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
@@ -57,20 +58,13 @@ const EmptyPlaceholders = () => (
     </>
 );
 
-/** The empty list without an account, before launch. */
-export function L2EmptyList() {
-    return (
-        <ListWrapper>
-            <EmptyLabel />
-            <ListItemWrapper>
-                <EmptyPlaceholders />
-            </ListItemWrapper>
-        </ListWrapper>
-    );
-}
-
-export default function L2Activity({ account, filter }: { account: L2Account; filter: string }) {
+/** Without an account (before launch) only burns show: they live on L1 and on disk, so they need no L2 connection. */
+export default function L2Activity({ account, filter }: { account?: L2Account; filter: string }) {
     const { t } = useTranslation('wallet');
+    const preLaunch = useIsL2PreLaunch();
+    // Every state update replaces the accounts, including the one sent for a new burn,
+    // so this also refetches before launch, when there is no account to follow.
+    const accounts = useL2WalletStore((s) => s.accounts);
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [selectedBurnId, setSelectedBurnId] = useState<string | null>(null);
@@ -91,13 +85,13 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
         let ignore = false;
         invoke<L2Burn[]>('l2_claimable_burns')
             .then((list) => {
-                if (!ignore) setBurns(list);
+                if (!ignore) setBurns(list ?? []);
             })
             .catch((e) => console.warn('Could not load L2 burns:', e));
         return () => {
             ignore = true;
         };
-    }, [account]);
+    }, [account, accounts]);
 
     async function claim(commitment: string) {
         setClaiming(commitment);
@@ -122,17 +116,17 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
     }
 
     const rows: Row[] = [
-        ...(filter === 'l2.filter.waiting-claims' ? [] : account.history.map((change) => ({ change }))),
+        ...(filter === 'l2.filter.waiting-claims' ? [] : (account?.history ?? []).map((change) => ({ change }))),
         ...(filter === 'transactions' ? [] : burns.filter((b) => b.status !== 'claimed').map((burn) => ({ burn }))),
     ].sort((a, b) => rowTime(b) - rowTime(a));
 
     const xtr = (value: number) =>
         hideBalance ? '***' : formatNumber(Math.abs(value), FormatPreset.XTM_COMPACT).toLowerCase();
-    const selected = account.history.find((change) => change.id === selectedId);
+    const selected = account?.history.find((change) => change.id === selectedId);
     const selectedBurn = burns.find((burn) => burn.commitment === selectedBurnId);
     const selectedProofFile = selectedBurn?.proof_file;
     const tx = selected?.transaction_id
-        ? account.transactions.find((transaction) => transaction.id === selected.transaction_id)
+        ? account?.transactions.find((transaction) => transaction.id === selected.transaction_id)
         : undefined;
 
     return (
@@ -146,6 +140,7 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
                             burn={burn}
                             amount={xtr(burn.amount)}
                             claiming={claiming}
+                            preLaunch={preLaunch}
                             onClaim={() => claim(burn.commitment)}
                             onBackup={() => burn.proof_file && backup(burn.proof_file)}
                             onDetails={() => setSelectedBurnId(burn.commitment)}
@@ -258,6 +253,8 @@ interface L2BurnRowProps {
     burn: L2Burn;
     amount: string;
     claiming: string | null;
+    /** Before launch a mined burn can't be claimed yet, so it says so instead of offering Claim. */
+    preLaunch: boolean;
     onClaim: () => void;
     onBackup: () => void;
     onDetails: () => void;
@@ -269,18 +266,30 @@ interface L2BurnRowProps {
 // A burn row: a Pending chip until it's mined, a checking status until the L1 node says
 // where it was mined, a Waiting chip until the L2 has imported that block, then the Claim
 // button. Without the L2 height the button shows, so nothing gets stuck.
-function L2BurnRow({ burn, amount, claiming, onClaim, onBackup, onDetails, stalledId, onAbandon }: L2BurnRowProps) {
+function L2BurnRow({
+    burn,
+    amount,
+    claiming,
+    preLaunch,
+    onClaim,
+    onBackup,
+    onDetails,
+    stalledId,
+    onAbandon,
+}: L2BurnRowProps) {
     const { t } = useTranslation('wallet');
     const [hovering, setHovering] = useState(false);
     const stats = useL2WalletStore((s) => s.networkStats);
     const blocksToWait = burn.mined_height === null || !stats ? 0 : Math.max(0, burn.mined_height - stats.block_height);
-    const waiting = burn.status === 'claimable' && blocksToWait > 0;
-    const checking = burn.status === 'claimable' && burn.mined_height === null;
+    const mined = burn.status === 'claimable' && preLaunch;
+    const waiting = burn.status === 'claimable' && !preLaunch && blocksToWait > 0;
+    const checking = burn.status === 'claimable' && !preLaunch && burn.mined_height === null;
 
     let status = t('l2.claim.ready');
     if (burn.status === 'pending') status = t('l2.claim.pending');
     else if (burn.status === 'abandoned') status = t('l2.claim.abandoned');
     else if (burn.status === 'foreign') status = t('l2.claim.foreign');
+    else if (mined) status = t('l2.claim.after-launch');
     else if (checking) status = t('l2.claim.checking');
     else if (waiting && stats) {
         const minutes = Math.ceil((blocksToWait * stats.block_target_secs) / 60);
@@ -360,7 +369,7 @@ function L2BurnRow({ burn, amount, claiming, onClaim, onBackup, onDetails, stall
                             {t('abandon.cta')}
                         </Button>
                     )}
-                    {burn.status === 'claimable' && !waiting && !checking && (
+                    {burn.status === 'claimable' && !mined && !waiting && !checking && (
                         <Button
                             size="smaller"
                             variant="black"

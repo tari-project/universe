@@ -348,6 +348,7 @@
       "pending": "Waiting for the burn to be mined",
       "abandoned": "Abandoned. It may still be mined, and then becomes claimable",
       "ready": "Ready to claim",
+      "after-launch": "Mined. Claimable once the Ootle launches",
       "checking": "Checking with the node",
       "claimable-in_one": "Claimable in {{count}} block, about {{time}}",
       "claimable-in_other": "Claimable in {{count}} blocks, about {{time}}",
