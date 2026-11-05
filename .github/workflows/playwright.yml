@@ -182,6 +182,7 @@ jobs:
             patchelf \
             libprotobuf-dev \
             protobuf-compiler \
+            libudev-dev \
             opencl-headers \
             ocl-icd-opencl-dev \
             xvfb \
