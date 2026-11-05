@@ -6,7 +6,7 @@ _November 6, 2026_
 
 Hey Tari fam,
 
-Twin Tides brought a second wallet to testnet. This one brings the boat to the mainnet shore: the Ootle Layer 2 wallet is built into mainnet Tari Universe, with a launch countdown and pre-burns while we wait for the Ootle itself to go live. The rest of the cargo is security work, much of it from reports that came in through our GitHub security advisory program, plus AMD support for TARI.Miner, a Tor update the network now insists on, and a pile of wallet fixes. It's a bigger drop than the version number lets on.
+Twin Tides brought a second wallet to testnet. This one brings the boat to the mainnet shore: the Ootle Layer 2 wallet is built into mainnet Tari Universe, with a launch countdown and pre-burns while we wait for the Ootle itself to go live. The rest of the cargo is a round of security hardening, plus AMD support for TARI.Miner, a Tor update the network now insists on, and a pile of wallet fixes. It's a bigger drop than the version number lets on.
 
 ✨ WHAT'S NEW
 
@@ -19,7 +19,7 @@ Twin Tides brought a second wallet to testnet. This one brings the boat to the m
 
 ✨ WHAT'S FIXED
 
-- 🔒 **Security hardening, with thanks** – We've closed a run of reports from our GitHub security advisory program (HackerOne is gone, advisories are the way in now). The PIN key for your Monero seed is now derived with Argon2id instead of a single unsalted hash, PIN lockouts can't be dodged by rolling the clock back, the PIN is now required to change your exchange or Monero payout address or to revert to the internal wallet, forgot-PIN recovery is tied to the wallet recorded on disk, config files and the MCP audit log are owner-only on Linux and macOS, the bundled Tor control port needs a fresh cookie, and downloaded binaries (miners, Tor, the node) are checksum-verified before extraction and again at launch. Thank you to everyone who reported.
+- 🔒 **Security hardening** – The PIN key for your Monero seed is now derived with Argon2id instead of a single unsalted hash, PIN lockouts can't be dodged by rolling the clock back, the PIN is now required to change your exchange or Monero payout address or to revert to the internal wallet, forgot-PIN recovery is tied to the wallet recorded on disk, config files and the MCP audit log are owner-only on Linux and macOS, the bundled Tor control port needs a fresh cookie, and downloaded binaries (miners, Tor, the node) are checksum-verified before extraction and again at launch.
 - 🤖 **MCP token keys moved to your credential store** – The key that protects your MCP bearer token now lives in the OS credential store. Heads up for MCP users: existing tokens are cleared by this update and the server stays off until you issue a new token and update your client. Your port and limits are kept.
 - 🧅 **Tor 0.4.9 on Windows and Linux** – Since 28 October the Tor network turns away older Tor clients. macOS got the new Tor in v1.6.19; Windows and Linux now ship the Tor Browser 16.0 expert bundle (Tor 0.4.9.15) too. Heads up: a fresh binary can trip a new antivirus false positive, so check your exclusions if Tor won't start.
 - 💼 **Wallet loads with a blank Monero address** – Clearing the Monero address in Settings > Advanced left you with a "config_wallet.json is incomplete" dialog, a blank Tari address and no CPU mining. The address is optional at load now, and Tari Universe derives it from your Monero seed when it can. Solo CPU mining asks you for an address instead of handing xmrig an empty one.
