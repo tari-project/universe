@@ -1947,6 +1947,13 @@ pub async fn l2_claimable_burns() -> Result<Vec<L2Burn>, String> {
     OotleWalletManager::burns().await.map_err(|e| e.to_string())
 }
 
+/// Copy a mined burn's claim proof to a location chosen in the save dialog.
+#[tauri::command]
+pub fn save_burn_proof(proof_file: String, destination: String) -> Result<(), String> {
+    OotleWalletManager::save_burn_proof(&proof_file, std::path::Path::new(&destination))
+        .map_err(|e| e.to_string())
+}
+
 /// Claim a burn on L2 by its commitment. Refused without a PIN; with one, the PIN
 /// prompt is the gate. Returns the L2 transaction id.
 #[tauri::command]

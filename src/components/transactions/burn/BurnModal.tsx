@@ -6,6 +6,7 @@ import { open } from '@tauri-apps/plugin-shell';
 
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { FormField } from '@app/components/transactions/send/FormField.tsx';
@@ -43,7 +44,6 @@ interface BurnModalProps {
 interface BurnReceipt {
     tx_id: string;
     output_hash: string;
-    proof_file: string;
     /** False when the node hasn't accepted the burn yet; it is recorded and retried automatically. */
     accepted_by_node: boolean;
 }
@@ -252,6 +252,9 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                                 ) : (
                                     <StatusHero icon={<CompletedIcon />} title={t('burn.completed-title')}>
                                         {t('burn.completed-text')}
+                                        <br />
+                                        <br />
+                                        {t('burn.backup-warning')}
                                         {receipt?.accepted_by_node === false && (
                                             <>
                                                 <br />
@@ -269,17 +272,16 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                                         {t('send.processing-button')}
                                     </Button>
                                 ) : (
-                                    <>
-                                        <Button
+                                    <BottomWrapper>
+                                        <TextButton
                                             type="button"
                                             fluid
-                                            size="xlarge"
-                                            variant="green"
+                                            size="small"
                                             onClick={handleShare}
                                             data-testid="burn-share-button"
                                         >
                                             {t('burn.share-button')}
-                                        </Button>
+                                        </TextButton>
                                         <Button
                                             type="button"
                                             fluid
@@ -290,7 +292,7 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                                         >
                                             {t('send.done-button')}
                                         </Button>
-                                    </>
+                                    </BottomWrapper>
                                 )}
                             </div>
                         )}

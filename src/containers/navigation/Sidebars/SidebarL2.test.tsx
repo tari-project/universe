@@ -55,13 +55,15 @@ describe('SidebarL2', () => {
         expect(screen.queryByTestId('l2-launch-countdown')).not.toBeInTheDocument();
     });
 
-    it('renders as today off MainNet whatever the flags say', async () => {
+    it('follows the same flags on Esmeralda', async () => {
         useMiningStore.setState({ network: Network.Esmeralda });
         render(<SidebarL2 />);
+        expect(await screen.findByTestId('l2-wallet')).toBeInTheDocument();
+        expect(screen.getByTestId('l2-launch-countdown')).toBeInTheDocument();
 
-        await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_get_state'));
+        act(() => useAirdropStore.setState({ features: LIVE }));
+        expect(await screen.findByTestId('l2-loading')).toBeInTheDocument();
         expect(screen.getByTestId('l2-tiles')).toBeInTheDocument();
-        expect(screen.getByTestId('l2-loading')).toBeInTheDocument();
     });
 
     it('switches modes live when a feature refetch adds or removes the flag', async () => {

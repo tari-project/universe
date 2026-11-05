@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
+import { useIsL2PreLaunch } from '@app/hooks/wallet/useIsL2PreLaunch.ts';
 import type { L2Account, L2BalanceChange, L2Burn } from '@app/types/events-payloads.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
@@ -30,6 +32,8 @@ import {
 import { Wrapper as DetailsWrapper } from '@app/components/transactions/history/transactionDetails/styles.ts';
 import { AbandonStalled } from '@app/components/transactions/history/transactionDetails/AbandonStalled.tsx';
 import { useStalledTransactions } from '@app/hooks/wallet/useStalledTransactions.ts';
+import { saveBurnProof } from '@app/components/transactions/burn/saveBurnProof.ts';
+import { BottomWrapper } from '@app/components/transactions/send/Send.styles.ts';
 
 // The backend sends unix seconds; formatEffectiveDate wants an ISO string.
 const date = (seconds: number) => formatEffectiveDate(new Date(seconds * 1000).toISOString());
@@ -54,22 +58,16 @@ const EmptyPlaceholders = () => (
     </>
 );
 
-/** The empty list without an account, before launch. */
-export function L2EmptyList() {
-    return (
-        <ListWrapper>
-            <EmptyLabel />
-            <ListItemWrapper>
-                <EmptyPlaceholders />
-            </ListItemWrapper>
-        </ListWrapper>
-    );
-}
-
-export default function L2Activity({ account, filter }: { account: L2Account; filter: string }) {
+/** Without an account (before launch) only burns show: they live on L1 and on disk, so they need no L2 connection. */
+export default function L2Activity({ account, filter }: { account?: L2Account; filter: string }) {
     const { t } = useTranslation('wallet');
+    const preLaunch = useIsL2PreLaunch();
+    // Every state update replaces the accounts, including the one sent for a new burn,
+    // so this also refetches before launch, when there is no account to follow.
+    const accounts = useL2WalletStore((s) => s.accounts);
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [selectedBurnId, setSelectedBurnId] = useState<string | null>(null);
     const [burns, setBurns] = useState<L2Burn[]>([]);
     const [claiming, setClaiming] = useState<string | null>(null);
     const [abandonId, setAbandonId] = useState<string | null>(null);
@@ -87,13 +85,13 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
         let ignore = false;
         invoke<L2Burn[]>('l2_claimable_burns')
             .then((list) => {
-                if (!ignore) setBurns(list);
+                if (!ignore) setBurns(list ?? []);
             })
             .catch((e) => console.warn('Could not load L2 burns:', e));
         return () => {
             ignore = true;
         };
-    }, [account]);
+    }, [account, accounts]);
 
     async function claim(commitment: string) {
         setClaiming(commitment);
@@ -107,16 +105,28 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
         }
     }
 
+    async function backup(proofFile: string) {
+        try {
+            if (await saveBurnProof(proofFile)) {
+                addToast({ title: t('burn.backup-saved'), type: 'success' });
+            }
+        } catch (error) {
+            addToast({ title: t('burn.backup-failed'), text: String(error), type: 'error' });
+        }
+    }
+
     const rows: Row[] = [
-        ...(filter === 'l2.filter.waiting-claims' ? [] : account.history.map((change) => ({ change }))),
+        ...(filter === 'l2.filter.waiting-claims' ? [] : (account?.history ?? []).map((change) => ({ change }))),
         ...(filter === 'transactions' ? [] : burns.filter((b) => b.status !== 'claimed').map((burn) => ({ burn }))),
     ].sort((a, b) => rowTime(b) - rowTime(a));
 
     const xtr = (value: number) =>
         hideBalance ? '***' : formatNumber(Math.abs(value), FormatPreset.XTM_COMPACT).toLowerCase();
-    const selected = account.history.find((change) => change.id === selectedId);
+    const selected = account?.history.find((change) => change.id === selectedId);
+    const selectedBurn = burns.find((burn) => burn.commitment === selectedBurnId);
+    const selectedProofFile = selectedBurn?.proof_file;
     const tx = selected?.transaction_id
-        ? account.transactions.find((transaction) => transaction.id === selected.transaction_id)
+        ? account?.transactions.find((transaction) => transaction.id === selected.transaction_id)
         : undefined;
 
     return (
@@ -130,7 +140,10 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
                             burn={burn}
                             amount={xtr(burn.amount)}
                             claiming={claiming}
+                            preLaunch={preLaunch}
                             onClaim={() => claim(burn.commitment)}
+                            onBackup={() => burn.proof_file && backup(burn.proof_file)}
+                            onDetails={() => setSelectedBurnId(burn.commitment)}
                             stalledId={
                                 burn.status === 'pending'
                                     ? stalled.find((s) => s.burn_commitment === burn.commitment)?.tx_id
@@ -174,6 +187,41 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
             </TransactionModal>
 
             <TransactionModal
+                show={Boolean(selectedBurn)}
+                title={t('burn.details-title')}
+                handleClose={() => setSelectedBurnId(null)}
+            >
+                {selectedBurn && (
+                    <DetailsWrapper>
+                        <StatusList
+                            entries={[
+                                { label: t('l2.details.amount'), value: `${xtr(selectedBurn.amount)} XTR` },
+                                { label: t('l2.claim.commitment'), value: selectedBurn.commitment },
+                                { label: t('burn.claim-public-key'), value: selectedBurn.claim_public_key },
+                            ]}
+                        />
+                        {selectedProofFile && (
+                            <BottomWrapper>
+                                <Typography variant="p" style={{ fontSize: 12, margin: '12px 0 4px' }}>
+                                    {t('burn.backup-detail')}
+                                </Typography>
+                                <Button
+                                    type="button"
+                                    fluid
+                                    size="medium"
+                                    variant="outlined"
+                                    onClick={() => backup(selectedProofFile)}
+                                    data-testid="l2-save-proof-button"
+                                >
+                                    {t('burn.backup-button')}
+                                </Button>
+                            </BottomWrapper>
+                        )}
+                    </DetailsWrapper>
+                )}
+            </TransactionModal>
+
+            <TransactionModal
                 show={Boolean(selected)}
                 title={t('history.transaction-details')}
                 handleClose={() => setSelectedId(null)}
@@ -205,7 +253,11 @@ interface L2BurnRowProps {
     burn: L2Burn;
     amount: string;
     claiming: string | null;
+    /** Before launch a mined burn can't be claimed yet, so it says so instead of offering Claim. */
+    preLaunch: boolean;
     onClaim: () => void;
+    onBackup: () => void;
+    onDetails: () => void;
     /** Set when the network keeps refusing the burn; it can then be abandoned. */
     stalledId?: string;
     onAbandon: (stalledId: string) => void;
@@ -214,17 +266,30 @@ interface L2BurnRowProps {
 // A burn row: a Pending chip until it's mined, a checking status until the L1 node says
 // where it was mined, a Waiting chip until the L2 has imported that block, then the Claim
 // button. Without the L2 height the button shows, so nothing gets stuck.
-function L2BurnRow({ burn, amount, claiming, onClaim, stalledId, onAbandon }: L2BurnRowProps) {
+function L2BurnRow({
+    burn,
+    amount,
+    claiming,
+    preLaunch,
+    onClaim,
+    onBackup,
+    onDetails,
+    stalledId,
+    onAbandon,
+}: L2BurnRowProps) {
     const { t } = useTranslation('wallet');
+    const [hovering, setHovering] = useState(false);
     const stats = useL2WalletStore((s) => s.networkStats);
     const blocksToWait = burn.mined_height === null || !stats ? 0 : Math.max(0, burn.mined_height - stats.block_height);
-    const waiting = burn.status === 'claimable' && blocksToWait > 0;
-    const checking = burn.status === 'claimable' && burn.mined_height === null;
+    const mined = burn.status === 'claimable' && preLaunch;
+    const waiting = burn.status === 'claimable' && !preLaunch && blocksToWait > 0;
+    const checking = burn.status === 'claimable' && !preLaunch && burn.mined_height === null;
 
     let status = t('l2.claim.ready');
     if (burn.status === 'pending') status = t('l2.claim.pending');
     else if (burn.status === 'abandoned') status = t('l2.claim.abandoned');
     else if (burn.status === 'foreign') status = t('l2.claim.foreign');
+    else if (mined) status = t('l2.claim.after-launch');
     else if (checking) status = t('l2.claim.checking');
     else if (waiting && stats) {
         const minutes = Math.ceil((blocksToWait * stats.block_target_secs) / 60);
@@ -243,12 +308,30 @@ function L2BurnRow({ burn, amount, claiming, onClaim, stalledId, onAbandon }: L2
     else if (waiting) chip = t('l2.claim.chip-waiting');
 
     return (
-        <ItemWrapper style={{ minHeight: 48 }} title={burn.commitment} data-testid="l2-claim-row">
+        <ItemWrapper
+            style={{ minHeight: 48 }}
+            title={burn.commitment}
+            data-testid="l2-claim-row"
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+        >
             <ContentWrapper>
                 <Content>
-                    <BlockInfoWrapper>
+                    <BlockInfoWrapper
+                        as="button"
+                        type="button"
+                        onClick={onDetails}
+                        aria-label={t('burn.details-title')}
+                        style={{
+                            padding: 0,
+                            border: 0,
+                            background: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                        }}
+                    >
                         <TitleWrapper>{t('tabs.burn')}</TitleWrapper>
-                        <TimeWrapper variant="p" data-testid="l2-claim-status">
+                        <TimeWrapper variant="span" data-testid="l2-claim-status">
                             {status}
                         </TimeWrapper>
                     </BlockInfoWrapper>
@@ -259,9 +342,22 @@ function L2BurnRow({ burn, amount, claiming, onClaim, stalledId, onAbandon }: L2
                             <span>{chip}</span>
                         </Chip>
                     )}
-                    <ValueWrapper>
-                        {amount}
-                        <CurrencyText>{`XTR`}</CurrencyText>
+                    <ValueWrapper style={{ minWidth: 94 }} data-testid="l2-burn-value">
+                        {hovering && burn.proof_file ? (
+                            <Button
+                                size="smaller"
+                                variant="outlined"
+                                onClick={onBackup}
+                                data-testid="l2-save-proof-button"
+                            >
+                                {t('burn.backup-button')}
+                            </Button>
+                        ) : (
+                            <>
+                                {amount}
+                                <CurrencyText>{`XTR`}</CurrencyText>
+                            </>
+                        )}
                     </ValueWrapper>
                     {stalledId && (
                         <Button
@@ -273,7 +369,7 @@ function L2BurnRow({ burn, amount, claiming, onClaim, stalledId, onAbandon }: L2
                             {t('abandon.cta')}
                         </Button>
                     )}
-                    {burn.status === 'claimable' && !waiting && !checking && (
+                    {burn.status === 'claimable' && !mined && !waiting && !checking && (
                         <Button
                             size="smaller"
                             variant="black"

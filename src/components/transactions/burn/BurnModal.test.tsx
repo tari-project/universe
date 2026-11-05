@@ -44,6 +44,18 @@ describe('BurnModal', () => {
         useAirdropStore.setState({ features: undefined });
     });
 
+    it('directs users to burn details for the backup after mining', async () => {
+        await burnWith(async (command) =>
+            command === 'burn_to_l2'
+                ? { tx_id: '12', output_hash: 'aa', proof_file: 'proof.json', accepted_by_node: true }
+                : []
+        );
+        expect(await screen.findByTestId('burn-status')).toHaveTextContent('burn.backup-warning');
+        expect(screen.queryByTestId('burn-save-proof-button')).not.toBeInTheDocument();
+        expect(screen.getByTestId('burn-share-button')).toBeInTheDocument();
+        expect(screen.getByTestId('burn-done-button')).toBeInTheDocument();
+    });
+
     it('tells the user when the node has not accepted the burn yet', async () => {
         const invokeMock = await burnWith(async (command) =>
             command === 'burn_to_l2'
@@ -97,7 +109,8 @@ describe('BurnModal', () => {
             ['MainNet before the flag loads', Network.MainNet, undefined, true],
             ['MainNet without the live flag', Network.MainNet, ['polling'], true],
             ['MainNet with the live flag', Network.MainNet, LIVE, false],
-            ['Esmeralda without the live flag', Network.Esmeralda, undefined, false],
+            ['Esmeralda without the live flag', Network.Esmeralda, undefined, true],
+            ['Esmeralda with the live flag', Network.Esmeralda, LIVE, false],
         ])('ties the pre-burn notice to the launch flag on %s', async (_, network, features, preBurn) => {
             useMiningStore.setState({ network });
             useAirdropStore.setState({ features });

@@ -473,6 +473,13 @@ impl OotleWalletManager {
         claim::find_claimable(&burn_proofs_dir()?, commitment).map_err(wallet_error)
     }
 
+    pub fn save_burn_proof(
+        proof_file: &str,
+        destination: &std::path::Path,
+    ) -> Result<(), TransactionError> {
+        claim::save_proof_copy(&burn_proofs_dir()?, proof_file, destination).map_err(wallet_error)
+    }
+
     /// Claims a burn into the wallet account its claim key belongs to once the user
     /// enters their PIN, and returns the L2 transaction id. The caller has already
     /// passed the send gate.
