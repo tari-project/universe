@@ -48,6 +48,11 @@ describe('L2Tiles', () => {
 
 describe('L2LaunchTile', () => {
     const launchAt = (value: unknown) => useAirdropStore.setState({ config: { 'ootle-mainnet-launch-at': value } });
+    const digits = () =>
+        screen
+            .getAllByTestId('l2-launch-digits')
+            .map((el) => el.textContent)
+            .join(' ');
 
     beforeEach(() => {
         vi.useFakeTimers();
@@ -61,18 +66,26 @@ describe('L2LaunchTile', () => {
         render(<L2LaunchTile />);
 
         expect(screen.getByText('l2.pre-launch.countdown')).toBeInTheDocument();
-        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('2d 03h 04m 05s');
+        // Shown in local time, the way the countdown counts to it.
+        const date = new Date('2026-11-07T03:04:05Z').toLocaleDateString('en', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+        });
+        expect(screen.getByText(date)).toBeInTheDocument();
+        expect(screen.getByText('l2.pre-launch.days')).toBeInTheDocument();
+        expect(digits()).toBe('02 03 04 05');
         act(() => vi.advanceTimersByTime(1000));
-        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('2d 03h 04m 04s');
+        expect(digits()).toBe('02 03 04 04');
         act(() => vi.advanceTimersByTime(5000));
-        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('2d 03h 03m 59s');
+        expect(digits()).toBe('02 03 03 59');
     });
 
     it('shows Launching soon once the target passes', () => {
         launchAt('2026-11-05T00:00:02Z');
         render(<L2LaunchTile />);
 
-        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('0d 00h 00m 02s');
+        expect(digits()).toBe('00 00 00 02');
         act(() => vi.advanceTimersByTime(2000));
         expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('l2.pre-launch.soon');
     });
@@ -88,10 +101,10 @@ describe('L2LaunchTile', () => {
     it('follows a new launch date from a config refetch', () => {
         launchAt('2026-11-06T00:00:00Z');
         render(<L2LaunchTile />);
-        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('1d 00h 00m 00s');
+        expect(digits()).toBe('01 00 00 00');
 
         act(() => launchAt('2026-11-08T00:00:00Z'));
-        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('3d 00h 00m 00s');
+        expect(digits()).toBe('03 00 00 00');
     });
 
     it.each([

@@ -5,15 +5,14 @@ import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 import { ButtonContainer, Container, LinkContainer, SectionButton, TermsBtn } from './Navigation.styles.ts';
 
 import { open } from '@tauri-apps/plugin-shell';
-import { useMiningStore } from '@app/store';
-import { networkSupportsL2 } from '@app/utils/network';
+import { useHasL2Access } from '@app/hooks/wallet/useHasL2Access.ts';
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
 }
 export default function SettingsNavigation({ activeSection, onChangeActiveSection }: SettingsNavigationProps) {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const l2Supported = useMiningStore((s) => networkSupportsL2(s.network));
+    const l2Supported = useHasL2Access();
 
     function handleClick(section: SettingsType) {
         onChangeActiveSection(section);

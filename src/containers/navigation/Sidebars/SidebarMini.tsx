@@ -2,8 +2,8 @@ import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import OpenSettingsButton from '@app/containers/floating/Settings/components/OpenSettingsButton.tsx';
 import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/AirdropSidebarItems.tsx';
 import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
-import { useConfigUIStore, useMiningStore } from '@app/store';
-import { networkSupportsL2 } from '@app/utils/network';
+import { useConfigUIStore } from '@app/store';
+import { useHasL2Access } from '@app/hooks/wallet/useHasL2Access.ts';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import MineButton from './buttons/MineButton.tsx';
 import BridgeButton from './buttons/BridgeButton.tsx';
@@ -12,7 +12,7 @@ import FailedModuleButton from '@app/containers/navigation/Sidebars/buttons/Fail
 
 export default function SidebarMini() {
     const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
-    const showL2 = useMiningStore((s) => networkSupportsL2(s.network));
+    const showL2 = useHasL2Access();
 
     return (
         <MiniWrapper>

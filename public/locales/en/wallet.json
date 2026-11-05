@@ -277,7 +277,16 @@
     "empty": "No Layer 2 activity yet",
     "pre-launch": {
       "countdown": "Mainnet launch in",
-      "soon": "Launching soon"
+      "soon": "Launching soon",
+      "days": "Days",
+      "hours": "Hours",
+      "minutes": "Minutes",
+      "seconds": "Seconds"
+    },
+    "burn-stats": {
+      "total": "XTM burned",
+      "burns": "Burns",
+      "people": "Unique burners"
     },
     "filter": {
       "waiting-claims": "Waiting claims"
