@@ -15,6 +15,8 @@ test('test_send_ui_credits_walletd_exact_amount', async ({ appPage: page }) => {
     await page.locator('input[name="amount"]').fill(String(SEND_MICRO / 1_000_000));
     await page.locator(sel.l2.sendReview).click();
     await page.locator(sel.l2.sendConfirm).click();
+    // The prompt waits on the indexer's fee dry run, which can outlast answerPinPrompt's 10s.
+    await page.locator(`${sel.pin.input} input`).first().waitFor({ state: 'visible', timeout: 60_000 });
     await answerPinPrompt(page, TEST_PIN);
     await expect.poll(() => walletd.balance(), { timeout: 180_000 }).toBe(recipientBefore + SEND_MICRO);
     // Startup replay may reopen the L1 sidebar while the signed transfer settles.

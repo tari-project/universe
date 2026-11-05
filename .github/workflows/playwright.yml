@@ -182,7 +182,7 @@ jobs:
             patchelf \
             libprotobuf-dev \
             protobuf-compiler \
-            libudev-dev \
+            unzip \
             opencl-headers \
             ocl-icd-opencl-dev \
             xvfb \
@@ -216,6 +216,29 @@ jobs:
 
       - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Read pinned Ootle revision
+        id: ootle
+        run: echo "rev=$(node --experimental-strip-types playwright/helpers/l2/install.ts --print-rev)" >> "$GITHUB_OUTPUT"
+
+      # Before the Tauri build so a broken install fails in minutes, and saved
+      # right after it succeeds so a later test failure never discards it.
+      - name: Restore L2 swarm binaries
+        id: l2-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: target/l2-swarm-cache
+          key: l2-swarm-${{ runner.os }}-${{ runner.arch }}-${{ steps.ootle.outputs.rev }}
+
+      - name: Install pinned L2 swarm and managed binaries
+        run: node --experimental-strip-types playwright/helpers/l2/install.ts
+
+      - name: Save L2 swarm binaries
+        if: steps.l2-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: target/l2-swarm-cache
+          key: l2-swarm-${{ runner.os }}-${{ runner.arch }}-${{ steps.ootle.outputs.rev }}
 
       # Typecheck the e2e sources before the expensive Tauri build so a type
       # error fails in seconds. `playwright test` transpiles via esbuild and
@@ -262,19 +285,6 @@ jobs:
           eval "$(dbus-launch --sh-syntax)"
           echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
           echo "DBUS_SESSION_BUS_PID=$DBUS_SESSION_BUS_PID" >> "$GITHUB_ENV"
-
-      - name: Read pinned Ootle revision
-        id: ootle
-        run: echo "rev=$(node --experimental-strip-types playwright/helpers/l2/install.ts --print-rev)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache L2 swarm binaries
-        uses: actions/cache@v6
-        with:
-          path: target/l2-swarm-cache
-          key: l2-swarm-${{ runner.os }}-${{ runner.arch }}-${{ steps.ootle.outputs.rev }}
-
-      - name: Install pinned L2 swarm and managed binaries
-        run: node --experimental-strip-types playwright/helpers/l2/install.ts
 
       - name: Clean up orphaned test processes (self-hosted runner)
         run: |
