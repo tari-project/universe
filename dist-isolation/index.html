@@ -82,6 +82,8 @@
                 'l2_import_seed_words',
                 'l2_use_l1_seed',
                 'l2_claimable_burns',
+                'save_burn_proof',
+                'burn_proof_ready',
                 'l2_claim_burn',
                 'l2_send',
                 'l2_send_from_tapplet',
@@ -222,6 +224,7 @@
                 'plugin:clipboard-manager|write_text', // @tauri-apps/plugin-clipboard-manager writeText()
                 'plugin:clipboard-manager|clear', // @tauri-apps/plugin-clipboard-manager clear() - wipes copied seed phrase
                 'plugin:dialog|open', // @tauri-apps/plugin-dialog open() - file picker
+                'plugin:dialog|save', // @tauri-apps/plugin-dialog save() - backup location
                 'plugin:os|type', // @tauri-apps/plugin-os type() - settings screens branch on OS
                 'plugin:os|platform', // @tauri-apps/plugin-os platform() - feedback survey
             ];

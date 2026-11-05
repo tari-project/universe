@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
+import { save } from '@tauri-apps/plugin-dialog';
 import { act, fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import type { L2Account, L2Burn, L2NetworkStats } from '@app/types/events-payloads.ts';
 import L2Activity from './L2Activity';
@@ -7,6 +8,7 @@ import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import { useToastStore } from '@app/components/ToastStack/useToastStore.tsx';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
+vi.mock('@tauri-apps/plugin-dialog', () => ({ save: vi.fn() }));
 vi.mock('@tauri-apps/api/window', () => ({
     getCurrentWindow: vi.fn(() => ({ onCloseRequested: vi.fn(), listen: vi.fn() })),
 }));
@@ -30,8 +32,10 @@ const REJECTION = 'L2 claim failed: ownership proof validation failed';
 
 describe('L2Activity', () => {
     beforeEach(() => {
+        vi.mocked(save).mockReset();
         vi.mocked(invoke).mockReset();
         vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'burn_proof_ready') return true;
             if (cmd === 'l2_claimable_burns') {
                 return [
                     burn('aa'.repeat(32), 'claimable'),
@@ -42,6 +46,20 @@ describe('L2Activity', () => {
             if (cmd === 'l2_claim_burn') throw REJECTION;
             if (cmd === 'get_stalled_transactions') return [];
         }) as typeof invoke);
+    });
+
+    it('offers a proof backup only after the proof has been written', async () => {
+        vi.mocked(save).mockResolvedValue('/backup/proof.json');
+        render(<L2Activity account={account} filter="all-activity" />);
+        const button = await screen.findByTestId('l2-save-proof-button');
+        expect(screen.getAllByTestId('l2-claim-row')).toHaveLength(2);
+        fireEvent.click(button);
+        await waitFor(() =>
+            expect(invoke).toHaveBeenCalledWith('save_burn_proof', {
+                proofFile: `${'aa'.repeat(32)}.json`,
+                destination: '/backup/proof.json',
+            })
+        );
     });
 
     it('marks a stalled burn and offers to abandon it', async () => {

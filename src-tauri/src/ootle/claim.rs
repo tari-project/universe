@@ -302,6 +302,49 @@ pub fn read_proof(path: &Path) -> Result<BurnProof, anyhow::Error> {
     BurnProof::from_json(&std::fs::read(path)?)
 }
 
+/// Copy a completed claim proof to a location chosen by the user, keeping the app's original.
+pub fn save_proof_copy(
+    dir: &Path,
+    proof_file: &str,
+    destination: &Path,
+) -> Result<(), anyhow::Error> {
+    let source = proof_path(dir, proof_file)?;
+    read_proof(&source).map_err(|e| anyhow!("Burn proof is not ready or is invalid: {e}"))?;
+    let source = std::fs::canonicalize(source)?;
+    let parent = std::fs::canonicalize(
+        destination
+            .parent()
+            .ok_or_else(|| anyhow!("Invalid backup location"))?,
+    )?;
+    if parent.starts_with(std::fs::canonicalize(dir)?) {
+        bail!("Choose a location outside the app's burn proof folder");
+    }
+    if destination.exists() && std::fs::canonicalize(destination)? == source {
+        bail!("Choose a different location for the backup");
+    }
+    std::fs::copy(source, destination)?;
+    Ok(())
+}
+
+/// The receipt names the future file; it is only available after the burn is mined.
+pub fn proof_ready(dir: &Path, proof_file: &str) -> Result<bool, anyhow::Error> {
+    let source = proof_path(dir, proof_file)?;
+    match std::fs::metadata(&source) {
+        Ok(_) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(e) => return Err(e.into()),
+    }
+    read_proof(&source)?;
+    Ok(true)
+}
+
+fn proof_path(dir: &Path, proof_file: &str) -> Result<std::path::PathBuf, anyhow::Error> {
+    let name = Path::new(proof_file)
+        .file_name()
+        .ok_or_else(|| anyhow!("Invalid burn proof file name"))?;
+    Ok(dir.join(name))
+}
+
 /// Submitted claims and sends, transaction id to the claim's proof file or `None` for
 /// a send.
 type Tracked = HashMap<TransactionId, Option<String>>;
@@ -817,6 +860,25 @@ mod tests {
         assert_eq!(proof.claim_proof.value, 1_000_000_000);
         assert_eq!(proof.mined_height, 12_345);
         assert_eq!(proof.mined_in_epoch, written.mined_in_epoch);
+    }
+
+    #[test]
+    fn proof_backup_copies_only_a_completed_proof_and_keeps_the_original() {
+        let dir = tempfile::tempdir().expect("dir");
+        let backup_dir = tempfile::tempdir().expect("backup dir");
+        let proof_file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
+        let destination = backup_dir.path().join("backup.json");
+        assert!(!proof_ready(dir.path(), &proof_file).expect("not ready"));
+        assert!(save_proof_copy(dir.path(), &proof_file, &destination).is_err());
+        write(dir.path(), &proof_file, PROOF);
+        assert!(proof_ready(dir.path(), &proof_file).expect("ready"));
+        save_proof_copy(dir.path(), &proof_file, &destination).expect("copy");
+        assert_eq!(std::fs::read_to_string(destination).expect("backup"), PROOF);
+        assert_eq!(
+            std::fs::read_to_string(dir.path().join(&proof_file)).expect("original"),
+            PROOF
+        );
+        assert!(save_proof_copy(dir.path(), &proof_file, &dir.path().join(&proof_file)).is_err());
     }
 
     #[test]

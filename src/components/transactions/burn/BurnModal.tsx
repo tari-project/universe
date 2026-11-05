@@ -33,6 +33,8 @@ import { setError as setStoreError } from '@app/store';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useIsL2PreLaunch } from '@app/hooks/wallet/useIsL2PreLaunch.ts';
 import { FormatPreset, formatNumber } from '@app/utils/formatters.ts';
+import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
+import { saveBurnProof } from './saveBurnProof.ts';
 
 interface BurnModalProps {
     section: string;
@@ -199,6 +201,20 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
         );
     }
 
+    async function handleSaveProof() {
+        if (!receipt) return;
+        try {
+            const result = await saveBurnProof(receipt.proof_file);
+            if (result === 'saved') {
+                addToast({ title: t('burn.backup-saved'), type: 'success' });
+            } else if (result === 'not-ready') {
+                addToast({ title: t('burn.backup-not-ready'), type: 'info' });
+            }
+        } catch (error) {
+            addToast({ title: t('burn.backup-failed'), text: String(error), type: 'error' });
+        }
+    }
+
     const statusEntries: StatusListEntry[] = [
         {
             label: t('send.status'),
@@ -252,6 +268,9 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                                 ) : (
                                     <StatusHero icon={<CompletedIcon />} title={t('burn.completed-title')}>
                                         {t('burn.completed-text')}
+                                        <br />
+                                        <br />
+                                        {t('burn.backup-warning')}
                                         {receipt?.accepted_by_node === false && (
                                             <>
                                                 <br />
@@ -275,6 +294,16 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                                             fluid
                                             size="xlarge"
                                             variant="green"
+                                            onClick={handleSaveProof}
+                                            data-testid="burn-save-proof-button"
+                                        >
+                                            {t('burn.backup-button')}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            fluid
+                                            size="xlarge"
+                                            variant="purple"
                                             onClick={handleShare}
                                             data-testid="burn-share-button"
                                         >

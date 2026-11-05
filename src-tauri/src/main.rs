@@ -537,6 +537,8 @@ fn main() {
             commands::l2_import_seed_words,
             commands::l2_use_l1_seed,
             commands::l2_claimable_burns,
+            commands::save_burn_proof,
+            commands::burn_proof_ready,
             commands::l2_claim_burn,
             commands::l2_send,
             commands::l2_send_from_tapplet,
