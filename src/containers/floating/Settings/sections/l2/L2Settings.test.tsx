@@ -49,8 +49,8 @@ describe('Layer 2 settings tab', () => {
     it.each([
         ['esmeralda without flags', Network.Esmeralda, undefined, true],
         ['mainnet before flags load', Network.MainNet, undefined, false],
-        ['mainnet without the pre-burn flag', Network.MainNet, ['polling'], false],
-        ['mainnet with the pre-burn flag', Network.MainNet, [FEATURE_FLAGS.FF_OOTLE_PRE_BURN], true],
+        ['mainnet without the wallet-available flag', Network.MainNet, ['polling'], false],
+        ['mainnet with the wallet-available flag', Network.MainNet, [FEATURE_FLAGS.FF_OOTLE_WALLET_AVAILABLE], true],
         ['mainnet with only the live flag', Network.MainNet, [FEATURE_FLAGS.FF_OOTLE_MAINNET_LIVE], true],
     ])('L2 tab visibility on %s', (_, network, features, shown) => {
         useMiningStore.setState({ network });
@@ -59,9 +59,9 @@ describe('Layer 2 settings tab', () => {
         expect(!!screen.queryByTestId('settings-tab-l2')).toBe(shown);
     });
 
-    it('drops the L2 tab when the pre-burn flag is pulled', () => {
+    it('drops the L2 tab when the wallet-available flag is pulled', () => {
         useMiningStore.setState({ network: Network.MainNet });
-        useAirdropStore.setState({ features: [FEATURE_FLAGS.FF_OOTLE_PRE_BURN] });
+        useAirdropStore.setState({ features: [FEATURE_FLAGS.FF_OOTLE_WALLET_AVAILABLE] });
         render(<SettingsNavigation activeSection="general" onChangeActiveSection={vi.fn()} />);
         expect(screen.getByTestId('settings-tab-l2')).toBeInTheDocument();
 
