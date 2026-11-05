@@ -2059,11 +2059,7 @@ pub async fn set_node_type(
     }
 
     let network = Network::get_current_or_user_setting_or_default();
-    if network.is_solo_network() && node_type != NodeType::Local {
-        info!(target: LOG_TARGET_APP_LOGIC, "[set_node_type] Forcing Local node type for {network} network");
-        node_type = NodeType::Local;
-    }
-
+    node_type = node_type.for_network(network);
     let prev_node_type = state.node_manager.get_node_type().await;
     info!(target: LOG_TARGET_APP_LOGIC, "[set_node_type] from {prev_node_type:?} to: {node_type:?}");
 

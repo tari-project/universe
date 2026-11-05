@@ -162,3 +162,49 @@ the offending process names, rather than being silently reaped by teardown.
 |---|---|---|
 | Graceful quit stops node, proxy, wallet, xmrig (+ tor/GPU when present) | automated | `99-shutdown` |
 | Windows process-tree teardown | manual | the pgid check is POSIX-only (`test.skip` on win32) |
+
+
+## Local L2 suite
+
+The common suite stays in `tests/` and runs with `pnpm playwright`. It never
+starts the L2 infrastructure. The separate suite uses `playwright.l2.config.ts`
+and a fresh localnet profile:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm --dir playwright exec playwright install --with-deps chromium
+TARI_NETWORK=localnet pnpm playwright:l2
+# Optional browser modes:
+TARI_NETWORK=localnet pnpm playwright:l2:headed
+TARI_NETWORK=localnet pnpm playwright:l2:ui
+```
+
+Install the same Rust, protobuf, and Linux build dependencies as the common
+suite. The first run builds the app in test mode and downloads/builds the swarm
+and all managed binaries. `SKIP_BUILD=1` reuses an app already built with
+`TARI_NETWORK=localnet` and `--features test-mode`. `KEEP_TEST_DATA` and
+`SKIP_BACKEND` are rejected because this suite owns its chain and profile.
+
+The swarm comes from the exact SDK git revision in `src-tauri/Cargo.toml`.
+Its binary cache is `target/l2-swarm-cache/<revision>/` (override the parent
+with `L2_SWARM_CACHE`). CI caches it by revision. The swarm owns L1, registers
+validators, mines activation epochs, and funds TEST_WALLET before the app is
+started against the discovered remote base node and local indexer. Localnet
+has no default remote indexer. Ports 18080 and 18140 through 18200 must be free,
+alongside the app's 1420/9515. The base node starts its allocation at 18140 so its wallet HTTP API is 18142, matching the app's existing LocalNet remote HTTP endpoint. Setup verifies that allocation before launching the app; gRPC is read from the swarm instance list. Teardown stops the app and swarm process groups,
+including setup failures. Swarm stdout is retained under `test-results-l2/`.
+
+| Flow | Spec | Assertion |
+| --- | --- | --- |
+| PIN and enable | `tests-l2/01-setup.spec.ts` | UI opens an unlocked localnet Ootle wallet |
+| Burn | `tests-l2/02-burn.spec.ts` | L1 history and debit of the fixed burn amount |
+| Claim | `tests-l2/03-claim.spec.ts` | Positive L2 credit no larger than the burn, claim activity |
+| Send | `tests-l2/04-send.spec.ts` | App debit and exact walletd credit |
+| Receive | `tests-l2/05-receive.spec.ts` | Exact app credit from walletd, incoming activity |
+
+Files run in numeric order with one worker and no retries. Burn state carries
+to Claim, and Claim funds Send/Receive. Mining advances confirmations through
+the swarm API; bounded condition polling observes readiness and balances.
+Reports and traces are separate: `playwright-l2-report/` and `test-results-l2/`.
+To run the fast swarm helper contracts, use
+`pnpm exec vitest run --config playwright/vitest.l2.config.ts`.

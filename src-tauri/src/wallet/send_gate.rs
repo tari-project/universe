@@ -561,7 +561,10 @@ pub async fn gated_send_with_cancel(
 
 /// Networks with an L2 Universe can use. A burn anywhere else would just destroy funds.
 pub fn network_supports_l2(network: Network) -> bool {
-    matches!(network, Network::Esmeralda | Network::MainNet)
+    matches!(
+        network,
+        Network::Esmeralda | Network::MainNet | Network::LocalNet
+    )
 }
 
 /// Checks run before anything on L2 (and any burn to it) shows a dialog or takes the
@@ -1290,12 +1293,8 @@ mod tests {
     fn test_supported_networks_allow_l2() {
         assert!(network_supports_l2(Network::Esmeralda));
         assert!(network_supports_l2(Network::MainNet));
-        for network in [
-            Network::StageNet,
-            Network::NextNet,
-            Network::LocalNet,
-            Network::Igor,
-        ] {
+        assert!(network_supports_l2(Network::LocalNet));
+        for network in [Network::StageNet, Network::NextNet, Network::Igor] {
             assert!(!network_supports_l2(network), "{network} must not offer L2");
         }
     }
@@ -1304,6 +1303,11 @@ mod tests {
     fn test_l2_requires_pin_on_supported_networks() {
         assert!(check_l2_allowed(Network::Esmeralda, true).is_ok());
         assert!(check_l2_allowed(Network::MainNet, true).is_ok());
+        assert!(check_l2_allowed(Network::LocalNet, true).is_ok());
+        assert!(matches!(
+            check_l2_allowed(Network::LocalNet, false),
+            Err(TransactionError::NoPinConfigured(_))
+        ));
         assert!(matches!(
             check_l2_allowed(Network::MainNet, false),
             Err(TransactionError::NoPinConfigured(_))
@@ -1312,12 +1316,7 @@ mod tests {
             check_l2_allowed(Network::Esmeralda, false),
             Err(TransactionError::NoPinConfigured(_))
         ));
-        for network in [
-            Network::LocalNet,
-            Network::Igor,
-            Network::StageNet,
-            Network::NextNet,
-        ] {
+        for network in [Network::Igor, Network::StageNet, Network::NextNet] {
             assert!(matches!(
                 check_l2_allowed(network, true),
                 Err(TransactionError::Disabled(_))

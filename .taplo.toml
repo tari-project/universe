@@ -1,1 +1,1 @@
-exclude = ["target/**", "src-tauri/target/**", "node_modules/**"]
+exclude = ["target/**", "src-tauri/target/**", "node_modules/**", "playwright/test-results-l2/**"]

@@ -2,3 +2,5 @@ node_modules/
 dist/
 playwright-report/
 test-results/
+playwright-l2-report/
+test-results-l2/

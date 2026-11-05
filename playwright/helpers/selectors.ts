@@ -1,4 +1,20 @@
 export const sel = {
+  l2: {
+    open: '[data-testid="sidebar-l2-button"]',
+    wallet: '[data-testid="l2-wallet"]',
+    address: '[data-testid="l2-copy-address"]',
+    balance: '[data-testid="l2-balance"]',
+    burn: '[data-testid="l2-burn-button"]',
+    burnReview: '[data-testid="burn-review-button"]',
+    burnConfirm: '[data-testid="burn-confirm-button"]',
+    burnDone: '[data-testid="burn-done-button"]',
+    claim: '[data-testid="l2-claim-button"]',
+    claimRow: '[data-testid="l2-claim-row"]',
+    historyRow: '[data-testid="l2-history-row"]',
+    send: '[data-testid="l2-send-button"]',
+    sendReview: '[data-testid="l2-send-review-button"]',
+    sendConfirm: '[data-testid="l2-send-confirm-button"]',
+  },
   settings: {
     open: '[data-testid="settings-open"]',
     tab: (name: string) => `[data-testid="settings-tab-${name}"]`,

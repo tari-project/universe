@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use super::node_manager::{NodeManagerError, NodeType, STOP_ON_ERROR_CODES};
+use crate::network_utils::NetworkExt;
 
 #[test]
 fn node_type_local_is_local() {
@@ -134,4 +135,35 @@ fn stop_on_error_codes_contains_expected_values() {
     assert!(STOP_ON_ERROR_CODES.contains(&102));
     assert!(STOP_ON_ERROR_CODES.contains(&101));
     assert_eq!(STOP_ON_ERROR_CODES.len(), 3);
+}
+
+#[test]
+fn test_localnet_explicit_remote_uses_the_configured_chain() {
+    use tari_common::configuration::Network;
+    assert_eq!(
+        NodeType::Remote.for_network(Network::LocalNet),
+        NodeType::Remote
+    );
+    assert_eq!(
+        NodeType::Local.for_network(Network::LocalNet),
+        NodeType::Local
+    );
+    assert_eq!(
+        NodeType::RemoteUntilLocal.for_network(Network::LocalNet),
+        NodeType::Local
+    );
+    for network in [
+        Network::MainNet,
+        Network::Esmeralda,
+        Network::StageNet,
+        Network::NextNet,
+        Network::Igor,
+    ] {
+        let expected = if network.is_solo_network() {
+            NodeType::Local
+        } else {
+            NodeType::Remote
+        };
+        assert_eq!(NodeType::Remote.for_network(network), expected);
+    }
 }
