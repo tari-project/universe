@@ -31,11 +31,8 @@ import CompletedIcon from '@app/components/transactions/send/SendReview/icons/Co
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { setError as setStoreError } from '@app/store';
 import { queryClient } from '@app/App/queryClient.ts';
-import { isMainNet } from '@app/utils/network.ts';
+import { useIsL2PreLaunch } from '@app/hooks/wallet/useIsL2PreLaunch.ts';
 import { FormatPreset, formatNumber } from '@app/utils/formatters.ts';
-
-// Pre-burn window ends 11 Nov 2026 00:00 UTC.
-const isPreBurn = () => Date.now() < Date.UTC(2026, 10, 11);
 
 interface BurnModalProps {
     section: string;
@@ -57,6 +54,7 @@ const defaultValues: SendInputs = { message: undefined, address: '', amount: und
 function BurnForm() {
     const { t } = useTranslation('wallet');
     const { validateAmount } = useValidateTariAddress();
+    const preLaunch = useIsL2PreLaunch();
     const { control, formState, setError, setValue, clearErrors, getValues } = useFormContext<SendInputs>();
     const { isSubmitting, errors } = formState;
     const claimKey = useWatch({ control, name: 'claimPublicKey' }) ?? '';
@@ -92,7 +90,7 @@ function BurnForm() {
 
     return (
         <>
-            {isMainNet() && isPreBurn() && (
+            {preLaunch && (
                 <Typography variant="p" style={{ fontSize: 13, fontWeight: 600 }} data-testid="burn-pre-burn-notice">
                     {t('burn.pre-burn-notice')}
                 </Typography>
@@ -145,6 +143,7 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
     const { t } = useTranslation('wallet');
     const [status, setStatus] = useState<SendStatus>('fields');
     const [receipt, setReceipt] = useState<BurnReceipt | null>(null);
+    const preLaunch = useIsL2PreLaunch();
     const methods = useForm<SendInputs>({ defaultValues: { ...defaultValues, claimPublicKey }, mode: 'all' });
     const { reset, setError } = methods;
 
@@ -191,7 +190,7 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
     const amountMicro = Math.round(Number(values.amount || 0) * 1_000_000);
 
     function handleShare() {
-        const text = t(isPreBurn() ? 'burn.share-text-pre' : 'burn.share-text', {
+        const text = t(preLaunch ? 'burn.share-text-pre' : 'burn.share-text', {
             amount: formatNumber(amountMicro, FormatPreset.XTM_COMPACT),
             url: 'https://tari.com/burns',
         });

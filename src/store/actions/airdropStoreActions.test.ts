@@ -1,4 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+import { fetchConfig } from './airdropStoreActions.ts';
+
+vi.mock('@app/hooks/airdrop/utils/useHandleRequest.ts', () => ({ handleAirdropRequest: vi.fn() }));
+vi.mock('@tauri-apps/api/window', () => ({
+    getCurrentWindow: vi.fn(() => ({ onCloseRequested: vi.fn(), listen: vi.fn() })),
+}));
 
 // Test the pure functions extracted from airdropStoreActions
 
@@ -472,5 +480,37 @@ describe('airdropStoreActions', () => {
             expect(progress.miningMinutesProgress).toBe(60);
             expect(progress.isComplete).toBe(false);
         });
+    });
+});
+
+describe('fetchConfig', () => {
+    const previous = { 'ootle-mainnet-launch-at': '2026-12-01T00:00:00Z' };
+
+    beforeEach(() => {
+        vi.mocked(handleAirdropRequest).mockReset();
+        useAirdropStore.setState({ config: previous });
+    });
+
+    it('asks the public RWA config endpoint and stores what it returns', async () => {
+        const config = { 'ootle-mainnet-launch-at': '2026-12-24T12:00:00Z', other: 1 };
+        vi.mocked(handleAirdropRequest).mockResolvedValue(config);
+
+        await fetchConfig();
+
+        expect(handleAirdropRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ publicRequest: true, path: '/config', method: 'GET' })
+        );
+        expect(useAirdropStore.getState().config).toEqual(config);
+    });
+
+    it.each([
+        ['a failed request', undefined],
+        ['a null body', null],
+        ['a body that is not an object', ['nope']],
+    ])('keeps the previous config after %s', async (_, response) => {
+        vi.mocked(handleAirdropRequest).mockResolvedValue(response);
+
+        await fetchConfig();
+        expect(useAirdropStore.getState().config).toBe(previous);
     });
 });

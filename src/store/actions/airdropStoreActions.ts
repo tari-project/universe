@@ -237,6 +237,21 @@ export async function fetchFeatures() {
     return response;
 }
 
+/** Leaves the previous config in place when the request fails or returns nothing usable. */
+export async function fetchConfig() {
+    const response = await handleAirdropRequest<Record<string, unknown> | null>({
+        publicRequest: true,
+        path: '/config',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    if (response && typeof response === 'object' && !Array.isArray(response)) {
+        useAirdropStore.setState({ config: response });
+    }
+}
+
 export async function fetchCommunityMessages() {
     const response = await handleAirdropRequest<CommunityMessage[] | null>({
         publicRequest: true,

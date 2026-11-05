@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@app/test/test-utils';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import { handleL2NetworkStats } from '@app/store/actions/l2WalletStoreActions.ts';
-import L2Tiles from './L2Tiles';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+import L2Tiles, { L2LaunchTile } from './L2Tiles';
 
 const stats = {
     epoch: 11_432,
@@ -42,5 +43,67 @@ describe('L2Tiles', () => {
         // A new block restarts the countdown from the fresh numbers.
         act(() => handleL2NetworkStats({ ...stats, block_height: stats.block_height + 1, blocks_into_epoch: 38 }));
         expect(screen.getByTestId('l2-epoch-countdown')).toHaveTextContent('10:30');
+    });
+});
+
+describe('L2LaunchTile', () => {
+    const launchAt = (value: unknown) => useAirdropStore.setState({ config: { 'ootle-mainnet-launch-at': value } });
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-11-05T00:00:00Z'));
+        useAirdropStore.setState({ config: undefined });
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('counts down days, hours, minutes and seconds to the launch, once a second', () => {
+        launchAt('2026-11-07T03:04:05Z');
+        render(<L2LaunchTile />);
+
+        expect(screen.getByText('l2.pre-launch.countdown')).toBeInTheDocument();
+        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('2d 03h 04m 05s');
+        act(() => vi.advanceTimersByTime(1000));
+        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('2d 03h 04m 04s');
+        act(() => vi.advanceTimersByTime(5000));
+        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('2d 03h 03m 59s');
+    });
+
+    it('shows Launching soon once the target passes', () => {
+        launchAt('2026-11-05T00:00:02Z');
+        render(<L2LaunchTile />);
+
+        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('0d 00h 00m 02s');
+        act(() => vi.advanceTimersByTime(2000));
+        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('l2.pre-launch.soon');
+    });
+
+    it('shows Launching soon for a target already in the past', () => {
+        launchAt('2026-11-01T00:00:00Z');
+        render(<L2LaunchTile />);
+
+        // Only the label, no negative or zero countdown next to it.
+        expect(screen.getByTestId('l2-launch-countdown').textContent).toBe('l2.pre-launch.soon');
+    });
+
+    it('follows a new launch date from a config refetch', () => {
+        launchAt('2026-11-06T00:00:00Z');
+        render(<L2LaunchTile />);
+        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('1d 00h 00m 00s');
+
+        act(() => launchAt('2026-11-08T00:00:00Z'));
+        expect(screen.getByTestId('l2-launch-countdown')).toHaveTextContent('3d 00h 00m 00s');
+    });
+
+    it.each([
+        ['no config', undefined],
+        ['a missing launch date', {}],
+        ['a launch date that is not a string', { 'ootle-mainnet-launch-at': 1_800_000_000_000 }],
+        ['a launch date that is not a date', { 'ootle-mainnet-launch-at': 'soon' }],
+    ])('renders no countdown for %s', (_, config) => {
+        useAirdropStore.setState({ config });
+        render(<L2LaunchTile />);
+
+        expect(screen.queryByTestId('l2-launch-countdown')).not.toBeInTheDocument();
+        expect(screen.queryByText('l2.pre-launch.countdown')).not.toBeInTheDocument();
     });
 });

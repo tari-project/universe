@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { TopRow, Wrapper } from '@app/containers/navigation/components/MiningTiles/styles.ts';
 import {
@@ -52,6 +53,51 @@ function Countdown({ seconds }: { seconds: number }) {
         return () => clearInterval(timer);
     }, []);
     return <>{formatCountdown(left)}</>;
+}
+
+const pad = (n: number) => n.toString().padStart(2, '0');
+
+/** Ticks once a second off the clock toward `target` (ms), so it never drifts from the real time left. */
+function LaunchCountdown({ target }: { target: number }) {
+    const { t } = useTranslation('wallet');
+    const [now, setNow] = useState(Date.now);
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+    const left = Math.ceil((target - now) / 1000);
+    if (left <= 0) return <>{t('l2.pre-launch.soon')}</>;
+    const days = Math.floor(left / 86_400);
+    return (
+        <>{`${days}d ${pad(Math.floor(left / 3600) % 24)}h ${pad(Math.floor(left / 60) % 60)}m ${pad(left % 60)}s`}</>
+    );
+}
+
+/** Stands in for the network tiles before the Ootle mainnet launch. Nothing shows without a valid launch date in the RWA config. */
+export function L2LaunchTile() {
+    const { t } = useTranslation('wallet');
+    const launchAt = useAirdropStore((s) => s.config?.['ootle-mainnet-launch-at']);
+    const target = typeof launchAt === 'string' ? new Date(launchAt).getTime() : NaN;
+    if (isNaN(target)) return null;
+
+    return (
+        <Wrapper data-testid="l2-launch-tiles">
+            <Tile>
+                <Inside>
+                    <HeadingRow>
+                        <LabelWrapper>
+                            <LabelText>{t('l2.pre-launch.countdown')}</LabelText>
+                        </LabelWrapper>
+                    </HeadingRow>
+                    <BigNumber>
+                        <Number $isIdle data-testid="l2-launch-countdown">
+                            <LaunchCountdown target={target} />
+                        </Number>
+                    </BigNumber>
+                </Inside>
+            </Tile>
+        </Wrapper>
+    );
 }
 
 function Stat({ value, unit, label }: { value: string; unit?: string; label: string }) {

@@ -2,6 +2,7 @@ import { useAirdropStore } from '@app/store';
 import {
     fetchAllUserData,
     fetchCommunityMessages,
+    fetchConfig,
     fetchFeatures,
     fetchLatestXSpaceEvent,
 } from '@app/store/actions/airdropStoreActions';
@@ -30,7 +31,7 @@ export const useAirdropPolling = () => {
     }, []);
 
     const fetchFeatureFlags = useCallback(async () => {
-        await fetchFeatures();
+        await Promise.all([fetchFeatures(), fetchConfig()]);
     }, []);
 
     const fetchFeatureFlagDebounced = useCallback(() => {

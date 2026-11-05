@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { invoke } from '@tauri-apps/api/core';
 import { IoCheckmarkOutline } from 'react-icons/io5';
 import { QRCode } from 'react-qrcode-logo';
 import { CopySVG } from '@app/assets/icons/copy';
@@ -39,12 +40,17 @@ import {
     QRSizer,
 } from '@app/components/transactions/receive/Address.style.ts';
 import { FilterSelect } from '@app/components/transactions/history/FilterSelect.tsx';
+import { EmptyText } from '@app/components/transactions/history/List.styles.ts';
 import L2Activity from './L2Activity.tsx';
 import L2SendModal from './L2SendModal.tsx';
 
 const FILTER_TYPES = ['all-activity', 'transactions', 'l2.filter.waiting-claims'] as const;
 
-export default function L2Wallet({ account }: { account: L2Account }) {
+const EMPTY_BALANCE = { revealed: 0, confidential: 0 };
+
+/** With no `account` it is the pre-launch wallet: zero balance, no activity, Send and Receive off,
+ * and Burn claiming to the key the default account will get. */
+export default function L2Wallet({ account }: { account?: L2Account }) {
     const { t } = useTranslation('wallet');
     const [section, setSection] = useState('history');
     const [filter, setFilter] = useState<string>('all-activity');
@@ -53,8 +59,23 @@ export default function L2Wallet({ account }: { account: L2Account }) {
     // A burn spends L1 funds, so it waits on the L1 wallet like the L1 send does.
     const isL1Scanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_complete);
     const hasPin = useWalletStore((s) => s.is_pin_locked);
+    const [defaultClaimKey, setDefaultClaimKey] = useState<string>();
+    const claimPublicKey = account ? account.public_key : defaultClaimKey;
 
-    const { revealed, confidential } = account.balance;
+    useEffect(() => {
+        if (account) return;
+        let ignore = false;
+        invoke<string>('l2_default_claim_public_key')
+            .then((key) => {
+                if (!ignore) setDefaultClaimKey(key);
+            })
+            .catch((e) => console.warn('Could not derive the default L2 claim key:', e));
+        return () => {
+            ignore = true;
+        };
+    }, [account]);
+
+    const { revealed, confidential } = account?.balance ?? EMPTY_BALANCE;
     const xtr = (value: number) => (hideBalance ? '*******' : formatNumber(value, FormatPreset.XTM_LONG));
 
     return (
@@ -63,16 +84,20 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                 <AnimatedBG $col1="#2b1d5a" $col2="#4c2c8f" />
                 <Content>
                     <DetailsRow>
-                        <Name>{account.is_default ? t('l2.account-name') : account.name || t('l2.title')}</Name>
-                        <Actions>
-                            <ActionButton
-                                onClick={() => copyToClipboard(account.address)}
-                                title={account.address}
-                                data-testid="l2-copy-address"
-                            >
-                                {isCopied ? <IoCheckmarkOutline /> : <CopySVG />}
-                            </ActionButton>
-                        </Actions>
+                        <Name>
+                            {!account || account.is_default ? t('l2.account-name') : account.name || t('l2.title')}
+                        </Name>
+                        {account && (
+                            <Actions>
+                                <ActionButton
+                                    onClick={() => copyToClipboard(account.address)}
+                                    title={account.address}
+                                    data-testid="l2-copy-address"
+                                >
+                                    {isCopied ? <IoCheckmarkOutline /> : <CopySVG />}
+                                </ActionButton>
+                            </Actions>
+                        )}
                     </DetailsRow>
                     <BottomContent>
                         <BalanceWrapper data-testid="l2-balance">
@@ -100,6 +125,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                         $isActive={section === 'send'}
                         aria-selected={section === 'send'}
                         onClick={() => setSection('send')}
+                        disabled={!account}
                         data-testid="l2-send-button"
                     >
                         {t('tabs.send')}
@@ -108,6 +134,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                         $isActive={section === 'receive'}
                         aria-selected={section === 'receive'}
                         onClick={() => setSection('receive')}
+                        disabled={!account}
                         data-testid="l2-receive-button"
                     >
                         {t('tabs.receive')}
@@ -118,7 +145,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                             $isActive={section === 'burn'}
                             aria-selected={section === 'burn'}
                             onClick={() => setSection('burn')}
-                            disabled={isL1Scanning || !hasPin}
+                            disabled={isL1Scanning || !hasPin || !claimPublicKey}
                             aria-label={hasPin ? undefined : t('burn.pin-required')}
                             data-testid="l2-burn-button"
                         >
@@ -130,50 +157,56 @@ export default function L2Wallet({ account }: { account: L2Account }) {
 
             {/* Its own scroll area, so a long list can't push the card past the window. */}
             <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto' }}>
-                <L2Activity account={account} filter={filter} />
+                {account ? (
+                    <L2Activity account={account} filter={filter} />
+                ) : (
+                    <EmptyText data-testid="l2-history-empty">{t('l2.empty')}</EmptyText>
+                )}
             </div>
 
             {/* Mounted only while open, like BurnModal, so a send that finishes after the X can't leave a stale Submitted screen. */}
-            {section === 'send' && (
+            {section === 'send' && account && (
                 <L2SendModal show account={account.component_address} onClose={() => setSection('history')} />
             )}
 
-            {section === 'burn' && (
-                <BurnModal section={section} setSection={setSection} claimPublicKey={account.public_key} />
+            {section === 'burn' && claimPublicKey && (
+                <BurnModal section={section} setSection={setSection} claimPublicKey={claimPublicKey} />
             )}
 
-            <TransactionModal
-                show={section === 'receive'}
-                title={t('l2.receive-title')}
-                handleClose={() => setSection('history')}
-            >
-                <ReceiveWrapper>
-                    <QRContainer>
-                        <QROutside>
-                            <QRSizer>
-                                <QRCode
-                                    value={account.address}
-                                    ecLevel="H"
-                                    size={400}
-                                    quietZone={20}
-                                    qrStyle="dots"
-                                    eyeRadius={12}
-                                    style={{ width: '100%', height: '100%' }}
-                                />
-                            </QRSizer>
-                        </QROutside>
-                        <AddressContainer>
-                            <Label>{t('receive.label-address')}</Label>
-                            <AddressWrapper title={account.address}>
-                                {truncateMiddle(account.address, 10)}
-                            </AddressWrapper>
-                        </AddressContainer>
-                    </QRContainer>
-                    <CopyAddressButton onClick={() => copyToClipboard(account.address)} $isCopied={isCopied}>
-                        {isCopied ? t('receive.copy-address-success') : t('receive.copy-address')}
-                    </CopyAddressButton>
-                </ReceiveWrapper>
-            </TransactionModal>
+            {account && (
+                <TransactionModal
+                    show={section === 'receive'}
+                    title={t('l2.receive-title')}
+                    handleClose={() => setSection('history')}
+                >
+                    <ReceiveWrapper>
+                        <QRContainer>
+                            <QROutside>
+                                <QRSizer>
+                                    <QRCode
+                                        value={account.address}
+                                        ecLevel="H"
+                                        size={400}
+                                        quietZone={20}
+                                        qrStyle="dots"
+                                        eyeRadius={12}
+                                        style={{ width: '100%', height: '100%' }}
+                                    />
+                                </QRSizer>
+                            </QROutside>
+                            <AddressContainer>
+                                <Label>{t('receive.label-address')}</Label>
+                                <AddressWrapper title={account.address}>
+                                    {truncateMiddle(account.address, 10)}
+                                </AddressWrapper>
+                            </AddressContainer>
+                        </QRContainer>
+                        <CopyAddressButton onClick={() => copyToClipboard(account.address)} $isCopied={isCopied}>
+                            {isCopied ? t('receive.copy-address-success') : t('receive.copy-address')}
+                        </CopyAddressButton>
+                    </ReceiveWrapper>
+                </TransactionModal>
+            )}
         </WalletWrapper>
     );
 }

@@ -43,7 +43,7 @@ use log::{error, info, warn};
 use r2d2_sqlite::rusqlite::{Connection, OpenFlags};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
-use tari_crypto::tari_utilities::SafePassword;
+use tari_crypto::tari_utilities::{ByteArray, SafePassword};
 use tari_engine_types::resource::Resource;
 use tari_ootle_common_types::optional::Optional;
 use tari_ootle_wallet_sdk::{
@@ -383,6 +383,12 @@ impl OotleWalletManager {
             return Err(not_started());
         }
         Ok(closed_state())
+    }
+
+    /// The public key the default account gets (account key index 0), derived locally so a
+    /// burn can name it before recovery has written any account. Read-only, no network call.
+    pub async fn default_claim_public_key() -> Result<String, TransactionError> {
+        default_claim_public_key(&started_sdk().await?)
     }
 
     /// Parses an Ootle address for the current network. Called before a send touches
@@ -928,6 +934,14 @@ async fn started_sdk() -> Result<OotleSdk, TransactionError> {
     INSTANCE.sdk.lock().await.clone().ok_or_else(not_started)
 }
 
+fn default_claim_public_key(sdk: &OotleSdk) -> Result<String, TransactionError> {
+    let pair = sdk
+        .key_manager_api()
+        .derive_account_key_pair(0)
+        .map_err(wallet_error)?;
+    Ok(hex::encode(pair.public_key.as_bytes()))
+}
+
 fn parse_address(address: &str, network: OotleNetwork) -> Result<OotleAddress, TransactionError> {
     let invalid =
         |reason: String| TransactionError::InvalidAddress(format!("Invalid L2 address: {reason}"));
@@ -1334,6 +1348,30 @@ mod tests {
         let state = state::build_state(&sdk).expect("state after burn");
         assert_eq!(state.accounts[0].balance.confidential, 0);
         assert_eq!(state.accounts[0].history.len(), 2);
+    }
+
+    #[test]
+    fn test_default_claim_public_key_matches_account_index_zero() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+
+        let key = default_claim_public_key(&sdk).expect("claim key");
+        assert_eq!(key.len(), 64);
+        assert_eq!(key, key.to_lowercase());
+        // Read-only: asking twice gives the same key, the key index doesn't move.
+        assert_eq!(default_claim_public_key(&sdk).expect("claim key"), key);
+
+        // The account the wallet creates for key index 0 has exactly this public key.
+        let address = sdk.key_manager_api().next_account_address().expect("key");
+        assert_eq!(address.owner_key_id, KeyId::derived(KeyBranch::Account, 0));
+        sdk.accounts_api()
+            .create_account(Some("default"), true, address)
+            .expect("account");
+        let state = state::build_state(&sdk).expect("state");
+        assert_eq!(state.accounts[0].public_key, key);
     }
 
     #[test]

@@ -1901,6 +1901,15 @@ pub async fn l2_get_state() -> Result<L2WalletState, String> {
     OotleWalletManager::state().await.map_err(|e| e.to_string())
 }
 
+/// Hex public key of L2 account key index 0, the default claim key for a burn before the
+/// default account exists. Derived locally from the started wallet.
+#[tauri::command]
+pub async fn l2_default_claim_public_key() -> Result<String, String> {
+    OotleWalletManager::default_claim_public_key()
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// The L2 seed words, behind the PIN prompt.
 #[tauri::command]
 pub async fn l2_get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
