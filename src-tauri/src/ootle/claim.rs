@@ -326,18 +326,6 @@ pub fn save_proof_copy(
     Ok(())
 }
 
-/// The receipt names the future file; it is only available after the burn is mined.
-pub fn proof_ready(dir: &Path, proof_file: &str) -> Result<bool, anyhow::Error> {
-    let source = proof_path(dir, proof_file)?;
-    match std::fs::metadata(&source) {
-        Ok(_) => {}
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
-        Err(e) => return Err(e.into()),
-    }
-    read_proof(&source)?;
-    Ok(true)
-}
-
 fn proof_path(dir: &Path, proof_file: &str) -> Result<std::path::PathBuf, anyhow::Error> {
     let name = Path::new(proof_file)
         .file_name()
@@ -868,10 +856,8 @@ mod tests {
         let backup_dir = tempfile::tempdir().expect("backup dir");
         let proof_file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
         let destination = backup_dir.path().join("backup.json");
-        assert!(!proof_ready(dir.path(), &proof_file).expect("not ready"));
         assert!(save_proof_copy(dir.path(), &proof_file, &destination).is_err());
         write(dir.path(), &proof_file, PROOF);
-        assert!(proof_ready(dir.path(), &proof_file).expect("ready"));
         save_proof_copy(dir.path(), &proof_file, &destination).expect("copy");
         assert_eq!(std::fs::read_to_string(destination).expect("backup"), PROOF);
         assert_eq!(

@@ -1954,11 +1954,6 @@ pub fn save_burn_proof(proof_file: String, destination: String) -> Result<(), St
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-pub fn burn_proof_ready(proof_file: String) -> Result<bool, String> {
-    OotleWalletManager::burn_proof_ready(&proof_file).map_err(|e| e.to_string())
-}
-
 /// Claim a burn on L2 by its commitment. Refused without a PIN; with one, the PIN
 /// prompt is the gate. Returns the L2 transaction id.
 #[tauri::command]

@@ -4,7 +4,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
-import { save } from '@tauri-apps/plugin-dialog';
 import { render, screen, fireEvent } from '@app/test/test-utils';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
@@ -16,7 +15,6 @@ vi.mock('@tauri-apps/api/window', () => ({
     getCurrentWindow: vi.fn(() => ({ onCloseRequested: vi.fn(), listen: vi.fn() })),
 }));
 vi.mock('@tauri-apps/plugin-shell', () => ({ open: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@tauri-apps/plugin-dialog', () => ({ save: vi.fn() }));
 
 const CLAIM_KEY = 'ab'.repeat(32);
 
@@ -44,41 +42,18 @@ describe('BurnModal', () => {
     beforeEach(() => {
         useMiningStore.setState({ network: undefined });
         useAirdropStore.setState({ features: undefined });
-        vi.mocked(save).mockReset();
     });
 
-    it('offers a backup copy of the proof and keeps the source path out of the save dialog', async () => {
-        vi.mocked(save).mockResolvedValue('/backup/proof.json');
-        const invokeMock = await burnWith(async (command) =>
-            command === 'burn_to_l2'
-                ? { tx_id: '12', output_hash: 'aa', proof_file: '/app/burn_proofs/proof.json', accepted_by_node: true }
-                : command === 'burn_proof_ready'
-                  ? true
-                  : undefined
-        );
-        fireEvent.click(await screen.findByTestId('burn-save-proof-button'));
-        await vi.waitFor(() =>
-            expect(invokeMock).toHaveBeenCalledWith('save_burn_proof', {
-                proofFile: '/app/burn_proofs/proof.json',
-                destination: '/backup/proof.json',
-            })
-        );
-        expect(save).toHaveBeenCalledWith(expect.objectContaining({ defaultPath: 'proof.json' }));
-    });
-
-    it('waits until mining creates the proof before opening the save dialog', async () => {
-        const invokeMock = await burnWith(async (command) =>
+    it('directs users to burn details for the backup after mining', async () => {
+        await burnWith(async (command) =>
             command === 'burn_to_l2'
                 ? { tx_id: '12', output_hash: 'aa', proof_file: 'proof.json', accepted_by_node: true }
-                : command === 'burn_proof_ready'
-                  ? false
-                  : undefined
+                : []
         );
-        fireEvent.click(await screen.findByTestId('burn-save-proof-button'));
-        await vi.waitFor(() =>
-            expect(invokeMock).toHaveBeenCalledWith('burn_proof_ready', { proofFile: 'proof.json' })
-        );
-        expect(save).not.toHaveBeenCalled();
+        expect(await screen.findByTestId('burn-status')).toHaveTextContent('burn.backup-warning');
+        expect(screen.queryByTestId('burn-save-proof-button')).not.toBeInTheDocument();
+        expect(screen.getByTestId('burn-share-button')).toBeInTheDocument();
+        expect(screen.getByTestId('burn-done-button')).toBeInTheDocument();
     });
 
     it('tells the user when the node has not accepted the burn yet', async () => {

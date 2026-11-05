@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
-import { act, fireEvent, render, screen, waitFor } from '@app/test/test-utils';
+import { act, fireEvent, render, screen, waitFor, within } from '@app/test/test-utils';
 import type { L2Account, L2Burn, L2NetworkStats } from '@app/types/events-payloads.ts';
 import L2Activity from './L2Activity';
 import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
@@ -35,7 +35,6 @@ describe('L2Activity', () => {
         vi.mocked(save).mockReset();
         vi.mocked(invoke).mockReset();
         vi.mocked(invoke).mockImplementation((async (cmd: string) => {
-            if (cmd === 'burn_proof_ready') return true;
             if (cmd === 'l2_claimable_burns') {
                 return [
                     burn('aa'.repeat(32), 'claimable'),
@@ -48,18 +47,36 @@ describe('L2Activity', () => {
         }) as typeof invoke);
     });
 
-    it('offers a proof backup only after the proof has been written', async () => {
+    it('replaces a mined burn value with Save proof on hover', async () => {
         vi.mocked(save).mockResolvedValue('/backup/proof.json');
         render(<L2Activity account={account} filter="all-activity" />);
-        const button = await screen.findByTestId('l2-save-proof-button');
-        expect(screen.getAllByTestId('l2-claim-row')).toHaveLength(2);
-        fireEvent.click(button);
+        const rows = await screen.findAllByTestId('l2-claim-row');
+        expect(rows).toHaveLength(2);
+        expect(screen.queryByTestId('l2-save-proof-button')).not.toBeInTheDocument();
+        expect(within(rows[0]).getByTestId('l2-burn-value')).toHaveTextContent('1kXTR');
+        fireEvent.mouseEnter(rows[0]);
+        expect(within(rows[0]).getByTestId('l2-burn-value')).toHaveTextContent('burn.backup-button');
+        expect(within(rows[0]).getByTestId('l2-claim-button')).toBeInTheDocument();
+        fireEvent.click(await within(rows[0]).findByTestId('l2-save-proof-button'));
         await waitFor(() =>
             expect(invoke).toHaveBeenCalledWith('save_burn_proof', {
                 proofFile: `${'aa'.repeat(32)}.json`,
                 destination: '/backup/proof.json',
             })
         );
+        fireEvent.mouseEnter(rows[1]);
+        expect(within(rows[1]).queryByTestId('l2-save-proof-button')).not.toBeInTheDocument();
+        expect(within(rows[1]).getByTestId('l2-burn-value')).toHaveTextContent('1kXTR');
+    });
+
+    it('offers Save proof in burn details after mining', async () => {
+        render(<L2Activity account={account} filter="all-activity" />);
+        const rows = await screen.findAllByTestId('l2-claim-row');
+        fireEvent.click(within(rows[0]).getByRole('button', { name: 'burn.details-title' }));
+        expect(await screen.findByTestId('l2-save-proof-button')).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('modal-close'));
+        fireEvent.click(within(rows[1]).getByRole('button', { name: 'burn.details-title' }));
+        expect(screen.queryByTestId('l2-save-proof-button')).not.toBeInTheDocument();
     });
 
     it('marks a stalled burn and offers to abandon it', async () => {
