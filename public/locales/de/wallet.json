@@ -240,7 +240,6 @@
     "address-eth": "ETH-Börsenadresse",
     "buy-tari": "Tari von einer Börse kaufen",
     "buy-tari-subtitle": "Verfügbar an ausgewählten Börsen.",
-    "mine-directly-to": "Direkt zu einer Börse minen",
     "mine-directly-to-exchange": "Direkt zu {{exchangeName}} minen",
     "mining-here": "Hier minen",
     "or": "oder"

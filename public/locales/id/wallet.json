@@ -240,7 +240,6 @@
     "address-eth": "Alamat ETH Bursa",
     "buy-tari": "Beli Tari dari bursa",
     "buy-tari-subtitle": "Tersedia di bursa terpilih.",
-    "mine-directly-to": "Menambang langsung ke bursa",
     "mine-directly-to-exchange": "Menambang langsung ke {{exchangeName}}",
     "mining-here": "Menambang di sini",
     "or": "atau"

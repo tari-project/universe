@@ -240,7 +240,6 @@
     "address-eth": "Adresse d\"échange ETH",
     "buy-tari": "Acheter Tari sur une plateforme d\"échange",
     "buy-tari-subtitle": "Disponible sur certaines plateformes d\"échange.",
-    "mine-directly-to": "Miner directement vers une plateforme d\"échange",
     "mine-directly-to-exchange": "Miner directement vers {{exchangeName}}",
     "mining-here": "Minage ici",
     "or": "ou"

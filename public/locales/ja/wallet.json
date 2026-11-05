@@ -240,7 +240,6 @@
     "address-eth": "ETHアドレスを交換",
     "buy-tari": "取引所からTariを購入",
     "buy-tari-subtitle": "選択された取引所で利用可能です。",
-    "mine-directly-to": "取引所に直接マイニング",
     "mine-directly-to-exchange": "{{exchangeName}} に直接マイニング",
     "mining-here": "ここでマイニング",
     "or": "または"
