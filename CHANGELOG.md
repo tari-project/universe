@@ -1,3 +1,40 @@
+🚀 TARI UNIVERSE v1.6.21: Twin Tides Part 2 – Landfall
+
+_November 6, 2026_
+
+🔄 Rolling out via auto-update
+
+Hey Tari fam,
+
+Twin Tides put the Layer 2 wallet on testnet. This one brings it to mainnet, sort of: the Ootle mainnet isn't live yet, so for now you get a countdown and a Burn button. Alongside that, TARI.Miner learned AMD, Tor got the update the network now insists on, and we've squashed a long list of wallet bugs.
+
+✨ WHAT'S NEW
+
+- 🌊 **Layer 2 on mainnet, nearly** – The L2 button in the sidebar now opens on mainnet, but the Ootle itself hasn't launched. So what you'll see is a countdown to launch, a running total of XTM burned so far, and a Burn button. Burns work today: burn from your Tari wallet now and claim it on L2 once the Ootle is up. Send and Receive stay greyed out until then. When it launches we flip a switch on our side and the full wallet appears, no update needed. We're turning the panel on gradually, so if a friend has it and you don't yet, it's coming.
+- 🧾 **Save your burn proofs** – You need the proof from a mined burn to claim it later. Hover the burn in your list (or open its details) and click **Save proof** to put a copy somewhere safe. Tari Universe keeps its own copy too.
+- 🎮 **TARI.Miner on AMD** – TARI.Miner now mines on AMD cards (RDNA2, RDNA3 and RDNA4). It also asks the miner itself which GPUs you have instead of `nvidia-smi`, which fixes detection on AMD rigs and on Flatpak installs without the NVIDIA extension.
+- 💸 **The real fee before you send** – The review screen and PIN dialog now show the actual network fee for a send. **Max** fills in an amount that actually goes through, fee included.
+- 💤 **Stalled sends can be abandoned** – A send or burn the network never picked up gets a "Stalled" chip and an abandon option (PIN required). A send the node hasn't accepted yet says so, so you don't send it twice.
+- 📜 **Live transaction details** – Output status in a transaction's details used to be frozen at the moment it was saved. It now shows the live state and refreshes while the panel is open.
+
+✨ WHAT'S FIXED
+
+- 🔒 **Security hardening** – The PIN key for your Monero seed is now derived with Argon2id, PIN lockouts can't be dodged by rolling the clock back, changing your exchange or Monero payout address now asks for your PIN, config files are owner-only on Linux and macOS, and downloaded binaries (miners, Tor, the node) are checksum-verified before extraction and again at launch.
+- 🤖 **MCP tokens moved to your credential store** – Heads up for MCP users: existing tokens are cleared by this update and the server stays off until you issue a new one. Your port and limits are kept.
+- 🧅 **Tor 0.4.9 on Windows and Linux** – Since 28 October the Tor network turns away older clients. macOS got the new Tor in v1.6.19; Windows and Linux get it now. Heads up: a new binary can trigger a fresh antivirus false positive, so check your exclusions if Tor won't start.
+- 💼 **A blank Monero address no longer breaks loading** – Clearing the Monero address in Settings > Advanced left you with a "config_wallet.json is incomplete" dialog and no CPU mining. The address is optional now, and we derive it from your Monero seed when we can.
+- 🏦 **Payment IDs, round three** – If a deposit address carries its own payment ID, the review screen now shows the ID that will actually be sent. IDs are capped at 140 bytes, and a burn memo that's too long is refused before any funds are locked.
+- 🔁 **External address sticks** – Pointing Tari Universe at an external Tari address used to reset on restart. Fixed.
+- 🪟 **Reset works on Windows** – A full reset could fail on Windows because the wallet database was still open when we tried to delete it. We now close the wallet first. A reset that keeps your wallet keeps your L2 wallet too, and if a reset fails you get a Restart button instead of nothing.
+- 🌐 **Node sync that finishes** – A local node could never report "synced" during startup because of a zero-difficulty check, and a remote node that hadn't finished syncing could crash the app. Both fixed.
+- 🙈 **Less in the logs** – Amounts, destinations, claim keys and payment IDs no longer land in the logs that go into support bundles.
+- 🇨🇳 **Chinese plurals** – Our Chinese locale was filed under `cn`, which isn't a real language code, so plurals quietly followed your OS language. It's `zh` now.
+- 🔧 **Under the hood** – Updated the built-in wallet to minotari v0.6.0 and Ootle to v0.49.2. Old L2 stores migrate in place. We cleared eight Dependabot advisories, removed the old Sync with Phone feature and the "Mine directly to an exchange" box (the exchange picker is still there), and added end-to-end tests for the L2 wallet. A copied seed phrase now clears from your clipboard after 60 seconds. Seed backup exports from this version are v3 and won't import into older versions.
+
+Thanks for the bug reports, keep them coming. 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.20: Deposit Reference Fix, Part Two
 
 _October 29, 2026_
