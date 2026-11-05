@@ -109,7 +109,8 @@ describe('BurnModal', () => {
             ['MainNet before the flag loads', Network.MainNet, undefined, true],
             ['MainNet without the live flag', Network.MainNet, ['polling'], true],
             ['MainNet with the live flag', Network.MainNet, LIVE, false],
-            ['Esmeralda without the live flag', Network.Esmeralda, undefined, false],
+            ['Esmeralda without the live flag', Network.Esmeralda, undefined, true],
+            ['Esmeralda with the live flag', Network.Esmeralda, LIVE, false],
         ])('ties the pre-burn notice to the launch flag on %s', async (_, network, features, preBurn) => {
             useMiningStore.setState({ network });
             useAirdropStore.setState({ features });

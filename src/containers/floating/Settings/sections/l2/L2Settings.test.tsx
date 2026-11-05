@@ -47,7 +47,13 @@ describe('Layer 2 settings tab', () => {
     beforeEach(() => useAirdropStore.setState({ features: undefined }));
 
     it.each([
-        ['esmeralda without flags', Network.Esmeralda, undefined, true],
+        ['esmeralda without flags', Network.Esmeralda, undefined, false],
+        [
+            'esmeralda with the wallet-available flag',
+            Network.Esmeralda,
+            [FEATURE_FLAGS.FF_OOTLE_WALLET_AVAILABLE],
+            true,
+        ],
         ['mainnet before flags load', Network.MainNet, undefined, false],
         ['mainnet without the wallet-available flag', Network.MainNet, ['polling'], false],
         ['mainnet with the wallet-available flag', Network.MainNet, [FEATURE_FLAGS.FF_OOTLE_WALLET_AVAILABLE], true],
