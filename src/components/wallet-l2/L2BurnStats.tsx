@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 
@@ -12,6 +12,7 @@ interface BurnStats {
 }
 
 const REFRESH_MS = 60_000;
+const ROTATE_MS = 5_000;
 // A visual scale for the ember glow, not an issuance rule: full heat at 1M XTM.
 const FULL_HEAT_MICRO = 1_000_000n * 1_000_000n;
 
@@ -34,8 +35,7 @@ const Card = styled.section<{ $heat: number }>`
     isolation: isolate;
     overflow: hidden;
     width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    padding: 24px 20px 16px;
     border-radius: 20px;
     background: #0c0718;
     color: #fbf7ef;
@@ -51,31 +51,24 @@ const Card = styled.section<{ $heat: number }>`
     }
 `;
 
-const Stat = styled.article<{ $total?: boolean; $divider?: boolean }>`
-    position: relative;
-    min-width: 0;
-    padding: ${({ $total }) => ($total ? '26px 20px 20px' : '16px 20px')};
-    grid-column: ${({ $total }) => ($total ? '1 / -1' : 'auto')};
-    border-top: ${({ $total }) => ($total ? 'none' : '1px solid #d3c4e23b')};
-
-    ${({ $divider }) =>
-        $divider &&
-        `&::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 16px;
-            bottom: 16px;
-            width: 1px;
-            background: #d3c4e23b;
-        }`}
+const fadeIn = keyframes`
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
 `;
 
-const Value = styled.span<{ $total?: boolean }>`
+const Slide = styled.article`
+    animation: ${fadeIn} 0.4s ease-out;
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: none;
+    }
+`;
+
+const Value = styled.span`
     display: block;
     font-family: Druk, sans-serif;
     font-weight: 800;
-    font-size: ${({ $total }) => ($total ? '44px' : '28px')};
+    font-size: 44px;
     line-height: 1;
     letter-spacing: -0.025em;
     font-variant-numeric: tabular-nums;
@@ -91,13 +84,31 @@ const Label = styled.h2`
     color: #e2d6eb;
 `;
 
+const Dots = styled.div`
+    display: flex;
+    gap: 6px;
+    margin-top: 16px;
+`;
+
+const Dot = styled.button<{ $active: boolean }>`
+    width: ${({ $active }) => ($active ? '18px' : '6px')};
+    height: 6px;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: ${({ $active }) => ($active ? '#fbf7ef' : '#d3c4e25c')};
+    cursor: pointer;
+    transition: width 0.3s ease;
+`;
+
 const fmt = (n: bigint | number) => n.toLocaleString('en-US');
 
-/** Network-wide burn totals from the RWA API, refreshed every minute. Shows nothing until a valid response lands. */
+/** Network-wide burn totals from the RWA API, refreshed every minute and rotated one at a time. Shows nothing until a valid response lands. */
 export function L2BurnStats() {
     const { t } = useTranslation('wallet');
     const network = useMiningStore((s) => s.network);
     const [stats, setStats] = useState<BurnStats>();
+    const [index, setIndex] = useState(0);
 
     useEffect(() => {
         if (!network) return;
@@ -118,25 +129,38 @@ export function L2BurnStats() {
         };
     }, [network]);
 
+    // Keyed on the index, so picking a dot restarts the wait for the next slide.
+    useEffect(() => {
+        const timer = setTimeout(() => setIndex((i) => (i + 1) % 3), ROTATE_MS);
+        return () => clearTimeout(timer);
+    }, [index]);
+
     if (!isValid(stats, network)) return null;
     const micro = BigInt(stats.totalMicroMinotari);
+    const slides = [
+        [fmt(micro / 1_000_000n), t('l2.burn-stats.total')],
+        [fmt(stats.burnCount), t('l2.burn-stats.burns')],
+        [fmt(stats.uniqueBurners), t('l2.burn-stats.people')],
+    ];
+    const [value, label] = slides[index];
 
     return (
         <Card $heat={heat(micro)} data-testid="l2-burn-stats">
-            <Stat $total>
-                <Value $total data-testid="l2-burn-total">
-                    {fmt(micro / 1_000_000n)}
-                </Value>
-                <Label>{t('l2.burn-stats.total')}</Label>
-            </Stat>
-            <Stat>
-                <Value data-testid="l2-burn-count">{fmt(stats.burnCount)}</Value>
-                <Label>{t('l2.burn-stats.burns')}</Label>
-            </Stat>
-            <Stat $divider>
-                <Value data-testid="l2-burn-people">{fmt(stats.uniqueBurners)}</Value>
-                <Label>{t('l2.burn-stats.people')}</Label>
-            </Stat>
+            <Slide key={index}>
+                <Value data-testid="l2-burn-value">{value}</Value>
+                <Label>{label}</Label>
+            </Slide>
+            <Dots>
+                {slides.map(([, l], i) => (
+                    <Dot
+                        key={l}
+                        $active={i === index}
+                        aria-label={l}
+                        aria-current={i === index}
+                        onClick={() => setIndex(i)}
+                    />
+                ))}
+            </Dots>
         </Card>
     );
 }

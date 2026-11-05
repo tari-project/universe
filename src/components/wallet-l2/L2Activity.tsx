@@ -11,7 +11,7 @@ import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { formatEffectiveDate } from '@app/components/transactions/history/helpers.ts';
-import { EmptyText, ListItemWrapper, ListWrapper } from '@app/components/transactions/history/List.styles.ts';
+import { ListItemWrapper, ListWrapper } from '@app/components/transactions/history/List.styles.ts';
 import {
     BlockInfoWrapper,
     ButtonWrapper,
@@ -95,7 +95,6 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
 
     return (
         <ListWrapper>
-            {!rows.length && <EmptyText data-testid="l2-history-empty">{t('l2.empty')}</EmptyText>}
             <ListItemWrapper>
                 {rows.map(({ change, burn }) =>
                     burn ? (

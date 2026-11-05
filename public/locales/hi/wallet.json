@@ -275,7 +275,6 @@
     "loading": "आपका लेयर 2 वॉलेट लोड हो रहा है...",
     "balance-split": "प्रकट {{revealed}} · गोपनीय {{confidential}}",
     "receive-title": "लेयर 2 पर प्राप्त करें",
-    "empty": "अभी तक कोई लेयर 2 गतिविधि नहीं",
     "filter": {
       "waiting-claims": "प्रतीक्षारत दावे"
     },

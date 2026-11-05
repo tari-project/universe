@@ -147,11 +147,11 @@ describe('L2Activity', () => {
         expect(screen.queryByTestId('l2-claim-row')).not.toBeInTheDocument();
     });
 
-    it('shows the empty text when only claimed burns are left', async () => {
+    it('shows no rows when only claimed burns are left', async () => {
         serveBurns([burn('cc'.repeat(32), 'claimed')]);
         render(<L2Activity account={account} filter="all-activity" />);
         await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_claimable_burns'));
         expect(screen.queryByTestId('l2-claim-row')).not.toBeInTheDocument();
-        expect(screen.getByTestId('l2-history-empty')).toBeInTheDocument();
+        expect(screen.queryByTestId('l2-history-row')).not.toBeInTheDocument();
     });
 });

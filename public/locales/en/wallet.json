@@ -275,7 +275,6 @@
     "loading": "Loading your Layer 2 wallet...",
     "balance-split": "Revealed {{revealed}} · Confidential {{confidential}}",
     "receive-title": "Receive on Layer 2",
-    "empty": "No Layer 2 activity yet",
     "pre-launch": {
       "countdown": "Mainnet launch in",
       "soon": "Launching soon",

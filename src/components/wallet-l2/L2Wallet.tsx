@@ -40,7 +40,6 @@ import {
     QRSizer,
 } from '@app/components/transactions/receive/Address.style.ts';
 import { FilterSelect } from '@app/components/transactions/history/FilterSelect.tsx';
-import { EmptyText } from '@app/components/transactions/history/List.styles.ts';
 import L2Activity from './L2Activity.tsx';
 import L2SendModal from './L2SendModal.tsx';
 
@@ -157,11 +156,7 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
 
             {/* Its own scroll area, so a long list can't push the card past the window. */}
             <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto' }}>
-                {account ? (
-                    <L2Activity account={account} filter={filter} />
-                ) : (
-                    <EmptyText data-testid="l2-history-empty">{t('l2.empty')}</EmptyText>
-                )}
+                {account && <L2Activity account={account} filter={filter} />}
             </div>
 
             {/* Mounted only while open, like BurnModal, so a send that finishes after the X can't leave a stale Submitted screen. */}

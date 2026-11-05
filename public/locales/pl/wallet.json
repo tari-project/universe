@@ -275,7 +275,6 @@
     "loading": "Wczytywanie portfela Layer 2...",
     "balance-split": "Jawne {{revealed}} · Poufne {{confidential}}",
     "receive-title": "Odbierz w Layer 2",
-    "empty": "Brak aktywności w Layer 2",
     "filter": {
       "waiting-claims": "Oczekujące odbiory"
     },

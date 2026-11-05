@@ -30,10 +30,34 @@ describe('L2BurnStats', () => {
         expect(handleAirdropRequest).toHaveBeenCalledWith(
             expect.objectContaining({ path: '/miner/burns/stats?network=mainnet', publicRequest: true })
         );
-        expect(screen.getByTestId('l2-burn-total')).toHaveTextContent('5,000,000,000');
-        expect(screen.getByTestId('l2-burn-count')).toHaveTextContent('125,000');
-        expect(screen.getByTestId('l2-burn-people')).toHaveTextContent('42,000');
-        expect(screen.getByText('l2.burn-stats.total')).toBeInTheDocument();
+        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('5,000,000,000');
+        expect(screen.getByRole('heading')).toHaveTextContent('l2.burn-stats.total');
+    });
+
+    it('rotates through XTM burned, burns and unique burners every five seconds, then wraps', async () => {
+        vi.mocked(handleAirdropRequest).mockResolvedValue(stats);
+        render(<L2BurnStats />);
+        await flush();
+
+        await act(() => vi.advanceTimersByTimeAsync(5000));
+        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('125,000');
+        expect(screen.getByRole('heading')).toHaveTextContent('l2.burn-stats.burns');
+        await act(() => vi.advanceTimersByTimeAsync(5000));
+        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('42,000');
+        await act(() => vi.advanceTimersByTimeAsync(5000));
+        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('5,000,000,000');
+    });
+
+    it('jumps to a stat from its dot and restarts the wait', async () => {
+        vi.mocked(handleAirdropRequest).mockResolvedValue(stats);
+        render(<L2BurnStats />);
+        await flush();
+
+        await act(() => vi.advanceTimersByTimeAsync(4000));
+        act(() => screen.getByRole('button', { name: 'l2.burn-stats.people' }).click());
+        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('42,000');
+        await act(() => vi.advanceTimersByTimeAsync(4000));
+        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('42,000');
     });
 
     it('refreshes every minute', async () => {
@@ -41,9 +65,10 @@ describe('L2BurnStats', () => {
         render(<L2BurnStats />);
         await flush();
 
-        vi.mocked(handleAirdropRequest).mockResolvedValue({ ...stats, burnCount: 125001 });
+        vi.mocked(handleAirdropRequest).mockResolvedValue({ ...stats, totalMicroMinotari: '6000000000000000' });
         await act(() => vi.advanceTimersByTimeAsync(60_000));
-        expect(screen.getByTestId('l2-burn-count')).toHaveTextContent('125,001');
+        act(() => screen.getByRole('button', { name: 'l2.burn-stats.total' }).click());
+        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('6,000,000,000');
     });
 
     it.each([
