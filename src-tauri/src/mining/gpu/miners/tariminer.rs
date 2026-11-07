@@ -676,7 +676,7 @@ impl ProcessAdapter for TariMinerGpuMiner {
         add_firewall_rule(
             format!("{}.exe", device.backend.file_stem()),
             binary_version_path.clone(),
-        )?;
+        );
 
         // `--device` is passed straight to `cudaSetDevice` / `hipSetDevice`. Because device
         // detection enumerates GPUs through the miner's own `--list-devices` flag
