@@ -124,11 +124,12 @@ impl McpServerManager {
 
         let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
         let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
-            anyhow::anyhow!(
-                "MCP server failed to bind to configured port {configured_port}: {e}. \
+            error!(target: LOG_TARGET_APP_LOGIC, "MCP server failed to bind to configured port {configured_port}: {e}");
+            anyhow::Error::new(e).context(format!(
+                "MCP server failed to bind to configured port {configured_port}. \
                  Refusing to fall back to a random port for security reasons — \
                  another process on the configured port could intercept bearer tokens."
-            )
+            ))
         })?;
         info!(target: LOG_TARGET_APP_LOGIC, "MCP server bound to configured port {configured_port}");
 
