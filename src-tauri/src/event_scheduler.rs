@@ -1059,6 +1059,84 @@ impl EventScheduler {
         }
     }
 
+    /// Applies a scheduled mining mode to the miners that are currently running.
+    ///
+    /// `CpuManager::start_mining` and `GpuManager::start_mining` return early when a
+    /// miner is already running, so recording the new mode and then calling `start`
+    /// left a window that began while mining was already active stuck on the old
+    /// mode's settings (thread counts, algorithm, pool). The manual mode selector
+    /// avoids this by stopping first; this is the same stop-then-start sequence,
+    /// in one place so both paths agree.
+    ///
+    /// Miners that are disabled are never started, and a miner already on the
+    /// requested mode is left alone rather than being needlessly bounced.
+    /// Whether entering a scheduled window has to bounce the running miners.
+    ///
+    /// Only a genuine mode change does: with the same mode the miners already
+    /// run the right settings, and restarting them would drop hashrate for
+    /// nothing.
+    fn scheduled_mode_requires_restart(previous_mode: &str, scheduled_mode: &str) -> bool {
+        previous_mode != scheduled_mode
+    }
+
+    async fn apply_scheduled_mining_mode(mining_mode: String, event_id: &str) {
+        let previous_mode = {
+            let config = ConfigMining::content().await;
+            config.selected_mining_mode().clone()
+        };
+        let mode_changed = Self::scheduled_mode_requires_restart(&previous_mode, &mining_mode);
+
+        if let Err(e) = ConfigMining::update_field(
+            ConfigMiningContent::set_selected_mining_mode,
+            mining_mode.clone(),
+        )
+        .await
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
+        }
+        // TODO: Replace with emiting specific value only
+        let config = ConfigMining::content().await;
+        EventsEmitter::emit_mining_config_loaded(&config).await;
+
+        let gpu_enabled = *config.gpu_mining_enabled();
+        let cpu_enabled = *config.cpu_mining_enabled();
+
+        if mode_changed {
+            // Only miners that are actually running are cycled; touching a stopped
+            // one would start it, and the scheduler must not enable mining the user
+            // turned off.
+            if gpu_enabled {
+                let running = GpuManager::read().await.is_running();
+                if running {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Restarting GPU miner for scheduled mode {:?} during Mine event {:?}", mining_mode, event_id);
+                    if let Err(e) = GpuManager::write().await.stop_mining().await {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop GPU mining during Mine event {:?}: {}", event_id, e);
+                    }
+                }
+            }
+            if cpu_enabled {
+                let running = CpuManager::read().await.is_running();
+                if running {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Restarting CPU miner for scheduled mode {:?} during Mine event {:?}", mining_mode, event_id);
+                    if let Err(e) = CpuManager::write().await.stop_mining().await {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop CPU mining during Mine event {:?}: {}", event_id, e);
+                    }
+                }
+            }
+        }
+
+        if gpu_enabled {
+            GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
+            });
+        }
+        if cpu_enabled {
+            CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
+            });
+        }
+    }
+
     /// Internal handler for event enter callbacks.
     ///
     /// Executes the actions associated with an event when it triggers.
@@ -1093,22 +1171,7 @@ impl EventScheduler {
                     }
                 }
                 SchedulerEventType::Mine { mining_mode } => {
-                    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
-                    });
-                    // TODO: Replace with emiting specific value only
-                    let config = ConfigMining::content().await;
-                    EventsEmitter::emit_mining_config_loaded(&config).await;
-                    if *config.gpu_mining_enabled() {
-                        GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
-                        });
-                    }
-                    if *config.cpu_mining_enabled() {
-                        CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
-                        });
-                    }
+                    Self::apply_scheduled_mining_mode(mining_mode, &event_id).await;
                 }
             }
         }
@@ -1270,5 +1333,35 @@ impl EventScheduler {
         };
 
         Ok(handle)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::EventScheduler;
+
+    #[test]
+    fn a_new_scheduled_mode_restarts_the_miners() {
+        assert!(EventScheduler::scheduled_mode_requires_restart(
+            "Eco",
+            "Ludicrous"
+        ));
+    }
+
+    #[test]
+    fn the_same_scheduled_mode_leaves_the_miners_alone() {
+        assert!(!EventScheduler::scheduled_mode_requires_restart(
+            "Ludicrous",
+            "Ludicrous"
+        ));
+    }
+
+    #[test]
+    fn mode_names_are_compared_exactly() {
+        // The stored mode is a display name, so a case difference is a different
+        // configuration rather than a no-op.
+        assert!(EventScheduler::scheduled_mode_requires_restart(
+            "eco", "Eco"
+        ));
     }
 }

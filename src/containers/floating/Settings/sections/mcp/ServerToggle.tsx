@@ -18,15 +18,26 @@ export default function ServerToggle() {
     const enabled = useConfigMcpStore((s) => s.enabled);
     const serverRunning = useMcpStore((s) => s.serverRunning);
     const serverPort = useMcpStore((s) => s.serverPort);
+    const storePort = useConfigMcpStore((s) => s.port);
     const [loading, setLoading] = useState(false);
+    const [enableError, setEnableError] = useState<string | null>(null);
 
     const handleToggle = async (checked: boolean) => {
         setLoading(true);
+        setEnableError(null);
         try {
             await invoke('set_mcp_enabled', { enabled: checked });
             useConfigMcpStore.setState((c) => ({ ...c, enabled: checked }));
         } catch (e) {
-            console.error('Failed to toggle MCP server:', e);
+            // Enabling starts the server, so a port that another process already
+            // holds fails here instead of in the settings panel. Surface it.
+            const message = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e);
+            const inUse = /failed to bind to configured port/i.test(message);
+            const port = serverPort ?? storePort;
+            setEnableError(
+                inUse ? t('mcp.advanced.port-in-use', { port }) : t('mcp.advanced.port-error-generic', { port })
+            );
+            useConfigMcpStore.setState((c) => ({ ...c, enabled: false }));
         } finally {
             setLoading(false);
         }
@@ -48,6 +59,16 @@ export default function ServerToggle() {
                     <Typography variant="p" style={{ opacity: 0.7 }} data-testid="mcp-server-status">
                         {statusText}
                     </Typography>
+                    {enableError && (
+                        <Typography
+                            variant="p"
+                            role="alert"
+                            data-testid="mcp-enable-error"
+                            style={{ color: 'var(--color-error, #d32f2f)' }}
+                        >
+                            {enableError}
+                        </Typography>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch
