@@ -66,8 +66,11 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
         await invoke('set_seed_backed_up').then(() => {
             setModal(null);
         });
+        // Only offer to create a PIN when the wallet positively reports that it
+        // has none. An unknown state means the setup phase has not reported yet,
+        // and prompting would overwrite an existing PIN's flow.
         const isPinLocked = useWalletStore.getState().is_pin_locked;
-        if (!isPinLocked) {
+        if (isPinLocked === false) {
             await invoke('create_pin');
         }
     };

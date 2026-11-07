@@ -29,12 +29,42 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
     }
 };
 
+const PIN_STATE_TIMEOUT_MS = 30_000;
+
+/**
+ * Resolves once the wallet setup phase has reported the PIN state, or after a
+ * timeout so a stuck load cannot leave the L2 button hanging forever.
+ */
+const waitForPinState = () =>
+    new Promise<void>((resolve) => {
+        if (useWalletStore.getState().is_pin_locked !== undefined) {
+            resolve();
+            return;
+        }
+        const finish = () => {
+            clearTimeout(timer);
+            unsubscribe();
+            resolve();
+        };
+        const timer = setTimeout(finish, PIN_STATE_TIMEOUT_MS);
+        const unsubscribe = useWalletStore.subscribe((state) => {
+            if (state.is_pin_locked !== undefined) finish();
+        });
+    });
+
 /**
  * The sidebar's way into L2. An open wallet just shows the panel. Without a PIN the user is
  * asked to set one first; otherwise the PIN prompt opens straight away, and the panel only
  * once the wallet is open.
  */
 export const openL2 = async () => {
+    const pinLocked = useWalletStore.getState().is_pin_locked;
+    if (pinLocked === undefined) {
+        // The wallet setup phase has not reported the PIN state yet. Falling
+        // through to the create-PIN dialog here is what asked users with an
+        // existing PIN to set one, so wait for the load to finish instead.
+        await waitForPinState();
+    }
     if (!useWalletStore.getState().is_pin_locked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;

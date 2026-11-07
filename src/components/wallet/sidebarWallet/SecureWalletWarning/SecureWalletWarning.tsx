@@ -54,7 +54,7 @@ export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Pr
                                 <StepsText>{t('warning.steps')}</StepsText>
                                 <StepsDots>
                                     <StepsDot $isActive={seedBackedUp} />
-                                    <StepsDot $isActive={pinLocked} />
+                                    <StepsDot $isActive={!!pinLocked} />
                                 </StepsDots>
                             </StepsWrapper>
                         )}

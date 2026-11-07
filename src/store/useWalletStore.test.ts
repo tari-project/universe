@@ -62,8 +62,10 @@ describe('useWalletStore', () => {
             expect(scanning.progress).toBe(0);
         });
 
-        it('has is_pin_locked as false', () => {
-            expect(useWalletStore.getState().is_pin_locked).toBe(false);
+        it('has is_pin_locked as unknown until the wallet reports it', () => {
+            // Undefined, not false: false would mean "this wallet has no PIN",
+            // which is what made the L2 flow offer to create one mid-load.
+            expect(useWalletStore.getState().is_pin_locked).toBeUndefined();
         });
 
         it('has is_seed_backed_up as false', () => {

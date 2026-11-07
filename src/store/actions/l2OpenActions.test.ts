@@ -98,3 +98,32 @@ describe('createPinAndOpenL2', () => {
         expect(useUIStore.getState().l2Open).toBe(true);
     });
 });
+
+describe('openL2 while the PIN state is unknown', () => {
+    it('waits for the wallet to report the PIN state instead of offering to create one', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(lockedState);
+
+        const opened = openL2();
+        // Nothing is shown yet: the state has not arrived.
+        expect(useSecurityStore.getState().modal).toBeNull();
+
+        useWalletStore.setState({ is_pin_locked: true });
+        await opened;
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(useUIStore.getState().l2Open).toBe(true);
+    });
+
+    it('still offers the create-PIN dialog when the wallet reports it has none', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(lockedState);
+
+        const opened = openL2();
+        useWalletStore.setState({ is_pin_locked: false });
+        await opened;
+
+        // The dialog is what matters here; opening the panel would be the bug.
+        expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+    });
+});
