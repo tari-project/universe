@@ -147,6 +147,9 @@ static MONERO_CREDENTIAL_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::cons
 /// Set once the Monero credential is known not to need `upgrade_monero_seed_cipher`, which
 /// keeps later PIN entries off the keyring.
 static MONERO_CIPHER_CURRENT: AtomicBool = AtomicBool::new(false);
+/// Set when setup refused to create a wallet with a problem the dialog offers start fresh for.
+/// Start fresh overwrites the Monero seed, so it only runs after one of those refusals.
+static START_FRESH_OFFERED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Clone)]
 pub struct InternalWallet {
@@ -343,7 +346,7 @@ impl InternalWallet {
                     // config and then a Monero failure leaves a config the next launch cannot
                     // load. A custom Monero address generates no seed, so it still passes.
                     if monero_address.is_empty() && monero_credential_exists().await {
-                        return Err(wallet_config_missing_problem());
+                        return Err(monero_keys_found_problem());
                     }
 
                     // Create new wallet
@@ -502,11 +505,18 @@ impl InternalWallet {
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet");
         let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
-        let cm = CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()));
         // A generated seed must never overwrite the Monero credential already in the keyring.
         if monero_credential_exists().await {
-            return Err(wallet_config_missing_problem());
+            return Err(monero_keys_found_problem());
         }
+        InternalWallet::store_monero_seed(monero_seed).await
+    }
+
+    /// Writes the seed under the `monero` keyring entry, replacing whatever is there, and
+    /// records its address as generated. The caller holds `MONERO_CREDENTIAL_LOCK`; only
+    /// `add_monero_wallet`, after its guard, and the user's start fresh may call this.
+    async fn store_monero_seed(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
+        let cm = CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()));
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
             .expect("Failed to convert monero seed to binary");
@@ -1723,17 +1733,13 @@ async fn monero_credential_exists() -> bool {
         .is_ok()
 }
 
-/// The wallet settings file is gone. The raw line names what was on disk, never a credential
-/// store: a Monero credential is why we stopped, not the problem the user has to fix.
-fn wallet_config_missing_problem() -> anyhow::Error {
-    let config_backup = ConfigWallet::_get_config_path().with_extension("json.backup");
+/// The wallet settings file is gone while the keyring still holds a Monero seed from a previous
+/// install, so a new wallet is not created without the user's say-so.
+pub(crate) fn monero_keys_found_problem() -> anyhow::Error {
+    START_FRESH_OFFERED.store(true, Ordering::SeqCst);
     wallet_settings_problem(
         "wallet-config-missing",
-        if config_backup.exists() {
-            "config_wallet.json missing, backup unusable"
-        } else {
-            "config_wallet.json missing, backup absent"
-        },
+        "Monero keys from a previous install were found, config_wallet.json is missing",
     )
 }
 
@@ -1782,9 +1788,14 @@ fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow
         |scope| scope.set_tag("previous_wallet_evidence", evidence),
         || sentry::capture_message(PREVIOUS_WALLET_EVIDENT, sentry::Level::Error),
     );
-    // The dialog describes the config itself: missing or unreadable. The evidence only decided
-    // whether to block and travels in the log line and the Sentry tag above.
-    Err(match config_moved_aside(&config_backup) {
+    Err(previous_wallet_problem(&config_backup))
+}
+
+/// The dialog describes the config itself: missing or unreadable. The evidence only decided
+/// whether to block and travels in the log line and the Sentry tag.
+pub(crate) fn previous_wallet_problem(config_backup: &Path) -> anyhow::Error {
+    START_FRESH_OFFERED.store(true, Ordering::SeqCst);
+    match config_moved_aside(config_backup) {
         Some(moved_aside) => wallet_settings_problem(
             "wallet-config-unreadable",
             &config_backup
@@ -1792,8 +1803,11 @@ fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow
                 .display()
                 .to_string(),
         ),
-        None => wallet_config_missing_problem(),
-    })
+        None => wallet_settings_problem(
+            "wallet-config-missing",
+            "config_wallet.json is missing, config_wallet.json.backup is unreadable",
+        ),
+    }
 }
 
 /// Rebuilds the wallet config from the `config_wallet.json.corrupt.<timestamp>` that startup
@@ -1942,19 +1956,73 @@ pub(crate) fn move_unreadable_wallet_config_to_recovery(config_dir: &Path) -> st
     Ok(())
 }
 
-/// The dialog's way out once the user confirmed their seed words are backed up. The files that
-/// make `refuse_if_previous_wallet_evident` block go to `recovery/`, and a Monero seed the
-/// keyring holds in plain form gets its address back, so the next launch creates a new Tari
-/// wallet without touching the Monero one. A PIN-enciphered Monero seed cannot be decoded
-/// here, so its address stays blank; the wallet still loads, and solo CPU mining asks for an
-/// address when there is none.
-pub(crate) async fn discard_unreadable_wallet_config() -> Result<(), anyhow::Error> {
+/// Constant Sentry message for the user's start fresh; whether a Monero seed was replaced
+/// travels as a tag.
+const START_FRESH: &str = "Starting fresh with a new wallet on the user's request";
+
+/// The dialog's start fresh, on the user's click. The files that make
+/// `refuse_if_previous_wallet_evident` block go to `recovery/`, a new Monero seed overwrites
+/// the `monero` keyring entry whatever it held (plain, PIN-enciphered or unreadable), and a
+/// config with no Tari wallet gets a new one under a new id. No existing Tari keyring entry is
+/// read or touched. The caller brings the new wallet up.
+pub(crate) async fn discard_unreadable_wallet_config(
+    app_handle: &AppHandle,
+) -> Result<(), anyhow::Error> {
+    // Only reachable from the dialog shown when setup could not bring a wallet up. With one
+    // loaded, the command would overwrite the live Monero seed, so it refuses.
+    if InternalWallet::is_initialized() {
+        return Err(anyhow!(
+            "A wallet is already loaded, refusing to start fresh over it"
+        ));
+    }
+    // Nor may it run before setup has actually refused with the dialog's problem, e.g. while a
+    // healthy wallet is still loading. Taking the flag makes each offer good for one run, so two
+    // overlapping calls cannot both overwrite the Monero seed; a failed run hands it back.
+    if !START_FRESH_OFFERED.swap(false, Ordering::SeqCst) {
+        return Err(anyhow!(
+            "Setup has not refused to create a wallet, refusing to start fresh"
+        ));
+    }
+    let result = start_fresh(app_handle).await;
+    if result.is_err() {
+        START_FRESH_OFFERED.store(true, Ordering::SeqCst);
+    }
+    result
+}
+
+async fn start_fresh(app_handle: &AppHandle) -> Result<(), anyhow::Error> {
     let config_path = ConfigWallet::_get_config_path();
     let config_dir = config_path
         .parent()
         .ok_or_else(|| anyhow!("The wallet config path has no parent directory"))?;
     move_unreadable_wallet_config_to_recovery(config_dir)?;
-    restore_blank_monero_address(ConfigWallet::content().await.monero_address().clone()).await?;
+
+    let monero_replaced = {
+        let _monero_credential = MONERO_CREDENTIAL_LOCK.lock().await;
+        // Any answer other than NoEntry means the keyring holds something under `monero`.
+        let monero_replaced = !matches!(
+            CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()))
+                .get_credentials()
+                .await,
+            Err(CredentialError::NoEntry(_))
+        );
+        // The user's click on start fresh is the consent to replace the Monero seed: the
+        // dialog tells them a new Monero wallet replaces the previous one. Keeping copies of old
+        // seeds in new keyring entries is out of scope (tari-project/universe#3510).
+        InternalWallet::store_monero_seed(generate_monero_seed()?).await?;
+        monero_replaced
+    };
+
+    if ConfigWallet::content().await.tari_wallets().is_empty() {
+        InternalWallet::add_tari_wallet(app_handle, CipherSeed::random(), None).await?;
+    }
+
+    let start_fresh_monero = if monero_replaced { "replaced" } else { "new" };
+    log::warn!(target: LOG_TARGET_APP_LOGIC, "{START_FRESH}: monero {start_fresh_monero}");
+    sentry::with_scope(
+        |scope| scope.set_tag("start_fresh_monero", start_fresh_monero),
+        || sentry::capture_message(START_FRESH, sentry::Level::Warning),
+    );
     Ok(())
 }
 

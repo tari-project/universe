@@ -16,7 +16,10 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
 
     const { isExiting, handleClose, handleRestart, handleStartFresh } = useErrorDialogsButtonsLogic();
-    const canStartFresh = criticalProblem?.description === 'common:wallet-config-unreadable';
+    const startFreshLabel = {
+        'common:wallet-config-missing': 'common:wallet-config-missing-start-fresh',
+        'common:wallet-config-unreadable': 'common:wallet-config-start-fresh',
+    }[criticalProblem?.description ?? ''];
 
     return (
         <Dialog open={!!criticalProblem}>
@@ -40,9 +43,9 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
                                     {t('settings:settings')}
                                 </Button>
                                 <Stack direction="row" gap={8} justifyContent="space-around">
-                                    {canStartFresh && (
+                                    {startFreshLabel && (
                                         <Button backgroundColor="info" size="smaller" onClick={handleStartFresh}>
-                                            {t('common:wallet-config-start-fresh')}
+                                            {t(startFreshLabel)}
                                         </Button>
                                     )}
                                     <Button backgroundColor="error" size="smaller" onClick={handleClose}>
