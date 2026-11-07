@@ -21,11 +21,13 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::configs::config_core::ConfigCore;
+use crate::configs::config_mining::ConfigMining;
 use crate::configs::trait_config::ConfigImpl;
 use crate::event_scheduler::{
     EventScheduler, SchedulerEventTiming, SchedulerEventType, TimePeriod,
 };
 use crate::events_emitter::EventsEmitter;
+use crate::mcp::tools::mining::resolve_canonical_mining_mode;
 
 pub async fn list_scheduled_events() -> Result<String, String> {
     let events = EventScheduler::instance()
@@ -51,6 +53,15 @@ pub struct MiningWindowParams {
 }
 
 pub async fn schedule_mining_window(params: MiningWindowParams) -> Result<String, String> {
+    let event_id = params.event_id.trim();
+    if event_id.is_empty() {
+        return Err("Event ID cannot be empty".to_string());
+    }
+    let mining_mode = {
+        let current_config = ConfigMining::content().await;
+        resolve_canonical_mining_mode(&params.mining_mode, current_config.mining_modes())?
+    };
+
     let start_period = parse_time_period(&params.start_period)?;
     let end_period = parse_time_period(&params.end_period)?;
 
@@ -64,22 +75,20 @@ pub async fn schedule_mining_window(params: MiningWindowParams) -> Result<String
     )
     .map_err(|e| e.to_string())?;
 
-    let event_type = SchedulerEventType::Mine {
-        mining_mode: params.mining_mode,
-    };
+    let event_type = SchedulerEventType::Mine { mining_mode };
 
     EventScheduler::instance()
-        .schedule_event(event_type, params.event_id.clone(), timing)
+        .schedule_event(event_type, event_id.to_string(), timing)
         .await
         .map_err(|e| e.to_string())?;
 
     EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
 
-    Ok(serde_json::json!({"status": "scheduled", "event_id": params.event_id}).to_string())
+    Ok(serde_json::json!({"status": "scheduled", "event_id": event_id}).to_string())
 }
 
 fn parse_time_period(period: &str) -> Result<TimePeriod, String> {
-    match period.to_uppercase().as_str() {
+    match period.trim().to_uppercase().as_str() {
         "AM" => Ok(TimePeriod::AM),
         "PM" => Ok(TimePeriod::PM),
         _ => Err(format!("Invalid time period: {period}. Use 'AM' or 'PM'")),

@@ -432,6 +432,13 @@ fn settle(
     L2ClaimResult::new(file.as_deref(), accepted, reason, not_yet)
 }
 
+/// True only when the transaction's main (and fee) intent succeeded (`TransactionStatus::Accepted`).
+/// `TransactionStatus::OnlyFeeAccepted` means the fee was paid on-chain while the main instructions
+/// were rejected (`AcceptFeeRejectRest`), so a send or claim with that status was not accepted.
+fn is_settled_accepted(status: TransactionStatus) -> bool {
+    status == TransactionStatus::Accepted
+}
+
 /// Settles tracked claims and sends that finished while nothing was listening (Universe
 /// was closed or events were missed) and returns how they ended. `status` looks a
 /// transaction up in the wallet, `None` when the wallet doesn't have it. Accepted and
@@ -446,7 +453,7 @@ pub fn reconcile_claims(
         tracked.retain(|id, file| match status(*id) {
             Ok(Some(TransactionStatus::New | TransactionStatus::Pending)) => true,
             Ok(Some(status)) => {
-                ended.push((file.take(), status == TransactionStatus::Accepted));
+                ended.push((file.take(), is_settled_accepted(status)));
                 false
             }
             Ok(None) => {
@@ -475,27 +482,31 @@ pub fn reconcile_claims(
 /// How a tracked claim or send ended, once it finalizes or turns out invalid. `None` for
 /// any other event or a transaction that isn't tracked.
 pub fn track_claim(dir: &Path, event: &WalletEvent) -> Option<L2ClaimResult> {
-    let (id, reject, invalid) = match event {
+    let (id, status, reject, invalid) = match event {
         WalletEvent::TransactionFinalized(event) => (
             event.transaction_id,
+            event.status,
             event.finalize.result.any_reject(),
             false,
         ),
         WalletEvent::TransactionInvalid(event) => (
             event.transaction_id,
+            event.status,
             event.finalize.as_ref().and_then(|f| f.result.any_reject()),
             true,
         ),
         _ => return None,
     };
+    let accepted = !invalid && is_settled_accepted(status) && reject.is_none();
     let reason = match reject {
         Some(reject) => Some(reject.to_string()),
         None if invalid => Some("The transaction is invalid".to_string()),
+        None if !accepted => Some(format!("Transaction ended with status {status}")),
         None => None,
     };
     let not_yet = reject.is_some_and(is_burn_not_yet_claimable);
     let file = update_tracked(dir, |tracked| tracked.remove(&id))?;
-    Some(settle(dir, file, reason.is_none(), reason, not_yet))
+    Some(settle(dir, file, accepted, reason, not_yet))
 }
 
 /// The wallet SDK verifies this read against a trusted validator committee.
@@ -1202,6 +1213,36 @@ mod tests {
         );
         let res = track_claim(dir, &finalized).expect("settled claim");
         assert!(!res.accepted);
+        assert!(dir.join(&file).is_file());
+        assert!(!dir.join(CLAIMED_DIR).join(&file).exists());
+    }
+
+    #[test]
+    fn only_fee_accepted_keeps_burn_proof_claimable_and_reports_rejected() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
+        write(dir, &file, PROOF);
+
+        let id = TransactionId::from([10; 32]);
+        track(dir, id, Some(file.clone()));
+        let finalized = WalletEvent::TransactionFinalized(
+            tari_ootle_wallet_sdk::models::TransactionFinalizedEvent {
+                transaction_id: id,
+                finalize: tari_engine_types::commit_result::FinalizeResult::new(
+                    Default::default(),
+                    vec![],
+                    vec![],
+                    tari_engine_types::commit_result::TransactionResult::Accept(Default::default()),
+                    Default::default(),
+                ),
+                final_fee: 100,
+                status: TransactionStatus::OnlyFeeAccepted,
+            },
+        );
+        let res = track_claim(dir, &finalized).expect("settled claim");
+        assert!(!res.accepted);
+        assert!(res.reason.is_some());
         assert!(dir.join(&file).is_file());
         assert!(!dir.join(CLAIMED_DIR).join(&file).exists());
     }

@@ -126,6 +126,7 @@ pub async fn set_mcp_max_transaction_amount(
     ConfigMcp::update_field(ConfigMcpContent::set_max_transaction_amount, amount)
         .await
         .map_err(|e| e.to_string())?;
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 
@@ -144,6 +145,7 @@ pub async fn set_mcp_tier_enabled(tier: String, enabled: bool) -> Result<(), Str
         }
         _ => return Err(format!("Unknown tier: {tier}")),
     }
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 
