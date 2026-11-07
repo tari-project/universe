@@ -1,16 +1,19 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@app/test/test-utils';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
+import { invoke } from '@tauri-apps/api/core';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import ServerToggle from './ServerToggle';
 
 describe('ServerToggle', () => {
     beforeEach(() => {
-        useConfigMcpStore.setState({ enabled: false });
-        useMcpStore.setState({ serverRunning: false, serverPort: null });
+        vi.mocked(invoke).mockReset();
+        vi.mocked(invoke).mockResolvedValue(undefined);
+        useConfigMcpStore.setState({ enabled: false, port: 19222 });
+        useMcpStore.setState({ serverRunning: false, serverPort: null, portError: null });
     });
 
     it('renders title', () => {
@@ -49,5 +52,19 @@ describe('ServerToggle', () => {
         useConfigMcpStore.setState({ enabled: false });
         render(<ServerToggle />);
         expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+
+    it('records port-in-use error and keeps Stopped status when enabling fails on a taken port', async () => {
+        useConfigMcpStore.setState({ enabled: false, port: 4444 });
+        vi.mocked(invoke).mockRejectedValueOnce(
+            'MCP server failed to bind to configured port 4444: Address already in use'
+        );
+
+        render(<ServerToggle />);
+        fireEvent.click(screen.getByTestId('mcp-server-toggle'));
+
+        await waitFor(() => expect(useMcpStore.getState().portError).toEqual({ kind: 'in-use', port: 4444 }));
+        expect(useConfigMcpStore.getState().enabled).toBe(true);
+        expect(screen.getByText('mcp.server-toggle.status-stopped')).toBeInTheDocument();
     });
 });

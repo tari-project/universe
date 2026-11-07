@@ -9,9 +9,26 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
-import { useMcpStore } from '@app/store/useMcpStore';
+import { setMcpPortError, setMcpServerStatus, useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
+
+// Persists the enabled flag and records a port conflict in the store when starting the listener
+// fails on an occupied port, keeping the Advanced section visible so the user can pick a free port.
+async function applyMcpServerToggle(checked: boolean) {
+    try {
+        await invoke('set_mcp_enabled', { enabled: checked });
+        useConfigMcpStore.setState((c) => ({ ...c, enabled: checked }));
+        setMcpPortError(null);
+    } catch (e) {
+        console.error('Failed to toggle MCP server:', e);
+        if (!checked) return;
+        const configuredPort = useConfigMcpStore.getState().port;
+        useConfigMcpStore.setState((c) => ({ ...c, enabled: true }));
+        setMcpServerStatus(false, null);
+        setMcpPortError({ kind: 'in-use', port: configuredPort });
+    }
+}
 
 export default function ServerToggle() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -23,10 +40,7 @@ export default function ServerToggle() {
     const handleToggle = async (checked: boolean) => {
         setLoading(true);
         try {
-            await invoke('set_mcp_enabled', { enabled: checked });
-            useConfigMcpStore.setState((c) => ({ ...c, enabled: checked }));
-        } catch (e) {
-            console.error('Failed to toggle MCP server:', e);
+            await applyMcpServerToggle(checked);
         } finally {
             setLoading(false);
         }

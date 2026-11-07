@@ -85,6 +85,8 @@
     "advanced": {
       "control-tier": "Control Tier",
       "port": "Server Port",
+      "port-in-use": "Port {{port}} is already in use. Choose another port.",
+      "port-out-of-range": "Port must be between 1024 and 65535",
       "read-tier": "Read Tier"
     },
     "agent-config": {
