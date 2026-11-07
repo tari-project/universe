@@ -65,6 +65,7 @@ describe('ServerToggle', () => {
         fireEvent.click(screen.getByRole('checkbox'));
         const error = await screen.findByTestId('mcp-server-error');
         expect(error).toHaveTextContent('mcp.server-toggle.port-in-use');
+        expect(error).toHaveAttribute('role', 'alert');
         expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-stopped');
     });
 });

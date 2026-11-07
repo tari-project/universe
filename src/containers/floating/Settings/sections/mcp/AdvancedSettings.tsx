@@ -13,11 +13,12 @@ import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
 
-const PortInput = styled.input`
+const PortInput = styled.input<{ $hasError?: boolean }>`
     width: 90px;
     font-size: 14px;
     height: 32px;
-    border: 1px solid ${({ theme }) => theme.colorsAlpha.darkAlpha[10]};
+    border: 1px solid
+        ${({ theme, $hasError }) => ($hasError ? theme.palette.error.main : theme.colorsAlpha.darkAlpha[10])};
     background-color: ${({ theme }) => theme.palette.background.default};
     border-radius: 8px;
     padding: 4px 8px;
@@ -56,7 +57,14 @@ export default function AdvancedSettings() {
 
     const commitPort = useCallback(async () => {
         const num = Number(portValue);
-        if (portValue.trim() === '' || isNaN(num) || !Number.isInteger(num) || num < 1024 || num > 65535) {
+        // Not a number at all (empty, text, fractional) gets its own message so the
+        // user fixes the right problem; a whole number outside the allowed range
+        // gets the range message.
+        if (portValue.trim() === '' || isNaN(num) || !Number.isInteger(num)) {
+            setPortError(t('mcp.advanced.port-invalid-error'));
+            return;
+        }
+        if (num < 1024 || num > 65535) {
             setPortError(t('mcp.advanced.port-range-error'));
             return;
         }
@@ -106,6 +114,7 @@ export default function AdvancedSettings() {
                         min={1024}
                         max={65535}
                         data-testid="mcp-port-input"
+                        $hasError={Boolean(portError)}
                         value={portValue}
                         onChange={(e) => {
                             setPortValue(e.target.value);
@@ -121,7 +130,9 @@ export default function AdvancedSettings() {
             {portError ? (
                 <SettingsGroup>
                     <SettingsGroupContent>
-                        <PortError data-testid="mcp-port-error">{portError}</PortError>
+                        <PortError role="alert" data-testid="mcp-port-error">
+                            {portError}
+                        </PortError>
                     </SettingsGroupContent>
                 </SettingsGroup>
             ) : null}

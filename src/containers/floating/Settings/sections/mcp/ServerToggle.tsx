@@ -67,7 +67,11 @@ export default function ServerToggle() {
                     <Typography variant="p" style={{ opacity: 0.7 }} data-testid="mcp-server-status">
                         {statusText}
                     </Typography>
-                    {error ? <StatusError data-testid="mcp-server-error">{error}</StatusError> : null}
+                    {error ? (
+                        <StatusError role="alert" data-testid="mcp-server-error">
+                            {error}
+                        </StatusError>
+                    ) : null}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch
