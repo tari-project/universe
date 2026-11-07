@@ -310,3 +310,8 @@ export interface L2NetworkStats {
     fee_volume: number;
     burned: number;
 }
+
+/** Why the MCP server could not start. Mirrors `McpServerErrorPayload` in src-tauri/src/events.rs. */
+export type McpServerError =
+    | { kind: 'port_in_use'; port: number }
+    | { kind: 'bind_failed'; port: number; message: string };

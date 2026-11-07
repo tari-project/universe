@@ -10,7 +10,54 @@ import ServerToggle from './ServerToggle';
 describe('ServerToggle', () => {
     beforeEach(() => {
         useConfigMcpStore.setState({ enabled: false });
-        useMcpStore.setState({ serverRunning: false, serverPort: null });
+        useMcpStore.setState({ serverRunning: false, serverPort: null, serverError: null });
+    });
+
+    describe('start errors', () => {
+        it('explains that the configured port is taken', () => {
+            useConfigMcpStore.setState({ enabled: true });
+            useMcpStore.setState({ serverError: { kind: 'port_in_use', port: 4444 } });
+            render(<ServerToggle />);
+
+            expect(screen.getByText('mcp.server-toggle.status-stopped')).toBeInTheDocument();
+            const alert = screen.getByRole('alert');
+            expect(alert).toHaveAttribute('data-testid', 'mcp-server-error');
+            expect(alert).toHaveTextContent('mcp.server-toggle.error-port-in-use');
+        });
+
+        it('shows other bind failures with their own message', () => {
+            useConfigMcpStore.setState({ enabled: true });
+            useMcpStore.setState({ serverError: { kind: 'bind_failed', port: 4444, message: 'access denied' } });
+            render(<ServerToggle />);
+
+            expect(screen.getByTestId('mcp-server-error')).toHaveTextContent('mcp.server-toggle.error-bind-failed');
+        });
+
+        it('hides the error once the server is running', () => {
+            useConfigMcpStore.setState({ enabled: true });
+            useMcpStore.setState({
+                serverRunning: true,
+                serverPort: 4445,
+                serverError: { kind: 'port_in_use', port: 4444 },
+            });
+            render(<ServerToggle />);
+
+            expect(screen.queryByTestId('mcp-server-error')).not.toBeInTheDocument();
+        });
+
+        it('hides the error when the server is disabled', () => {
+            useMcpStore.setState({ serverError: { kind: 'port_in_use', port: 4444 } });
+            render(<ServerToggle />);
+
+            expect(screen.queryByTestId('mcp-server-error')).not.toBeInTheDocument();
+        });
+
+        it('shows no error after a normal stop', () => {
+            useConfigMcpStore.setState({ enabled: true });
+            render(<ServerToggle />);
+
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        });
     });
 
     it('renders title', () => {

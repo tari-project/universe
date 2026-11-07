@@ -55,6 +55,18 @@ describe('useMcpStore', () => {
             setMcpServerStatus(true, 8080);
             expect(useMcpStore.getState().serverPort).toBe(8080);
         });
+
+        it('records why the server failed to start', () => {
+            setMcpServerStatus(false, null, { kind: 'port_in_use', port: 4444 });
+            expect(useMcpStore.getState().serverRunning).toBe(false);
+            expect(useMcpStore.getState().serverError).toEqual({ kind: 'port_in_use', port: 4444 });
+        });
+
+        it('clears the start error on the next status update', () => {
+            setMcpServerStatus(false, null, { kind: 'port_in_use', port: 4444 });
+            setMcpServerStatus(true, 4445);
+            expect(useMcpStore.getState().serverError).toBeNull();
+        });
     });
 
     describe('addMcpAuditEntry', () => {

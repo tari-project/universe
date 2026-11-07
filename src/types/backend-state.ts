@@ -8,6 +8,7 @@ import {
     DetectedDevicesPayload,
     GpuMiner,
     GpuMinerType,
+    McpServerError,
     MinerControlsState,
     NodeTypeUpdatePayload,
     PinPromptPayload,
@@ -274,7 +275,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'McpServerStatusUpdate';
-          payload: { running: boolean; port?: number };
+          payload: { running: boolean; port?: number; error?: McpServerError | null };
       }
     | {
           event_type: 'McpTransactionConfirmation';

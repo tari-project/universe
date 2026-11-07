@@ -12,6 +12,16 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
+import { AddressErrorMessage as ErrorMessage } from '../connections/NodeTypeConfiguration.styles.ts';
+
+const PORT_ERROR_ID = 'mcp-port-error';
+
+const PortField = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+`;
 
 const PortInput = styled.input`
     width: 90px;
@@ -31,6 +41,15 @@ const PortInput = styled.input`
     }
 `;
 
+const MIN_PORT = 1024;
+const MAX_PORT = 65535;
+
+function isValidPort(value: string): boolean {
+    if (value.trim() === '') return false;
+    const num = Number(value);
+    return Number.isInteger(num) && num >= MIN_PORT && num <= MAX_PORT;
+}
+
 export default function AdvancedSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const enabled = useConfigMcpStore((s) => s.enabled);
@@ -38,23 +57,29 @@ export default function AdvancedSettings() {
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
     const [portValue, setPortValue] = useState(String(storePort));
+    const [portInvalid, setPortInvalid] = useState(false);
 
     useEffect(() => {
         setPortValue(String(storePort));
+        setPortInvalid(false);
     }, [storePort]);
 
     const commitPort = useCallback(async () => {
         const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
-            setPortValue(String(storePort));
+        if (!isValidPort(portValue)) {
+            // Keep what the user typed so they can see and fix it.
+            setPortInvalid(true);
             return;
         }
+        setPortInvalid(false);
         if (num === storePort) return;
         try {
             await invoke('set_mcp_port', { port: num });
         } catch (e) {
-            console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
+            // A bind failure is shown by ServerToggle from the McpServerStatusUpdate event.
+            // The backend has already sent the saved port, so read it fresh, not from this closure.
+            console.warn('Failed to apply MCP port:', e);
+            setPortValue(String(useConfigMcpStore.getState().port));
         }
     }, [portValue, storePort]);
 
@@ -82,18 +107,31 @@ export default function AdvancedSettings() {
                     </SettingsGroupTitle>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <PortInput
-                        type="number"
-                        min={1024}
-                        max={65535}
-                        data-testid="mcp-port-input"
-                        value={portValue}
-                        onChange={(e) => setPortValue(e.target.value)}
-                        onBlur={commitPort}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') commitPort();
-                        }}
-                    />
+                    <PortField>
+                        <PortInput
+                            type="number"
+                            min={MIN_PORT}
+                            max={MAX_PORT}
+                            data-testid="mcp-port-input"
+                            aria-label={t('mcp.advanced.port')}
+                            aria-invalid={portInvalid}
+                            aria-describedby={portInvalid ? PORT_ERROR_ID : undefined}
+                            value={portValue}
+                            onChange={(e) => {
+                                setPortValue(e.target.value);
+                                setPortInvalid(false);
+                            }}
+                            onBlur={commitPort}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') commitPort();
+                            }}
+                        />
+                        {portInvalid && (
+                            <ErrorMessage id={PORT_ERROR_ID} role="alert" data-testid="mcp-port-error">
+                                {t('mcp.advanced.port-invalid', { min: MIN_PORT, max: MAX_PORT })}
+                            </ErrorMessage>
+                        )}
+                    </PortField>
                 </SettingsGroupAction>
             </SettingsGroup>
             <SettingsGroup>
