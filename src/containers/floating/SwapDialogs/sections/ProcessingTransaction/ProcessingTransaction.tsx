@@ -9,7 +9,7 @@ import {
 } from './ProcessingTransaction.styles';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
 import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
@@ -20,6 +20,7 @@ import { SwapStatus } from '@app/hooks/swap/lib/types';
 import { truncateMiddle } from '@app/utils';
 import { CopyIcon } from '../../icons/copyIcon';
 import { AnimatePresence } from 'motion/react';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 
 export interface ProccessingTransactionProps {
     status?: SwapStatus;
@@ -58,13 +59,11 @@ export const ProcessingTransaction = ({
 }: Props) => {
     const { t } = useTranslation(['wallet'], { useSuspense: false });
     const explorerUrl = mainnetExplorerUrl;
-    const [copied, setCopied] = useState(false);
+    const { isCopied: copied, copyToClipboard } = useCopyToClipboard();
 
     const handleCopyAddress = useCallback(() => {
-        navigator.clipboard.writeText(CONTRACT_ADDRESS);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    }, []);
+        copyToClipboard(CONTRACT_ADDRESS);
+    }, [copyToClipboard]);
 
     const statusItems: StatusListEntry[] = useMemo(() => {
         const items: StatusListEntry[] = [];

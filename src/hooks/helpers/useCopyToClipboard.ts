@@ -1,7 +1,10 @@
-import { clear, readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { clearClipboardText, readClipboardText, writeClipboardText } from '@app/utils/clipboard';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 
-interface CopyOptions {
+export { clearClipboardText, readClipboardText, writeClipboardText };
+
+export interface CopyOptions {
     /**
      * Wipe the value from the clipboard after this many ms, for secrets like a seed
      * phrase. The clear only fires if the clipboard still holds exactly what we wrote,
@@ -28,7 +31,7 @@ export function useCopyToClipboard() {
     }, [isCopied]);
 
     const copyToClipboard = useCallback((value: string, onCopied?: () => void, options?: CopyOptions) => {
-        writeText(value)
+        writeClipboardText(value)
             .then(() => {
                 setIsCopied(true);
                 onCopied?.();
@@ -37,20 +40,25 @@ export function useCopyToClipboard() {
                 clearTimeout(clearTimer.current);
                 if (options?.clearAfterMs) {
                     clearTimer.current = setTimeout(() => {
-                        readText()
+                        readClipboardText()
                             .then((current) => {
                                 if (current === value) {
-                                    return clear();
+                                    return clearClipboardText();
                                 }
                             })
-                            .catch((e) => {
+                            .catch((e: unknown) => {
                                 console.error('Could not clear clipboard', e);
                             });
                     }, options.clearAfterMs);
                 }
             })
-            .catch((e) => {
+            .catch((e: unknown) => {
                 console.error('Could not copy to clipboard', e);
+                addToast({
+                    title: 'Failed to copy to clipboard',
+                    text: e instanceof Error ? e.message : String(e),
+                    type: 'error',
+                });
             });
     }, []);
 

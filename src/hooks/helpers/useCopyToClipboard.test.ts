@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 
 const writeText = vi.fn();
 const readText = vi.fn();
@@ -19,6 +20,7 @@ describe('useCopyToClipboard', () => {
         writeText.mockReset().mockResolvedValue(undefined);
         readText.mockReset();
         clear.mockReset().mockResolvedValue(undefined);
+        useToastStore.setState({ toasts: [] });
     });
 
     afterEach(() => {
@@ -111,5 +113,65 @@ describe('useCopyToClipboard', () => {
         expect(clear).not.toHaveBeenCalled();
         await act(async () => vi.advanceTimersByTimeAsync(60_000));
         expect(clear).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to navigator clipboard when native plugin fails', async () => {
+        writeText.mockRejectedValueOnce(new Error('X11 server connection timed out'));
+        const webviewWrite = vi.fn().mockResolvedValue(undefined);
+        Object.defineProperty(window.navigator, 'clipboard', {
+            value: { writeText: webviewWrite },
+            configurable: true,
+        });
+
+        const { result } = renderHook(() => useCopyToClipboard());
+        await act(async () => {
+            result.current.copyToClipboard('wayland address');
+        });
+
+        expect(webviewWrite).toHaveBeenCalledWith('wayland address');
+        expect(result.current.isCopied).toBe(true);
+
+        Object.defineProperty(window.navigator, 'clipboard', {
+            value: undefined,
+            configurable: true,
+        });
+    });
+
+    it('surfaces toast error when both native plugin and webview fail', async () => {
+        writeText.mockRejectedValue(new Error('X11 server connection timed out'));
+        const webviewWrite = vi.fn().mockRejectedValue(new Error('navigator write failed'));
+        Object.defineProperty(window.navigator, 'clipboard', {
+            value: { writeText: webviewWrite },
+            configurable: true,
+        });
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        const { result } = renderHook(() => useCopyToClipboard());
+        await act(async () => {
+            result.current.copyToClipboard('fail address');
+        });
+
+        expect(result.current.isCopied).toBe(false);
+        const toasts = useToastStore.getState().toasts;
+        expect(toasts.length).toBeGreaterThan(0);
+        expect(toasts[toasts.length - 1].title).toBe('Failed to copy to clipboard');
+
+        consoleError.mockRestore();
+        Object.defineProperty(window.navigator, 'clipboard', {
+            value: undefined,
+            configurable: true,
+        });
+    });
+
+    it('triggers onCopied callback upon successful copy', async () => {
+        const onCopied = vi.fn();
+        const { result } = renderHook(() => useCopyToClipboard());
+
+        await act(async () => {
+            result.current.copyToClipboard('callback test', onCopied);
+        });
+
+        expect(onCopied).toHaveBeenCalledTimes(1);
+        expect(result.current.isCopied).toBe(true);
     });
 });

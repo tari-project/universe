@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardIcon, ClipboardText, Container, ContentContainer, TextContainer, Title } from './styles';
 import { useTranslation } from 'react-i18next';
-import { readText } from '@tauri-apps/plugin-clipboard-manager';
+import { readClipboardText } from '@app/hooks/helpers/useCopyToClipboard';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 
 export interface ClipboardViewerProps {
@@ -17,7 +17,7 @@ export const ClipboardViewer: React.FC<ClipboardViewerProps> = ({ handlePaste })
     useEffect(() => {
         const readClipboard = async () => {
             try {
-                const text = await readText();
+                const text = await readClipboardText();
                 if (text) {
                     const isValidAddress = await validateAddress(text);
                     setClipboardText(isValidAddress ? text : undefined);
