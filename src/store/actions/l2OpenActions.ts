@@ -5,6 +5,8 @@ import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { useL2WalletStore } from '../useL2WalletStore';
 import { useWalletStore } from '../useWalletStore.ts';
 import { useSecurityStore } from '../useSecurityStore.ts';
+import { useSetupStore } from '../useSetupStore.ts';
+import { setupStoreSelectors } from '../selectors/setupStoreSelectors.ts';
 import { handleL2WalletStateUpdate, PIN_CANCELLED_RE } from './l2WalletStoreActions.ts';
 import { setL2Open } from './uiStoreActions.ts';
 
@@ -35,6 +37,13 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
  * once the wallet is open.
  */
 export const openL2 = async () => {
+    // The initial false PIN value is not authoritative until the backend has emitted it.
+    if (
+        !setupStoreSelectors.isWalletModuleInitialized(useSetupStore.getState()) ||
+        !useWalletStore.getState().is_pin_state_loaded
+    ) {
+        return;
+    }
     if (!useWalletStore.getState().is_pin_locked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;
