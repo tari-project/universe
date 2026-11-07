@@ -58,7 +58,10 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
     }
 
     if enabled {
-        McpServerManager::start().await.map_err(|e| e.to_string())?;
+        if let Err(e) = McpServerManager::start().await {
+            EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
+            return Err(e.to_string());
+        }
     } else {
         McpServerManager::stop().await;
     }
@@ -107,9 +110,10 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
     // Restart if currently running so the new port takes effect
     let content = ConfigMcp::content().await;
     if *content.enabled() {
-        McpServerManager::restart()
-            .await
-            .map_err(|e| e.to_string())?;
+        if let Err(e) = McpServerManager::restart().await {
+            EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
+            return Err(e.to_string());
+        }
     }
     EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
