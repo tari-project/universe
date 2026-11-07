@@ -887,3 +887,69 @@ async fn test_set_external_monero_address_blank_is_rejected() {
         );
     }
 }
+
+fn critical_problem(error: anyhow::Error) -> super::events::CriticalProblemPayload {
+    error
+        .downcast::<super::events::CriticalProblemPayload>()
+        .expect("a critical problem payload")
+}
+
+/// The refusal before a new wallet is created, and the guard in `add_monero_wallet`, name the
+/// Monero keys that stopped them, not a backup the user never had.
+#[test]
+fn test_monero_keys_found_problem_detail_names_the_monero_keys() {
+    use super::internal_wallet::monero_keys_found_problem;
+
+    let payload = critical_problem(monero_keys_found_problem());
+
+    assert_eq!(
+        payload.description.as_deref(),
+        Some("common:wallet-config-missing")
+    );
+    assert_eq!(
+        payload.error_message.as_deref(),
+        Some("Monero keys from a previous install were found, config_wallet.json is missing")
+    );
+}
+
+/// Evidence on disk without a moved-aside config: the backup is what could not be used.
+#[test]
+fn test_previous_wallet_problem_no_moved_aside_file_names_the_unreadable_backup() {
+    use super::internal_wallet::previous_wallet_problem;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let payload = critical_problem(previous_wallet_problem(
+        &dir.path().join("config_wallet.json.backup"),
+    ));
+
+    assert_eq!(
+        payload.description.as_deref(),
+        Some("common:wallet-config-missing")
+    );
+    assert_eq!(
+        payload.error_message.as_deref(),
+        Some("config_wallet.json is missing, config_wallet.json.backup is unreadable")
+    );
+}
+
+/// A moved-aside config still reports the unreadable config, by its moved-aside path.
+#[test]
+fn test_previous_wallet_problem_moved_aside_file_reports_the_unreadable_config() {
+    use super::internal_wallet::previous_wallet_problem;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let config_backup = dir.path().join("config_wallet.json.backup");
+    let moved_aside = dir.path().join("config_wallet.json.corrupt.1790000000");
+    std::fs::write(&moved_aside, "\0").expect("write the config moved aside");
+
+    let payload = critical_problem(previous_wallet_problem(&config_backup));
+
+    assert_eq!(
+        payload.description.as_deref(),
+        Some("common:wallet-config-unreadable")
+    );
+    assert_eq!(
+        payload.error_message.as_deref(),
+        Some(moved_aside.display().to_string().as_str())
+    );
+}

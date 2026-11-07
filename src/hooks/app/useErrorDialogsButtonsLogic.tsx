@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useState } from 'react';
+import { setCriticalProblem } from '@app/store/actions/appStateStoreActions.ts';
 
 export const useErrorDialogsButtonsLogic = () => {
     const [isExiting, setIsExiting] = useState(false);
@@ -24,13 +25,13 @@ export const useErrorDialogsButtonsLogic = () => {
         setIsExiting(false);
     }, []);
 
-    // The user has confirmed their seed words are backed up: move the unreadable wallet
-    // config aside and restart so setup creates a new wallet.
+    // The user asked to start fresh: the backend creates the new wallet and brings it up in the
+    // running app, so the dialog just closes. On failure it stays open.
     const handleStartFresh = useCallback(async () => {
         try {
             setIsExiting(true);
             await invoke('discard_unreadable_wallet_config');
-            await invoke('restart_application');
+            setCriticalProblem();
         } catch (e) {
             console.error('Error discarding the wallet config | handleStartFresh in CriticalProblemDialog: ', e);
         }

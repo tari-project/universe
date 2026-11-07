@@ -916,11 +916,30 @@ fn reset_data_dir(dir_path: &Path, reset_wallet: bool, network: &str) -> Result<
     Ok(())
 }
 
+/// The critical problem dialog's start fresh: creates the new wallet, then brings it up in the
+/// running app the way `revert_to_internal_wallet` does, so the user never has to restart.
 #[tauri::command]
-pub async fn discard_unreadable_wallet_config() -> Result<(), String> {
-    crate::internal_wallet::discard_unreadable_wallet_config()
+pub async fn discard_unreadable_wallet_config(app_handle: tauri::AppHandle) -> Result<(), String> {
+    crate::internal_wallet::discard_unreadable_wallet_config(&app_handle)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    // Setup left the wallet and CPU mining phases without a wallet; nothing else depends on one.
+    SetupManager::get_instance()
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+        .await;
+    InternalWallet::initialize_with_seed(&app_handle)
+        .await
+        .map_err(|e| e.to_string())?;
+    ConfigWallet::migrate().await.map_err(|e| e.to_string())?;
+    EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
+
+    tauri::async_runtime::spawn(async move {
+        SetupManager::get_instance()
+            .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+            .await;
+    });
+    Ok(())
 }
 
 #[tauri::command]
