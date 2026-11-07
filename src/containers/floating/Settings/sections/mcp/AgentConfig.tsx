@@ -129,7 +129,7 @@ export default function AgentConfig() {
         async (buildText: (token: string) => string) => {
             try {
                 let token: string | null = null;
-                if (isPinLocked) {
+                if (isPinLocked !== false) {
                     const pin = await requestPin();
                     if (!pin) return;
                     token = await invoke<string | null>('get_mcp_token', { pin });

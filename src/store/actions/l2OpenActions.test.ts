@@ -84,6 +84,36 @@ describe('openL2', () => {
         expect(useUIStore.getState().l2Open).toBe(false);
         expect(useToastStore.getState().toasts).toHaveLength(1);
     });
+
+    it('waits for PIN status when unknown, then unlocks if PIN is set', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(lockedState, 'unlock_l2_wallet', openState);
+
+        const openPromise = openL2();
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).not.toHaveBeenCalled();
+
+        useWalletStore.setState({ is_pin_locked: true });
+        await openPromise;
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet');
+        expect(useUIStore.getState().l2Open).toBe(true);
+    });
+
+    it('waits for PIN status when unknown, then asks for PIN if wallet has no PIN', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+
+        const openPromise = openL2();
+        expect(useSecurityStore.getState().modal).toBeNull();
+
+        useWalletStore.setState({ is_pin_locked: false });
+        await openPromise;
+
+        expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(invoke).not.toHaveBeenCalled();
+    });
 });
 
 describe('createPinAndOpenL2', () => {

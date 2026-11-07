@@ -35,7 +35,7 @@ export default function TokenDisplay() {
             setFullToken(null);
             return;
         }
-        if (isPinLocked) {
+        if (isPinLocked !== false) {
             const pin = await requestPin();
             if (!pin) return;
             try {
@@ -63,7 +63,7 @@ export default function TokenDisplay() {
             setTimeout(() => setCopied(false), 2000);
             return;
         }
-        if (isPinLocked) {
+        if (isPinLocked !== false) {
             const pin = await requestPin();
             if (!pin) return;
             try {

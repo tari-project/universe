@@ -35,8 +35,8 @@ export default function L2WalletCard() {
     // restart), close the card and let the sidebar ask for the PIN next time. A seed change
     // reopens the wallet itself, so the card waits for it.
     useEffect(() => {
-        if (!open && !seedChangePending) setL2Open(false);
-    }, [open, seedChangePending]);
+        if (hasPin !== undefined && !open && !seedChangePending) setL2Open(false);
+    }, [hasPin, open, seedChangePending]);
 
     // Before launch there is no L2 account to wait for (recovery can't reach the indexer),
     // so the wallet shows a placeholder that can still burn to the default claim key.

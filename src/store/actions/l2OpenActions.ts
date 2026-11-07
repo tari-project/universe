@@ -29,27 +29,65 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
     }
 };
 
+let pinStatusPromise: Promise<boolean> | null = null;
+
+/** Waits for `is_pin_locked` to become known (emitted by phase_wallet on startup). */
+export const waitForPinStatus = (timeoutMs = 10000): Promise<boolean> => {
+    const current = useWalletStore.getState().is_pin_locked;
+    if (current !== undefined) return Promise.resolve(current);
+    if (pinStatusPromise) return pinStatusPromise;
+    pinStatusPromise = new Promise<boolean>((resolve) => {
+        let timer: NodeJS.Timeout | null = null;
+        const unsub = useWalletStore.subscribe((state) => {
+            if (state.is_pin_locked !== undefined) {
+                if (timer) clearTimeout(timer);
+                unsub();
+                pinStatusPromise = null;
+                resolve(state.is_pin_locked);
+            }
+        });
+        timer = setTimeout(() => {
+            unsub();
+            pinStatusPromise = null;
+            resolve(useWalletStore.getState().is_pin_locked ?? false);
+        }, timeoutMs);
+    });
+    return pinStatusPromise;
+};
+
+let openingL2 = false;
+
 /**
  * The sidebar's way into L2. An open wallet just shows the panel. Without a PIN the user is
  * asked to set one first; otherwise the PIN prompt opens straight away, and the panel only
  * once the wallet is open.
  */
 export const openL2 = async () => {
-    if (!useWalletStore.getState().is_pin_locked) {
-        useSecurityStore.setState({ modal: 'l2_pin_required' });
-        return;
-    }
+    if (openingL2) return;
+    openingL2 = true;
     try {
-        handleL2WalletStateUpdate(await invoke<L2WalletState>('l2_get_state'));
-    } catch (e) {
-        console.warn('Could not load L2 wallet state:', e);
+        let isPinLocked = useWalletStore.getState().is_pin_locked;
+        if (isPinLocked === undefined) {
+            isPinLocked = await waitForPinStatus();
+        }
+        if (!isPinLocked) {
+            useSecurityStore.setState({ modal: 'l2_pin_required' });
+            return;
+        }
+        try {
+            handleL2WalletStateUpdate(await invoke<L2WalletState>('l2_get_state'));
+        } catch (e) {
+            console.warn('Could not load L2 wallet state:', e);
+        }
+        const { enabled, locked } = useL2WalletStore.getState();
+        if (enabled && !locked) {
+            setL2Open(true);
+            return;
+        }
+        await openWith('unlock_l2_wallet');
+    } finally {
+        openingL2 = false;
     }
-    const { enabled, locked } = useL2WalletStore.getState();
-    if (enabled && !locked) {
-        setL2Open(true);
-        return;
-    }
-    await openWith('unlock_l2_wallet');
 };
 
 /** Sets the wallet PIN and opens L2 with it, so the user enters it once. */

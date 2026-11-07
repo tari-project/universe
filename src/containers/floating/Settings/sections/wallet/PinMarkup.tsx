@@ -27,7 +27,7 @@ export const PinMarkup = () => {
             });
     }, []);
 
-    return !isPinLocked ? (
+    return isPinLocked === false ? (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
                 <Typography variant="h6" style={{ textTransform: 'uppercase' }}>
