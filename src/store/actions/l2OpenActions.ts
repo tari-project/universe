@@ -35,10 +35,27 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
  * once the wallet is open.
  */
 export const openL2 = async () => {
-    if (!useWalletStore.getState().is_pin_locked) {
+    const pinLocked = useWalletStore.getState().is_pin_locked;
+    
+    // If still loading PIN state, wait briefly then re-check
+    if (pinLocked === undefined) {
+        // Give wallet time to load, then proceed with normal flow
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const updatedPinLocked = useWalletStore.getState().is_pin_locked;
+        if (updatedPinLocked === undefined) {
+            // Still undefined, show loading state or return
+            console.warn('PIN state still loading, please try again');
+            return;
+        }
+        if (!updatedPinLocked) {
+            useSecurityStore.setState({ modal: 'l2_pin_required' });
+            return;
+        }
+    } else if (!pinLocked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;
     }
+    
     try {
         handleL2WalletStateUpdate(await invoke<L2WalletState>('l2_get_state'));
     } catch (e) {
