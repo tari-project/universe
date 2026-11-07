@@ -1,17 +1,3 @@
-🚀 TARI UNIVERSE v1.6.22: Windows GPU Mining Fix
-
-_November 7, 2026_
-
-✨ WHAT'S FIXED
-
-- 🪟 **GPU mining starts on Windows again** – Since v1.6.21, GPU mining on Windows could refuse to start with "Failed to update stale firewall rule:" and nothing after the colon. We were sending Windows a firewall command it rejects, then throwing away the error it gave back. Old firewall rules for your miners are now deleted and replaced, and Block rules are left alone.
-- 🌊 **The L2 panel opens** – Unlocking the L2 wallet waited on the Ootle indexer, which stays off until launch, so the panel failed with "indexer could not be reached". It opens without the indexer now.
-- 💰 **L2 balances say TARI** – The L2 wallet called its token XTR. It's TARI now. Your L1 balance is still XTM.
-- 🔑 **Starting over after a manual wipe** – If you reset Tari Universe by deleting its folders, your system keychain still held the old keys, so the next launch got stuck on a "config_wallet.json is missing" dialog with no way forward. That dialog now has a **Start fresh with a new wallet** button, which sets up a new wallet right there, no restart needed.
-- 🔧 **Under the hood** – Updated the Layer 2 libraries to tari-ootle v0.50.1, so sends and claims keep working when the Esmeralda testnet moves to Ootle protocol V1 on November 8.
-
----
-
 🚀 TARI UNIVERSE v1.6.21: Twin Tides Part 2 – Landfall
 
 _November 6, 2026_

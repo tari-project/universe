@@ -295,10 +295,17 @@ impl CpuManager {
             }
         };
 
-        let cpu_cores_to_use = max_cpu_available
-            .saturating_mul(cpu_usage_percentage)
-            .saturating_div(100)
-            .clamp(1, max_cpu_available);
+        // LocalNet's difficulty is 1, so every xmrig hash is a block the node has to process. On
+        // a 64 core CI runner the Eco share alone is 6 threads, enough block submissions to swamp
+        // the node whenever the host is busy. Test builds mine with a single thread.
+        let cpu_cores_to_use = if cfg!(feature = "test-mode") {
+            1
+        } else {
+            max_cpu_available
+                .saturating_mul(cpu_usage_percentage)
+                .saturating_div(100)
+                .clamp(1, max_cpu_available)
+        };
 
         info!(target: LOG_TARGET_APP_LOGIC, "Using {cpu_cores_to_use} CPU cores for mining");
 

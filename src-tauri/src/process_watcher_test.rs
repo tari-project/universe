@@ -104,6 +104,7 @@ async fn healthy_status_resets_warning_count() {
     assert!(result.is_none());
     assert_eq!(warning_count, 0);
     assert_eq!(duration_since_last_healthy, Duration::from_secs(0));
+    assert!(stats.healthy_since_start);
 }
 
 #[tokio::test]
@@ -274,6 +275,51 @@ async fn unhealthy_during_startup_waits_no_restart() {
     assert_eq!(stats.num_failures, 1);
     assert_eq!(stats.num_restarts, 0);
     assert!(child.is_running.load(Ordering::SeqCst));
+}
+
+#[tokio::test]
+async fn unhealthy_during_startup_restarts_once_it_was_healthy() {
+    let (
+        mut child,
+        status_monitor,
+        mut uptime,
+        mut duration_since_last_healthy,
+        global_shutdown,
+        tracker,
+        inner_shutdown,
+        mut stats,
+    ) = setup_test_context().await;
+
+    // The process came up, then wedged well inside its startup window.
+    stats.healthy_since_start = true;
+    status_monitor.set_health_status(HealthStatus::Unhealthy);
+
+    let mut warning_count = 0u32;
+    let unhealthy_timer = Instant::now();
+
+    let result = do_health_check(
+        &mut child,
+        status_monitor,
+        "test_process".to_string(),
+        &mut uptime,
+        &mut duration_since_last_healthy,
+        unhealthy_timer,
+        Duration::from_secs(300),
+        Duration::from_secs(10),
+        global_shutdown.to_signal(),
+        tracker,
+        inner_shutdown.to_signal(),
+        &mut warning_count,
+        &[],
+        &mut stats,
+    )
+    .await
+    .unwrap();
+
+    assert!(result.is_none());
+    assert_eq!(stats.num_restarts, 1);
+    // The restarted process gets the full startup grace again.
+    assert!(!stats.healthy_since_start);
 }
 
 #[tokio::test]
