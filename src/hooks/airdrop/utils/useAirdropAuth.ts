@@ -17,37 +17,31 @@ export function useAirdropAuth() {
 
     useFetchAirdropToken({ canListen: linkOpened });
 
-    const prepareAirdropLink = useCallback(
-        async (claimCode?: string) => {
-            const token = uuidv4();
-            if (!allowTelemetry) {
-                await setAllowTelemetry(true);
-            }
-            if (airdropUrl) {
-                setAuthUuid(token);
-                return `${airdropUrl}/auth?tauri=${token}${claimCode ? `&universeReferral=${claimCode}` : ''}`;
-            }
-            return null;
-        },
-        [airdropUrl, allowTelemetry]
-    );
+    const prepareAirdropLink = useCallback(async () => {
+        const token = uuidv4();
+        if (!allowTelemetry) {
+            await setAllowTelemetry(true);
+        }
+        if (airdropUrl) {
+            setAuthUuid(token);
+            return `${airdropUrl}/auth?tauri=${token}`;
+        }
+        return null;
+    }, [airdropUrl, allowTelemetry]);
 
-    const handleAuth = useCallback(
-        async (claimCode?: string) => {
-            const url = await prepareAirdropLink(claimCode);
-            if (url) {
-                try {
-                    await open(url);
-                } catch (e) {
-                    copyToClipboard(url);
-                    console.error('Airdrop auth URL error: ', e);
-                } finally {
-                    setLinkOpened(true);
-                }
+    const handleAuth = useCallback(async () => {
+        const url = await prepareAirdropLink();
+        if (url) {
+            try {
+                await open(url);
+            } catch (e) {
+                copyToClipboard(url);
+                console.error('Airdrop auth URL error: ', e);
+            } finally {
+                setLinkOpened(true);
             }
-        },
-        [copyToClipboard, prepareAirdropLink]
-    );
+        }
+    }, [copyToClipboard, prepareAirdropLink]);
 
     return { authUrlCopied: isCopied, handleAuth };
 }

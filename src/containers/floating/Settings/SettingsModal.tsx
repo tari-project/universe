@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 
 import { useAppStateStore } from '@app/store/appStateStore.ts';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -32,6 +33,8 @@ const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
+    const userDetails = useAirdropStore((s) => s.userDetails);
+    const currentSection = activeSection === 'airdrop' && !userDetails ? SETTINGS_TYPES[0] : activeSection;
     const markups = {
         general: <GeneralSettings />,
         mining: <MiningSettings />,
@@ -45,7 +48,7 @@ const SettingsModal = memo(function SettingsModal() {
         releaseNotes: <ReleaseNotes />,
     };
 
-    const sectionMarkup = markups[activeSection];
+    const sectionMarkup = markups[currentSection];
 
     function onOpenChange() {
         if (isSettingsOpen) {
@@ -54,15 +57,15 @@ const SettingsModal = memo(function SettingsModal() {
         setIsSettingsOpen(!isSettingsOpen);
     }
 
-    const sectionTitle = t(`tabs.${activeSection}`);
-    const omitSettingsSuffix = activeSection === 'releaseNotes' || activeSection === 'airdrop';
+    const sectionTitle = t(`tabs.${currentSection}`);
+    const omitSettingsSuffix = currentSection === 'releaseNotes' || currentSection === 'airdrop';
     const title = omitSettingsSuffix ? sectionTitle : `${sectionTitle} ${t('settings')}`;
 
     return (
         <Dialog open={isSettingsOpen} onOpenChange={onOpenChange}>
             <DialogContent $unPadded>
                 <Container>
-                    <SettingsNavigation activeSection={activeSection} onChangeActiveSection={setActiveSection} />
+                    <SettingsNavigation activeSection={currentSection} onChangeActiveSection={setActiveSection} />
                     <ContentContainer>
                         <HeaderContainer>
                             <Typography variant="h4">{title}</Typography>
@@ -74,7 +77,7 @@ const SettingsModal = memo(function SettingsModal() {
                             </EndContainer>
                         </HeaderContainer>
 
-                        <SectionWrapper key={activeSection}>{sectionMarkup}</SectionWrapper>
+                        <SectionWrapper key={currentSection}>{sectionMarkup}</SectionWrapper>
                     </ContentContainer>
                 </Container>
                 <RestartDialog />
