@@ -157,7 +157,10 @@ pub fn scheduled_mine_action(
 /// so that the new mode's settings (e.g. xmrig thread count, GPU power levels) take effect.
 /// If `start_if_stopped` is true (e.g. when entering a scheduled mining window),
 /// miners that are enabled in config but currently stopped will be started.
-pub async fn switch_mining_mode(new_mode: &str, start_if_stopped: bool) -> Result<(), anyhow::Error> {
+pub async fn switch_mining_mode(
+    new_mode: &str,
+    start_if_stopped: bool,
+) -> Result<(), anyhow::Error> {
     let current_mode = crate::configs::config_mining::ConfigMining::content()
         .await
         .selected_mining_mode()
@@ -349,4 +352,3 @@ mod tests {
         );
     }
 }
-
