@@ -85,7 +85,7 @@ use zeroize::Zeroizing;
 
 use crate::{
     configs::{
-        config_core::{ConfigCore, check_ootle_indexer_network},
+        config_core::{ConfigCore, check_ootle_indexer_network_lenient},
         trait_config::ConfigImpl,
     },
     credential_manager::CredentialManager,
@@ -532,7 +532,7 @@ async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), Transa
     }
     let store_dir = found_store_dir().await?;
     let (network, indexer_url) = network_and_indexer().await?;
-    check_ootle_indexer_network(&indexer_url, network)
+    check_ootle_indexer_network_lenient(&indexer_url, network)
         .await
         .map_err(wallet_error)?;
     let secret = keyring_secret()?;
@@ -632,7 +632,7 @@ async fn replace_store(
     password: &str,
 ) -> Result<(), TransactionError> {
     let (network, indexer_url) = network_and_indexer().await?;
-    check_ootle_indexer_network(&indexer_url, network)
+    check_ootle_indexer_network_lenient(&indexer_url, network)
         .await
         .map_err(wallet_error)?;
 

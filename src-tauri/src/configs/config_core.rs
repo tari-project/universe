@@ -202,13 +202,43 @@ pub async fn check_ootle_indexer_network(
     let identity: IndexerNetwork = serde_json::from_slice(&body)
         .map_err(|_| anyhow::anyhow!("Invalid network response from indexer at {indexer}"))?;
     if identity.network != network.as_key_str() {
-        anyhow::bail!(
-            "indexer at {indexer} serves {}, this wallet is on {}",
-            identity.network.escape_default(),
-            network.as_key_str()
-        );
+        return Err(OotleIndexerNetworkMismatch {
+            indexer,
+            served: identity.network.escape_default().to_string(),
+            expected: network.as_key_str(),
+        }
+        .into());
     }
     Ok(())
+}
+
+/// The indexer answered with a valid identity for another network: a misconfiguration,
+/// told apart from an indexer that is down or answering garbage.
+#[derive(Debug, thiserror::Error)]
+#[error("indexer at {indexer} serves {served}, this wallet is on {expected}")]
+struct OotleIndexerNetworkMismatch {
+    indexer: Url,
+    served: String,
+    expected: &'static str,
+}
+
+/// Like [`check_ootle_indexer_network`], but only an indexer reporting another network
+/// or a malformed URL refuses; one that can't be reached or gives an unusable answer is
+/// logged and let through.
+pub async fn check_ootle_indexer_network_lenient(
+    indexer: &Url,
+    network: Network,
+) -> Result<(), anyhow::Error> {
+    canonicalise_ootle_indexer_url(indexer.as_str())?;
+    match check_ootle_indexer_network(indexer, network).await {
+        Err(e) if !e.is::<OotleIndexerNetworkMismatch>() => {
+            // Opening only needs the local store; the services that use the indexer
+            // wait for it themselves.
+            warn!(target: LOG_TARGET_APP_LOGIC, "Opening the L2 wallet without checking the indexer network: {e}");
+            Ok(())
+        }
+        result => result,
+    }
 }
 
 /// Defaults that have since been taken down. A copy of one in a config file is stale, not
@@ -496,6 +526,54 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(error.contains("indexer could not be reached"), "{error}");
+    }
+
+    #[tokio::test]
+    async fn test_lenient_indexer_network_unreachable_returns_ok() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = Url::parse(&format!("http://{}/", listener.local_addr().unwrap())).unwrap();
+        drop(listener);
+        check_ootle_indexer_network_lenient(&url, Network::MainNet)
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_lenient_indexer_network_invalid_response_returns_ok() {
+        for body in ["not JSON", "{}", r#"{"network":0}"#] {
+            let url = stub_indexer(body).await;
+            check_ootle_indexer_network_lenient(&url, Network::MainNet)
+                .await
+                .unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn test_lenient_indexer_network_matching_returns_ok() {
+        let url = stub_indexer(r#"{"network":"mainnet"}"#).await;
+        check_ootle_indexer_network_lenient(&url, Network::MainNet)
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_lenient_indexer_network_malformed_url_returns_err() {
+        for bad in ["http://user:pass@localhost:1/", "http://localhost:1/?q=1"] {
+            check_ootle_indexer_network_lenient(&Url::parse(bad).unwrap(), Network::MainNet)
+                .await
+                .unwrap_err();
+        }
+    }
+
+    #[tokio::test]
+    async fn test_lenient_indexer_network_mismatch_returns_err() {
+        let url = stub_indexer(r#"{"network":"esmeralda"}"#).await;
+        let error = check_ootle_indexer_network_lenient(&url, Network::MainNet)
+            .await
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("serves esmeralda"), "{error}");
+        assert!(error.contains("wallet is on mainnet"), "{error}");
     }
 
     #[test]
