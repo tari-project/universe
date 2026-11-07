@@ -1,5 +1,6 @@
-import { clear, readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { clearClipboardText, readClipboardText, writeClipboardText } from '@app/utils/clipboard';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 
 interface CopyOptions {
     /**
@@ -28,7 +29,7 @@ export function useCopyToClipboard() {
     }, [isCopied]);
 
     const copyToClipboard = useCallback((value: string, onCopied?: () => void, options?: CopyOptions) => {
-        writeText(value)
+        writeClipboardText(value)
             .then(() => {
                 setIsCopied(true);
                 onCopied?.();
@@ -37,10 +38,10 @@ export function useCopyToClipboard() {
                 clearTimeout(clearTimer.current);
                 if (options?.clearAfterMs) {
                     clearTimer.current = setTimeout(() => {
-                        readText()
+                        readClipboardText()
                             .then((current) => {
                                 if (current === value) {
-                                    return clear();
+                                    return clearClipboardText();
                                 }
                             })
                             .catch((e) => {
@@ -51,6 +52,7 @@ export function useCopyToClipboard() {
             })
             .catch((e) => {
                 console.error('Could not copy to clipboard', e);
+                addToast({ title: 'Failed to copy to clipboard', text: String(e), type: 'error' });
             });
     }, []);
 
