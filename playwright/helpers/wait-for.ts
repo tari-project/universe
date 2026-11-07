@@ -213,25 +213,50 @@ export async function waitForWalletReady(page: Page, timeout = 120_000) {
   throw new Error(`Wallet scan did not complete within ${timeout}ms`);
 }
 
+/** Read the highest block height currently visible in the UI. */
+export async function readBlockHeight(page: Page): Promise<number | null> {
+  const accent = await page
+    .locator(sel.node.blockHeight)
+    .textContent({ timeout: 2_000 })
+    .catch(() => null);
+  if (accent) {
+    const height = parseInt(accent.replace(/\D/g, ''), 10);
+    if (!Number.isNaN(height) && height >= 0) return height;
+  }
+  const cards = await page
+    .getByText(/Block: #[\d,]+/)
+    .allTextContents()
+    .catch(() => [] as string[]);
+  const heights = cards
+    .map((text) => parseInt(text.replace(/\D/g, ''), 10))
+    .filter((height) => !Number.isNaN(height) && height > 0);
+  return heights.length ? Math.max(...heights) : null;
+}
+
 /**
  * Mine until the wallet balance exceeds `target`, then stop mining.
  *
  * The balance tracks the WALLET SCAN, and the scanner cannot converge
  * while localnet keeps producing a block every second or two — it chases
- * a moving tip indefinitely. So: mine a short burst (with a fast-path
- * balance check), STOP, and then wait for the scanner to catch up to the
+ * a moving tip indefinitely. So: mine a short burst of blocks, STOP,
+ * and then wait for the scanner to catch up to the
  * now-static tip.
  */
 export async function mineUntilBalanceExceeds(page: Page, target: number, timeout = 300_000) {
   await waitForMiningReady(page, 120_000);
+  let initialHeight = await readBlockHeight(page);
   await clickStartMining(page);
   await waitForMiningActive(page, 120_000);
   try {
-    // Fast path: on a small chain the scan keeps up and the balance
-    // crosses the target while mining.
-    await waitForWalletBalance(page, target, 60_000);
-  } catch {
-    // Slow path: stop below and let the scanner converge.
+    // The wallet scanner can lag a growing chain. Mine only enough blocks
+    // to fund and mature a coinbase, then let it catch up to a static tip.
+    const deadline = Date.now() + 120_000;
+    while (Date.now() < deadline) {
+      const height = await readBlockHeight(page);
+      if (initialHeight === null) initialHeight = height;
+      if (initialHeight !== null && height !== null && height >= initialHeight + 6) break;
+      await page.waitForTimeout(2_000);
+    }
   } finally {
     await clickStopMining(page);
     await waitForMiningStopped(page, 60_000);

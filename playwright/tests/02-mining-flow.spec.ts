@@ -9,6 +9,7 @@ import {
   mineUntilBalanceExceeds,
   ensureBalance,
   waitForWalletReady,
+  readBlockHeight,
 } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
 import { getAppDataDir } from '../helpers/app-dirs';
@@ -56,27 +57,6 @@ async function waitForHashrateReset(page: Page, timeout = 30_000) {
     await page.waitForTimeout(1_000);
   }
   throw new Error(`Hashrate did not reset within ${timeout}ms`);
-}
-
-/**
- * Read the highest block height visible in the UI — the accent counter
- * when rendered, otherwise the "Block: #N" cards in the miners strip.
- */
-async function readBlockHeight(page: Page): Promise<number | null> {
-  const accent = await page
-    .locator(sel.node.blockHeight)
-    .textContent({ timeout: 2_000 })
-    .catch(() => null);
-  if (accent) {
-    const n = parseInt(accent.replace(/\D/g, ''), 10);
-    if (!Number.isNaN(n) && n > 0) return n;
-  }
-  const cards = await page
-    .getByText(/Block: #[\d,]+/)
-    .allTextContents()
-    .catch(() => [] as string[]);
-  const nums = cards.map((t) => parseInt(t.replace(/\D/g, ''), 10)).filter((n) => !Number.isNaN(n) && n > 0);
-  return nums.length ? Math.max(...nums) : null;
 }
 
 /** Wait until the chain tip visibly advances — the honest "mining works" signal. */
