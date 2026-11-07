@@ -150,7 +150,7 @@ export const L2Settings = () => {
     }
 
     let status;
-    if (!hasPin) {
+    if (hasPin === false) {
         status = (
             <SettingsGroup data-testid="l2-settings-pin-required">
                 <SettingsGroupContent>

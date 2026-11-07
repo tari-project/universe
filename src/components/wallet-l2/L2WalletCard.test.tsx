@@ -59,6 +59,18 @@ describe('L2WalletCard', () => {
         expect(invoke).not.toHaveBeenCalled();
     });
 
+    it('waits and shows loading when PIN state is unknown (undefined), does not close itself', () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        useUIStore.setState({ l2Open: true });
+        serve(enabledState);
+        render(<L2WalletCard />);
+
+        expect(useUIStore.getState().l2Open).toBe(true);
+        expect(screen.getByTestId('l2-loading')).toBeInTheDocument();
+        expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
     it.each([
         ['locked', { enabled: true, locked: true, seed_source: 'l1', accounts: [] }],
         ['not enabled', initialState],
