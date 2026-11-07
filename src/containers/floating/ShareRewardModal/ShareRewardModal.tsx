@@ -1,4 +1,5 @@
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { writeClipboardText } from '@app/utils/clipboard';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 import GreenModal from '@app/components/GreenModal/GreenModal';
 import { AnimatePresence } from 'motion/react';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
@@ -57,9 +58,14 @@ const ShareRewardModal = memo(function ShareRewardModal() {
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
     const handleCopy = useCallback(() => {
-        writeText(shareUrl).then(() => {
-            setCopied(true);
-        });
+        writeClipboardText(shareUrl)
+            .then(() => {
+                setCopied(true);
+            })
+            .catch((e) => {
+                console.error('Could not copy to clipboard', e);
+                addToast({ title: 'Failed to copy', text: String(e), type: 'error' });
+            });
     }, [shareUrl]);
 
     return (
