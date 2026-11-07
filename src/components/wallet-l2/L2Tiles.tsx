@@ -253,8 +253,8 @@ export default function L2Tiles() {
                             value={stats ? formatNumber(stats.tx_count, FormatPreset.COMPACT) : DASH}
                             label={t('l2.tiles.transactions')}
                         />
-                        <Stat value={xtr(stats?.fee_volume)} unit="XTR" label={t('l2.tiles.fees')} />
-                        <Stat value={xtr(stats?.burned)} unit="XTR" label={t('l2.tiles.burned')} />
+                        <Stat value={xtr(stats?.fee_volume)} unit="TARI" label={t('l2.tiles.fees')} />
+                        <Stat value={xtr(stats?.burned)} unit="TARI" label={t('l2.tiles.burned')} />
                     </ActivityRow>
                 </Inside>
             </Tile>

@@ -360,10 +360,10 @@ impl SpendKind {
         }
     }
 
-    /// The currency the amount is in: XTR on L2, XTM on L1.
+    /// The currency the amount is in: TARI on L2, XTM on L1.
     fn currency(&self) -> &'static str {
         match self {
-            SpendKind::L2Send { .. } | SpendKind::L2Claim { .. } => "XTR",
+            SpendKind::L2Send { .. } | SpendKind::L2Claim { .. } => "TARI",
             SpendKind::Send { .. } | SpendKind::Burn { .. } | SpendKind::Abandon { .. } => "XTM",
         }
     }
@@ -1216,6 +1216,17 @@ mod tests {
         assert_eq!(burn.as_str(), "burn");
         assert_eq!(send.counterparty(), "addr");
         assert_eq!(burn.counterparty(), "claimkey");
+        assert_eq!(send.currency(), "XTM");
+        assert_eq!(burn.currency(), "XTM");
+        assert_eq!(
+            SpendKind::Abandon {
+                tx_id: "12".to_string(),
+                accept_unreconcilable: false,
+                is_burn: true,
+            }
+            .currency(),
+            "XTM"
+        );
         assert!(matches!(
             send.pin_context(SendOrigin::App, 1, None, false)
                 .with_fee(25),
@@ -1237,7 +1248,7 @@ mod tests {
     }
 
     #[test]
-    fn l2_send_asks_about_the_l2_address_in_xtr() {
+    fn l2_send_asks_about_the_l2_address_in_tari() {
         let send = SpendKind::L2Send {
             destination: "otl_esm_addr".to_string(),
             account: "component_abc".to_string(),
@@ -1245,7 +1256,7 @@ mod tests {
         };
         assert_eq!(send.as_str(), "l2_send");
         assert_eq!(send.counterparty(), "otl_esm_addr");
-        assert_eq!(send.currency(), "XTR");
+        assert_eq!(send.currency(), "TARI");
         assert_eq!(
             SpendKind::Send {
                 destination: "addr".to_string()
@@ -1275,13 +1286,13 @@ mod tests {
     }
 
     #[test]
-    fn l2_claim_asks_about_the_burn_commitment_in_xtr() {
+    fn l2_claim_asks_about_the_burn_commitment_in_tari() {
         let claim = SpendKind::L2Claim {
             commitment: "dae29ac8".to_string(),
         };
         assert_eq!(claim.as_str(), "l2_claim");
         assert_eq!(claim.counterparty(), "dae29ac8");
-        assert_eq!(claim.currency(), "XTR");
+        assert_eq!(claim.currency(), "TARI");
         assert!(matches!(
             claim.pin_context(SendOrigin::App, 4, None, false).with_fee(7),
             PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment, fee_micro_minotari: Some(7) }

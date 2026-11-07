@@ -282,7 +282,7 @@
     "seed-change-error": "Nie udało się zmienić frazy kluczowej Layer 2",
     "confirm-replace-copy": "Twój obecny portfel Layer 2 zostanie zastąpiony.\nOdzyskasz go tylko za pomocą jego frazy kluczowej.",
     "address": "Adres portfela Ootle",
-    "address-description": "Udostępnij go, aby otrzymywać XTR w Ootle.",
+    "address-description": "Udostępnij go, aby otrzymywać TARI w Ootle.",
     "public-key": "Klucz publiczny właściciela Ootle",
     "public-key-description": "Klucz odbioru dla spaleń z Twojego portfela Tari. Funkcja Spal do L2 uzupełnia go za Ciebie.",
     "side-by-side": "Zezwól na wyświetlanie portfeli obok siebie",

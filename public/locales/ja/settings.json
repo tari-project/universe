@@ -282,7 +282,7 @@
     "seed-change-error": "レイヤー2のシードワードを変更できませんでした",
     "confirm-replace-copy": "現在のレイヤー2ウォレットは置き換えられます。\n元に戻すにはそのシードワードが必要です。",
     "address": "Ootleウォレットアドレス",
-    "address-description": "OotleでXTRを受け取るにはこれを共有してください。",
+    "address-description": "OotleでTARIを受け取るにはこれを共有してください。",
     "public-key": "Ootle所有者公開鍵",
     "public-key-description": "Tariウォレットからのバーンの請求キーです。「L2へバーン」で自動的に入力されます。",
     "side-by-side": "ウォレットを並べて表示できるようにする",

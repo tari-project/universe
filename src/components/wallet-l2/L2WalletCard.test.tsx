@@ -88,8 +88,8 @@ describe('L2WalletCard', () => {
         serve(enabledState);
         render(<L2WalletCard />);
 
-        expect(await screen.findByTestId('l2-balance')).toHaveTextContent('******* XTR');
-        expect(screen.getByTestId('l2-history-row')).toHaveTextContent('***XTR');
+        expect(await screen.findByTestId('l2-balance')).toHaveTextContent('******* TARI');
+        expect(screen.getByTestId('l2-history-row')).toHaveTextContent('***TARI');
         useUIStore.setState({ hideWalletBalance: false });
     });
 
@@ -98,9 +98,9 @@ describe('L2WalletCard', () => {
         serve(enabledState);
         render(<L2WalletCard />);
 
-        expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 XTR');
+        expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 TARI');
         expect(screen.getAllByTestId('l2-history-row')).toHaveLength(1);
-        expect(screen.getByTestId('l2-history-row')).toHaveTextContent('+1.23kXTR');
+        expect(screen.getByTestId('l2-history-row')).toHaveTextContent('+1.23kTARI');
         expect(screen.queryByTestId('l2-enable')).not.toBeInTheDocument();
     });
 
@@ -169,6 +169,7 @@ describe('L2WalletCard', () => {
         fireEvent.mouseEnter(row);
         fireEvent.click(await screen.findByTestId('l2-row-details'));
         expect(await screen.findByText('history.transaction-details')).toBeInTheDocument();
+        expect(screen.getByText('+1,234.56 TARI')).toBeInTheDocument();
     });
 
     it('filters the feed between burns and history', async () => {
@@ -238,7 +239,7 @@ describe('L2WalletCard', () => {
             serveWithKey(noAccounts, async () => CLAIM_KEY);
             render(<L2WalletCard />);
 
-            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('0 XTR');
+            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('0 TARI');
             expect(screen.queryByTestId('l2-loading')).not.toBeInTheDocument();
             expect(screen.queryByTestId('l2-copy-address')).not.toBeInTheDocument();
             expect(screen.getByTestId('l2-history-empty')).toHaveTextContent('l2.empty');
@@ -251,7 +252,7 @@ describe('L2WalletCard', () => {
             serveWithKey(enabledState, async () => CLAIM_KEY);
             render(<L2WalletCard />);
 
-            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('0 XTR');
+            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('0 TARI');
             expect(screen.queryByTestId('l2-history-row')).not.toBeInTheDocument();
         });
 
@@ -319,7 +320,7 @@ describe('L2WalletCard', () => {
             serve(enabledState);
             render(<L2WalletCard />);
 
-            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 XTR');
+            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 TARI');
             expect(screen.getByTestId('l2-copy-address')).toBeInTheDocument();
             expect(invoke).not.toHaveBeenCalledWith('l2_default_claim_public_key');
         });
@@ -338,7 +339,7 @@ describe('L2WalletCard', () => {
             serve(enabledState);
             render(<L2WalletCard />);
 
-            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 XTR');
+            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 TARI');
             expect(screen.getByTestId('l2-copy-address')).toBeInTheDocument();
             expect(invoke).not.toHaveBeenCalledWith('l2_default_claim_public_key');
         });
@@ -348,7 +349,7 @@ describe('L2WalletCard', () => {
             serve(noAccounts);
             render(<L2WalletCard />);
 
-            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('0 XTR');
+            expect(await screen.findByTestId('l2-balance')).toHaveTextContent('0 TARI');
             expect(screen.queryByTestId('l2-loading')).not.toBeInTheDocument();
         });
     });

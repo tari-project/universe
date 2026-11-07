@@ -57,7 +57,7 @@ describe('L2Activity', () => {
         const rows = await screen.findAllByTestId('l2-claim-row');
         expect(rows).toHaveLength(2);
         expect(screen.queryByTestId('l2-save-proof-button')).not.toBeInTheDocument();
-        expect(within(rows[0]).getByTestId('l2-burn-value')).toHaveTextContent('1kXTR');
+        expect(within(rows[0]).getByTestId('l2-burn-value')).toHaveTextContent('1kTARI');
         fireEvent.mouseEnter(rows[0]);
         expect(within(rows[0]).getByTestId('l2-burn-value')).toHaveTextContent('burn.backup-button');
         expect(within(rows[0]).getByTestId('l2-claim-button')).toBeInTheDocument();
@@ -70,7 +70,7 @@ describe('L2Activity', () => {
         );
         fireEvent.mouseEnter(rows[1]);
         expect(within(rows[1]).queryByTestId('l2-save-proof-button')).not.toBeInTheDocument();
-        expect(within(rows[1]).getByTestId('l2-burn-value')).toHaveTextContent('1kXTR');
+        expect(within(rows[1]).getByTestId('l2-burn-value')).toHaveTextContent('1kTARI');
     });
 
     it('offers Save proof in burn details after mining', async () => {
@@ -78,6 +78,7 @@ describe('L2Activity', () => {
         const rows = await screen.findAllByTestId('l2-claim-row');
         fireEvent.click(within(rows[0]).getByRole('button', { name: 'burn.details-title' }));
         expect(await screen.findByTestId('l2-save-proof-button')).toBeInTheDocument();
+        expect(screen.getByText('1k TARI')).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('modal-close'));
         fireEvent.click(within(rows[1]).getByRole('button', { name: 'burn.details-title' }));
         expect(screen.queryByTestId('l2-save-proof-button')).not.toBeInTheDocument();
@@ -108,7 +109,7 @@ describe('L2Activity', () => {
         expect(screen.getAllByTestId('l2-claim-chip').map((chip) => chip.textContent)).toEqual([
             'l2.claim.chip-pending',
         ]);
-        expect(screen.getAllByTestId('l2-claim-row')[0]).toHaveTextContent('1kXTR');
+        expect(screen.getAllByTestId('l2-claim-row')[0]).toHaveTextContent('1kTARI');
     });
 
     it('mixes burns with history newest first and never shows the proof file', async () => {

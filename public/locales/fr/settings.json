@@ -282,7 +282,7 @@
     "seed-change-error": "Impossible de modifier la phrase de récupération de la Couche 2",
     "confirm-replace-copy": "Votre portefeuille de Couche 2 actuel sera remplacé.\nVous ne pourrez le récupérer qu'avec sa phrase de récupération.",
     "address": "Adresse du portefeuille Ootle",
-    "address-description": "Partagez-la pour recevoir des XTR sur Ootle.",
+    "address-description": "Partagez-la pour recevoir des TARI sur Ootle.",
     "public-key": "Clé publique du propriétaire Ootle",
     "public-key-description": "La clé de réclamation pour les brûlages depuis votre portefeuille Tari. « Brûler vers L2 » la remplit pour vous.",
     "side-by-side": "Afficher les portefeuilles côte à côte",

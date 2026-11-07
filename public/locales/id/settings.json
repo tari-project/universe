@@ -282,7 +282,7 @@
     "seed-change-error": "Tidak dapat mengubah frasa seed Layer 2",
     "confirm-replace-copy": "Dompet Layer 2 Anda saat ini akan diganti.\nAnda hanya dapat memulihkannya dengan frasa seed-nya.",
     "address": "Alamat dompet Ootle",
-    "address-description": "Bagikan ini untuk menerima XTR di Ootle.",
+    "address-description": "Bagikan ini untuk menerima TARI di Ootle.",
     "public-key": "Kunci publik pemilik Ootle",
     "public-key-description": "Kunci klaim untuk burn dari dompet Tari Anda. Burn ke L2 mengisinya untuk Anda.",
     "side-by-side": "Izinkan dompet ditampilkan berdampingan",

@@ -70,7 +70,7 @@ export function TransactionContextSummary({
             label: t('send.network-fee'),
             value:
                 feeMicroMinotari != null
-                    ? `${formatNumber(feeMicroMinotari, FormatPreset.XTM_DECIMALS)} ${isL2 ? 'XTR' : 'XTM'}`
+                    ? `${formatNumber(feeMicroMinotari, FormatPreset.XTM_DECIMALS)} ${isL2 ? 'TARI' : 'XTM'}`
                     : kind === 'send'
                       ? t('send.fee-unavailable')
                       : null,
@@ -95,7 +95,7 @@ export function TransactionContextSummary({
                     <Amount>
                         {formatNumber(amountMicroMinotari, isL2 ? FormatPreset.XTM_DECIMALS : FormatPreset.XTM_COMPACT)}
                     </Amount>
-                    <Currency>{isL2 ? `XTR` : `XTM`}</Currency>
+                    <Currency>{isL2 ? `TARI` : `XTM`}</Currency>
                 </WhiteBoxValue>
             </WhiteBox>
             <StatusList entries={entries} />

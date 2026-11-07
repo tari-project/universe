@@ -41,6 +41,13 @@ describe('L2SendModal', () => {
         await waitFor(() => expect(screen.getByTestId('l2-send-review-button')).toBeEnabled());
     });
 
+    it('test_l2_send_review_displays_tari', async () => {
+        await fill(GOOD, '1');
+        await waitFor(() => expect(screen.getByTestId('l2-send-review-button')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('l2-send-review-button'));
+        expect(await screen.findByText('TARI')).toBeInTheDocument();
+    });
+
     it('tells the user the send was cancelled when the PIN prompt is dismissed', async () => {
         vi.mocked(invoke).mockImplementation((async (cmd: string) => {
             if (cmd === 'l2_send') throw 'PIN entry cancelled';

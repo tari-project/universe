@@ -282,7 +282,7 @@
     "seed-change-error": "레이어 2 시드 구문을 변경하지 못했습니다",
     "confirm-replace-copy": "현재 레이어 2 지갑이 대체됩니다.\n해당 시드 구문이 있어야만 되찾을 수 있습니다.",
     "address": "Ootle 지갑 주소",
-    "address-description": "Ootle에서 XTR을 받으려면 이 주소를 공유하세요.",
+    "address-description": "Ootle에서 TARI를 받으려면 이 주소를 공유하세요.",
     "public-key": "Ootle 소유자 공개 키",
     "public-key-description": "Tari 지갑에서 소각한 자금을 청구하는 키입니다. L2로 소각 시 자동으로 입력됩니다.",
     "side-by-side": "지갑 나란히 표시 허용",

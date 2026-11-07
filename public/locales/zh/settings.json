@@ -282,7 +282,7 @@
     "seed-change-error": "无法更改二层网络种子短语",
     "confirm-replace-copy": "您当前的二层网络钱包将被替换。\n只能通过其种子短语找回。",
     "address": "Ootle 钱包地址",
-    "address-description": "分享此地址以在 Ootle 上接收 XTR。",
+    "address-description": "分享此地址以在 Ootle 上接收 TARI。",
     "public-key": "Ootle 所有者公钥",
     "public-key-description": "从您的 Tari 钱包销毁时使用的领取密钥。“销毁到 L2”会为您自动填写。",
     "side-by-side": "允许钱包并排显示",

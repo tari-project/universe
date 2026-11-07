@@ -282,7 +282,7 @@
     "seed-change-error": "Kon nie die Laag 2-saadwoorde verander nie",
     "confirm-replace-copy": "Jou huidige Laag 2-beursie sal vervang word.\nJy kan dit slegs met sy saadwoorde terugkry.",
     "address": "Ootle-beursieadres",
-    "address-description": "Deel dit om XTR op Ootle te ontvang.",
+    "address-description": "Deel dit om TARI op Ootle te ontvang.",
     "public-key": "Ootle-eienaar se publieke sleutel",
     "public-key-description": "Die eissleutel vir verbrandings vanaf jou Tari-beursie. Verbrand na L2 vul dit vir jou in.",
     "side-by-side": "Laat beursies langs mekaar toe",
