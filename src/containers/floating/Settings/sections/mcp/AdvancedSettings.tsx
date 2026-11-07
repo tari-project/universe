@@ -10,14 +10,15 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
+import { useMcpStore, setMcpPortError } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
 
-const PortInput = styled.input`
+const PortInput = styled.input<{ $hasError?: boolean }>`
     width: 90px;
     font-size: 14px;
     height: 32px;
-    border: 1px solid ${({ theme }) => theme.colorsAlpha.darkAlpha[10]};
+    border: 1px solid ${({ theme, $hasError }) => ($hasError ? '#E53E3E' : theme.colorsAlpha.darkAlpha[10])};
     background-color: ${({ theme }) => theme.palette.background.default};
     border-radius: 8px;
     padding: 4px 8px;
@@ -37,26 +38,42 @@ export default function AdvancedSettings() {
     const readTier = useConfigMcpStore((s) => s.read_tier_enabled);
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
+    const storePortError = useMcpStore((s) => s.portError);
     const [portValue, setPortValue] = useState(String(storePort));
+    const [localError, setLocalError] = useState<string | null>(null);
 
     useEffect(() => {
         setPortValue(String(storePort));
     }, [storePort]);
 
+    const activeError = localError || storePortError;
+
     const commitPort = useCallback(async () => {
-        const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
-            setPortValue(String(storePort));
+        const trimmed = portValue.trim();
+        const num = Number(trimmed);
+        if (!trimmed || isNaN(num) || !Number.isInteger(num) || num < 1024 || num > 65535) {
+            setLocalError(t('mcp.advanced.port-invalid-range'));
             return;
         }
+        setLocalError(null);
+        setMcpPortError(null);
         if (num === storePort) return;
         try {
             await invoke('set_mcp_port', { port: num });
-        } catch (e) {
+            useConfigMcpStore.setState((c) => ({ ...c, port: num }));
+        } catch (e: unknown) {
             console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
+            const msg = t('mcp.advanced.port-in-use', { port: num });
+            setLocalError(msg);
+            setMcpPortError(msg);
         }
-    }, [portValue, storePort]);
+    }, [portValue, storePort, t]);
+
+    const handlePortChange = (val: string) => {
+        setPortValue(val);
+        setLocalError(null);
+        setMcpPortError(null);
+    };
 
     if (!enabled) return null;
 
@@ -80,6 +97,15 @@ export default function AdvancedSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('mcp.advanced.port')}</Typography>
                     </SettingsGroupTitle>
+                    {activeError && (
+                        <Typography
+                            variant="p"
+                            style={{ color: '#E53E3E', fontSize: 13, marginTop: 4 }}
+                            data-testid="mcp-port-error"
+                        >
+                            {activeError}
+                        </Typography>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <PortInput
@@ -87,8 +113,9 @@ export default function AdvancedSettings() {
                         min={1024}
                         max={65535}
                         data-testid="mcp-port-input"
+                        $hasError={Boolean(activeError)}
                         value={portValue}
-                        onChange={(e) => setPortValue(e.target.value)}
+                        onChange={(e) => handlePortChange(e.target.value)}
                         onBlur={commitPort}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') commitPort();

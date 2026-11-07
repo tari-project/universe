@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
     useMcpStore,
     setMcpServerStatus,
+    setMcpPortError,
     addMcpAuditEntry,
     setMcpPendingTransaction,
     McpAuditEntry,
@@ -13,6 +14,7 @@ describe('useMcpStore', () => {
         useMcpStore.setState({
             serverRunning: false,
             serverPort: null,
+            portError: null,
             auditEntries: [],
             pendingTransaction: null,
         });
@@ -27,6 +29,10 @@ describe('useMcpStore', () => {
             expect(useMcpStore.getState().serverPort).toBeNull();
         });
 
+        it('port error is null', () => {
+            expect(useMcpStore.getState().portError).toBeNull();
+        });
+
         it('audit entries is empty', () => {
             expect(useMcpStore.getState().auditEntries).toEqual([]);
         });
@@ -36,11 +42,26 @@ describe('useMcpStore', () => {
         });
     });
 
+    describe('setMcpPortError', () => {
+        it('sets port error message', () => {
+            setMcpPortError('Port 4444 is already in use.');
+            expect(useMcpStore.getState().portError).toBe('Port 4444 is already in use.');
+        });
+
+        it('clears port error with null', () => {
+            setMcpPortError('Port 4444 is already in use.');
+            setMcpPortError(null);
+            expect(useMcpStore.getState().portError).toBeNull();
+        });
+    });
+
     describe('setMcpServerStatus', () => {
-        it('sets server running with port', () => {
+        it('sets server running with port and clears port error', () => {
+            setMcpPortError('Old error');
             setMcpServerStatus(true, 19222);
             expect(useMcpStore.getState().serverRunning).toBe(true);
             expect(useMcpStore.getState().serverPort).toBe(19222);
+            expect(useMcpStore.getState().portError).toBeNull();
         });
 
         it('sets server stopped', () => {
