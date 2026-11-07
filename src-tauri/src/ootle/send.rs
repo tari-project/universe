@@ -199,8 +199,11 @@ async fn estimate_fee(
             .map_err(|e| anyhow!("The L2 fee estimate failed: {e}"))?;
         let finalize = result.finalize;
         if finalize.charged_fees() <= params.max_fee {
-            if let Some(reason) = finalize.any_reject() {
+            if let Some(reason) = finalize.result.any_reject() {
                 bail!("The L2 transaction would be rejected: {reason}");
+            }
+            if !finalize.result.is_accept() {
+                bail!("The L2 transaction did not succeed: {}", finalize.result);
             }
             return Ok(params.max_fee);
         }
