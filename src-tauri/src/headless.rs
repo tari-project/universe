@@ -44,7 +44,7 @@
 
 use log::{error, info};
 use std::collections::HashMap;
-use std::sync::{Arc, LazyLock};
+use std::sync::{Arc, LazyLock, OnceLock};
 use tauri::AppHandle;
 use tauri::Listener;
 use tauri::Manager;
@@ -60,6 +60,15 @@ use crate::utils;
 /// (plus a discriminator for per-module / per-phase events).
 static REPLAY_CACHE: LazyLock<RwLock<HashMap<String, serde_json::Value>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Work for the single forwarder task. Live events and snapshot replays share
+/// one queue so a replay can never overtake, or be overtaken by, a live event.
+enum Forward {
+    Event(String),
+    Replay,
+}
+
+static FORWARDER: OnceLock<tokio::sync::mpsc::UnboundedSender<Forward>> = OnceLock::new();
 
 /// Returns the cache key for a `backend_state_update` event, or `None` if
 /// the event is transient (dialog triggers, one-shot prompts) and must not
@@ -109,6 +118,9 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         // PIN is set, or frontend-gated flows (e.g. MCP token reveal) skip
         // their PIN prompt. Replaying the last value is correct.
         | "PinLocked"
+        // MCP server running/port. Without it a page that loads after the
+        // server (re)starts, e.g. right after a port change, shows "Stopped".
+        | "McpServerStatusUpdate"
         | "CloseSplashscreen" => event_type.to_string(),
         // Periodic metric streams (CpuMiningUpdate, GpuMiningUpdate,
         // pool stats) are intentionally NOT replayed: their emitters stop
@@ -144,12 +156,15 @@ fn replay_priority(key: &str) -> u8 {
 }
 
 /// Broadcast the cached state snapshot to all connected WebSocket clients.
-/// Safe to call at any time; a no-op when remote-ui isn't running.
-pub async fn replay_state_snapshot(app_handle: &AppHandle) {
-    let Some(remote_ui_state) = app_handle.try_state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>()
-    else {
-        return;
-    };
+/// Safe to call at any time; a no-op when remote-ui isn't running. Queued
+/// behind the live events already forwarded, so it is never stale.
+pub async fn replay_state_snapshot(_app_handle: &AppHandle) {
+    if let Some(forwarder) = FORWARDER.get() {
+        forwarder.send(Forward::Replay).ok();
+    }
+}
+
+async fn send_snapshot(remote_ui: &tauri_remote_ui::RemoteUi) {
     let mut entries: Vec<(String, serde_json::Value)> = REPLAY_CACHE
         .read()
         .await
@@ -162,11 +177,8 @@ pub async fn replay_state_snapshot(app_handle: &AppHandle) {
             .then_with(|| a.0.cmp(&b.0))
     });
     let count = entries.len();
-    let remote_ui = remote_ui_state.read().await;
     for (_key, event) in entries {
-        if let Err(e) = remote_ui.emit("backend_state_update", event) {
-            error!(target: LOG_TARGET_APP_LOGIC, "Headless: failed to replay event: {e:?}");
-        }
+        remote_ui.emit_ordered("backend_state_update", event).await;
     }
     info!(target: LOG_TARGET_APP_LOGIC, "Headless: replayed {count} cached state events");
 }
@@ -240,22 +252,34 @@ async fn start_remote_ui(handle: &AppHandle) {
     info!(target: LOG_TARGET_APP_LOGIC, "Remote UI available at http://localhost:9515");
 
     // Forward every backend event over the WebSocket and record replayable
-    // ones in the cache so they can be re-sent to late-joining clients.
-    let forward_handle = handle.clone();
+    // ones in the cache so they can be re-sent to late-joining clients. One
+    // task drains the events in emit order: a task per event could cache (and
+    // forward) a quick stopped-then-running pair the wrong way round.
+    let (events_tx, mut events_rx) = tokio::sync::mpsc::unbounded_channel::<Forward>();
+    FORWARDER.set(events_tx.clone()).ok();
     handle.listen("backend_state_update", move |event| {
-        let fwd = forward_handle.clone();
-        let payload_str = event.payload().to_string();
-        tauri::async_runtime::spawn(async move {
-            let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload_str) else {
-                return;
-            };
-            if let Some(key) = replay_cache_key(&value) {
-                REPLAY_CACHE.write().await.insert(key, value.clone());
-            }
-            let remote_ui_state = fwd.state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>();
+        events_tx
+            .send(Forward::Event(event.payload().to_string()))
+            .ok();
+    });
+    let forward_handle = handle.clone();
+    tauri::async_runtime::spawn(async move {
+        while let Some(work) = events_rx.recv().await {
+            let remote_ui_state = forward_handle.state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>();
             let remote_ui = remote_ui_state.read().await;
-            remote_ui.emit("backend_state_update", value).ok();
-        });
+            match work {
+                Forward::Replay => send_snapshot(&remote_ui).await,
+                Forward::Event(payload_str) => {
+                    let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload_str) else {
+                        continue;
+                    };
+                    if let Some(key) = replay_cache_key(&value) {
+                        REPLAY_CACHE.write().await.insert(key, value.clone());
+                    }
+                    remote_ui.emit_ordered("backend_state_update", value).await;
+                }
+            }
+        }
     });
 
     // When a WebSocket client connects, replay the current state snapshot.
@@ -269,4 +293,25 @@ async fn start_remote_ui(handle: &AppHandle) {
             replay_state_snapshot(&handle).await;
         });
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::replay_cache_key;
+    use serde_json::json;
+
+    #[test]
+    fn mcp_server_status_is_replayed_last_one_wins() {
+        let event = json!({"event_type": "McpServerStatusUpdate", "payload": {"running": true, "port": 19223}});
+        assert_eq!(
+            replay_cache_key(&event).as_deref(),
+            Some("McpServerStatusUpdate")
+        );
+    }
+
+    #[test]
+    fn transient_events_are_not_replayed() {
+        let event = json!({"event_type": "ShowReleaseNotes", "payload": null});
+        assert_eq!(replay_cache_key(&event), None);
+    }
 }

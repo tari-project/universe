@@ -5,6 +5,8 @@ import { openL2, l2Balance, BURN_MICRO } from '../helpers/l2/ui';
 import { mine } from '../helpers/l2/swarm';
 
 test('test_claim_ui_credits_burn_less_fee_and_lists_activity', async ({ appPage: page }) => {
+    // Claimable poll, PIN prompt and settlement can each take minutes on a busy runner.
+    test.setTimeout(720_000);
     await openL2(page);
     const before = await l2Balance(page);
     const rowsBefore = await page.locator(sel.l2.historyRow).count();
