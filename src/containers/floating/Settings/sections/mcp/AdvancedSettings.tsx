@@ -10,6 +10,7 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
+import { setMcpServerError, useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
 
@@ -37,26 +38,38 @@ export default function AdvancedSettings() {
     const readTier = useConfigMcpStore((s) => s.read_tier_enabled);
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
+    const serverError = useMcpStore((s) => s.serverError);
     const [portValue, setPortValue] = useState(String(storePort));
+    const [validationError, setValidationError] = useState<string | null>(null);
 
     useEffect(() => {
         setPortValue(String(storePort));
     }, [storePort]);
 
     const commitPort = useCallback(async () => {
-        const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
-            setPortValue(String(storePort));
+        const trimmed = portValue.trim();
+        const num = Number(trimmed);
+        if (!trimmed || !Number.isInteger(num) || num < 1024 || num > 65535) {
+            setValidationError(t('mcp.advanced.port-invalid'));
             return;
         }
-        if (num === storePort) return;
+        setValidationError(null);
+        if (num === storePort && !serverError) return;
         try {
+            setMcpServerError(null);
             await invoke('set_mcp_port', { port: num });
+            useConfigMcpStore.setState((c) => ({ ...c, port: num }));
         } catch (e) {
             console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
+            useConfigMcpStore.setState((c) => ({ ...c, port: num }));
+            const errStr = String(e);
+            if (errStr.includes('failed to bind to configured port')) {
+                setMcpServerError(t('mcp.advanced.port-in-use', { port: num }));
+            } else {
+                setMcpServerError(errStr);
+            }
         }
-    }, [portValue, storePort]);
+    }, [portValue, storePort, serverError, t]);
 
     if (!enabled) return null;
 
@@ -73,6 +86,8 @@ export default function AdvancedSettings() {
         }
     };
 
+    const displayedError = validationError ?? serverError;
+
     return (
         <SettingsGroupWrapper $advanced>
             <SettingsGroup>
@@ -80,6 +95,15 @@ export default function AdvancedSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('mcp.advanced.port')}</Typography>
                     </SettingsGroupTitle>
+                    {displayedError && (
+                        <Typography
+                            variant="p"
+                            style={{ color: '#ff4d4f', marginTop: 4 }}
+                            data-testid="mcp-port-error"
+                        >
+                            {displayedError}
+                        </Typography>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <PortInput
@@ -88,7 +112,10 @@ export default function AdvancedSettings() {
                         max={65535}
                         data-testid="mcp-port-input"
                         value={portValue}
-                        onChange={(e) => setPortValue(e.target.value)}
+                        onChange={(e) => {
+                            setPortValue(e.target.value);
+                            if (validationError) setValidationError(null);
+                        }}
                         onBlur={commitPort}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') commitPort();
