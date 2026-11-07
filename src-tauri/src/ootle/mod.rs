@@ -695,8 +695,13 @@ fn stored_seed(store_dir: &Path) -> Result<Option<Zeroizing<Box<[u8]>>>, anyhow:
     if !db.exists() {
         return Ok(None);
     }
+    // A v0.44 store lacks tables later migrations alter, so they fail on it. Its config
+    // table already reads as-is, and the store is rebuilt from that seed anyway.
+    let old_schema = has_old_schema(store_dir)?;
     let store = SqliteWalletStore::try_open(db)?;
-    store.run_migrations()?;
+    if !old_schema {
+        store.run_migrations()?;
+    }
     Ok(ConfigApi::new(&store)
         .get::<Zeroizing<Box<[u8]>>>(ConfigKey::CipherSeed)
         .optional()?)
