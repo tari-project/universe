@@ -394,7 +394,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
         }
 
         #[cfg(target_os = "windows")]
-        add_firewall_rule("lolMiner.exe".to_string(), binary_version_path.clone())?;
+        add_firewall_rule("lolMiner.exe".to_string(), binary_version_path.clone());
 
         info!(
             target: LOG_TARGET_APP_LOGIC,

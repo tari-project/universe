@@ -402,7 +402,7 @@ impl ProcessAdapter for LocalNodeAdapter {
         }
 
         #[cfg(target_os = "windows")]
-        add_firewall_rule("minotari_node.exe".to_string(), binary_version_path.clone())?;
+        add_firewall_rule("minotari_node.exe".to_string(), binary_version_path.clone());
 
         Ok((
             ProcessInstance {
