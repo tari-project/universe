@@ -18,16 +18,17 @@ const promptStyle = { justifyContent: 'center', alignItems: 'center', gap: 12, t
 export default function L2WalletCard() {
     const { t } = useTranslation('wallet');
     const hasPin = useWalletStore((s) => s.is_pin_locked);
+    const pinLoading = hasPin === undefined;
     const enabled = useL2WalletStore((s) => s.enabled);
     const locked = useL2WalletStore((s) => s.locked);
     const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
     const account = useL2WalletStore(selectL2Account);
     const preLaunch = useIsL2PreLaunch();
-    const open = hasPin && enabled && !locked;
+    const open = hasPin === true && enabled && !locked;
 
     // Events keep the store current; this catches up with whatever was sent before the card opened.
     useEffect(() => {
-        if (!hasPin) return;
+        if (hasPin === undefined || !hasPin) return;
         fetchL2State().catch((e) => console.warn('Could not load L2 wallet state:', e));
     }, [hasPin]);
 
