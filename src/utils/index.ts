@@ -1,4 +1,5 @@
 export * from './calculateTimeSince.ts';
+export * from './clipboard.ts';
 export * from './convertHex.ts';
 export * from './formatters.ts';
 export * from './shared-logger.ts';

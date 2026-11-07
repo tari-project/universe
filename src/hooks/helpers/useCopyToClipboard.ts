@@ -1,7 +1,10 @@
-import { clear, readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { clearClipboardText, readClipboardText, writeClipboardText } from '@app/utils/clipboard';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 
-interface CopyOptions {
+export { clearClipboardText, readClipboardText, writeClipboardText };
+
+export interface CopyOptions {
     /**
      * Wipe the value from the clipboard after this many ms, for secrets like a seed
      * phrase. The clear only fires if the clipboard still holds exactly what we wrote,
@@ -28,7 +31,7 @@ export function useCopyToClipboard() {
     }, [isCopied]);
 
     const copyToClipboard = useCallback((value: string, onCopied?: () => void, options?: CopyOptions) => {
-        writeText(value)
+        writeClipboardText(value)
             .then(() => {
                 setIsCopied(true);
                 onCopied?.();
@@ -36,21 +39,74 @@ export function useCopyToClipboard() {
                 // timer could only clear the new value early. A failed write leaves it.
                 clearTimeout(clearTimer.current);
                 if (options?.clearAfterMs) {
-                    clearTimer.current = setTimeout(() => {
-                        readText()
-                            .then((current) => {
-                                if (current === value) {
-                                    return clear();
-                                }
-                            })
-                            .catch((e) => {
-                                console.error('Could not clear clipboard', e);
-                            });
+                    clearTimer.current = setTimeout(async () => {
+                        const executeWipe = async (): Promise<boolean> => {
+                            let current: string | undefined;
+                            try {
+                                current = await readClipboardText();
+                            } catch {
+                                // Reading may fail if unfocused under Wayland or permissions denied;
+                                // proceed with attempting to clear.
+                            }
+
+                            if (current !== undefined && current !== value) {
+                                // User copied something else in the meantime; leave it alone.
+                                return true;
+                            }
+
+                            await clearClipboardText();
+                            return true;
+                        };
+
+                        try {
+                            await executeWipe();
+                        } catch (wipeErr) {
+                            console.warn(
+                                'Scheduled clipboard wipe failed (window may be unfocused under Wayland); scheduling retry on focus:',
+                                wipeErr
+                            );
+
+                            const isFocused =
+                                typeof document !== 'undefined' &&
+                                typeof document.hasFocus === 'function' &&
+                                document.hasFocus();
+
+                            if (typeof window !== 'undefined' && !isFocused) {
+                                const onFocusRetry = async () => {
+                                    window.removeEventListener('focus', onFocusRetry);
+                                    try {
+                                        await executeWipe();
+                                    } catch (retryErr) {
+                                        console.error(
+                                            'Failed to clear sensitive clipboard data on focus retry:',
+                                            retryErr
+                                        );
+                                        addToast({
+                                            title: 'Clipboard wipe failed',
+                                            text: 'Could not clear sensitive seed phrase from clipboard. Please clear your clipboard manually.',
+                                            type: 'warning',
+                                        });
+                                    }
+                                };
+                                window.addEventListener('focus', onFocusRetry, { once: true });
+                            } else {
+                                addToast({
+                                    title: 'Clipboard wipe failed',
+                                    text: 'Could not clear sensitive seed phrase from clipboard. Please clear your clipboard manually.',
+                                    type: 'warning',
+                                });
+                            }
+                        }
                     }, options.clearAfterMs);
                 }
             })
-            .catch((e) => {
+            .catch((e: unknown) => {
                 console.error('Could not copy to clipboard', e);
+                addToast({
+                    title: 'Failed to copy to clipboard',
+                    text: e instanceof Error ? e.message : String(e),
+                    type: 'error',
+                });
             });
     }, []);
 
