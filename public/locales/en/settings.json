@@ -85,7 +85,11 @@
     "advanced": {
       "control-tier": "Control Tier",
       "port": "Server Port",
-      "read-tier": "Read Tier"
+      "read-tier": "Read Tier",
+      "port-in-use": "Port {{port}} is already in use. Choose another port.",
+      "port-out-of-range": "Port must be between 1024 and 65535.",
+      "port-invalid": "Port must be a number between 1024 and 65535.",
+      "port-error-generic": "Could not change the server port. The server is still on port {{port}}."
     },
     "agent-config": {
       "copied": "Copied!",
