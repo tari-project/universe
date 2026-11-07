@@ -105,7 +105,7 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
                         >
                             <BalanceTextWrapper>
                                 {hideBalance ? <Hidden>{`*******`}</Hidden> : xtr(revealed + confidential)}
-                                <SuffixWrapper>{` XTR`}</SuffixWrapper>
+                                <SuffixWrapper>{` TARI`}</SuffixWrapper>
                             </BalanceTextWrapper>
                             <BottomWrapper>
                                 <Typography>

@@ -39,7 +39,7 @@ import { BottomWrapper } from '@app/components/transactions/send/Send.styles.ts'
 const date = (seconds: number) => formatEffectiveDate(new Date(seconds * 1000).toISOString());
 // Same preset choice as the L1 transaction details.
 const detail = (value: number) =>
-    `${formatNumber(value, value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS)} XTR`;
+    `${formatNumber(value, value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS)} TARI`;
 
 type Row = { change: L2BalanceChange; burn?: never } | { burn: L2Burn; change?: never };
 const rowTime = (row: Row) => (row.change ?? row.burn).timestamp;
@@ -168,7 +168,7 @@ export default function L2Activity({ account, filter }: { account?: L2Account; f
                                             </ValueChangeWrapper>
                                         )}
                                         {xtr(change.amount)}
-                                        <CurrencyText>{`XTR`}</CurrencyText>
+                                        <CurrencyText>{`TARI`}</CurrencyText>
                                     </ValueWrapper>
                                 </Content>
                             </ContentWrapper>
@@ -195,7 +195,7 @@ export default function L2Activity({ account, filter }: { account?: L2Account; f
                     <DetailsWrapper>
                         <StatusList
                             entries={[
-                                { label: t('l2.details.amount'), value: `${xtr(selectedBurn.amount)} XTR` },
+                                { label: t('l2.details.amount'), value: `${xtr(selectedBurn.amount)} TARI` },
                                 { label: t('l2.claim.commitment'), value: selectedBurn.commitment },
                                 { label: t('burn.claim-public-key'), value: selectedBurn.claim_public_key },
                             ]}
@@ -355,7 +355,7 @@ function L2BurnRow({
                         ) : (
                             <>
                                 {amount}
-                                <CurrencyText>{`XTR`}</CurrencyText>
+                                <CurrencyText>{`TARI`}</CurrencyText>
                             </>
                         )}
                     </ValueWrapper>

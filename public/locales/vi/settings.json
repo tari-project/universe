@@ -282,7 +282,7 @@
     "seed-change-error": "Không thể thay đổi cụm từ khôi phục Layer 2",
     "confirm-replace-copy": "Ví Layer 2 hiện tại của bạn sẽ bị thay thế.\nBạn chỉ có thể lấy lại nó bằng cụm từ khôi phục của nó.",
     "address": "Địa chỉ ví Ootle",
-    "address-description": "Chia sẻ địa chỉ này để nhận XTR trên Ootle.",
+    "address-description": "Chia sẻ địa chỉ này để nhận TARI trên Ootle.",
     "public-key": "Khóa công khai chủ sở hữu Ootle",
     "public-key-description": "Khóa nhận cho các giao dịch đốt từ ví Tari của bạn. Burn to L2 sẽ tự động điền cho bạn.",
     "side-by-side": "Cho phép hiển thị các ví cạnh nhau",

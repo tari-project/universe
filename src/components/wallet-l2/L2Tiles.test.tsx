@@ -35,6 +35,9 @@ describe('L2Tiles', () => {
 
         expect(screen.getByText('11,432')).toBeInTheDocument();
         expect(screen.getByText('#11433')).toBeInTheDocument();
+        expect(screen.getAllByText('TARI')).toHaveLength(2);
+        expect(screen.getByText('869.38')).toBeInTheDocument();
+        expect(screen.getByText('44.72')).toBeInTheDocument();
         // 43 blocks left at 15 s a block.
         expect(screen.getByTestId('l2-epoch-countdown')).toHaveTextContent('10:45');
         act(() => vi.advanceTimersByTime(5000));

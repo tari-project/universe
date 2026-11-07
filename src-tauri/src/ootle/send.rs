@@ -212,7 +212,7 @@ async fn estimate_fee(
 /// Refuses a fee above `ceiling`, returning it otherwise.
 pub(super) fn check_fee(fee: u64, ceiling: u64) -> Result<u64, anyhow::Error> {
     if fee > ceiling {
-        bail!("The network asked for a fee of {fee} micro XTR, over the {ceiling} limit");
+        bail!("The network asked for a fee of {fee} micro TARI, over the {ceiling} limit");
     }
     Ok(fee)
 }
@@ -309,6 +309,9 @@ mod tests {
     fn fees_over_the_ceiling_are_refused() {
         assert_eq!(check_fee(MAX_L2_FEE, MAX_L2_FEE).unwrap(), MAX_L2_FEE);
         let err = check_fee(MAX_L2_FEE + 1, MAX_L2_FEE).unwrap_err();
-        assert!(err.to_string().contains("over the 100000 limit"));
+        assert_eq!(
+            err.to_string(),
+            "The network asked for a fee of 100001 micro TARI, over the 100000 limit"
+        );
     }
 }

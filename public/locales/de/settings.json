@@ -282,7 +282,7 @@
     "seed-change-error": "Die Layer-2-Seed-Wörter konnten nicht geändert werden",
     "confirm-replace-copy": "Deine aktuelle Layer-2-Wallet wird ersetzt.\nDu kannst sie nur mit ihren Seed-Wörtern zurückholen.",
     "address": "Ootle-Wallet-Adresse",
-    "address-description": "Teile diese, um XTR auf Ootle zu empfangen.",
+    "address-description": "Teile diese, um TARI auf Ootle zu empfangen.",
     "public-key": "Öffentlicher Ootle-Besitzerschlüssel",
     "public-key-description": "Der Claim-Schlüssel für Burns aus deiner Tari-Wallet. „Auf L2 burnen“ füllt ihn für dich aus.",
     "side-by-side": "Wallets nebeneinander erlauben",

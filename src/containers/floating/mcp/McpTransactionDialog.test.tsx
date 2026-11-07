@@ -121,38 +121,40 @@ describe('McpTransactionDialog', () => {
         expect(screen.queryByText('abandon.note')).not.toBeInTheDocument();
     });
 
-    it('labels an L2 send with the L2 address and XTR', async () => {
+    it('labels an L2 send with the L2 address and TARI', async () => {
         setMcpPendingTransaction({
             request_id: 'app_tx_l2',
             kind: 'l2_send',
             origin: 'app',
             destination: 'otl_esm_example',
             amount_micro_minotari: 1_000_000,
-            amount_display: '1 XTR',
+            amount_display: '1 TARI',
+            fee_micro_minotari: 25,
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
             expect(screen.getByText('l2.send.address')).toBeInTheDocument();
-            expect(screen.getByText('XTR')).toBeInTheDocument();
+            expect(screen.getByText('TARI')).toBeInTheDocument();
         });
         expect(screen.getByText('otl_esm_example')).toBeInTheDocument();
+        expect(screen.getByText('0.000025 TARI')).toBeInTheDocument();
         expect(screen.queryByText('send.destination-address')).not.toBeInTheDocument();
         expect(screen.queryByText('XTM')).not.toBeInTheDocument();
     });
 
-    it('labels an L2 claim with the burn commitment and XTR', async () => {
+    it('labels an L2 claim with the burn commitment and TARI', async () => {
         setMcpPendingTransaction({
             request_id: 'app_tx_claim',
             kind: 'l2_claim',
             origin: 'app',
             destination: 'dae29ac8',
             amount_micro_minotari: 1_000_000,
-            amount_display: '1.000000 XTR',
+            amount_display: '1.000000 TARI',
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
             expect(screen.getByText('l2.claim.commitment')).toBeInTheDocument();
-            expect(screen.getByText('XTR')).toBeInTheDocument();
+            expect(screen.getByText('TARI')).toBeInTheDocument();
         });
         expect(screen.getByText('dae29ac8')).toBeInTheDocument();
     });

@@ -282,7 +282,7 @@
     "seed-change-error": "Katman 2 seed kelimeleri değiştirilemedi",
     "confirm-replace-copy": "Mevcut Katman 2 cüzdanınız değiştirilecek.\nOnu yalnızca seed kelimeleriyle geri alabilirsiniz.",
     "address": "Ootle cüzdan adresi",
-    "address-description": "Ootle'da XTR almak için bunu paylaşın.",
+    "address-description": "Ootle'da TARI almak için bunu paylaşın.",
     "public-key": "Ootle sahip açık anahtarı",
     "public-key-description": "Tari cüzdanınızdan yapılan yakımlar için talep anahtarı. L2'ye Yak bunu sizin için doldurur.",
     "side-by-side": "Cüzdanların yan yana olmasına izin ver",

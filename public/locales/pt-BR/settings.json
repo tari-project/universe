@@ -282,7 +282,7 @@
     "seed-change-error": "Não foi possível alterar a frase semente da Camada 2",
     "confirm-replace-copy": "Sua carteira atual da Camada 2 será substituída.\nVocê só poderá recuperá-la com a frase semente dela.",
     "address": "Endereço da carteira Ootle",
-    "address-description": "Compartilhe para receber XTR no Ootle.",
+    "address-description": "Compartilhe para receber TARI no Ootle.",
     "public-key": "Chave pública do proprietário Ootle",
     "public-key-description": "A chave de reivindicação para queimas da sua carteira Tari. A Queima para L2 a preenche para você.",
     "side-by-side": "Permitir carteiras lado a lado",
