@@ -223,6 +223,17 @@ pub struct TariAddressUpdatePayload {
 pub struct McpServerStatusPayload {
     pub running: bool,
     pub port: Option<u16>,
+    /// Why the last start attempt failed, if it did. Cleared by the next status update.
+    pub error: Option<McpServerErrorPayload>,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum McpServerErrorPayload {
+    /// Another process is already listening on the configured port.
+    PortInUse { port: u16 },
+    /// Binding failed for another reason (e.g. permission denied).
+    BindFailed { port: u16, message: String },
 }
 
 #[derive(Debug, Serialize, Clone)]

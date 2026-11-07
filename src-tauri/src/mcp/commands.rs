@@ -57,15 +57,18 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
         *config._get_content_mut() = updated;
     }
 
-    if enabled {
-        McpServerManager::start().await.map_err(|e| e.to_string())?;
+    let result = if enabled {
+        McpServerManager::start().await.map(|_| ())
     } else {
         McpServerManager::stop().await;
-    }
+        Ok(())
+    };
 
+    // The config was saved above, so report it even if the server failed to start
+    // (e.g. the port is taken). Otherwise the panel would show a stale enabled state.
     EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
-    Ok(())
+    result.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -106,13 +109,15 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     // Restart if currently running so the new port takes effect
     let content = ConfigMcp::content().await;
-    if *content.enabled() {
-        McpServerManager::restart()
-            .await
-            .map_err(|e| e.to_string())?;
-    }
+    let result = if *content.enabled() {
+        McpServerManager::restart().await.map(|_| ())
+    } else {
+        Ok(())
+    };
+    // The new port is saved even if the restart fails, so the panel must show it
+    // next to the bind error instead of the previous port.
     EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
-    Ok(())
+    result.map_err(|e| e.to_string())
 }
 
 #[tauri::command]

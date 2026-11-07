@@ -164,7 +164,11 @@ const useTauriEventsListener = () => {
                         handleConfigMcpLoaded(event.payload);
                         break;
                     case 'McpServerStatusUpdate':
-                        setMcpServerStatus(event.payload.running, event.payload.port ?? null);
+                        setMcpServerStatus(
+                            event.payload.running,
+                            event.payload.port ?? null,
+                            event.payload.error ?? null
+                        );
                         break;
                     case 'McpTransactionConfirmation':
                         setMcpPendingTransaction(event.payload);

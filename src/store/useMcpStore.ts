@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { addToast } from '@app/components/ToastStack/useToastStore';
-import type { SpendKind, TransactionOrigin } from '@app/types/events-payloads.ts';
+import type { McpServerError, SpendKind, TransactionOrigin } from '@app/types/events-payloads.ts';
 
 export interface McpAuditEntry {
     timestamp: string;
@@ -39,6 +39,8 @@ export type McpTxStatus = 'reviewing' | 'processing' | 'completed';
 interface McpStoreState {
     serverRunning: boolean;
     serverPort: number | null;
+    /** Why the last start attempt failed; null once the server starts or stops normally. */
+    serverError: McpServerError | null;
     auditEntries: McpAuditEntry[];
     pendingTransaction: McpPendingTransaction | null;
     mcpTxStatus: McpTxStatus;
@@ -47,6 +49,7 @@ interface McpStoreState {
 const initialState: McpStoreState = {
     serverRunning: false,
     serverPort: null,
+    serverError: null,
     auditEntries: [],
     pendingTransaction: null,
     mcpTxStatus: 'reviewing',
@@ -56,8 +59,8 @@ export const useMcpStore = create<McpStoreState>()(() => ({
     ...initialState,
 }));
 
-export const setMcpServerStatus = (running: boolean, port: number | null) => {
-    useMcpStore.setState({ serverRunning: running, serverPort: port });
+export const setMcpServerStatus = (running: boolean, port: number | null, error: McpServerError | null = null) => {
+    useMcpStore.setState({ serverRunning: running, serverPort: port, serverError: error });
 };
 
 export const addMcpAuditEntry = (entry: McpAuditEntry) => {

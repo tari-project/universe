@@ -36,6 +36,7 @@ use tokio_util::sync::CancellationToken;
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent, compute_token_expiry};
 use crate::configs::trait_config::ConfigImpl;
+use crate::events::McpServerErrorPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::tools::TariMcpHandler;
 use crate::node::node_adapter::BaseNodeStatus;
@@ -123,13 +124,27 @@ impl McpServerManager {
         };
 
         let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
-        let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
-            anyhow::anyhow!(
-                "MCP server failed to bind to configured port {configured_port}: {e}. \
-                 Refusing to fall back to a random port for security reasons — \
-                 another process on the configured port could intercept bearer tokens."
-            )
-        })?;
+        let listener = match tokio::net::TcpListener::bind(addr).await {
+            Ok(listener) => listener,
+            Err(e) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "MCP server could not bind to configured port {configured_port}: {e} (kind: {:?})",
+                    e.kind()
+                );
+                EventsEmitter::emit_mcp_server_status_update(
+                    false,
+                    None,
+                    Some(bind_error_payload(configured_port, &e)),
+                )
+                .await;
+                anyhow::bail!(
+                    "MCP server failed to bind to configured port {configured_port}: {e}. \
+                     Refusing to fall back to a random port for security reasons — \
+                     another process on the configured port could intercept bearer tokens."
+                );
+            }
+        };
         info!(target: LOG_TARGET_APP_LOGIC, "MCP server bound to configured port {configured_port}");
 
         let bound_port = listener.local_addr()?.port();
@@ -184,7 +199,7 @@ impl McpServerManager {
             manager.bound_port = Some(bound_port);
         }
 
-        EventsEmitter::emit_mcp_server_status_update(true, Some(bound_port)).await;
+        EventsEmitter::emit_mcp_server_status_update(true, Some(bound_port), None).await;
 
         Ok(bound_port)
     }
@@ -234,13 +249,25 @@ impl McpServerManager {
             }
         }
 
-        EventsEmitter::emit_mcp_server_status_update(false, None).await;
+        EventsEmitter::emit_mcp_server_status_update(false, None, None).await;
     }
 
     pub async fn restart() -> Result<u16, anyhow::Error> {
         let _lifecycle = LIFECYCLE.lock().await;
         Self::stop_locked().await;
         Self::start_locked().await
+    }
+}
+
+/// Maps a bind failure to the reason shown in the MCP settings panel.
+fn bind_error_payload(port: u16, error: &std::io::Error) -> McpServerErrorPayload {
+    if error.kind() == std::io::ErrorKind::AddrInUse {
+        McpServerErrorPayload::PortInUse { port }
+    } else {
+        McpServerErrorPayload::BindFailed {
+            port,
+            message: error.to_string(),
+        }
     }
 }
 
@@ -287,6 +314,33 @@ async fn auth_middleware(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn bind_error_payload_reports_a_taken_port_as_port_in_use() {
+        let taken = std::net::TcpListener::bind(("127.0.0.1", 0)).expect("bind a free port");
+        let port = taken.local_addr().expect("local addr").port();
+
+        let err = tokio::net::TcpListener::bind(("127.0.0.1", port))
+            .await
+            .expect_err("second bind on the same port must fail");
+
+        assert_eq!(
+            bind_error_payload(port, &err),
+            McpServerErrorPayload::PortInUse { port }
+        );
+    }
+
+    #[test]
+    fn bind_error_payload_keeps_other_os_errors() {
+        let err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
+        assert_eq!(
+            bind_error_payload(4444, &err),
+            McpServerErrorPayload::BindFailed {
+                port: 4444,
+                message: "access denied".to_string(),
+            }
+        );
+    }
 
     #[tokio::test]
     #[serial_test::serial]

@@ -12,12 +12,14 @@ import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
+import { AddressErrorMessage as ErrorMessage } from '../connections/NodeTypeConfiguration.styles.ts';
 
 export default function ServerToggle() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const enabled = useConfigMcpStore((s) => s.enabled);
     const serverRunning = useMcpStore((s) => s.serverRunning);
     const serverPort = useMcpStore((s) => s.serverPort);
+    const serverError = useMcpStore((s) => s.serverError);
     const [loading, setLoading] = useState(false);
 
     const handleToggle = async (checked: boolean) => {
@@ -37,6 +39,14 @@ export default function ServerToggle() {
             ? t('mcp.server-toggle.status-running', { port: serverPort })
             : t('mcp.server-toggle.status-stopped');
 
+    let errorText: string | null = null;
+    if (enabled && !serverRunning && serverError) {
+        errorText =
+            serverError.kind === 'port_in_use'
+                ? t('mcp.server-toggle.error-port-in-use', { port: serverError.port })
+                : t('mcp.server-toggle.error-bind-failed', { port: serverError.port, message: serverError.message });
+    }
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
@@ -48,6 +58,11 @@ export default function ServerToggle() {
                     <Typography variant="p" style={{ opacity: 0.7 }} data-testid="mcp-server-status">
                         {statusText}
                     </Typography>
+                    {errorText && (
+                        <ErrorMessage role="alert" data-testid="mcp-server-error">
+                            {errorText}
+                        </ErrorMessage>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch
