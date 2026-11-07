@@ -13,11 +13,12 @@ import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
 
-const PortInput = styled.input`
+const PortInput = styled.input<{ $hasError?: boolean }>`
     width: 90px;
     font-size: 14px;
     height: 32px;
-    border: 1px solid ${({ theme }) => theme.colorsAlpha.darkAlpha[10]};
+    border: 1px solid
+        ${({ theme, $hasError }) => ($hasError ? theme.palette.error.main : theme.colorsAlpha.darkAlpha[10])};
     background-color: ${({ theme }) => theme.palette.background.default};
     border-radius: 8px;
     padding: 4px 8px;
@@ -31,6 +32,16 @@ const PortInput = styled.input`
     }
 `;
 
+const PortError = styled.p`
+    margin: 0;
+    font-size: 13px;
+    color: ${({ theme }) => theme.palette.error.main};
+`;
+
+// Marker in the error built by McpServerManager::start (src-tauri/src/mcp/server.rs)
+// when the configured port cannot be bound.
+const BIND_ERROR_MARKER = 'failed to bind to configured port';
+
 export default function AdvancedSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const enabled = useConfigMcpStore((s) => s.enabled);
@@ -38,6 +49,7 @@ export default function AdvancedSettings() {
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
     const [portValue, setPortValue] = useState(String(storePort));
+    const [portError, setPortError] = useState<string | null>(null);
 
     useEffect(() => {
         setPortValue(String(storePort));
@@ -45,18 +57,33 @@ export default function AdvancedSettings() {
 
     const commitPort = useCallback(async () => {
         const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
-            setPortValue(String(storePort));
+        // Not a number at all (empty, text, fractional) gets its own message so the
+        // user fixes the right problem; a whole number outside the allowed range
+        // gets the range message.
+        if (portValue.trim() === '' || isNaN(num) || !Number.isInteger(num)) {
+            setPortError(t('mcp.advanced.port-invalid-error'));
             return;
         }
-        if (num === storePort) return;
+        if (num < 1024 || num > 65535) {
+            setPortError(t('mcp.advanced.port-range-error'));
+            return;
+        }
+        if (num === storePort) {
+            setPortError(null);
+            return;
+        }
         try {
             await invoke('set_mcp_port', { port: num });
+            setPortError(null);
         } catch (e) {
             console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
+            if (String(e).includes(BIND_ERROR_MARKER)) {
+                setPortError(t('mcp.advanced.port-in-use', { port: num }));
+            } else {
+                setPortError(String(e));
+            }
         }
-    }, [portValue, storePort]);
+    }, [portValue, storePort, t]);
 
     if (!enabled) return null;
 
@@ -87,8 +114,12 @@ export default function AdvancedSettings() {
                         min={1024}
                         max={65535}
                         data-testid="mcp-port-input"
+                        $hasError={Boolean(portError)}
                         value={portValue}
-                        onChange={(e) => setPortValue(e.target.value)}
+                        onChange={(e) => {
+                            setPortValue(e.target.value);
+                            setPortError(null);
+                        }}
                         onBlur={commitPort}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') commitPort();
@@ -96,6 +127,15 @@ export default function AdvancedSettings() {
                     />
                 </SettingsGroupAction>
             </SettingsGroup>
+            {portError ? (
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <PortError role="alert" data-testid="mcp-port-error">
+                            {portError}
+                        </PortError>
+                    </SettingsGroupContent>
+                </SettingsGroup>
+            ) : null}
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>

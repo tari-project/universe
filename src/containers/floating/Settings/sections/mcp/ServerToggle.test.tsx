@@ -1,11 +1,14 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@app/test/test-utils';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@app/test/test-utils';
+import { invoke } from '@tauri-apps/api/core';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import ServerToggle from './ServerToggle';
+
+const mockInvoke = vi.mocked(invoke);
 
 describe('ServerToggle', () => {
     beforeEach(() => {
@@ -49,5 +52,20 @@ describe('ServerToggle', () => {
         useConfigMcpStore.setState({ enabled: false });
         render(<ServerToggle />);
         expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+
+    it('shows a port-in-use error when enabling fails because the saved port is taken', async () => {
+        mockInvoke.mockReset();
+        mockInvoke.mockRejectedValueOnce(
+            'MCP server failed to bind to configured port 19222: Address already in use (os error 98). ' +
+                'Refusing to fall back to a random port for security reasons'
+        );
+        useConfigMcpStore.setState({ enabled: false, port: 19222 });
+        render(<ServerToggle />);
+        fireEvent.click(screen.getByRole('checkbox'));
+        const error = await screen.findByTestId('mcp-server-error');
+        expect(error).toHaveTextContent('mcp.server-toggle.port-in-use');
+        expect(error).toHaveAttribute('role', 'alert');
+        expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-stopped');
     });
 });
