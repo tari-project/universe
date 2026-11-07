@@ -129,7 +129,9 @@ export default function AgentConfig() {
         async (buildText: (token: string) => string) => {
             try {
                 let token: string | null = null;
-                if (isPinLocked) {
+                // Fail closed while the PIN state is unknown (undefined): only a
+                // wallet known to have no PIN skips the PIN prompt (#3518).
+                if (isPinLocked !== false) {
                     const pin = await requestPin();
                     if (!pin) return;
                     token = await invoke<string | null>('get_mcp_token', { pin });

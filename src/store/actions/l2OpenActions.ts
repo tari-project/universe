@@ -35,7 +35,15 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
  * once the wallet is open.
  */
 export const openL2 = async () => {
-    if (!useWalletStore.getState().is_pin_locked) {
+    const isPinLocked = useWalletStore.getState().is_pin_locked;
+    // Unknown until the backend emits the PIN state during wallet setup. Opening the
+    // create-PIN dialog here is the #3518 bug: a wallet that already has a PIN would be
+    // asked to set one, and entering it fails with "A PIN is already set". Wait instead —
+    // the sidebar button is disabled in this state, so a direct call is just a no-op.
+    if (isPinLocked === undefined) {
+        return;
+    }
+    if (!isPinLocked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;
     }

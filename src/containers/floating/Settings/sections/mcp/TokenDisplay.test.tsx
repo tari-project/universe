@@ -1,10 +1,18 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@app/test/test-utils';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
+import { invoke } from '@tauri-apps/api/core';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
+import { useWalletStore } from '@app/store/useWalletStore';
+import { requestPin } from '@app/store/useSecurityStore';
 import TokenDisplay from './TokenDisplay';
+
+vi.mock('@app/store/useSecurityStore', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@app/store/useSecurityStore')>()),
+    requestPin: vi.fn(),
+}));
 
 describe('TokenDisplay', () => {
     beforeEach(() => {
@@ -83,5 +91,38 @@ describe('TokenDisplay', () => {
         });
         render(<TokenDisplay />);
         expect(screen.getByText(/mcp\.token-display\.days-remaining/)).toBeInTheDocument();
+    });
+
+    describe('PIN state handling (#3518)', () => {
+        beforeEach(() => {
+            vi.mocked(invoke).mockReset();
+            vi.mocked(invoke).mockImplementation((async (cmd: string) =>
+                cmd === 'get_mcp_token' ? 'full-token-xyz' : undefined) as typeof invoke);
+            vi.mocked(requestPin).mockReset();
+            vi.mocked(requestPin).mockResolvedValue('1234');
+            useConfigMcpStore.setState({ enabled: true, bearer_token_redacted: 'tu_••••••••' });
+        });
+
+        it('asks for a PIN before revealing while the PIN state is unknown', async () => {
+            useWalletStore.setState({ is_pin_locked: undefined });
+            render(<TokenDisplay />);
+
+            fireEvent.click(screen.getByTestId('mcp-token-reveal'));
+
+            await waitFor(() => expect(screen.getByText('full-token-xyz')).toBeInTheDocument());
+            expect(requestPin).toHaveBeenCalledOnce();
+            expect(invoke).toHaveBeenCalledWith('get_mcp_token', { pin: '1234' });
+        });
+
+        it('reveals without a PIN prompt when the wallet is known to have no PIN', async () => {
+            useWalletStore.setState({ is_pin_locked: false });
+            render(<TokenDisplay />);
+
+            fireEvent.click(screen.getByTestId('mcp-token-reveal'));
+
+            await waitFor(() => expect(screen.getByText('full-token-xyz')).toBeInTheDocument());
+            expect(requestPin).not.toHaveBeenCalled();
+            expect(invoke).toHaveBeenCalledWith('get_mcp_token', { pin: null });
+        });
     });
 });
