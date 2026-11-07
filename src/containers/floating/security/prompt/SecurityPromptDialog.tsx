@@ -43,7 +43,7 @@ export default function SecurityPromptDialog() {
         },
         {
             stepNumber: 2,
-            completed: pinLocked,
+            completed: !!pinLocked,
             title: t('steps.title-pin'),
             subtitle: t('steps.subtitle-pin'),
         },

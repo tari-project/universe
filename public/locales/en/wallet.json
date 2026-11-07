@@ -364,7 +364,8 @@
       "failed": "Claim failed",
       "approve": "Approve claim",
       "approve-subtitle": "Enter your PIN to claim this burn into your Layer 2 wallet. If you did not start this, close this dialog."
-    }
+    },
+    "waiting-for-wallet": "Waiting for the wallet to finish loading…"
   },
   "abandon": {
     "stalled": "Your base node keeps refusing this transaction. The wallet keeps retrying it, and its funds stay locked until it is mined or you abandon it. Before abandoning it, try again later or switch to another base node.",

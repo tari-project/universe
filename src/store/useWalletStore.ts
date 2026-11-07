@@ -33,7 +33,15 @@ export interface WalletStoreState {
         progress: number;
         is_initial_scan_complete: boolean;
     };
-    is_pin_locked: boolean;
+    /**
+     * Whether the wallet has a PIN set.
+     *
+     * `undefined` means the wallet setup phase has not reported it yet. That is
+     * not the same as `false`: before the phase emits, a wallet with a PIN would
+     * look PIN-less and the UI would offer to create one. Callers that treat
+     * `false` as "no PIN" must handle the unknown state explicitly.
+     */
+    is_pin_locked: boolean | undefined;
     is_seed_backed_up: boolean;
 }
 
@@ -59,7 +67,7 @@ export const initialState: WalletStoreState = {
         progress: 0,
         is_initial_scan_complete: false,
     },
-    is_pin_locked: false,
+    is_pin_locked: undefined,
     is_seed_backed_up: false,
 };
 
