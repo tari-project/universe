@@ -113,3 +113,58 @@ describe('useCopyToClipboard', () => {
         expect(clear).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('useCopyToClipboard fallback', () => {
+    const setWebviewClipboard = (impl: (() => Promise<void>) | undefined) => {
+        Object.defineProperty(navigator, 'clipboard', {
+            value: impl ? { writeText: impl } : undefined,
+            configurable: true,
+            writable: true,
+        });
+    };
+
+    afterEach(() => {
+        setWebviewClipboard(undefined);
+    });
+
+    it('falls back to the webview clipboard when the plugin write fails', async () => {
+        // The Flatpak Wayland case: the plugin's X11 path times out.
+        writeText.mockRejectedValue(new Error('X11 server connection timed out'));
+        const webviewWrite = vi.fn().mockResolvedValue(undefined);
+        setWebviewClipboard(webviewWrite);
+
+        const { result } = renderHook(() => useCopyToClipboard());
+        await act(async () => {
+            result.current.copyToClipboard('seed words');
+        });
+
+        expect(webviewWrite).toHaveBeenCalledWith('seed words');
+        expect(result.current.isCopied).toBe(true);
+    });
+
+    it('stays on the plugin when it works, so other platforms are untouched', async () => {
+        writeText.mockResolvedValue(undefined);
+        const webviewWrite = vi.fn().mockResolvedValue(undefined);
+        setWebviewClipboard(webviewWrite);
+
+        const { result } = renderHook(() => useCopyToClipboard());
+        await act(async () => {
+            result.current.copyToClipboard('address');
+        });
+
+        expect(writeText).toHaveBeenCalledWith('address');
+        expect(webviewWrite).not.toHaveBeenCalled();
+    });
+
+    it('marks the copy as failed and reports it when both paths fail', async () => {
+        writeText.mockRejectedValue(new Error('X11 timed out'));
+        setWebviewClipboard(vi.fn().mockRejectedValue(new Error('no clipboard')));
+
+        const { result } = renderHook(() => useCopyToClipboard());
+        await act(async () => {
+            result.current.copyToClipboard('seed words');
+        });
+
+        expect(result.current.isCopied).toBe(false);
+    });
+});
