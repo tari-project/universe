@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
-import { fireEvent, render, screen, waitFor, within } from '@app/test/test-utils';
+import { act, fireEvent, render, screen, waitFor, within } from '@app/test/test-utils';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
@@ -46,6 +46,27 @@ describe('L2WalletCard', () => {
         useL2WalletStore.setState({ ...initialState }, true);
         useMiningStore.setState({ network: undefined });
         useAirdropStore.setState({ features: undefined });
+    });
+
+    it('stays in the loading state while the PIN state is unknown, without touching L2', () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(enabledState);
+        render(<L2WalletCard />);
+
+        expect(screen.getByTestId('l2-loading')).toBeInTheDocument();
+        expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it('shows the wallet once the PIN state arrives after loading', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(enabledState);
+        render(<L2WalletCard />);
+
+        expect(screen.getByTestId('l2-loading')).toBeInTheDocument();
+        act(() => useWalletStore.setState({ is_pin_locked: true }));
+
+        expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 TARI');
     });
 
     it('closes itself without a PIN and does not touch L2', () => {

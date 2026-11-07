@@ -17,7 +17,9 @@ const promptStyle = { justifyContent: 'center', alignItems: 'center', gap: 12, t
 
 export default function L2WalletCard() {
     const { t } = useTranslation('wallet');
-    const hasPin = useWalletStore((s) => s.is_pin_locked);
+    // Only a reported PIN counts: while the state is still unknown (undefined) the
+    // card stays in its loading state instead of assuming there is no PIN (#3518).
+    const hasPin = useWalletStore((s) => s.is_pin_locked === true);
     const enabled = useL2WalletStore((s) => s.enabled);
     const locked = useL2WalletStore((s) => s.locked);
     const seedChangePending = useL2WalletStore((s) => s.seedChangePending);

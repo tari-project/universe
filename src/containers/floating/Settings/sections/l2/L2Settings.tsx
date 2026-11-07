@@ -150,7 +150,10 @@ export const L2Settings = () => {
     }
 
     let status;
-    if (!hasPin) {
+    // While the PIN state is unknown (undefined) no status group renders at all,
+    // instead of a "PIN required" panel whose Set PIN button would call create_pin
+    // on a wallet that may already have one (#3518).
+    if (hasPin === false) {
         status = (
             <SettingsGroup data-testid="l2-settings-pin-required">
                 <SettingsGroupContent>

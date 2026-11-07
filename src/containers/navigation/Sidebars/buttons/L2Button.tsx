@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { setL2Open, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { deactivateTapplet } from '@app/store/useTappletsStore.ts';
 import { openL2 } from '@app/store/actions/l2OpenActions.ts';
@@ -9,12 +10,18 @@ export default function L2Button() {
     const { t } = useTranslation('wallet');
     const l2Open = useUIStore((s) => s.l2Open);
     const showTapplet = useUIStore((s) => s.showTapplet);
+    // The PIN state is unknown until the backend emits it during wallet setup; until
+    // then the button waits instead of risking the create-PIN dialog (#3518). An open
+    // panel can still be closed in this state.
+    const pinStateKnown = useWalletStore((s) => s.is_pin_locked !== undefined);
 
     return (
         <Button
             $isActive={l2Open}
             $isToggle={true}
             type="button"
+            disabled={!pinStateKnown && !l2Open}
+            aria-busy={!pinStateKnown}
             onClick={() => {
                 if (showTapplet) {
                     // Leave the bridge the way the Mine button does, then open the L2 card.

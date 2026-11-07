@@ -37,6 +37,15 @@ describe('openL2', () => {
         useToastStore.setState({ toasts: [] });
     });
 
+    it('does not open the create-PIN dialog while the PIN state is still unknown', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        await openL2();
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
     it('asks for a PIN to be set first, without touching L2', async () => {
         useWalletStore.setState({ is_pin_locked: false });
         await openL2();

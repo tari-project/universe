@@ -35,7 +35,9 @@ export default function TokenDisplay() {
             setFullToken(null);
             return;
         }
-        if (isPinLocked) {
+        // Fail closed while the PIN state is unknown (undefined): only a wallet
+        // known to have no PIN reveals the token without a PIN prompt (#3518).
+        if (isPinLocked !== false) {
             const pin = await requestPin();
             if (!pin) return;
             try {
@@ -63,7 +65,7 @@ export default function TokenDisplay() {
             setTimeout(() => setCopied(false), 2000);
             return;
         }
-        if (isPinLocked) {
+        if (isPinLocked !== false) {
             const pin = await requestPin();
             if (!pin) return;
             try {
