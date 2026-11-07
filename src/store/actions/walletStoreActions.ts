@@ -127,6 +127,7 @@ export const handlePinLocked = (is_pin_locked: boolean) => {
     useWalletStore.setState((c) => ({
         ...c,
         is_pin_locked,
+        is_pin_state_loaded: true,
     }));
 };
 

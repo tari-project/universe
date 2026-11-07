@@ -12,7 +12,19 @@ import {
     TransactionSource,
 } from '@app/types/app-status.ts';
 import { initialState, useWalletStore } from '../useWalletStore';
-import { handleWalletTransactionsFound, importSeedWords } from './walletStoreActions';
+import { handlePinLocked, handleWalletTransactionsFound, importSeedWords } from './walletStoreActions';
+
+describe('handlePinLocked', () => {
+    it.each([true, false])('marks the PIN state loaded when the backend reports %s', (isPinLocked) => {
+        useWalletStore.setState({ ...initialState });
+        expect(useWalletStore.getState().is_pin_state_loaded).toBe(false);
+
+        handlePinLocked(isPinLocked);
+
+        expect(useWalletStore.getState().is_pin_state_loaded).toBe(true);
+        expect(useWalletStore.getState().is_pin_locked).toBe(isPinLocked);
+    });
+});
 
 function makeTransaction(id: number): DisplayedTransaction {
     return {

@@ -4,17 +4,25 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { setL2Open, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { deactivateTapplet } from '@app/store/useTappletsStore.ts';
 import { openL2 } from '@app/store/actions/l2OpenActions.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 export default function L2Button() {
     const { t } = useTranslation('wallet');
     const l2Open = useUIStore((s) => s.l2Open);
     const showTapplet = useUIStore((s) => s.showTapplet);
+    const walletInitialized = useSetupStore(setupStoreSelectors.isWalletModuleInitialized);
+    const pinStateLoaded = useWalletStore((s) => s.is_pin_state_loaded);
+    const waitingForWallet = !walletInitialized || !pinStateLoaded;
 
     return (
         <Button
             $isActive={l2Open}
             $isToggle={true}
             type="button"
+            disabled={waitingForWallet && !l2Open}
+            aria-busy={waitingForWallet}
             onClick={() => {
                 if (showTapplet) {
                     // Leave the bridge the way the Mine button does, then open the L2 card.

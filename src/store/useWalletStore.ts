@@ -34,6 +34,7 @@ export interface WalletStoreState {
         is_initial_scan_complete: boolean;
     };
     is_pin_locked: boolean;
+    is_pin_state_loaded: boolean;
     is_seed_backed_up: boolean;
 }
 
@@ -60,6 +61,7 @@ export const initialState: WalletStoreState = {
         is_initial_scan_complete: false,
     },
     is_pin_locked: false,
+    is_pin_state_loaded: false,
     is_seed_backed_up: false,
 };
 

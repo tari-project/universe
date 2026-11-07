@@ -4,6 +4,8 @@ import { initialState, useL2WalletStore } from '../useL2WalletStore';
 import { useWalletStore } from '../useWalletStore.ts';
 import { useSecurityStore } from '../useSecurityStore.ts';
 import { useUIStore } from '../useUIStore.ts';
+import { useSetupStore } from '../useSetupStore.ts';
+import { AppModule, AppModuleStatus } from '../types/setup.ts';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { createPinAndOpenL2, openL2 } from './l2OpenActions';
@@ -35,7 +37,56 @@ describe('openL2', () => {
         useSecurityStore.setState({ modal: null });
         useUIStore.setState({ l2Open: false });
         useToastStore.setState({ toasts: [] });
+        useWalletStore.setState({ is_pin_state_loaded: true });
+        useSetupStore.setState((state) => ({
+            app_modules: {
+                ...state.app_modules,
+                [AppModule.Wallet]: { ...state.app_modules[AppModule.Wallet], status: AppModuleStatus.Initialized },
+            },
+        }));
     });
+
+    it('waits for the PIN state even when wallet initialization finishes first', async () => {
+        useWalletStore.setState({ is_pin_locked: false, is_pin_state_loaded: false });
+        await openL2();
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it.each([AppModuleStatus.NotInitialized, AppModuleStatus.Initializing, AppModuleStatus.Failed])(
+        'does not decide the PIN flow while the wallet is %s',
+        async (status) => {
+            useWalletStore.setState({ is_pin_locked: false });
+            useSetupStore.setState((state) => ({
+                app_modules: {
+                    ...state.app_modules,
+                    [AppModule.Wallet]: { ...state.app_modules[AppModule.Wallet], status },
+                },
+            }));
+
+            await openL2();
+
+            expect(useSecurityStore.getState().modal).toBeNull();
+            expect(useUIStore.getState().l2Open).toBe(false);
+            expect(invoke).not.toHaveBeenCalled();
+
+            // The loaded wallet has a PIN; the initial false value must not route to setup.
+            useWalletStore.setState({ is_pin_locked: true });
+            useSetupStore.setState((state) => ({
+                app_modules: {
+                    ...state.app_modules,
+                    [AppModule.Wallet]: { ...state.app_modules[AppModule.Wallet], status: AppModuleStatus.Initialized },
+                },
+            }));
+            serve(lockedState, 'unlock_l2_wallet');
+            await openL2();
+
+            expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet');
+            expect(useSecurityStore.getState().modal).toBeNull();
+            expect(useUIStore.getState().l2Open).toBe(true);
+        }
+    );
 
     it('asks for a PIN to be set first, without touching L2', async () => {
         useWalletStore.setState({ is_pin_locked: false });
