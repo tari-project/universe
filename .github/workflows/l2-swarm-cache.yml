@@ -28,6 +28,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Fix cache ownership (self-hosted runner)
+        # Same as the Playwright jobs: some pods come up with a root-owned
+        # ~/.npm and an empty root-owned tool cache, and setup-node then
+        # fails with EACCES.
+        run: |
+          if [ -d "$HOME/.npm" ]; then
+            sudo chown -R "$(id -u):$(id -g)" "$HOME/.npm"
+          fi
+          sudo mkdir -p "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}"
+          sudo chown -R "$(id -u):$(id -g)" "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}"
+
       - uses: actions/setup-node@v7
         with:
           node-version: lts/*
