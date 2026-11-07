@@ -49,21 +49,19 @@ pub async fn get_mcp_token(pin: Option<String>) -> Result<Option<String>, String
 
 #[tauri::command]
 pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
-    {
-        let mut config = ConfigMcp::current().write().await;
-        let mut updated = config._get_content().clone();
-        apply_mcp_enable_state(&mut updated, enabled);
-        ConfigMcp::_save_config(updated.clone()).map_err(|e| e.to_string())?;
-        *config._get_content_mut() = updated;
-    }
+    let updated = mutate_mcp_config(|content| apply_mcp_enable_state(content, enabled)).await?;
+    // Emit the persisted config before starting the listener so the UI reflects `enabled`
+    // and the configured port even when binding that port fails.
+    EventsEmitter::emit_mcp_config_loaded(&updated).await;
 
     if enabled {
-        McpServerManager::start().await.map_err(|e| e.to_string())?;
+        if let Err(e) = McpServerManager::start().await {
+            EventsEmitter::emit_mcp_server_status_update(false, None).await;
+            return Err(e.to_string());
+        }
     } else {
         McpServerManager::stop().await;
     }
-
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
     Ok(())
 }
@@ -84,18 +82,9 @@ pub async fn refresh_mcp_token_expiry() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn revoke_mcp_token() -> Result<(), String> {
-    {
-        let mut config = ConfigMcp::current().write().await;
-        let mut updated = config._get_content().clone();
-        apply_mcp_token_revocation(&mut updated);
-        ConfigMcp::_save_config(updated.clone()).map_err(|e| e.to_string())?;
-        *config._get_content_mut() = updated;
-    }
-
+    let updated = mutate_mcp_config(apply_mcp_token_revocation).await?;
     McpServerManager::stop().await;
-
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
-
+    EventsEmitter::emit_mcp_config_loaded(&updated).await;
     Ok(())
 }
 
@@ -104,14 +93,15 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
     ConfigMcp::update_field(ConfigMcpContent::set_port, port)
         .await
         .map_err(|e| e.to_string())?;
-    // Restart if currently running so the new port takes effect
     let content = ConfigMcp::content().await;
+    // Broadcast the newly saved port before restarting so the UI keeps displaying the
+    // configured port if the listener fails to bind.
+    EventsEmitter::emit_mcp_config_loaded(&content).await;
     if *content.enabled() {
         McpServerManager::restart()
             .await
             .map_err(|e| e.to_string())?;
     }
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 
@@ -186,6 +176,19 @@ pub async fn mcp_transaction_dialog_response(
     approved: bool,
 ) -> Result<(), String> {
     crate::wallet::send_gate::respond_to_transaction(request_id, approved).await
+}
+
+// Atomically clones, mutates, persists, and commits the in-memory MCP configuration under its
+// write lock so callers cannot diverge disk state from runtime state.
+async fn mutate_mcp_config(
+    mutator: impl FnOnce(&mut ConfigMcpContent),
+) -> Result<ConfigMcpContent, String> {
+    let mut config = ConfigMcp::current().write().await;
+    let mut updated = config._get_content().clone();
+    mutator(&mut updated);
+    ConfigMcp::_save_config(updated.clone()).map_err(|e| e.to_string())?;
+    *config._get_content_mut() = updated.clone();
+    Ok(updated)
 }
 
 fn apply_mcp_enable_state(content: &mut ConfigMcpContent, enabled: bool) {
