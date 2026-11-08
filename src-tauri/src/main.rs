@@ -467,6 +467,9 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::discard_unreadable_wallet_config,
+            commands::list_orphaned_wallet_candidates,
+            commands::unlock_orphaned_wallet_candidates,
+            commands::restore_orphaned_wallet_candidate,
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,

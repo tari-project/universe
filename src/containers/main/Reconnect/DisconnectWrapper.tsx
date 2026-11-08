@@ -70,7 +70,7 @@ export default function DisconnectWrapper() {
                 } else if (event.payload === 'Succeed') {
                     stopCountdown();
                 }
-            } else if (event.event_type === 'CriticalProblem') {
+            } else if (event.event_type === 'CriticalProblem' || event.event_type === 'OrphanedWalletRecovery') {
                 if (connectionStatusRef.current === 'connected') return;
                 console.warn('Failed to reconnect');
                 handleReconnectFailure();

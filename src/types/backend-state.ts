@@ -10,6 +10,7 @@ import {
     GpuMinerType,
     MinerControlsState,
     NodeTypeUpdatePayload,
+    OrphanedWalletRecoveryPayload,
     PinPromptPayload,
     ProgressTrackerUpdatePayload,
     SetupPhase,
@@ -79,6 +80,10 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'CriticalProblem';
           payload: CriticalProblemPayload;
+      }
+    | {
+          event_type: 'OrphanedWalletRecovery';
+          payload: OrphanedWalletRecoveryPayload;
       }
     | {
           event_type: 'SystemDependenciesLoaded';

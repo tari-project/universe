@@ -39,7 +39,7 @@ use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::consts::DEFAULT_SYSTEM_LOCALE_FALLBACK;
 use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEventType};
-use crate::events::ConnectionStatusPayload;
+use crate::events::{ConnectionStatusPayload, OrphanedWalletCandidate};
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{
@@ -627,6 +627,11 @@ pub async fn import_seed_words(
 
     match InternalWallet::import_tari_seed_words(seed_words, &app_handle).await {
         Ok((wallet_id, _seed_binary)) => {
+            crate::internal_wallet::clear_orphaned_wallet_recovery_state().await;
+            if let Err(e) = ConfigWallet::migrate().await {
+                error!(target: LOG_TARGET_APP_LOGIC, "Error migrating wallet config after seed import: {e:?}");
+            }
+            EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
             ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
                 DEFAULT_EXCHANGE_ID.to_string(),
@@ -933,6 +938,54 @@ pub async fn discard_unreadable_wallet_config(app_handle: tauri::AppHandle) -> R
         .map_err(|e| e.to_string())?;
     ConfigWallet::migrate().await.map_err(|e| e.to_string())?;
     EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
+
+    tauri::async_runtime::spawn(async move {
+        SetupManager::get_instance()
+            .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+            .await;
+    });
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn list_orphaned_wallet_candidates() -> Result<Vec<OrphanedWalletCandidate>, String> {
+    Ok(crate::internal_wallet::list_orphaned_wallet_candidates().await)
+}
+
+#[tauri::command]
+pub async fn unlock_orphaned_wallet_candidates(
+    pin: String,
+) -> Result<Vec<OrphanedWalletCandidate>, String> {
+    crate::internal_wallet::unlock_orphaned_wallet_candidates(tari_utilities::SafePassword::from(
+        pin,
+    ))
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn restore_orphaned_wallet_candidate(
+    wallet_id: String,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    let pin_locked =
+        crate::internal_wallet::restore_orphaned_wallet_candidate(WalletId::new(wallet_id))
+            .await
+            .map_err(|e| e.to_string())?;
+
+    SetupManager::get_instance()
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+        .await;
+    if let Err(e) = InternalWallet::initialize_with_seed(&app_handle).await {
+        crate::internal_wallet::rollback_failed_orphaned_wallet_restore().await;
+        return Err(e.to_string());
+    }
+    if let Err(e) = ConfigWallet::migrate().await {
+        crate::internal_wallet::rollback_failed_orphaned_wallet_restore().await;
+        return Err(e.to_string());
+    }
+    EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
+    EventsEmitter::emit_pin_locked(pin_locked).await;
 
     tauri::async_runtime::spawn(async move {
         SetupManager::get_instance()

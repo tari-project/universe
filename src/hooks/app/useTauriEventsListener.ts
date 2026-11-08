@@ -29,6 +29,7 @@ import {
     handleShowRelesaeNotes,
     loadSystemDependencies,
     handleCriticalProblemEvent,
+    handleOrphanedWalletRecoveryEvent,
     setCriticalError,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
@@ -202,6 +203,9 @@ const useTauriEventsListener = () => {
                         }
                         break;
                     }
+                    case 'OrphanedWalletRecovery':
+                        handleOrphanedWalletRecoveryEvent(event.payload);
+                        break;
                     case 'SystemDependenciesLoaded':
                         loadSystemDependencies(event.payload);
                         break;
