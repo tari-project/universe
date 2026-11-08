@@ -242,10 +242,93 @@ pub fn mark_foreign(sdk: &OotleSdk, burns: &mut [L2Burn]) -> Result<(), anyhow::
     Ok(())
 }
 
+/// Tracks an auto-claim attempt for a burn commitment during the current unlock session.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AutoClaimAttempt {
+    /// Rejected because the L2 hasn't seen the burn yet at this L2 block height;
+    /// retry once the L2 advances past it.
+    RetryAfterBlock(u64),
+    /// Failed for any other reason; leave the burn for the manual Claim button.
+    Failed,
+}
+
+#[derive(Debug)]
+struct BurnNotYetClaimable(String);
+
+impl std::fmt::Display for BurnNotYetClaimable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for BurnNotYetClaimable {}
+
+/// True if `error` came from the L2 not having seen the burn's L1 block yet.
+pub fn is_not_yet_claimable_error(error: &anyhow::Error) -> bool {
+    error.chain().any(|cause| cause.is::<BurnNotYetClaimable>())
+}
+
 /// True if a claim was rejected because the burn's L1 block isn't synced into a
 /// claimable epoch yet, rather than because the claim is bad.
 fn is_burn_not_yet_claimable(reject: &RejectReason) -> bool {
     reject.execution_failure_code() == Some(ExecutionFailureCode::NotYetValid)
+}
+
+/// Claimable burns in `dir` that have reached `block_height`, belong to one of this
+/// wallet's L2 accounts, have no claim already waiting on the network, and are due for
+/// an auto-claim attempt.
+pub fn ready_for_auto_claim(
+    sdk: &OotleSdk,
+    dir: &Path,
+    burns: &[L2Burn],
+    block_height: u64,
+    attempts: &HashMap<String, AutoClaimAttempt>,
+) -> Result<Vec<(String, String, BurnProof)>, anyhow::Error> {
+    let mut ready = Vec::new();
+    for burn in burns {
+        if burn.status != "claimable" {
+            continue;
+        }
+        if !burn.mined_height.is_some_and(|height| height <= block_height) {
+            continue;
+        }
+        match attempts.get(&burn.commitment) {
+            Some(AutoClaimAttempt::Failed) => continue,
+            Some(AutoClaimAttempt::RetryAfterBlock(height)) if block_height <= *height => continue,
+            _ => {}
+        }
+        let Ok((file, proof)) = find_claimable(dir, &burn.commitment) else {
+            continue;
+        };
+        if sdk
+            .accounts_api()
+            .get_account_by_public_key(&proof.account_key)
+            .optional()?
+            .is_none()
+        {
+            continue;
+        }
+        ready.push((burn.commitment.clone(), file, proof));
+    }
+    Ok(ready)
+}
+
+/// Updates `attempts` when a tracked claim settles on L2: an accepted claim clears its
+/// entry, a claim rejected because the L2 hasn't seen the burn yet keeps waiting for the
+/// next block, and any other rejection marks it failed so the manual Claim button takes
+/// over.
+pub fn record_claim_result(
+    attempts: &mut HashMap<String, AutoClaimAttempt>,
+    result: &L2ClaimResult,
+) {
+    let Some(commitment) = &result.commitment else {
+        return;
+    };
+    if result.accepted {
+        attempts.remove(commitment);
+    } else if !result.not_yet_claimable {
+        attempts.insert(commitment.clone(), AutoClaimAttempt::Failed);
+    }
 }
 
 /// The claimable proof for `commitment` and its file name.
@@ -566,6 +649,9 @@ pub async fn claim_burn(
         .await?
         .map_err(|e| anyhow!("The claim fee estimate failed: {e}"))?;
     if let Some(reason) = result.finalize.any_reject() {
+        if is_burn_not_yet_claimable(reason) {
+            return Err(BurnNotYetClaimable(format!("The claim would be rejected: {reason}")).into());
+        }
         if verified_claim_tombstone_exists(sdk, &proof).await? {
             mark_claimed(&proof_dir, &file_name);
             bail!("This burn has already been claimed on Layer 2: {reason}");
@@ -596,11 +682,12 @@ pub async fn claim_burn(
 /// its validators have the burn's L1 block. Before that the network rejects the claim.
 fn ensure_claimable_in(epoch: Epoch, mined_in_epoch: u64) -> Result<(), anyhow::Error> {
     if epoch.as_u64() <= mined_in_epoch {
-        bail!(
+        return Err(BurnNotYetClaimable(format!(
             "The L2 hasn't seen this burn yet. It's at epoch {} and can take the claim from epoch {}.",
             epoch.as_u64(),
             mined_in_epoch.saturating_add(1)
-        );
+        ))
+        .into());
     }
     Ok(())
 }
@@ -1204,5 +1291,128 @@ mod tests {
         assert!(!res.accepted);
         assert!(dir.join(&file).is_file());
         assert!(!dir.join(CLAIMED_DIR).join(&file).exists());
+    }
+
+    #[test]
+    fn auto_claim_selects_only_ready_own_burns_and_retries_only_not_yet_claimable() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store_dir = dir.path().join("store");
+        let proofs_dir = dir.path().join("proofs");
+        let url = url::Url::parse("http://127.0.0.1:1").expect("url");
+        let mut sdk =
+            super::super::open_sdk(&store_dir, Network::Esmeralda, url, "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        let default_key = hex::encode(
+            sdk.key_manager_api()
+                .derive_account_key_pair(0)
+                .expect("key")
+                .public_key
+                .as_bytes(),
+        );
+
+        let own_commitment = "11".repeat(32);
+        let foreign_commitment = "22".repeat(32);
+        let waiting_commitment = "33".repeat(32);
+        let abandoned_commitment = "44".repeat(32);
+        let proof_for = |commitment: &str, key: &str, height: u64| {
+            let mut json: serde_json::Value = serde_json::from_str(PROOF).expect("json");
+            json["claim_proof"]["output_proof"]["output"]["commitment"] = commitment.into();
+            json["claim_proof"]["burn_public_key"] = key.into();
+            json["claim_proof"]["output_proof"]["block_height"] = height.into();
+            json.to_string()
+        };
+        let own_file = format!("{default_key}-{own_commitment}.json");
+        write(
+            &proofs_dir,
+            &own_file,
+            &proof_for(&own_commitment, &default_key, 12_345),
+        );
+        write(
+            &proofs_dir,
+            &format!("{CLAIM_KEY}-{foreign_commitment}.json"),
+            &proof_for(&foreign_commitment, CLAIM_KEY, 12_345),
+        );
+        write(
+            &proofs_dir,
+            &format!("{default_key}-{waiting_commitment}.json"),
+            &proof_for(&waiting_commitment, &default_key, 12_400),
+        );
+
+        let mut abandoned = L2Burn::pending(abandoned_commitment, default_key.clone(), 1);
+        abandoned.status = "abandoned";
+        let mut burns = list_burns(&proofs_dir, vec![abandoned], &HashMap::new()).expect("burns");
+        mark_foreign(&sdk, &mut burns).expect("mark foreign");
+
+        let mut attempts = HashMap::new();
+        // Before recovery creates the account, a pre-burn to the default key waits.
+        assert!(
+            ready_for_auto_claim(&sdk, &proofs_dir, &burns, 12_350, &attempts)
+                .expect("ready")
+                .is_empty()
+        );
+
+        let key = sdk.key_manager_api().next_account_address().expect("key");
+        sdk.accounts_api()
+            .create_account(Some("default"), true, key)
+            .expect("account");
+        let ready =
+            ready_for_auto_claim(&sdk, &proofs_dir, &burns, 12_350, &attempts).expect("ready");
+        assert_eq!(ready.len(), 1);
+        assert_eq!(ready[0].0, own_commitment);
+        assert_eq!(ready[0].1, own_file);
+
+        // An in-flight claim in pending_claims.json prevents a duplicate submission.
+        let tx_id = TransactionId::from([5; 32]);
+        track(&proofs_dir, tx_id, Some(own_file.clone()));
+        assert!(
+            ready_for_auto_claim(&sdk, &proofs_dir, &burns, 12_350, &attempts)
+                .expect("ready")
+                .is_empty()
+        );
+        untrack(&proofs_dir, tx_id);
+
+        // Rejected because L2 hasn't seen the burn yet: waits at the same height, retries on the next block.
+        assert!(is_not_yet_claimable_error(
+            &ensure_claimable_in(Epoch(3), 3).expect_err("not yet")
+        ));
+        attempts.insert(
+            own_commitment.clone(),
+            AutoClaimAttempt::RetryAfterBlock(12_350),
+        );
+        record_claim_result(
+            &mut attempts,
+            &L2ClaimResult::new(Some(&own_file), false, Some("not yet".to_string()), true),
+        );
+        assert!(
+            ready_for_auto_claim(&sdk, &proofs_dir, &burns, 12_350, &attempts)
+                .expect("same block")
+                .is_empty()
+        );
+        assert_eq!(
+            ready_for_auto_claim(&sdk, &proofs_dir, &burns, 12_351, &attempts)
+                .expect("next block")
+                .len(),
+            1
+        );
+
+        // Any other rejection marks the burn failed so the manual Claim button serves as fallback.
+        record_claim_result(
+            &mut attempts,
+            &L2ClaimResult::new(Some(&own_file), false, Some("bad proof".to_string()), false),
+        );
+        assert_eq!(
+            attempts.get(&own_commitment),
+            Some(&AutoClaimAttempt::Failed)
+        );
+        assert!(
+            ready_for_auto_claim(&sdk, &proofs_dir, &burns, 12_360, &attempts)
+                .expect("failed stays manual")
+                .is_empty()
+        );
+        let ready_at_12_500 =
+            ready_for_auto_claim(&sdk, &proofs_dir, &burns, 12_500, &attempts).expect("waiting ready");
+        assert_eq!(ready_at_12_500.len(), 1);
+        assert_eq!(ready_at_12_500[0].0, waiting_commitment);
     }
 }

@@ -30,11 +30,12 @@
 //! stays locked, and nothing L2 runs, until the user unlocks it with the PIN.
 
 use std::{
+    collections::HashMap,
     future::Future,
     path::{Path, PathBuf},
     str::FromStr,
     sync::{
-        LazyLock,
+        Arc, LazyLock, Mutex as StdMutex, PoisonError,
         atomic::{AtomicBool, Ordering},
     },
 };
@@ -142,6 +143,7 @@ static INSTANCE: LazyLock<OotleWalletManager> = LazyLock::new(|| OotleWalletMana
     locked: AtomicBool::new(false),
     found: tokio::sync::Notify::new(),
     lifecycle: Mutex::new(None),
+    auto_claims: StdMutex::new(HashMap::new()),
 });
 
 pub struct OotleWalletManager {
@@ -163,6 +165,8 @@ pub struct OotleWalletManager {
     /// services run on them, and an unlock after that phase stopped (a restart whose new
     /// phase has not found the store yet) is refused.
     lifecycle: Mutex<Option<(TaskTracker, PhaseSignal)>>,
+    /// Per-commitment auto-claim state for the current unlock session.
+    auto_claims: StdMutex<HashMap<String, claim::AutoClaimAttempt>>,
 }
 
 impl OotleWalletManager {
@@ -924,16 +928,102 @@ async fn listed_burns() -> Result<Vec<L2Burn>, TransactionError> {
 
 /// A new burn or proof file is an L1 side change, so no wallet event reports it. Sends
 /// the L2 state when the burn list changed since `last`, which makes the panel refetch
-/// its burns.
-async fn emit_state_on_new_burns(sdk: &OotleSdk, last: &mut Option<Vec<L2Burn>>) {
-    match listed_burns().await {
-        Ok(burns) => {
-            if last.as_ref() != Some(&burns) {
-                *last = Some(burns);
+/// its burns, and automatically submits claims for burns whose L1 block the L2 has imported.
+async fn poll_burns(
+    sdk: &OotleSdk,
+    transactions: &TransactionServiceHandle,
+    last: &mut Option<Vec<L2Burn>>,
+    stats: Option<&L2NetworkStats>,
+) {
+    let mut burns = match listed_burns().await {
+        Ok(burns) => burns,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Could not list burns to L2: {e}");
+            return;
+        }
+    };
+    if last.as_ref() != Some(&burns) {
+        *last = Some(burns.clone());
+        emit_state(sdk).await;
+    }
+    let Some(stats) = stats else {
+        return;
+    };
+    if let Err(e) = claim::mark_foreign(sdk, &mut burns) {
+        warn!(target: LOG_TARGET, "Could not check burn claim keys: {e}");
+        return;
+    }
+    auto_claim_burns(sdk, transactions, &burns, stats.block_height).await;
+}
+
+/// Automatically claims burns that belong to one of this wallet's L2 accounts once the L2
+/// has reached their `mined_height`, skipping the PIN prompt. Burns rejected because the
+/// L2 hasn't seen them yet retry on the next block; anything else stays for the manual
+/// Claim button.
+async fn auto_claim_burns(
+    sdk: &OotleSdk,
+    transactions: &TransactionServiceHandle,
+    burns: &[L2Burn],
+    block_height: u64,
+) {
+    let proof_dir = match burn_proofs_dir() {
+        Ok(dir) => dir,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Could not resolve burn proofs dir: {e}");
+            return;
+        }
+    };
+    let ready = {
+        let attempts = INSTANCE
+            .auto_claims
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        claim::ready_for_auto_claim(sdk, &proof_dir, burns, block_height, &attempts)
+    };
+    let ready = match ready {
+        Ok(ready) => ready,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Could not check burns for auto-claim: {e}");
+            return;
+        }
+    };
+    for (commitment, file_name, proof) in ready {
+        let Ok(_permit) = crate::wallet::send_gate::try_exclusive_permit() else {
+            break;
+        };
+        match claim::claim_burn(sdk, transactions, proof, file_name, async |_| Ok(())).await {
+            Ok(id) => {
+                info!(target: LOG_TARGET, "L2 auto-claim submitted: {id}");
+                INSTANCE
+                    .auto_claims
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .insert(commitment, claim::AutoClaimAttempt::RetryAfterBlock(block_height));
+                drop(_permit);
+                emit_state(sdk).await;
+            }
+            Err(e) if claim::is_not_yet_claimable_error(&e) => {
+                info!(
+                    target: LOG_TARGET,
+                    "L2 burn {commitment} is not yet claimable at height {block_height}, retrying on the next block: {e}"
+                );
+                INSTANCE
+                    .auto_claims
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .insert(commitment, claim::AutoClaimAttempt::RetryAfterBlock(block_height));
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "L2 auto-claim failed for {commitment}: {e}");
+                INSTANCE
+                    .auto_claims
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .insert(commitment, claim::AutoClaimAttempt::Failed);
+                drop(_permit);
                 emit_state(sdk).await;
             }
         }
-        Err(e) => warn!(target: LOG_TARGET, "Could not list burns to L2: {e}"),
     }
 }
 
@@ -1102,15 +1192,21 @@ fn upsert_genesis_resources(sdk: &OotleSdk) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-/// Spawns the wallet services the way tari_walletd does, minus the template monitor,
-/// automatic burn claiming and the wasm optimizer. They run on the tracker of the wallet
-/// phase that found the store so they stop with the L1 wallet.
+/// Spawns the wallet services the way tari_walletd does, minus the template monitor
+/// and the wasm optimizer. They run on the tracker of the wallet phase that found the
+/// store so they stop with the L1 wallet.
 async fn start_services(
     sdk: &OotleSdk,
     needs_recovery: bool,
     tracker: TaskTracker,
     mut phase_signal: PhaseSignal,
 ) -> Result<(), anyhow::Error> {
+    INSTANCE
+        .auto_claims
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clear();
+
     // The SDK services take the crates.io tari shutdown signal, so relay the phase's one to it.
     let shutdown = Shutdown::new();
     let signal = shutdown.to_signal();
@@ -1119,15 +1215,16 @@ async fn start_services(
         shutdown.trigger();
     });
 
-    let network = Network::get_current_or_user_setting_or_default();
-    let poll = network_stats::poll(sdk.clone(), network);
-    spawn_service(&tracker, &signal, "network poller", poll);
-
     let notify = INSTANCE.notify.clone();
     let state_events_rx = notify.subscribe();
     let (transactions, handle) =
         TransactionService::new(notify.clone(), sdk.clone(), signal.clone());
-    *INSTANCE.transactions.lock().await = Some(handle);
+    *INSTANCE.transactions.lock().await = Some(handle.clone());
+
+    let network = Network::get_current_or_user_setting_or_default();
+    let poll_wake = Arc::new(tokio::sync::Notify::new());
+    let poll = network_stats::poll(sdk.clone(), handle, network, poll_wake.clone());
+    spawn_service(&tracker, &signal, "network poller", poll);
 
     let (scanner, scanner_handle) =
         StealthUtxoScannerWorker::new(sdk.clone(), notify.clone()).spawn();
@@ -1169,6 +1266,7 @@ async fn start_services(
         spawn_service(&tracker, &signal, "account recovery", async move {
             scanner.scan().await;
             emit_state(&sdk).await;
+            poll_wake.notify_one();
             Ok(())
         });
     }
@@ -1254,9 +1352,20 @@ fn record_stealth_balance_event(sdk: &OotleSdk, event: &WalletEvent) -> Result<(
     Ok(())
 }
 
-/// Tells the frontend how tracked claims and sends ended.
+/// Tells the frontend how tracked claims and sends ended. A claim rejected only because
+/// the L2 hasn't seen the burn yet is retried on the next block rather than surfacing an error.
 async fn emit_results(results: impl IntoIterator<Item = L2ClaimResult>) {
     for result in results {
+        claim::record_claim_result(
+            &mut INSTANCE
+                .auto_claims
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner),
+            &result,
+        );
+        if result.not_yet_claimable {
+            continue;
+        }
         EventsEmitter::emit_l2_claim_result(result).await;
     }
 }
