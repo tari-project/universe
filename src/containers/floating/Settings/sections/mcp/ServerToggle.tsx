@@ -11,7 +11,7 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 const StatusError = styled.p`
@@ -33,6 +33,14 @@ export default function ServerToggle() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Drop a stale error once the server is actually running again (the user
+    // fixed the port and the restart succeeded) or the server is off.
+    useEffect(() => {
+        if (serverRunning || !enabled) {
+            setError(null);
+        }
+    }, [serverRunning, enabled]);
+
     const handleToggle = async (checked: boolean) => {
         setLoading(true);
         setError(null);
@@ -42,6 +50,12 @@ export default function ServerToggle() {
         } catch (e) {
             console.error('Failed to toggle MCP server:', e);
             if (String(e).includes(BIND_ERROR_MARKER)) {
+                // set_mcp_enabled saves `enabled` before attempting to bind,
+                // so keep the store on the persisted value: the port field
+                // stays visible and the user can pick another port.
+                if (checked) {
+                    useConfigMcpStore.setState((c) => ({ ...c, enabled: true }));
+                }
                 setError(t('mcp.server-toggle.port-in-use', { port: configuredPort }));
             } else {
                 setError(String(e));

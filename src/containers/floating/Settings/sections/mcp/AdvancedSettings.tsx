@@ -74,10 +74,15 @@ export default function AdvancedSettings() {
         }
         try {
             await invoke('set_mcp_port', { port: num });
+            // The backend persists the port before restarting, and the panel
+            // is the source the user reads the configured port from, so keep
+            // the store in step on success and on a bind failure alike.
+            useConfigMcpStore.setState((c) => ({ ...c, port: num }));
             setPortError(null);
         } catch (e) {
             console.error('Failed to set MCP port:', e);
             if (String(e).includes(BIND_ERROR_MARKER)) {
+                useConfigMcpStore.setState((c) => ({ ...c, port: num }));
                 setPortError(t('mcp.advanced.port-in-use', { port: num }));
             } else {
                 setPortError(String(e));

@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@app/test/test-utils';
+import { act, render, screen, fireEvent } from '@app/test/test-utils';
 import { invoke } from '@tauri-apps/api/core';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
@@ -67,5 +67,33 @@ describe('ServerToggle', () => {
         expect(error).toHaveTextContent('mcp.server-toggle.port-in-use');
         expect(error).toHaveAttribute('role', 'alert');
         expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-stopped');
+        // set_mcp_enabled persists `enabled` before the bind attempt, so the
+        // store keeps it: the port field stays visible for picking another port
+        expect(useConfigMcpStore.getState().enabled).toBe(true);
+        expect(screen.getByRole('checkbox')).toBeChecked();
+
+        // Once the server is running again (user fixed the port, restart
+        // succeeded), the stale error goes away on its own
+        act(() => {
+            useMcpStore.setState({ serverRunning: true, serverPort: 19223 });
+        });
+        expect(screen.queryByTestId('mcp-server-error')).toBeNull();
+        expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-running');
+    });
+
+    it('clears the error when the server is disabled again', async () => {
+        mockInvoke.mockReset();
+        mockInvoke.mockRejectedValueOnce(
+            'MCP server failed to bind to configured port 19222: Address already in use (os error 98). ' +
+                'Refusing to fall back to a random port for security reasons'
+        );
+        useConfigMcpStore.setState({ enabled: false, port: 19222 });
+        render(<ServerToggle />);
+        fireEvent.click(screen.getByRole('checkbox'));
+        await screen.findByTestId('mcp-server-error');
+        act(() => {
+            useConfigMcpStore.setState({ enabled: false });
+        });
+        expect(screen.queryByTestId('mcp-server-error')).toBeNull();
     });
 });

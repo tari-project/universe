@@ -114,6 +114,8 @@ describe('AdvancedSettings', () => {
             expect(error).toHaveAttribute('role', 'alert');
             // The attempted port stays visible so the user sees what is configured
             expect(input).toHaveValue(4444);
+            // ...and the store holds it too: the backend already persisted it
+            expect(useConfigMcpStore.getState().port).toBe(4444);
         });
 
         it('commits a valid free port without showing an error', async () => {
@@ -121,6 +123,7 @@ describe('AdvancedSettings', () => {
             commitValue('4444');
             await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith('set_mcp_port', { port: 4444 }));
             expect(screen.queryByTestId('mcp-port-error')).toBeNull();
+            expect(useConfigMcpStore.getState().port).toBe(4444);
         });
     });
 });
