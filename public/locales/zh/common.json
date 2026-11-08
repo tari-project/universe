@@ -8,6 +8,7 @@
   "connection": "连接",
   "continue": "继续",
   "copied": "已复制",
+  "copy-failed": "无法复制到剪贴板",
   "critical-error": "严重错误",
   "day": "天",
   "disconnect": "断开连接",

@@ -9,8 +9,8 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useCallback, useState } from 'react';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { requestPin } from '@app/store/useSecurityStore';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 
@@ -23,7 +23,7 @@ export default function TokenDisplay() {
     const isPinLocked = useWalletStore((s) => s.is_pin_locked);
     const [revealed, setRevealed] = useState(false);
     const [fullToken, setFullToken] = useState<string | null>(null);
-    const [copied, setCopied] = useState(false);
+    const { copyToClipboard, isCopied: copied } = useCopyToClipboard();
 
     const fetchToken = useCallback(async (pinValue?: string) => {
         return invoke<string | null>('get_mcp_token', { pin: pinValue ?? null });
@@ -59,38 +59,27 @@ export default function TokenDisplay() {
     }, [revealed, isPinLocked, fetchToken]);
 
     const handleCopy = useCallback(async () => {
-        if (fullToken) {
-            await writeText(fullToken);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-            return;
-        }
-        if (isPinLocked !== false) {
-            const pin = await requestPin();
-            if (!pin) return;
-            try {
-                const token = await fetchToken(pin);
-                if (token) {
-                    await writeText(token);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                }
-            } catch (e) {
-                addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
+        const copyToken = async (token: string | null) => {
+            if (token) await copyToClipboard(token);
+        };
+        try {
+            if (fullToken) {
+                await copyToken(fullToken);
+                return;
             }
-        } else {
-            try {
-                const token = await fetchToken();
-                if (token) {
-                    await writeText(token);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                }
-            } catch (e) {
-                addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
+            // Fail closed while the PIN state is unknown (undefined): only a wallet
+            // known to have no PIN copies the token without a PIN prompt (#3518).
+            if (isPinLocked !== false) {
+                const pin = await requestPin();
+                if (!pin) return;
+                await copyToken(await fetchToken(pin));
+            } else {
+                await copyToken(await fetchToken());
             }
+        } catch (e) {
+            addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
         }
-    }, [fullToken, isPinLocked, fetchToken]);
+    }, [fullToken, isPinLocked, fetchToken, copyToClipboard]);
 
     const handleRefreshExpiry = useCallback(async () => {
         try {

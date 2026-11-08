@@ -7,11 +7,21 @@ import { invoke } from '@tauri-apps/api/core';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { requestPin } from '@app/store/useSecurityStore';
+import { copyTextToClipboard } from '@app/utils/clipboard';
 import TokenDisplay from './TokenDisplay';
 
 vi.mock('@app/store/useSecurityStore', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@app/store/useSecurityStore')>()),
     requestPin: vi.fn(),
+}));
+
+// Routing guard (#3489): the component must not touch the plugin itself, it has
+// to go through the shared clipboard helper.
+vi.mock('@app/utils/clipboard', () => ({
+    copyTextToClipboard: vi.fn(),
+    readClipboardText: vi.fn(),
+    clearClipboardIfMatches: vi.fn(),
+    ClipboardWriteError: class ClipboardWriteError extends Error {},
 }));
 
 describe('TokenDisplay', () => {
@@ -123,6 +133,60 @@ describe('TokenDisplay', () => {
             await waitFor(() => expect(screen.getByText('full-token-xyz')).toBeInTheDocument());
             expect(requestPin).not.toHaveBeenCalled();
             expect(invoke).toHaveBeenCalledWith('get_mcp_token', { pin: null });
+        });
+    });
+
+    describe('clipboard routing (#3489)', () => {
+        beforeEach(() => {
+            vi.mocked(invoke).mockReset();
+            vi.mocked(invoke).mockImplementation((async (cmd: string) =>
+                cmd === 'get_mcp_token' ? 'full-token-xyz' : undefined) as typeof invoke);
+            vi.mocked(requestPin).mockReset();
+            vi.mocked(requestPin).mockResolvedValue('1234');
+            vi.mocked(copyTextToClipboard).mockReset();
+            vi.mocked(copyTextToClipboard).mockResolvedValue('webview');
+            useConfigMcpStore.setState({ enabled: true, bearer_token_redacted: 'tu_••••••••' });
+            useWalletStore.setState({ is_pin_locked: false });
+        });
+
+        it('copies through the shared helper instead of the native plugin', async () => {
+            render(<TokenDisplay />);
+
+            fireEvent.click(screen.getByTestId('mcp-token-copy'));
+
+            await waitFor(() => expect(copyTextToClipboard).toHaveBeenCalledOnce());
+            expect(vi.mocked(copyTextToClipboard).mock.calls[0][0]).toBe('full-token-xyz');
+        });
+
+        it('asks for a PIN before copying while the PIN state is unknown', async () => {
+            useWalletStore.setState({ is_pin_locked: undefined });
+            render(<TokenDisplay />);
+
+            fireEvent.click(screen.getByTestId('mcp-token-copy'));
+
+            await waitFor(() => expect(copyTextToClipboard).toHaveBeenCalledOnce());
+            expect(requestPin).toHaveBeenCalledOnce();
+            expect(invoke).toHaveBeenCalledWith('get_mcp_token', { pin: '1234' });
+        });
+
+        it('shows the copied state only when the write succeeded', async () => {
+            render(<TokenDisplay />);
+
+            const button = screen.getByTestId('mcp-token-copy');
+            fireEvent.click(button);
+
+            await waitFor(() => expect(button.textContent).toBe('mcp.token-display.copied'));
+        });
+
+        it('does not show the copied state when the write failed', async () => {
+            vi.mocked(copyTextToClipboard).mockRejectedValue(new Error('everything failed'));
+            render(<TokenDisplay />);
+
+            const button = screen.getByTestId('mcp-token-copy');
+            fireEvent.click(button);
+
+            await waitFor(() => expect(copyTextToClipboard).toHaveBeenCalled());
+            expect(button.textContent).toBe('mcp.token-display.copy');
         });
     });
 });

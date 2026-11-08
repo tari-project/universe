@@ -8,6 +8,7 @@
   "connection": "연결",
   "continue": "계속",
   "copied": "복사됨",
+  "copy-failed": "클립보드에 복사하지 못했습니다",
   "critical-error": "치명적 오류",
   "day": "일",
   "disconnect": "연결 해제",
