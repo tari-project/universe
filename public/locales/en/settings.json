@@ -85,7 +85,9 @@
     "advanced": {
       "control-tier": "Control Tier",
       "port": "Server Port",
-      "read-tier": "Read Tier"
+      "read-tier": "Read Tier",
+      "port-in-use": "Port {{port}} is already in use. Choose another port.",
+      "port-range": "Port must be between 1024 and 65535."
     },
     "agent-config": {
       "copied": "Copied!",
