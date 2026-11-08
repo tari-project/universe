@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod cpu;
 pub mod gpu;
+pub mod mode_switch;
 pub mod pools;
 
 /// Errors that represent user-environment issues rather than application bugs.

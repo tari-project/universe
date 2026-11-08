@@ -92,11 +92,14 @@ use crate::{
     LOG_TARGET_APP_LOGIC,
     configs::{
         config_core::{ConfigCore, ConfigCoreContent},
-        config_mining::{ConfigMining, ConfigMiningContent},
+        config_mining::ConfigMining,
         trait_config::ConfigImpl,
     },
-    events_emitter::EventsEmitter,
-    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
+    mining::{
+        cpu::manager::CpuManager,
+        gpu::manager::GpuManager,
+        mode_switch::{ModeSwitchSource, apply_mining_mode},
+    },
     tasks_tracker::TasksTrackers,
 };
 
@@ -1093,21 +1096,15 @@ impl EventScheduler {
                     }
                 }
                 SchedulerEventType::Mine { mining_mode } => {
-                    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
-                    });
-                    // TODO: Replace with emiting specific value only
-                    let config = ConfigMining::content().await;
-                    EventsEmitter::emit_mining_config_loaded(&config).await;
-                    if *config.gpu_mining_enabled() {
-                        GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
-                        });
-                    }
-                    if *config.cpu_mining_enabled() {
-                        CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
-                        });
+                    // The scheduler used to save the mode and call start_mining,
+                    // which is a no-op for an already running miner. The shared
+                    // helper stops and restarts only the miners that are on a
+                    // different mode, and still starts enabled miners when the
+                    // window begins from a stopped state.
+                    if let Err(e) =
+                        apply_mining_mode(&mining_mode, ModeSwitchSource::ScheduledWindow).await
+                    {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to apply scheduled mining mode {:?} during Mine event {:?}: {e:#}", mining_mode, event_id);
                     }
                 }
             }

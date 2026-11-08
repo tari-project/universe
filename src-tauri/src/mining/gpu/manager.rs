@@ -84,6 +84,11 @@ pub struct GpuManager {
     detected_devices: Vec<GpuCommonInformation>,
     // ======= Cached config =======
     connection_type: GpuConnectionType,
+    /// The mode the running process was started with. It differs from the
+    /// config's `selected_mining_mode` while a new mode is being applied, and
+    /// is what the mode-switch logic uses to decide whether a restart is
+    /// actually needed.
+    applied_mining_mode: Option<String>,
     #[allow(dead_code)]
     tari_address: Option<String>,
     #[allow(dead_code)]
@@ -119,6 +124,7 @@ impl GpuManager {
             node_status_channel: None,
             // ======= Cached config =======
             connection_type: GpuConnectionType::default(),
+            applied_mining_mode: None,
             tari_address: None,
             pool: None,
             intensity_percentage: None,
@@ -319,7 +325,11 @@ impl GpuManager {
         info!(target: LOG_TARGET_APP_LOGIC, "Adapter miner type: {}", self.process_watcher.adapter.name());
 
         match self.start_mining_inner().await {
-            Ok(_) => {
+            Ok(started) => {
+                if started {
+                    self.applied_mining_mode =
+                        Some(ConfigMining::content().await.selected_mining_mode().clone());
+                }
                 info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner: {}", self.selected_miner);
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Started).await;
                 SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(true)).await;
@@ -343,7 +353,9 @@ impl GpuManager {
         }
     }
 
-    async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
+    /// Returns whether a new process was actually started. `false` means the
+    /// miner was already running (and therefore still uses its previous mode).
+    async fn start_mining_inner(&mut self) -> Result<bool, anyhow::Error> {
         let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
 
         if !gpu_mining_enabled {
@@ -352,7 +364,7 @@ impl GpuManager {
 
         if self.process_watcher.is_running() {
             info!(target: LOG_TARGET_APP_LOGIC, "GPU miner is already running");
-            return Ok(());
+            return Ok(false);
         }
 
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Initiated).await;
@@ -458,11 +470,27 @@ impl GpuManager {
             }
         }
 
-        Ok(())
+        Ok(true)
     }
 
     pub fn is_running(&self) -> bool {
         self.process_watcher.is_running()
+    }
+
+    /// The mining mode the running process was started with, if the process is
+    /// tracked by this manager.
+    pub fn applied_mining_mode(&self) -> Option<&str> {
+        self.applied_mining_mode.as_deref()
+    }
+
+    /// Stops the miner and starts it again so it picks up the mode currently
+    /// saved in the config. Starting an already running miner is a no-op, which
+    /// is why a plain `start_mining()` cannot apply a new mode.
+    pub async fn restart_mining(&mut self) -> Result<(), anyhow::Error> {
+        if self.is_running() {
+            self.stop_mining().await?;
+        }
+        self.start_mining().await
     }
 
     pub async fn stop_mining(&mut self) -> Result<(), anyhow::Error> {
@@ -475,6 +503,7 @@ impl GpuManager {
                     ));
             self.process_watcher.status_monitor = None;
             self.process_watcher.stop().await?;
+            self.applied_mining_mode = None;
             self.status_thread_shutdown.trigger();
         }
 

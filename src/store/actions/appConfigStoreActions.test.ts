@@ -18,11 +18,14 @@ import { ConfigUI, MiningModeType, PauseOnBatteryModeState } from '@app/types/co
 import { setError } from './appStateStoreActions.ts';
 import {
     handleConfigUILoaded,
+    selectMiningMode,
     setApplicationLanguage,
     setMoneroAddress,
     setShouldAlwaysUseSystemLanguage,
 } from './appConfigStoreActions.ts';
-import { useConfigUIStore, useConfigWalletStore } from '../useAppConfigStore.ts';
+import { useConfigMiningStore, useConfigUIStore, useConfigWalletStore } from '../useAppConfigStore.ts';
+import { useMiningStore, useUIStore } from '../index.ts';
+import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: vi.fn(),
@@ -204,99 +207,35 @@ describe('appConfigStoreActions', () => {
         });
     });
 
-    describe('selectMiningMode logic', () => {
-        interface ModeChangeState {
-            shouldSetMiningModeAsSchedulerEventMode: boolean;
-            cpuMining: boolean;
-            gpuMining: boolean;
-            wasCpuMiningInitiated: boolean;
-            wasGpuMiningInitiated: boolean;
-        }
+    describe('selectMiningMode delegation', () => {
+        it('sends a single command and leaves the miner restart to the backend', async () => {
+            const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
+            invokeMock.mockReset();
+            invokeMock.mockResolvedValue(undefined);
+            useUIStore.setState({ setMiningModeAsSchedulerEventMode: false });
+            useMiningStore.setState({ isChangingMode: false });
+            useConfigMiningStore.setState({ selected_mining_mode: 'Eco' });
 
-        const shouldSkipModeChange = (state: ModeChangeState): boolean => {
-            return state.shouldSetMiningModeAsSchedulerEventMode;
-        };
+            await selectMiningMode('Ludicrous');
 
-        const shouldStopCpuBeforeModeChange = (state: ModeChangeState): boolean => {
-            return state.cpuMining;
-        };
-
-        const shouldStopGpuBeforeModeChange = (state: ModeChangeState): boolean => {
-            return state.gpuMining || state.wasGpuMiningInitiated;
-        };
-
-        const shouldRestartCpuAfterModeChange = (state: ModeChangeState): boolean => {
-            return state.wasCpuMiningInitiated;
-        };
-
-        const shouldRestartGpuAfterModeChange = (state: ModeChangeState): boolean => {
-            return state.wasGpuMiningInitiated;
-        };
-
-        it('should skip mode change when setting for scheduler event', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: true,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: false,
-                wasGpuMiningInitiated: false,
-            };
-            expect(shouldSkipModeChange(state)).toBe(true);
+            expect(invokeMock).toHaveBeenCalledTimes(1);
+            expect(invokeMock).toHaveBeenCalledWith('select_mining_mode', { mode: 'Ludicrous' });
+            expect(useConfigMiningStore.getState().selected_mining_mode).toBe('Ludicrous');
+            expect(useMiningStore.getState().isChangingMode).toBe(false);
+            expect(stopCpuMining).not.toHaveBeenCalled();
+            expect(stopGpuMining).not.toHaveBeenCalled();
+            expect(startCpuMining).not.toHaveBeenCalled();
+            expect(startGpuMining).not.toHaveBeenCalled();
         });
 
-        it('should not skip mode change in normal operation', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: true,
-                gpuMining: true,
-                wasCpuMiningInitiated: true,
-                wasGpuMiningInitiated: true,
-            };
-            expect(shouldSkipModeChange(state)).toBe(false);
-        });
+        it('keeps a scheduler-event mode selection local', async () => {
+            const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
+            invokeMock.mockReset();
+            useUIStore.setState({ setMiningModeAsSchedulerEventMode: true });
 
-        it('should stop CPU before mode change if currently mining', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: true,
-                gpuMining: false,
-                wasCpuMiningInitiated: true,
-                wasGpuMiningInitiated: false,
-            };
-            expect(shouldStopCpuBeforeModeChange(state)).toBe(true);
-        });
+            await selectMiningMode('Ludicrous');
 
-        it('should stop GPU before mode change if currently mining or was initiated', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: false,
-                wasGpuMiningInitiated: true,
-            };
-            expect(shouldStopGpuBeforeModeChange(state)).toBe(true);
-        });
-
-        it('should restart CPU after mode change if was initiated', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: true,
-                wasGpuMiningInitiated: false,
-            };
-            expect(shouldRestartCpuAfterModeChange(state)).toBe(true);
-        });
-
-        it('should restart GPU after mode change if was initiated', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: false,
-                wasGpuMiningInitiated: true,
-            };
-            expect(shouldRestartGpuAfterModeChange(state)).toBe(true);
+            expect(invokeMock).not.toHaveBeenCalled();
         });
     });
 

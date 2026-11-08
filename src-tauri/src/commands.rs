@@ -48,6 +48,7 @@ use crate::internal_wallet::{
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::consts::GpuMinerType;
 use crate::mining::gpu::manager::GpuManager;
+use crate::mining::mode_switch::{ModeSwitchSource, apply_mining_mode};
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
@@ -1174,27 +1175,18 @@ pub async fn set_mine_on_app_start(mine_on_app_start: bool) -> Result<(), Invoke
 
 #[tauri::command]
 pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
-    let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[select_mining_mode] called with mode: {mode:?}");
 
-    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
+    // The backend now owns the stop-then-start sequence. Doing it here rather
+    // than in the frontend keeps a scheduled window and a manual selection on
+    // the same path, and closes the gap where another mode change could land
+    // between the frontend's stop and its restart. There is intentionally no
+    // "took too long" warning here: a real restart can take longer than a
+    // simple config write.
+    apply_mining_mode(&mode, ModeSwitchSource::ManualSelection)
         .await
         .map_err(InvokeError::from_anyhow)?;
 
-    if mode != "Eco" {
-        ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false)
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-    }
-
-    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
-        mode.clone(),
-    )))
-    .await;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET_APP_LOGIC, "select_mining_mode took too long: {:?}", timer.elapsed());
-    }
     Ok(())
 }
 
