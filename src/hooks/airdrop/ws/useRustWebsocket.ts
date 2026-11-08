@@ -21,9 +21,11 @@ export default function useAirdropWebsocket() {
     useEffect(() => {
         let cancelled = false;
         let unlistenFn: UnlistenFn | null = null;
+        let lastStatus: unknown;
 
         listen('ws-status-change', (event) => {
-            if (cancelled) return;
+            if (cancelled || event.payload === lastStatus) return;
+            lastStatus = event.payload;
             console.info('websocket status changed:', event.payload);
         }).then((unlisten) => {
             if (cancelled) {

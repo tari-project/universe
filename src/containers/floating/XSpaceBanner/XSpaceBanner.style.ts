@@ -142,6 +142,10 @@ export const Title = styled(m.span)<{ $marqueeOffsetPx?: number }>`
             ? css`
                   --marquee-offset: -${$marqueeOffsetPx}px;
                   animation: ${marqueeScroll} 10s linear 1s infinite;
+                  animation-play-state: paused;
+                  ${BannerContent}:hover & {
+                      animation-play-state: running;
+                  }
               `
             : ''}
 `;

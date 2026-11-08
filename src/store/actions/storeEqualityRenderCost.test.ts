@@ -100,6 +100,14 @@ describe('store equality and render cost fixes (#3373)', () => {
         setGpuPoolStats({ [GpuPools.LuckyPoolC29]: { ...stats } });
         expect(useMiningPoolsStore.getState()).toBe(firstGpuState);
         expect(useMiningPoolsStore.getState().gpuRewards).toBe(firstGpuRewards);
+
+        setCpuPoolStats({ [CpuPools.LuckyPoolRandomX]: { ...stats, accepted_shares: 11 } });
+        expect(useMiningPoolsStore.getState().cpuPoolStats?.accepted_shares).toBe(11);
+        expect(useMiningPoolsStore.getState().cpuRewards).toBe(firstCpuRewards);
+
+        setGpuPoolStats({ [GpuPools.LuckyPoolC29]: { ...stats, accepted_shares: 11 } });
+        expect(useMiningPoolsStore.getState().gpuPoolStats?.accepted_shares).toBe(11);
+        expect(useMiningPoolsStore.getState().gpuRewards).toBe(firstGpuRewards);
     });
 
     it('preserves base_node_status reference when handleBaseNodeStatusUpdate receives identical status', () => {
@@ -147,8 +155,15 @@ describe('store equality and render cost fixes (#3373)', () => {
             amount: 200,
             blockchain: { timestamp: '2026-01-01T00:00:00Z' },
         } as unknown as DisplayedTransaction;
+        const txC = {
+            id: 3,
+            amount: 300,
+            blockchain: { timestamp: '2026-01-03T00:00:00Z' },
+        } as unknown as DisplayedTransaction;
 
         const current = [txA, txB];
+        expect(mergeTransactions(current, [], true)).toBe(current);
+
         const unchanged = mergeTransactions(current, [{ ...txA }], false);
         expect(unchanged).toBe(current);
 
@@ -156,6 +171,9 @@ describe('store equality and render cost fixes (#3373)', () => {
         expect(updatedAmount).not.toBe(current);
         expect(updatedAmount[0].amount).toBe(150);
         expect(updatedAmount[1]).toBe(txB);
+
+        const prepended = mergeTransactions(current, [txC], true);
+        expect(prepended).toEqual([txC, txA, txB]);
     });
 
     it('serializes strings and objects compactly in shared-logger without multi-line indentation', () => {

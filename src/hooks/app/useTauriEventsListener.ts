@@ -321,7 +321,7 @@ const useTauriEventsListener = () => {
                         setShowBatteryAlert(event.payload);
                         break;
                     default:
-                        console.warn('Unknown event', JSON.stringify(event));
+                        console.warn('Unknown event', (event as { event_type?: unknown }).event_type);
                         break;
                 }
             }
