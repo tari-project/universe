@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { AccountBalance, DisplayedTransaction } from '@app/types/app-status.ts';
 import { useWalletStore } from '../useWalletStore';
+import { enforceMandatoryWalletSecurity, getIsWalletSecured, useSecurityStore } from '../useSecurityStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 
@@ -83,6 +84,7 @@ export const setWalletBalance = async (account_balance: AccountBalance) => {
     if (isEqual) return;
 
     useWalletStore.setState({ account_balance });
+    enforceMandatoryWalletSecurity();
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
 };
 
@@ -128,6 +130,11 @@ export const handlePinLocked = (is_pin_locked: boolean) => {
         ...c,
         is_pin_locked,
     }));
+    if (getIsWalletSecured() && useSecurityStore.getState().modal === 'intro') {
+        useSecurityStore.setState({ modal: null });
+    } else {
+        enforceMandatoryWalletSecurity();
+    }
 };
 
 export const handleSeedBackedUp = (is_seed_backed_up: boolean) => {
@@ -135,6 +142,11 @@ export const handleSeedBackedUp = (is_seed_backed_up: boolean) => {
         ...c,
         is_seed_backed_up,
     }));
+    if (getIsWalletSecured() && useSecurityStore.getState().modal === 'intro') {
+        useSecurityStore.setState({ modal: null });
+    } else {
+        enforceMandatoryWalletSecurity();
+    }
 };
 
 function shouldFetchBridgeItems(incomingWalletTransactions: DisplayedTransaction[]): boolean {

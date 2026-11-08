@@ -63,11 +63,13 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     };
 
     const handleSubmit = async () => {
-        await invoke('set_seed_backed_up').then(() => {
+        await Promise.resolve(invoke('set_seed_backed_up')).then(() => {
+            useWalletStore.setState({ is_seed_backed_up: true });
             setModal(null);
         });
         const isPinLocked = useWalletStore.getState().is_pin_locked;
         if (!isPinLocked) {
+            setModal('create_pin');
             await invoke('create_pin');
         }
     };

@@ -187,6 +187,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let app_handle_clone = self.get_app_handle().clone();
         progress_stepper
             .complete_step(SetupStep::MinotariWallet, || async {
+                let config_wallet = ConfigWallet::content().await;
+                let is_pin_locked = PinManager::pin_locked().await;
+                EventsEmitter::emit_pin_locked(is_pin_locked).await;
+                let is_seed_backed_up = *config_wallet.seed_backed_up();
+                EventsEmitter::emit_seed_backed_up(is_seed_backed_up).await;
+
                 MinotariWalletManager::load_app_handle(app_handle_clone).await;
                 if InternalWallet::is_internal().await {
                     // The account must exist before `initialize_wallet` looks it up by
@@ -226,6 +232,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
+        let config_wallet = ConfigWallet::content().await;
+        let is_pin_locked = PinManager::pin_locked().await;
+        EventsEmitter::emit_pin_locked(is_pin_locked).await;
+        let is_seed_backed_up = *config_wallet.seed_backed_up();
+        EventsEmitter::emit_seed_backed_up(is_seed_backed_up).await;
+
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();
         if setup_warnings.is_empty() {
@@ -234,12 +246,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
             self.status_sender
                 .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
-
-        let config_wallet = ConfigWallet::content().await;
-        let is_pin_locked = PinManager::pin_locked().await;
-        EventsEmitter::emit_pin_locked(is_pin_locked).await;
-        let is_seed_backed_up = *config_wallet.seed_backed_up();
-        EventsEmitter::emit_seed_backed_up(is_seed_backed_up).await;
 
         Ok(())
     }

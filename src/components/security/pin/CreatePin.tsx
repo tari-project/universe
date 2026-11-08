@@ -9,10 +9,12 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { StepChip } from '@app/containers/floating/security/common.styles.ts';
 import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { useIsWalletSecurityMandatory } from '@app/store/useSecurityStore.ts';
 
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void; onSubmit: (pin: string) => void }) {
     const isExchangeMiner = useExchangeStore((s) => s.currentExchangeMinerId !== 'universal');
+    const isMandatory = useIsWalletSecurityMandatory(isExchangeMiner);
     const { t } = useTranslation(['wallet', 'staged-security']);
 
     const [isConfirm, setIsConfirm] = useState(false);
@@ -43,7 +45,7 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
             setInitialCode('');
             setIsConfirm(false);
             setNoMatch(false);
-        } else {
+        } else if (!isMandatory) {
             onClose?.();
         }
         methods.reset();
@@ -85,9 +87,11 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
                     >
                         {t('security.pin.create', { context })}
                     </Button>
-                    <TextButton onClick={handleSecondary} data-testid="pin-create-secondary">
-                        {t('security.pin.enter', { context: isConfirm ? 'new' : 'skip' })}
-                    </TextButton>
+                    {(isConfirm || !isMandatory) && (
+                        <TextButton onClick={handleSecondary} data-testid="pin-create-secondary">
+                            {t('security.pin.enter', { context: isConfirm ? 'new' : 'skip' })}
+                        </TextButton>
+                    )}
                 </CTAWrapper>
             </Wrapper>
         </FormProvider>

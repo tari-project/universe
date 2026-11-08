@@ -1,4 +1,10 @@
-import { useSecurityStore, useWalletStore } from '@app/store';
+import {
+    enforceMandatoryWalletSecurity,
+    hasWalletFunds,
+    isWalletSecured,
+    openWalletSecurityFlow,
+    useWalletStore,
+} from '@app/store';
 import {
     LeftTextGroup,
     SecureIcon,
@@ -10,6 +16,7 @@ import {
     Wrapper,
 } from './styles';
 import { AnimatePresence } from 'motion/react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSetupStore } from '@app/store/useSetupStore';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
@@ -21,10 +28,18 @@ interface Props {
 
 export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Props) {
     const { t } = useTranslation('staged-security');
-    const setModal = useSecurityStore((s) => s.setModal);
     const pinLocked = useWalletStore((s) => s.is_pin_locked);
     const seedBackedUp = useWalletStore((s) => s.is_seed_backed_up);
+    const hasFunds = useWalletStore((s) => hasWalletFunds(s.account_balance));
     const walletModuleInitialized = useSetupStore(setupStoreSelectors.isWalletModuleInitialized);
+
+    const isHidden = isWalletSecured(pinLocked, seedBackedUp, isExchangeMiner);
+
+    useEffect(() => {
+        if (walletModuleInitialized && hasFunds && !isHidden) {
+            enforceMandatoryWalletSecurity(isExchangeMiner);
+        }
+    }, [walletModuleInitialized, hasFunds, isHidden, isExchangeMiner]);
 
     if (!walletModuleInitialized) {
         // Don't show anything until the wallet module is initialized
@@ -32,10 +47,8 @@ export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Pr
     }
 
     const handleClick = () => {
-        setModal(isExchangeMiner ? 'create_pin' : 'intro');
+        openWalletSecurityFlow(isExchangeMiner);
     };
-
-    const isHidden = isExchangeMiner ? pinLocked : seedBackedUp && pinLocked;
 
     return !isHidden ? (
         <AnimatePresence>
