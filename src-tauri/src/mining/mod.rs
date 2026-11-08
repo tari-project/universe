@@ -269,6 +269,18 @@ mod scheduled_mine_action_tests {
     }
 
     #[test]
+    fn test_scheduled_mine_action_enabled_running_custom_mode_reapplied_starts() {
+        // A scheduled window re-applying "Custom" does not restart a running
+        // miner: unlike a manual Custom re-select, which restarts so edited
+        // custom settings take effect, a window carries no new settings.
+        // `Start` is a no-op for a running miner (acceptance criterion 2).
+        assert_eq!(
+            scheduled_mine_action(true, true, "Custom", "Custom"),
+            ScheduledMineAction::Start
+        );
+    }
+
+    #[test]
     fn test_scheduled_mine_action_enabled_stopped_different_mode_starts() {
         // Window fires from a stopped state: plain start, no stop first
         // (acceptance criterion 3).

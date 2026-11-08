@@ -1135,6 +1135,7 @@ impl EventScheduler {
                     ) {
                         ScheduledMineAction::Skip => {}
                         ScheduledMineAction::Start => {
+                            info!(target: LOG_TARGET_APP_LOGIC, "Starting stopped GPU miner in scheduled mode {} during Mine event {:?}", effective_mode, event_id);
                             gpu_manager.start_mining().await.unwrap_or_else(|e| {
                                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
                             });
@@ -1155,6 +1156,7 @@ impl EventScheduler {
                     ) {
                         ScheduledMineAction::Skip => {}
                         ScheduledMineAction::Start => {
+                            info!(target: LOG_TARGET_APP_LOGIC, "Starting stopped CPU miner in scheduled mode {} during Mine event {:?}", effective_mode, event_id);
                             cpu_manager.start_mining().await.unwrap_or_else(|e| {
                                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
                             });
