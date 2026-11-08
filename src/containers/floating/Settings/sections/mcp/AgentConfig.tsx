@@ -5,7 +5,7 @@ import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { useCallback, useMemo, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { requestPin } from '@app/store/useSecurityStore';
@@ -119,6 +119,7 @@ export default function AgentConfig() {
 
     const [activeAgent, setActiveAgent] = useState<AgentId>('claude-code');
     const [copied, setCopied] = useState(false);
+    const { copyToClipboard } = useCopyToClipboard();
 
     const displaySnippets = useMemo(() => {
         if (!serverPort) return null;
@@ -138,14 +139,15 @@ export default function AgentConfig() {
                 }
                 if (!token) return;
                 const text = buildText(token);
-                await writeText(text);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
+                copyToClipboard(text, () => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                });
             } catch (e) {
                 addToast({ title: 'Failed to copy', text: String(e), type: 'error' });
             }
         },
-        [isPinLocked]
+        [isPinLocked, copyToClipboard]
     );
 
     if (!enabled || !redactedToken || !serverRunning || !serverPort || !displaySnippets) return null;

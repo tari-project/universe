@@ -1,4 +1,5 @@
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { writeToClipboard } from '@app/utils/clipboard';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 import GreenModal from '@app/components/GreenModal/GreenModal';
 import { AnimatePresence } from 'motion/react';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
@@ -57,9 +58,20 @@ const ShareRewardModal = memo(function ShareRewardModal() {
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
     const handleCopy = useCallback(() => {
-        writeText(shareUrl).then(() => {
-            setCopied(true);
-        });
+        // A silent failure here is invisible: the button never flips to "copied" and
+        // the user has no idea the referral link never reached the clipboard.
+        writeToClipboard(shareUrl)
+            .then(() => {
+                setCopied(true);
+            })
+            .catch((e) => {
+                console.error('Could not copy referral link', e);
+                addToast({
+                    title: 'Could not copy',
+                    text: 'The clipboard did not accept the link. Select the text and copy it manually.',
+                    type: 'error',
+                });
+            });
     }, [shareUrl]);
 
     return (

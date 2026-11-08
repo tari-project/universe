@@ -1,5 +1,6 @@
-import { clear, readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { addToast } from '@app/components/ToastStack/useToastStore';
+import { clearClipboard, readFromClipboard, writeToClipboard } from '@app/utils/clipboard';
 
 interface CopyOptions {
     /**
@@ -28,7 +29,7 @@ export function useCopyToClipboard() {
     }, [isCopied]);
 
     const copyToClipboard = useCallback((value: string, onCopied?: () => void, options?: CopyOptions) => {
-        writeText(value)
+        writeToClipboard(value)
             .then(() => {
                 setIsCopied(true);
                 onCopied?.();
@@ -37,10 +38,10 @@ export function useCopyToClipboard() {
                 clearTimeout(clearTimer.current);
                 if (options?.clearAfterMs) {
                     clearTimer.current = setTimeout(() => {
-                        readText()
+                        readFromClipboard()
                             .then((current) => {
                                 if (current === value) {
-                                    return clear();
+                                    return clearClipboard();
                                 }
                             })
                             .catch((e) => {
@@ -50,7 +51,14 @@ export function useCopyToClipboard() {
                 }
             })
             .catch((e) => {
+                // A silent failure is worst for secrets: the user assumes the seed
+                // words are on the clipboard and pastes whatever was there before.
                 console.error('Could not copy to clipboard', e);
+                addToast({
+                    title: 'Could not copy',
+                    text: 'The clipboard did not accept the value. Select the text and copy it manually.',
+                    type: 'error',
+                });
             });
     }, []);
 

@@ -18,6 +18,8 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
 import { SwapStatus } from '@app/hooks/swap/lib/types';
 import { truncateMiddle } from '@app/utils';
+import { writeToClipboard } from '@app/utils/clipboard';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 import { CopyIcon } from '../../icons/copyIcon';
 import { AnimatePresence } from 'motion/react';
 
@@ -61,9 +63,23 @@ export const ProcessingTransaction = ({
     const [copied, setCopied] = useState(false);
 
     const handleCopyAddress = useCallback(() => {
-        navigator.clipboard.writeText(CONTRACT_ADDRESS);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
+        // The contract address is shown next to a "copied" tick, so a failed write has
+        // to clear the tick rather than leave it lying. Routed through the shared
+        // clipboard module so the Flatpak-under-Wayland path is covered here too.
+        writeToClipboard(CONTRACT_ADDRESS)
+            .then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+            })
+            .catch((e) => {
+                console.error('Could not copy contract address', e);
+                setCopied(false);
+                addToast({
+                    title: 'Could not copy',
+                    text: 'The clipboard did not accept the address. Select the text and copy it manually.',
+                    type: 'error',
+                });
+            });
     }, []);
 
     const statusItems: StatusListEntry[] = useMemo(() => {
