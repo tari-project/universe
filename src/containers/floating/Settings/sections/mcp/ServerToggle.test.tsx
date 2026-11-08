@@ -1,15 +1,19 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@app/test/test-utils';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
+import { invoke } from '@tauri-apps/api/core';
 import ServerToggle from './ServerToggle';
+
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 
 describe('ServerToggle', () => {
     beforeEach(() => {
-        useConfigMcpStore.setState({ enabled: false });
+        vi.mocked(invoke).mockReset();
+        useConfigMcpStore.setState({ enabled: false, port: 19222 });
         useMcpStore.setState({ serverRunning: false, serverPort: null });
     });
 
@@ -49,5 +53,25 @@ describe('ServerToggle', () => {
         useConfigMcpStore.setState({ enabled: false });
         render(<ServerToggle />);
         expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+
+    it('shows the bind failure when enabling on an occupied port', async () => {
+        vi.mocked(invoke).mockRejectedValueOnce(
+            'MCP server failed to bind to configured port 19222: Address already in use'
+        );
+        render(<ServerToggle />);
+        fireEvent.click(screen.getByRole('checkbox'));
+        expect(await screen.findByTestId('mcp-server-error')).toHaveTextContent('mcp.advanced.port-in-use');
+    });
+
+    it('clears a previous bind failure on the next attempt', async () => {
+        vi.mocked(invoke).mockRejectedValueOnce('MCP server failed to bind to configured port 19222');
+        render(<ServerToggle />);
+        const toggle = screen.getByRole('checkbox');
+        fireEvent.click(toggle);
+        await screen.findByTestId('mcp-server-error');
+        vi.mocked(invoke).mockResolvedValueOnce(undefined);
+        fireEvent.click(toggle);
+        await waitFor(() => expect(screen.queryByTestId('mcp-server-error')).not.toBeInTheDocument());
     });
 });

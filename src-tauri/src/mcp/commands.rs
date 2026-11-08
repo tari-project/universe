@@ -58,7 +58,12 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
     }
 
     if enabled {
-        McpServerManager::start().await.map_err(|e| e.to_string())?;
+        if let Err(e) = McpServerManager::start().await {
+            // Keep the panel honest: the enabled flag and port are already saved, even though
+            // the listener could not start.
+            EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
+            return Err(e.to_string());
+        }
     } else {
         McpServerManager::stop().await;
     }
@@ -106,10 +111,13 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     // Restart if currently running so the new port takes effect
     let content = ConfigMcp::content().await;
-    if *content.enabled() {
-        McpServerManager::restart()
-            .await
-            .map_err(|e| e.to_string())?;
+    if *content.enabled()
+        && let Err(e) = McpServerManager::restart().await
+    {
+        // The port is already saved. Emit the saved config before returning the bind error so
+        // the settings panel can show which port the server failed to use.
+        EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
+        return Err(e.to_string());
     }
     EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
