@@ -31,6 +31,12 @@ const PortInput = styled.input`
     }
 `;
 
+const PortError = styled(Typography)`
+    color: ${({ theme }) => theme.palette.error.main};
+    font-size: 13px;
+    margin-top: 4px;
+`;
+
 export default function AdvancedSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const enabled = useConfigMcpStore((s) => s.enabled);
@@ -38,6 +44,7 @@ export default function AdvancedSettings() {
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
     const [portValue, setPortValue] = useState(String(storePort));
+    const [portError, setPortError] = useState<string | null>(null);
 
     useEffect(() => {
         setPortValue(String(storePort));
@@ -46,17 +53,22 @@ export default function AdvancedSettings() {
     const commitPort = useCallback(async () => {
         const num = Number(portValue);
         if (isNaN(num) || num < 1024 || num > 65535) {
+            setPortError(t('mcp.advanced.port-range'));
             setPortValue(String(storePort));
             return;
         }
+        setPortError(null);
         if (num === storePort) return;
         try {
             await invoke('set_mcp_port', { port: num });
+            setPortError(null);
         } catch (e) {
-            console.error('Failed to set MCP port:', e);
+            const message = typeof e === 'string' ? e : String(e);
+            console.error('Failed to set MCP port:', message);
+            setPortError(message);
             setPortValue(String(storePort));
         }
-    }, [portValue, storePort]);
+    }, [portValue, storePort, t]);
 
     if (!enabled) return null;
 
@@ -80,6 +92,11 @@ export default function AdvancedSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('mcp.advanced.port')}</Typography>
                     </SettingsGroupTitle>
+                    {portError && (
+                        <PortError data-testid="mcp-port-error" variant="p">
+                            {portError}
+                        </PortError>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <PortInput
