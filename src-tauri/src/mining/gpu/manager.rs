@@ -343,6 +343,18 @@ impl GpuManager {
         }
     }
 
+    /// Restarts the GPU miner so it picks up the currently configured mining mode.
+    ///
+    /// `start_mining_inner` reads the mode's GPU intensity only on startup and returns early
+    /// when the miner is already running, so a mode change requires stopping the active process
+    /// before starting it again.
+    pub async fn restart_mining(&mut self) -> Result<(), anyhow::Error> {
+        if self.is_running() {
+            self.stop_mining().await?;
+        }
+        self.start_mining().await
+    }
+
     async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
         let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
 

@@ -18,11 +18,21 @@ import { ConfigUI, MiningModeType, PauseOnBatteryModeState } from '@app/types/co
 import { setError } from './appStateStoreActions.ts';
 import {
     handleConfigUILoaded,
+    selectMiningMode,
     setApplicationLanguage,
     setMoneroAddress,
     setShouldAlwaysUseSystemLanguage,
 } from './appConfigStoreActions.ts';
-import { useConfigUIStore, useConfigWalletStore } from '../useAppConfigStore.ts';
+import { useConfigMiningStore, useConfigUIStore, useConfigWalletStore } from '../useAppConfigStore.ts';
+import { useMiningStore, useUIStore } from '../index.ts';
+import {
+    setLastSelectedMiningModeNameForSchedulerEvent,
+    startCpuMining,
+    startGpuMining,
+    stopCpuMining,
+    stopGpuMining,
+} from './miningStoreActions';
+import { updateSetMiningModeAsSchedulerEventMode } from './uiStoreActions';
 
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: vi.fn(),
@@ -297,6 +307,39 @@ describe('appConfigStoreActions', () => {
                 wasGpuMiningInitiated: true,
             };
             expect(shouldRestartGpuAfterModeChange(state)).toBe(true);
+        });
+
+        it('delegates mode switch and miner restart to backend select_mining_mode command', async () => {
+            const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
+            invokeMock.mockResolvedValue(undefined);
+            vi.clearAllMocks();
+
+            useUIStore.setState((s) => ({ ...s, setMiningModeAsSchedulerEventMode: false }));
+            useConfigMiningStore.setState((s) => ({ ...s, selected_mining_mode: 'Eco' }));
+
+            await selectMiningMode('Ludicrous');
+
+            expect(invokeMock).toHaveBeenCalledTimes(1);
+            expect(invokeMock).toHaveBeenCalledWith('select_mining_mode', { mode: 'Ludicrous' });
+            expect(useConfigMiningStore.getState().selected_mining_mode).toBe('Ludicrous');
+            expect(useMiningStore.getState().isChangingMode).toBe(false);
+            expect(stopCpuMining).not.toHaveBeenCalled();
+            expect(stopGpuMining).not.toHaveBeenCalled();
+            expect(startCpuMining).not.toHaveBeenCalled();
+            expect(startGpuMining).not.toHaveBeenCalled();
+        });
+
+        it('captures mode for scheduler event without invoking backend when setMiningModeAsSchedulerEventMode is true', async () => {
+            const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
+            vi.clearAllMocks();
+
+            useUIStore.setState((s) => ({ ...s, setMiningModeAsSchedulerEventMode: true }));
+
+            await selectMiningMode('Ludicrous');
+
+            expect(setLastSelectedMiningModeNameForSchedulerEvent).toHaveBeenCalledWith('Ludicrous');
+            expect(updateSetMiningModeAsSchedulerEventMode).toHaveBeenCalledWith(false);
+            expect(invokeMock).not.toHaveBeenCalled();
         });
     });
 
