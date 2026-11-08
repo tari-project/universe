@@ -64,7 +64,7 @@ use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
-use crate::tor_adapter::TorConfig;
+use crate::tor_adapter::{TorConfig, normalize_bridge_line};
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
@@ -287,6 +287,18 @@ pub async fn exit_application(
     Ok(())
 }
 
+/// Extracts obfs4 bridge lines from the bridges.torproject.org HTML page.
+/// The page HTML-escapes the lines (`+` in `cert=` becomes `&#43;`), so they
+/// are decoded here. Otherwise Tor rejects the cert and never bootstraps.
+fn parse_tor_bridges_html(html: &str) -> Result<Vec<String>, String> {
+    let re = Regex::new(r"obfs4.*?<br/>").map_err(|e| e.to_string())?;
+    Ok(re
+        .find_iter(html)
+        .map(|m| normalize_bridge_line(m.as_str().trim_end_matches("<br/>")))
+        .filter(|bridge| !bridge.is_empty())
+        .collect())
+}
+
 #[tauri::command]
 pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
     let timer = Instant::now();
@@ -297,11 +309,7 @@ pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r"obfs4.*?<br/>").map_err(|e| e.to_string())?;
-    let bridges: Vec<String> = re
-        .find_iter(&res_html)
-        .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
-        .collect();
+    let bridges = parse_tor_bridges_html(&res_html)?;
     info!(target: LOG_TARGET_APP_LOGIC, "Fetched default bridges: {bridges:?}");
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
@@ -2796,6 +2804,7 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
 #[cfg(test)]
 mod tests {
     use super::canonicalise_remote_base_node_address;
+    use super::parse_tor_bridges_html;
 
     fn reset_fixture() -> tempfile::TempDir {
         let dir = tempfile::tempdir().expect("reset directory");
@@ -2954,6 +2963,29 @@ mod tests {
     #[test]
     fn unparseable_input_is_rejected() {
         assert!(canonicalise_remote_base_node_address("not a valid url at all").is_err());
+    }
+
+    #[test]
+    fn test_parse_tor_bridges_html_decodes_entities() {
+        // Shape of https://bridges.torproject.org/bridges?transport=obfs4 as of 2026-11-08.
+        let html = "<div id=\"bridgelines\" class=\"bridge-lines\">\n\
+            obfs4 192.0.2.10:9130 920AF4E8BADEBDC1A5028F358E6BB2AB3D6041CE cert=gZLc7n2wlqPERLq3Z3i8cOplNfk84GO5blFVgLAQiC3TwLcaRzXgvvh0aU&#43;Zb6La9BIWfQ iat-mode=0 <br/>\n\
+            obfs4 198.51.100.20:26536 6D1780FF3CD756D2047A8E0C73F39D80B5343CD6 cert=JHZQbpmd0ChW/O&#43;NHvaEx8monxmEJV&#43;IUgAxgWbM/lOS7&#43;QO5RPPWOXqk&#43;N0kWjbZSajNA iat-mode=0 <br/>\n\
+            </div>";
+        let bridges = parse_tor_bridges_html(html).expect("parse bridges");
+        assert_eq!(
+            bridges,
+            vec![
+                "obfs4 192.0.2.10:9130 920AF4E8BADEBDC1A5028F358E6BB2AB3D6041CE cert=gZLc7n2wlqPERLq3Z3i8cOplNfk84GO5blFVgLAQiC3TwLcaRzXgvvh0aU+Zb6La9BIWfQ iat-mode=0",
+                "obfs4 198.51.100.20:26536 6D1780FF3CD756D2047A8E0C73F39D80B5343CD6 cert=JHZQbpmd0ChW/O+NHvaEx8monxmEJV+IUgAxgWbM/lOS7+QO5RPPWOXqk+N0kWjbZSajNA iat-mode=0",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_parse_tor_bridges_html_without_bridges_is_empty() {
+        let bridges = parse_tor_bridges_html("<html><body>captcha</body></html>").expect("parse");
+        assert!(bridges.is_empty());
     }
 }
 

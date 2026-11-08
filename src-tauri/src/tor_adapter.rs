@@ -51,6 +51,70 @@ use crate::{
 
 const TOR_CONTROL_TIMEOUT: Duration = Duration::from_secs(5);
 
+/// Decodes the HTML character references that can appear in bridge lines copied
+/// from an HTML page, e.g. bridges.torproject.org renders `+` in the obfs4 `cert=`
+/// value as `&#43;`. Only numeric references and the basic named entities are
+/// handled. Anything else is left untouched.
+fn decode_html_entities(input: &str) -> String {
+    let mut output = String::with_capacity(input.len());
+    let mut rest = input;
+    while let Some(start) = rest.find('&') {
+        output.push_str(&rest[..start]);
+        rest = &rest[start..];
+        let decoded = rest.find(';').and_then(|end| {
+            let entity = &rest[1..end];
+            let ch = match entity {
+                "amp" => Some('&'),
+                "lt" => Some('<'),
+                "gt" => Some('>'),
+                "quot" => Some('"'),
+                "apos" => Some('\''),
+                _ => {
+                    let code = if let Some(hex) = entity
+                        .strip_prefix("#x")
+                        .or_else(|| entity.strip_prefix("#X"))
+                    {
+                        u32::from_str_radix(hex, 16).ok()
+                    } else if let Some(dec) = entity.strip_prefix('#') {
+                        dec.parse::<u32>().ok()
+                    } else {
+                        None
+                    };
+                    code.and_then(char::from_u32)
+                }
+            };
+            ch.map(|c| (c, end))
+        });
+        match decoded {
+            Some((ch, end)) => {
+                output.push(ch);
+                rest = &rest[end + 1..];
+            }
+            None => {
+                output.push('&');
+                rest = &rest[1..];
+            }
+        }
+    }
+    output.push_str(rest);
+    output
+}
+
+/// Normalises a bridge line: decodes HTML character references and trims
+/// surrounding whitespace. Used for fetched bridges, bridges saved by the user,
+/// and bridges already stored in `tor_config.json` by older versions.
+pub(crate) fn normalize_bridge_line(line: &str) -> String {
+    decode_html_entities(line).trim().to_string()
+}
+
+fn normalize_bridges(bridges: Vec<String>) -> Vec<String> {
+    bridges
+        .iter()
+        .map(|bridge| normalize_bridge_line(bridge))
+        .filter(|bridge| !bridge.is_empty())
+        .collect()
+}
+
 pub(crate) struct TorAdapter {
     socks_port: u16,
     config_file: Option<PathBuf>,
@@ -114,6 +178,10 @@ impl TorAdapter {
             conf.control_port = 0;
             conf.version = 1;
         }
+        // Older versions saved fetched bridges with HTML entities still in them
+        // (`&#43;` instead of `+`), which Tor cannot use. Repair them on load;
+        // load_or_create_config writes the repaired config back to disk.
+        conf.bridges = normalize_bridges(conf.bridges);
 
         self.active_control_port
             .store(conf.control_port, Ordering::Relaxed);
@@ -137,7 +205,8 @@ impl TorAdapter {
         self.config.clone()
     }
 
-    pub async fn set_tor_config(&mut self, config: TorConfig) -> Result<TorConfig, Error> {
+    pub async fn set_tor_config(&mut self, mut config: TorConfig) -> Result<TorConfig, Error> {
+        config.bridges = normalize_bridges(config.bridges);
         self.active_control_port
             .store(config.control_port, Ordering::Relaxed);
         self.config = config.clone();
@@ -547,5 +616,55 @@ mod tests {
             });
             assert!(result.is_err(), "must reject {reply:?}");
         }
+    }
+
+    #[test]
+    fn test_decode_html_entities() {
+        assert_eq!(decode_html_entities("cert=ab&#43;cd"), "cert=ab+cd");
+        assert_eq!(decode_html_entities("a&#x2B;b&#X2b;c"), "a+b+c");
+        assert_eq!(decode_html_entities("x&#47;y&#61;"), "x/y=");
+        assert_eq!(
+            decode_html_entities("&amp;#43;"),
+            "&#43;",
+            "decodes one level only"
+        );
+        assert_eq!(decode_html_entities("&lt;&gt;&quot;&apos;"), "<>\"'");
+        assert_eq!(decode_html_entities("plain+text/="), "plain+text/=");
+        assert_eq!(decode_html_entities("a & b"), "a & b");
+        assert_eq!(
+            decode_html_entities("&unknown; &#xZZ; &#"),
+            "&unknown; &#xZZ; &#"
+        );
+        assert_eq!(decode_html_entities("tail&"), "tail&");
+    }
+
+    #[test]
+    fn test_normalize_bridges_repairs_and_drops_empty() {
+        let bridges = normalize_bridges(vec![
+            " obfs4 192.0.2.1:443 FINGERPRINT cert=ab&#43;cd iat-mode=0 ".to_string(),
+            "obfs4 192.0.2.2:443 FINGERPRINT cert=ab+cd iat-mode=0".to_string(),
+            "   ".to_string(),
+        ]);
+        assert_eq!(
+            bridges,
+            vec![
+                "obfs4 192.0.2.1:443 FINGERPRINT cert=ab+cd iat-mode=0",
+                "obfs4 192.0.2.2:443 FINGERPRINT cert=ab+cd iat-mode=0",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_apply_loaded_config_repairs_escaped_bridges() {
+        let (tx, _rx) = watch::channel(TorStatus::default());
+        let mut adapter = TorAdapter::new(tx);
+        adapter.apply_loaded_config(
+            r#"{"version":1,"control_port":0,"use_bridges":true,"bridges":["obfs4 192.0.2.1:443 FINGERPRINT cert=ab&#43;cd iat-mode=0"]}"#
+                .to_string(),
+        );
+        assert_eq!(
+            adapter.config.bridges,
+            vec!["obfs4 192.0.2.1:443 FINGERPRINT cert=ab+cd iat-mode=0"]
+        );
     }
 }
