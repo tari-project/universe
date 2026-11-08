@@ -6,7 +6,7 @@ import { useSecurityStore } from '../useSecurityStore.ts';
 import { useUIStore } from '../useUIStore.ts';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
-import { createPinAndOpenL2, openL2 } from './l2OpenActions';
+import { cancelOpenL2Wait, createPinAndOpenL2, openL2 } from './l2OpenActions';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 vi.mock('@tauri-apps/api/window', () => ({
@@ -30,8 +30,10 @@ const serve = (before: L2WalletState, command?: string, after = openState, fail?
 
 describe('openL2', () => {
     beforeEach(() => {
+        cancelOpenL2Wait();
         vi.mocked(invoke).mockReset();
         useL2WalletStore.setState({ ...initialState }, true);
+        useWalletStore.setState({ is_pin_locked: undefined });
         useSecurityStore.setState({ modal: null });
         useUIStore.setState({ l2Open: false });
         useToastStore.setState({ toasts: [] });
@@ -42,6 +44,51 @@ describe('openL2', () => {
         await openL2();
 
         expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it('waits while is_pin_locked is undefined and unlocks L2 once PIN state arrives as true', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(lockedState, 'unlock_l2_wallet');
+
+        const pending = openL2();
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).not.toHaveBeenCalled();
+
+        useWalletStore.setState({ is_pin_locked: true });
+        await pending;
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet');
+        expect(useUIStore.getState().l2Open).toBe(true);
+    });
+
+    it('waits while is_pin_locked is undefined and opens l2_pin_required once PIN state arrives as false', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+
+        const pending = openL2();
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).not.toHaveBeenCalled();
+
+        useWalletStore.setState({ is_pin_locked: false });
+        await pending;
+
+        expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it('does not open l2_pin_required if the wait is cancelled before PIN state arrives', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+
+        const pending = openL2();
+        cancelOpenL2Wait();
+        await pending;
+
+        expect(useSecurityStore.getState().modal).toBeNull();
         expect(useUIStore.getState().l2Open).toBe(false);
         expect(invoke).not.toHaveBeenCalled();
     });

@@ -29,7 +29,7 @@ export default function SecurityPromptDialog() {
     function handleClick() {
         if (!seedBackedUp) {
             setModal('verify_seedphrase');
-        } else if (!pinLocked) {
+        } else if (pinLocked === false) {
             void invoke('create_pin');
         }
     }
@@ -43,7 +43,7 @@ export default function SecurityPromptDialog() {
         },
         {
             stepNumber: 2,
-            completed: pinLocked,
+            completed: Boolean(pinLocked),
             title: t('steps.title-pin'),
             subtitle: t('steps.subtitle-pin'),
         },

@@ -119,7 +119,8 @@ function IndexerField() {
 
 export const L2Settings = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const hasPin = useWalletStore((s) => s.is_pin_locked);
+    const pinLocked = useWalletStore((s) => s.is_pin_locked);
+    const hasPin = pinLocked === true;
     const enabled = useL2WalletStore((s) => s.enabled);
     const locked = useL2WalletStore((s) => s.locked);
     const account = useL2WalletStore(selectL2Account);
@@ -150,7 +151,9 @@ export const L2Settings = () => {
     }
 
     let status;
-    if (!hasPin) {
+    if (pinLocked === undefined) {
+        status = null;
+    } else if (!hasPin) {
         status = (
             <SettingsGroup data-testid="l2-settings-pin-required">
                 <SettingsGroupContent>

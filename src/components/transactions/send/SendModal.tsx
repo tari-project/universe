@@ -32,7 +32,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const [feeMicroMinotari, setFeeMicroMinotari] = useState<number | null>(null);
     const [resolvedPaymentId, setResolvedPaymentId] = useState<EffectiveL1PaymentId | null>(null);
     // Without a PIN the backend's confirmation dialog is the review step.
-    const hasReviewStep = useWalletStore((s) => s.is_pin_locked);
+    const hasReviewStep = useWalletStore((s) => s.is_pin_locked === true);
 
     const methods = useForm<SendInputs>({
         defaultValues,
