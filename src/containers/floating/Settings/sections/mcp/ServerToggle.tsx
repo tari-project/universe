@@ -12,6 +12,7 @@ import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
+import { describeMcpPortError } from './describeMcpPortError';
 
 export default function ServerToggle() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -19,14 +20,16 @@ export default function ServerToggle() {
     const serverRunning = useMcpStore((s) => s.serverRunning);
     const serverPort = useMcpStore((s) => s.serverPort);
     const [loading, setLoading] = useState(false);
+    const [serverError, setServerError] = useState<string | null>(null);
 
     const handleToggle = async (checked: boolean) => {
         setLoading(true);
+        setServerError(null);
         try {
             await invoke('set_mcp_enabled', { enabled: checked });
             useConfigMcpStore.setState((c) => ({ ...c, enabled: checked }));
-        } catch (e) {
-            console.error('Failed to toggle MCP server:', e);
+        } catch (error) {
+            setServerError(describeMcpPortError(error, useConfigMcpStore.getState().port, t));
         } finally {
             setLoading(false);
         }
@@ -48,6 +51,11 @@ export default function ServerToggle() {
                     <Typography variant="p" style={{ opacity: 0.7 }} data-testid="mcp-server-status">
                         {statusText}
                     </Typography>
+                    {serverError && (
+                        <Typography variant="p" role="alert">
+                            {serverError}
+                        </Typography>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch

@@ -85,7 +85,10 @@
     "advanced": {
       "control-tier": "Control Tier",
       "port": "Server Port",
-      "read-tier": "Read Tier"
+      "read-tier": "Read Tier",
+      "port-in-use": "Port {{port}} is already in use. Choose another port.",
+      "port-invalid": "Port must be a whole number between 1024 and 65535.",
+      "port-start-failed": "Could not start the MCP server on port {{port}}. Check the logs and try another port."
     },
     "agent-config": {
       "copied": "Copied!",

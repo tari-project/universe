@@ -12,6 +12,7 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
+import { describeMcpPortError } from './describeMcpPortError';
 
 const PortInput = styled.input`
     width: 90px;
@@ -38,6 +39,7 @@ export default function AdvancedSettings() {
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
     const [portValue, setPortValue] = useState(String(storePort));
+    const [portError, setPortError] = useState<string | null>(null);
 
     useEffect(() => {
         setPortValue(String(storePort));
@@ -45,18 +47,24 @@ export default function AdvancedSettings() {
 
     const commitPort = useCallback(async () => {
         const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
-            setPortValue(String(storePort));
+        if (!/^\d+$/.test(portValue.trim()) || !Number.isInteger(num) || num < 1024 || num > 65535) {
+            setPortError(t('mcp.advanced.port-invalid'));
             return;
         }
-        if (num === storePort) return;
+        if (num === storePort) {
+            setPortError(null);
+            return;
+        }
         try {
             await invoke('set_mcp_port', { port: num });
-        } catch (e) {
-            console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
+            setPortError(null);
+        } catch (error) {
+            // set_mcp_port persists its port before restarting; the emitted config
+            // reflects that new value even if the listener cannot bind.
+            setPortValue(String(useConfigMcpStore.getState().port));
+            setPortError(describeMcpPortError(error, num, t));
         }
-    }, [portValue, storePort]);
+    }, [portValue, storePort, t]);
 
     if (!enabled) return null;
 
@@ -83,12 +91,16 @@ export default function AdvancedSettings() {
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <PortInput
-                        type="number"
-                        min={1024}
-                        max={65535}
+                        type="text"
+                        inputMode="numeric"
+                        aria-invalid={Boolean(portError)}
+                        aria-describedby={portError ? 'mcp-port-error' : undefined}
                         data-testid="mcp-port-input"
                         value={portValue}
-                        onChange={(e) => setPortValue(e.target.value)}
+                        onChange={(e) => {
+                            setPortValue(e.target.value);
+                            setPortError(null);
+                        }}
                         onBlur={commitPort}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') commitPort();
@@ -96,6 +108,11 @@ export default function AdvancedSettings() {
                     />
                 </SettingsGroupAction>
             </SettingsGroup>
+            {portError && (
+                <Typography variant="p" role="alert" id="mcp-port-error">
+                    {portError}
+                </Typography>
+            )}
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>

@@ -57,13 +57,14 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
         *config._get_content_mut() = updated;
     }
 
+    // Config is persisted even when start fails. Notify the UI before returning
+    // a bind error so its enabled/port controls are not stuck on stale state.
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     if enabled {
         McpServerManager::start().await.map_err(|e| e.to_string())?;
     } else {
         McpServerManager::stop().await;
     }
-
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
     Ok(())
 }
@@ -104,14 +105,15 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
     ConfigMcp::update_field(ConfigMcpContent::set_port, port)
         .await
         .map_err(|e| e.to_string())?;
-    // Restart if currently running so the new port takes effect
+    // The new port is already persisted. Emit its value before the restart,
+    // including on failure, so settings show the actual configured port.
     let content = ConfigMcp::content().await;
+    EventsEmitter::emit_mcp_config_loaded(&content).await;
     if *content.enabled() {
         McpServerManager::restart()
             .await
             .map_err(|e| e.to_string())?;
     }
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 

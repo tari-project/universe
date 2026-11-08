@@ -1,16 +1,29 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@app/test/test-utils';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen } from '@app/test/test-utils';
+import { invoke } from '@tauri-apps/api/core';
+
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import ServerToggle from './ServerToggle';
 
 describe('ServerToggle', () => {
     beforeEach(() => {
-        useConfigMcpStore.setState({ enabled: false });
+        useConfigMcpStore.setState({ enabled: false, port: 4444 });
+        vi.mocked(invoke).mockReset();
         useMcpStore.setState({ serverRunning: false, serverPort: null });
+    });
+
+    it('explains an occupied saved port when enabling the server', async () => {
+        vi.mocked(invoke).mockRejectedValueOnce('Address already in use (os error 98)');
+        render(<ServerToggle />);
+        fireEvent.click(screen.getByRole('checkbox'));
+        expect(await screen.findByRole('alert')).toHaveTextContent('mcp.advanced.port-in-use');
+        expect(vi.mocked(invoke)).toHaveBeenCalledWith('set_mcp_enabled', { enabled: true });
+        expect(screen.getByText('mcp.server-toggle.status-stopped')).toBeInTheDocument();
     });
 
     it('renders title', () => {
