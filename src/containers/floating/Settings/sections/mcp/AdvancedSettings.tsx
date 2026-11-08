@@ -31,6 +31,14 @@ const PortInput = styled.input`
     }
 `;
 
+const PortError = styled.p`
+    margin: 0;
+    font-size: 13px;
+    color: ${({ theme }) => theme.palette.error.main};
+`;
+
+const BIND_ERROR_MARKER = 'failed to bind to configured port';
+
 export default function AdvancedSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const enabled = useConfigMcpStore((s) => s.enabled);
@@ -38,6 +46,7 @@ export default function AdvancedSettings() {
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
     const [portValue, setPortValue] = useState(String(storePort));
+    const [portError, setPortError] = useState<string | null>(null);
 
     useEffect(() => {
         setPortValue(String(storePort));
@@ -45,18 +54,28 @@ export default function AdvancedSettings() {
 
     const commitPort = useCallback(async () => {
         const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
-            setPortValue(String(storePort));
+        if (portValue.trim() === '' || isNaN(num) || !Number.isInteger(num) || num < 1024 || num > 65535) {
+            setPortError(t('mcp.advanced.port-range-error'));
             return;
         }
-        if (num === storePort) return;
+        if (num === storePort) {
+            setPortError(null);
+            return;
+        }
         try {
             await invoke('set_mcp_port', { port: num });
+            useConfigMcpStore.setState((c) => ({ ...c, port: num }));
+            setPortError(null);
         } catch (e) {
             console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
+            if (String(e).includes(BIND_ERROR_MARKER)) {
+                useConfigMcpStore.setState((c) => ({ ...c, port: num }));
+                setPortError(t('mcp.advanced.port-in-use', { port: num }));
+            } else {
+                setPortError(String(e));
+            }
         }
-    }, [portValue, storePort]);
+    }, [portValue, storePort, t]);
 
     if (!enabled) return null;
 
@@ -88,7 +107,10 @@ export default function AdvancedSettings() {
                         max={65535}
                         data-testid="mcp-port-input"
                         value={portValue}
-                        onChange={(e) => setPortValue(e.target.value)}
+                        onChange={(e) => {
+                            setPortValue(e.target.value);
+                            setPortError(null);
+                        }}
                         onBlur={commitPort}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') commitPort();
@@ -96,6 +118,13 @@ export default function AdvancedSettings() {
                     />
                 </SettingsGroupAction>
             </SettingsGroup>
+            {portError ? (
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <PortError data-testid="mcp-port-error">{portError}</PortError>
+                    </SettingsGroupContent>
+                </SettingsGroup>
+            ) : null}
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>

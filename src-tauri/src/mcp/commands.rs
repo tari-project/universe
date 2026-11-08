@@ -57,15 +57,19 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
         *config._get_content_mut() = updated;
     }
 
-    if enabled {
-        McpServerManager::start().await.map_err(|e| e.to_string())?;
+    let start_result = if enabled {
+        McpServerManager::start()
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string())
     } else {
         McpServerManager::stop().await;
-    }
+        Ok(())
+    };
 
     EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
-    Ok(())
+    start_result
 }
 
 #[tauri::command]
@@ -106,13 +110,16 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     // Restart if currently running so the new port takes effect
     let content = ConfigMcp::content().await;
-    if *content.enabled() {
+    let restart_result = if *content.enabled() {
         McpServerManager::restart()
             .await
-            .map_err(|e| e.to_string())?;
-    }
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    } else {
+        Ok(())
+    };
     EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
-    Ok(())
+    restart_result
 }
 
 #[tauri::command]
