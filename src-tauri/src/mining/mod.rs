@@ -191,6 +191,13 @@ mod tests {
     }
 
     #[test]
+    fn test_mode_change_requires_restart_mode_names_compared_exactly() {
+        // Mode names are display names, so a case difference is a different
+        // configuration, not a no-op: a running miner restarts onto it.
+        assert!(mode_change_requires_restart("eco", "Eco", true));
+    }
+
+    #[test]
     fn test_mode_change_requires_restart_stopped_miner_starts_with_new_mode() {
         assert!(!mode_change_requires_restart("Eco", "Ludicrous", false));
     }

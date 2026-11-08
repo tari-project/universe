@@ -1119,6 +1119,13 @@ impl EventScheduler {
                     // TODO: Replace with emiting specific value only
                     let config = ConfigMining::content().await;
                     EventsEmitter::emit_mining_config_loaded(&config).await;
+                    if current_mode == effective_mode {
+                        // The scheduled mode is already active: a running
+                        // miner keeps its settings, so there is nothing to
+                        // restart. Say so explicitly instead of silently
+                        // doing nothing, so the no-op is visible in logs.
+                        info!(target: LOG_TARGET_APP_LOGIC, "Scheduled mining mode {:?} is already active; running miners will not be restarted during Mine event {:?}", effective_mode, event_id);
+                    }
                     let mut gpu_manager = GpuManager::write().await;
                     match scheduled_mine_action(
                         *config.gpu_mining_enabled(),
