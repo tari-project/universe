@@ -10,7 +10,7 @@ vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
     clear: (...args: unknown[]) => pluginClear(...args),
 }));
 
-import { clearClipboardText, readClipboardText, writeClipboardText } from './clipboard';
+import { ClipboardUnavailableError, clearClipboardText, readClipboardText, writeClipboardText } from './clipboard';
 
 function stubWebviewClipboard(clipboard: Partial<Clipboard> | undefined) {
     Object.defineProperty(window.navigator, 'clipboard', {
@@ -29,6 +29,7 @@ describe('clipboard', () => {
 
     afterEach(() => {
         stubWebviewClipboard(undefined);
+        Object.defineProperty(document, 'execCommand', { value: undefined, configurable: true });
     });
 
     describe('writeClipboardText', () => {
@@ -58,11 +59,42 @@ describe('clipboard', () => {
             expect(pluginWriteText).toHaveBeenCalledWith('logs path');
         });
 
-        it('rejects when both the webview and the plugin fail', async () => {
+        it('falls back to the legacy execCommand copy when the webview write is refused', async () => {
+            stubWebviewClipboard({ writeText: vi.fn().mockRejectedValue(new Error('NotAllowedError')) });
+            const execCommand = vi.fn().mockReturnValue(true);
+            Object.defineProperty(document, 'execCommand', { value: execCommand, configurable: true });
+
+            await writeClipboardText('seed words');
+
+            expect(execCommand).toHaveBeenCalledWith('copy');
+            expect(pluginWriteText).not.toHaveBeenCalled();
+        });
+
+        it('falls back to the plugin when the webview write and the legacy copy both fail', async () => {
+            stubWebviewClipboard({ writeText: vi.fn().mockRejectedValue(new Error('NotAllowedError')) });
+            Object.defineProperty(document, 'execCommand', {
+                value: vi.fn().mockReturnValue(false),
+                configurable: true,
+            });
+
+            await writeClipboardText('seed words');
+
+            expect(pluginWriteText).toHaveBeenCalledWith('seed words');
+        });
+
+        it('rejects with a typed error carrying both failures when both paths fail', async () => {
             stubWebviewClipboard({ writeText: vi.fn().mockRejectedValue(new Error('denied')) });
             pluginWriteText.mockRejectedValue(new Error('X11 server connection timed out'));
 
-            await expect(writeClipboardText('x')).rejects.toThrow('X11 server connection timed out');
+            try {
+                await writeClipboardText('x');
+                expect.unreachable('write should have thrown');
+            } catch (e) {
+                expect(e).toBeInstanceOf(ClipboardUnavailableError);
+                expect((e as ClipboardUnavailableError).message).toBe('Could not write to the clipboard');
+                expect((e as ClipboardUnavailableError).pluginError).toBeInstanceOf(Error);
+                expect((e as ClipboardUnavailableError).webviewError).toBeInstanceOf(Error);
+            }
         });
     });
 
@@ -82,10 +114,31 @@ describe('clipboard', () => {
             await expect(readClipboardText()).resolves.toBe('webview text');
         });
 
-        it('rejects with the plugin error when there is no webview fallback', async () => {
+        it('rejects with a typed error carrying the plugin failure when there is no webview fallback', async () => {
             pluginReadText.mockRejectedValue(new Error('X11 server connection timed out'));
 
-            await expect(readClipboardText()).rejects.toThrow('X11 server connection timed out');
+            try {
+                await readClipboardText();
+                expect.unreachable('read should have thrown');
+            } catch (e) {
+                expect(e).toBeInstanceOf(ClipboardUnavailableError);
+                expect((e as ClipboardUnavailableError).message).toBe('Could not read from the clipboard');
+                expect((e as ClipboardUnavailableError).pluginError).toBeInstanceOf(Error);
+            }
+        });
+
+        it('rejects with a typed error carrying both failures when the webview read also fails', async () => {
+            pluginReadText.mockRejectedValue(new Error('X11 server connection timed out'));
+            stubWebviewClipboard({ readText: vi.fn().mockRejectedValue(new Error('denied')) });
+
+            try {
+                await readClipboardText();
+                expect.unreachable('read should have thrown');
+            } catch (e) {
+                expect(e).toBeInstanceOf(ClipboardUnavailableError);
+                expect((e as ClipboardUnavailableError).pluginError).toBeInstanceOf(Error);
+                expect((e as ClipboardUnavailableError).webviewError).toBeInstanceOf(Error);
+            }
         });
     });
 
@@ -108,6 +161,21 @@ describe('clipboard', () => {
             await clearClipboardText();
 
             expect(webviewWrite).toHaveBeenCalledWith('');
+        });
+
+        it('rejects with a typed error carrying both failures when the webview clear also fails', async () => {
+            pluginClear.mockRejectedValue(new Error('X11 server connection timed out'));
+            stubWebviewClipboard({ writeText: vi.fn().mockRejectedValue(new Error('denied')) });
+
+            try {
+                await clearClipboardText();
+                expect.unreachable('clear should have thrown');
+            } catch (e) {
+                expect(e).toBeInstanceOf(ClipboardUnavailableError);
+                expect((e as ClipboardUnavailableError).message).toBe('Could not clear the clipboard');
+                expect((e as ClipboardUnavailableError).pluginError).toBeInstanceOf(Error);
+                expect((e as ClipboardUnavailableError).webviewError).toBeInstanceOf(Error);
+            }
         });
     });
 });

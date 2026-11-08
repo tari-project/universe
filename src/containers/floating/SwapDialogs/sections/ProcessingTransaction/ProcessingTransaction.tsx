@@ -70,7 +70,11 @@ export const ProcessingTransaction = ({
             })
             .catch((e) => {
                 console.error('Could not copy to clipboard', e);
-                addToast({ title: 'Failed to copy to clipboard', text: String(e), type: 'error' });
+                addToast({
+                    title: 'Failed to copy to clipboard',
+                    text: 'The clipboard did not accept the value. Select the text and copy it manually.',
+                    type: 'error',
+                });
             });
     }, []);
 

@@ -46,13 +46,22 @@ export function useCopyToClipboard() {
                             })
                             .catch((e) => {
                                 console.error('Could not clear clipboard', e);
+                                addToast({
+                                    title: 'Could not clear the clipboard',
+                                    text: 'The copied value may still be on the clipboard.',
+                                    type: 'warning',
+                                });
                             });
                     }, options.clearAfterMs);
                 }
             })
             .catch((e) => {
                 console.error('Could not copy to clipboard', e);
-                addToast({ title: 'Failed to copy to clipboard', text: String(e), type: 'error' });
+                addToast({
+                    title: 'Failed to copy to clipboard',
+                    text: 'The clipboard did not accept the value. Select the text and copy it manually.',
+                    type: 'error',
+                });
             });
     }, []);
 
