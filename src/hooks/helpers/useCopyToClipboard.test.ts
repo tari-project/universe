@@ -11,19 +11,31 @@ vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
     clear: (...args: unknown[]) => clear(...args),
 }));
 
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { useCopyToClipboard } from './useCopyToClipboard';
 
 describe('useCopyToClipboard', () => {
+    const originalNavigatorClipboard = navigator.clipboard;
+
     beforeEach(() => {
         vi.useFakeTimers();
         writeText.mockReset().mockResolvedValue(undefined);
         readText.mockReset();
         clear.mockReset().mockResolvedValue(undefined);
+        useToastStore.setState({ toasts: [] });
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: undefined,
+        });
     });
 
     afterEach(() => {
         vi.clearAllTimers();
         vi.useRealTimers();
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: originalNavigatorClipboard,
+        });
     });
 
     it('does not clear the clipboard when no clearAfterMs is given', async () => {
@@ -111,5 +123,100 @@ describe('useCopyToClipboard', () => {
         expect(clear).not.toHaveBeenCalled();
         await act(async () => vi.advanceTimersByTimeAsync(60_000));
         expect(clear).toHaveBeenCalledTimes(1);
+    });
+
+    it('copies and clears secrets via navigator.clipboard under Wayland Flatpak when the Tauri plugin fails', async () => {
+        const seed = 'word '.repeat(24).trim();
+        const webWriteText = vi.fn().mockResolvedValue(undefined);
+        const webReadText = vi.fn().mockRejectedValue(new DOMException('NotAllowedError'));
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: {
+                writeText: webWriteText,
+                readText: webReadText,
+            },
+        });
+        writeText.mockRejectedValue(new Error('No X11 display'));
+        readText.mockRejectedValue(new Error('No X11 display'));
+        clear.mockRejectedValue(new Error('No X11 display'));
+
+        const { result } = renderHook(() => useCopyToClipboard());
+
+        await act(async () => {
+            result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 });
+        });
+
+        expect(result.current.isCopied).toBe(true);
+        expect(webWriteText).toHaveBeenCalledWith(seed);
+        expect(writeText).not.toHaveBeenCalled();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000);
+        });
+
+        expect(webWriteText).toHaveBeenLastCalledWith('');
+    });
+
+    it('retries clearing the secret on window focus if background clear fails while unfocused', async () => {
+        const seed = 'word '.repeat(24).trim();
+        const webWriteText = vi
+            .fn()
+            .mockResolvedValueOnce(undefined)
+            .mockRejectedValueOnce(new DOMException('Document is not focused'))
+            .mockResolvedValueOnce(undefined);
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: {
+                writeText: webWriteText,
+                readText: vi.fn().mockRejectedValue(new DOMException('NotAllowedError')),
+            },
+        });
+        readText.mockRejectedValue(new Error('No X11 display'));
+        clear.mockRejectedValue(new Error('No X11 display'));
+        const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        const { result } = renderHook(() => useCopyToClipboard());
+
+        await act(async () => {
+            result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 });
+        });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000);
+        });
+
+        expect(webWriteText).toHaveBeenCalledTimes(2);
+
+        await act(async () => {
+            window.dispatchEvent(new Event('focus'));
+        });
+
+        expect(webWriteText).toHaveBeenCalledTimes(3);
+        expect(webWriteText).toHaveBeenLastCalledWith('');
+
+        hasFocusSpy.mockRestore();
+        consoleError.mockRestore();
+    });
+
+    it('surfaces an error toast when copying fails across all clipboard backends', async () => {
+        writeText.mockRejectedValueOnce(new Error('Clipboard unavailable'));
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const { result } = renderHook(() => useCopyToClipboard());
+
+        await act(async () => {
+            result.current.copyToClipboard('tari address');
+        });
+
+        expect(result.current.isCopied).toBe(false);
+        expect(useToastStore.getState().toasts).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    title: 'Could not copy to clipboard',
+                    text: 'Clipboard unavailable',
+                    type: 'error',
+                }),
+            ])
+        );
+        consoleError.mockRestore();
     });
 });
