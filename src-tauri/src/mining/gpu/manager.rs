@@ -465,6 +465,13 @@ impl GpuManager {
         self.process_watcher.is_running()
     }
 
+    pub async fn restart_mining(&mut self) -> Result<(), anyhow::Error> {
+        if self.is_running() {
+            self.stop_mining().await?;
+        }
+        self.start_mining().await
+    }
+
     pub async fn stop_mining(&mut self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET_APP_LOGIC, "Stopping gpu miner");
         {

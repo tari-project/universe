@@ -282,6 +282,13 @@ impl CpuManager {
         self.process_watcher.is_running()
     }
 
+    pub async fn restart_mining(&mut self) -> Result<(), anyhow::Error> {
+        if self.is_running() {
+            self.stop_mining().await?;
+        }
+        self.start_mining().await
+    }
+
     async fn determine_number_of_cores_to_use(cpu_usage_percentage: u32) -> u32 {
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
