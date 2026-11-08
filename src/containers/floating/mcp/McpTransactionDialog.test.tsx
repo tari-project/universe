@@ -1,14 +1,17 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@app/test/test-utils';
+import { StrictMode } from 'react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { act, render, screen, waitFor } from '@app/test/test-utils';
+import { invoke } from '@tauri-apps/api/core';
 import { useMcpStore, setMcpPendingTransaction } from '@app/store/useMcpStore';
 import McpTransactionDialog from './McpTransactionDialog';
 
 describe('McpTransactionDialog', () => {
     beforeEach(() => {
         useMcpStore.setState({ pendingTransaction: null });
+        vi.mocked(invoke).mockClear();
     });
 
     it('renders nothing when no pending transaction', () => {
@@ -241,5 +244,39 @@ describe('McpTransactionDialog', () => {
         await waitFor(() => {
             expect(screen.getByText('settings:mcp.transaction-dialog.remaining')).toBeInTheDocument();
         });
+    });
+
+    it('denies the transaction once when the countdown expires under StrictMode', async () => {
+        vi.useFakeTimers();
+        try {
+            setMcpPendingTransaction({
+                request_id: 'mcp_tx_timeout',
+                destination: '5AexampleAddress',
+                amount_micro_minotari: 1_500_000,
+                amount_display: '1.5 XTM',
+            });
+            render(
+                <StrictMode>
+                    <McpTransactionDialog />
+                </StrictMode>
+            );
+
+            await act(async () => {
+                vi.advanceTimersByTime(120 * 1000);
+            });
+
+            const denyCalls = vi.mocked(invoke).mock.calls.filter(([cmd]) => cmd === 'mcp_transaction_dialog_response');
+            expect(denyCalls).toEqual([
+                [
+                    'mcp_transaction_dialog_response',
+                    {
+                        requestId: 'mcp_tx_timeout',
+                        approved: false,
+                    },
+                ],
+            ]);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

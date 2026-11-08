@@ -15,25 +15,53 @@ export const ClipboardViewer: React.FC<ClipboardViewerProps> = ({ handlePaste })
     const { validateAddress } = useValidateTariAddress();
 
     useEffect(() => {
+        let cancelled = false;
+        let inFlight = false;
+        let lastCheckedText: string | undefined;
+
         const readClipboard = async () => {
+            if (inFlight || cancelled) return;
+            inFlight = true;
             try {
                 const text = await readText();
-                if (text) {
-                    const isValidAddress = await validateAddress(text);
+                if (cancelled) return;
+                if (!text) {
+                    if (lastCheckedText !== undefined) {
+                        lastCheckedText = undefined;
+                        setClipboardText(undefined);
+                    }
+                    return;
+                }
+                if (text === lastCheckedText) {
+                    return;
+                }
+                lastCheckedText = text;
+                const isValidAddress = await validateAddress(text);
+                if (!cancelled) {
                     setClipboardText(isValidAddress ? text : undefined);
                 }
             } catch (err) {
                 console.error('Unable to read clipboard: ' + err);
-                setClipboardText(undefined);
+                if (!cancelled) {
+                    lastCheckedText = undefined;
+                    setClipboardText(undefined);
+                }
+            } finally {
+                inFlight = false;
             }
         };
 
         void readClipboard();
 
         // Poll clipboard every 1 second to check for changes
-        const interval = setInterval(readClipboard, 1000);
+        const interval = setInterval(() => {
+            void readClipboard();
+        }, 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
     }, [validateAddress]);
 
     return clipboardText?.length ? (
