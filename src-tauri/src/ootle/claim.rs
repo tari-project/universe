@@ -759,11 +759,19 @@ mod tests {
 
     #[test]
     fn claim_fees_are_capped_by_the_ceiling_and_half_the_burn() {
-        assert_eq!(check_claim_fee(5_000, 1_000_000_000).unwrap(), 5_000);
-        assert!(check_claim_fee(MAX_L2_FEE + 1, 1_000_000_000).is_err());
-        assert_eq!(check_claim_fee(5_000, 10_000).unwrap(), 5_000);
-        assert!(check_claim_fee(5_001, 10_000).is_err());
-        assert!(check_claim_fee(1, 1).is_err());
+        assert_eq!(check_claim_fee(5_000, u64::MAX, 1_000_000_000).unwrap(), 5_000);
+        assert!(check_claim_fee(MAX_L2_FEE + 1, u64::MAX, 1_000_000_000).is_err());
+        assert_eq!(check_claim_fee(5_000, u64::MAX, 10_000).unwrap(), 5_000);
+        assert!(check_claim_fee(5_001, u64::MAX, 10_000).is_err());
+        assert!(check_claim_fee(1, u64::MAX, 1).is_err());
+    }
+
+    /// The fee comes from the indexer's dry run. A claim reveals no more than its own price, so an
+    /// indexer that overprices it can't burn the difference.
+    #[test]
+    fn a_claim_reveals_no_more_than_its_local_price() {
+        assert_eq!(check_claim_fee(90_000, 3_000, 1_000_000_000).unwrap(), 3_000);
+        assert_eq!(check_claim_fee(2_000, 3_000, 1_000_000_000).unwrap(), 2_000);
     }
 
     #[test]
