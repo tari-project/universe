@@ -11,8 +11,9 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import { isPortInUseError } from './mcpPortError';
 
 const ServerError = styled.p`
     margin: 4px 0 0 0;
@@ -30,16 +31,17 @@ export default function ServerToggle() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Drop a stale error once the server is actually running again (the user fixed
+    // the port) or the whole feature is disabled.
+    useEffect(() => {
+        if (serverRunning || !enabled) setError(null);
+    }, [serverRunning, enabled]);
+
     const describeError = (e: unknown) => {
         const message = e instanceof Error ? e.message : String(e);
-        const lower = message.toLowerCase();
         const portMatch = message.match(/port (\d+)/i);
         const port = portMatch ? Number(portMatch[1]) : configuredPort;
-        if (
-            lower.includes('failed to bind') ||
-            lower.includes('address already in use') ||
-            lower.includes('eaddrinuse')
-        ) {
+        if (isPortInUseError(e)) {
             return t('mcp.advanced.port-in-use', { port });
         }
         return t('mcp.advanced.port-error', { port });
@@ -53,6 +55,10 @@ export default function ServerToggle() {
             useConfigMcpStore.setState((c) => ({ ...c, enabled: checked }));
         } catch (e) {
             console.error('Failed to toggle MCP server:', e);
+            // set_mcp_enabled saves the flag before it starts the listener, so a
+            // failed start leaves MCP enabled-but-stopped. Keep the store in step
+            // with that persisted state so the port field stays available.
+            if (checked) useConfigMcpStore.setState((c) => ({ ...c, enabled: true }));
             setError(describeError(e));
         } finally {
             setLoading(false);
@@ -75,7 +81,11 @@ export default function ServerToggle() {
                     <Typography variant="p" style={{ opacity: 0.7 }} data-testid="mcp-server-status">
                         {statusText}
                     </Typography>
-                    {error && <ServerError data-testid="mcp-server-error">{error}</ServerError>}
+                    {error && (
+                        <ServerError data-testid="mcp-server-error" role="alert">
+                            {error}
+                        </ServerError>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch

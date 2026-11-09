@@ -2,13 +2,24 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
+import { act, fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import ServerToggle from './ServerToggle';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
+
+// The shared test setup returns bare keys; interpolate the port here so the
+// assertions cover the message the user actually sees.
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string, params?: { port?: number }) =>
+            key.startsWith('mcp.advanced.port-') && params?.port !== undefined ? `${key}|${params.port}` : key,
+        i18n: { language: 'en', changeLanguage: vi.fn() },
+    }),
+    initReactI18next: { type: '3rdParty', init: vi.fn() },
+}));
 
 describe('ServerToggle', () => {
     beforeEach(() => {
@@ -61,7 +72,18 @@ describe('ServerToggle', () => {
         );
         render(<ServerToggle />);
         fireEvent.click(screen.getByRole('checkbox'));
-        expect(await screen.findByTestId('mcp-server-error')).toHaveTextContent('mcp.advanced.port-in-use');
+        expect(await screen.findByTestId('mcp-server-error')).toHaveTextContent('mcp.advanced.port-in-use|19222');
+        // The backend saved enabled=true before failing to start. Keeping that in
+        // the store leaves the port field visible so the user can pick another port.
+        expect(useConfigMcpStore.getState().enabled).toBe(true);
+        await waitFor(() => expect(screen.getByRole('checkbox')).toBeChecked());
+    });
+
+    it('shows a generic start error for a non-bind failure', async () => {
+        vi.mocked(invoke).mockRejectedValueOnce('MCP server has no bearer token configured');
+        render(<ServerToggle />);
+        fireEvent.click(screen.getByRole('checkbox'));
+        expect(await screen.findByTestId('mcp-server-error')).toHaveTextContent('mcp.advanced.port-error|19222');
     });
 
     it('clears a previous bind failure on the next attempt', async () => {
@@ -72,6 +94,15 @@ describe('ServerToggle', () => {
         await screen.findByTestId('mcp-server-error');
         vi.mocked(invoke).mockResolvedValueOnce(undefined);
         fireEvent.click(toggle);
+        await waitFor(() => expect(screen.queryByTestId('mcp-server-error')).not.toBeInTheDocument());
+    });
+
+    it('clears the error once the server is running again', async () => {
+        vi.mocked(invoke).mockRejectedValueOnce('MCP server failed to bind to configured port 19222');
+        render(<ServerToggle />);
+        fireEvent.click(screen.getByRole('checkbox'));
+        await screen.findByTestId('mcp-server-error');
+        act(() => useMcpStore.setState({ serverRunning: true, serverPort: 19222 }));
         await waitFor(() => expect(screen.queryByTestId('mcp-server-error')).not.toBeInTheDocument());
     });
 });

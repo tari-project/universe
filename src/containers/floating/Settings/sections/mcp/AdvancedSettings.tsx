@@ -12,10 +12,10 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
+import { isPortInUseError } from './mcpPortError';
 
 const PortError = styled.p`
-    margin: 0 0 12px 0;
-    padding: 0 20px;
+    margin: 4px 0 0 0;
     font-size: 12px;
     line-height: 1.4;
     color: ${({ theme }) => theme.palette.error.main};
@@ -54,13 +54,7 @@ export default function AdvancedSettings() {
 
     const describePortError = useCallback(
         (error: unknown, port: number) => {
-            const message = error instanceof Error ? error.message : String(error);
-            const lower = message.toLowerCase();
-            if (
-                lower.includes('failed to bind') ||
-                lower.includes('address already in use') ||
-                lower.includes('eaddrinuse')
-            ) {
+            if (isPortInUseError(error)) {
                 return t('mcp.advanced.port-in-use', { port });
             }
             return t('mcp.advanced.port-error', { port });
@@ -76,14 +70,21 @@ export default function AdvancedSettings() {
             return;
         }
         setPortError(null);
-        if (num === storePort) return;
+        // Retry even when the value matches the saved port: after a bind failure the
+        // saved port is the one that could not be bound, so pressing Enter again must
+        // attempt the bind rather than do nothing.
+        if (num === storePort && !portError) return;
         try {
             await invoke('set_mcp_port', { port: num });
         } catch (e) {
             console.error('Failed to set MCP port:', e);
+            // The backend saves the port before restarting, so keep the configured port
+            // in the panel even if the event that reports the saved config arrives later.
+            useConfigMcpStore.setState((c) => ({ ...c, port: num }));
+            setPortValue(String(num));
             setPortError(describePortError(e, num));
         }
-    }, [portValue, storePort, describePortError, t]);
+    }, [portValue, storePort, portError, describePortError, t]);
 
     if (!enabled) return null;
 
@@ -107,6 +108,11 @@ export default function AdvancedSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('mcp.advanced.port')}</Typography>
                     </SettingsGroupTitle>
+                    {portError && (
+                        <PortError id="mcp-port-error" data-testid="mcp-port-error" role="alert">
+                            {portError}
+                        </PortError>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <PortInput
@@ -128,11 +134,6 @@ export default function AdvancedSettings() {
                     />
                 </SettingsGroupAction>
             </SettingsGroup>
-            {portError && (
-                <PortError id="mcp-port-error" data-testid="mcp-port-error">
-                    {portError}
-                </PortError>
-            )}
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
