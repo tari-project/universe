@@ -42,7 +42,7 @@ use tari_crypto::{
 };
 use tari_engine_types::{
     commit_result::{ExecutionFailureCode, RejectReason},
-    confidential::{ClaimBurnOutputData, MinotariBurnClaimProof},
+    confidential::MinotariBurnClaimProof,
     substate::SubstateId,
 };
 use tari_ootle_app_utilities::burn_claim_proof::claim_proof_from_l1;
@@ -62,7 +62,7 @@ use tari_sidechain::CompleteClaimBurnProof;
 use tari_template_lib::{
     prelude::RistrettoPublicKeyBytes,
     types::{
-        Amount, ClaimedOutputTombstoneAddress, EncryptedData,
+        Amount, ClaimedOutputTombstoneAddress,
         constants::{STEALTH_TARI_RESOURCE_ADDRESS, TARI_TOKEN},
         stealth::{RevealedOutput, SpendAuthorization},
     },
@@ -166,14 +166,11 @@ pub struct BurnProof {
     pub mined_height: u64,
     /// The L1 epoch the burn was mined in. The L2 takes the claim once it's past it.
     mined_in_epoch: u64,
-    encrypted_data: EncryptedData,
 }
 
 impl BurnProof {
     fn from_json(json: &[u8]) -> Result<Self, anyhow::Error> {
         let file: CompleteClaimBurnProof = serde_json::from_slice(json)?;
-        let encrypted_data = EncryptedData::try_from(file.encrypted_data)
-            .map_err(|len| anyhow!("The burn proof's encrypted data is {len} bytes, too long"))?;
         Ok(Self {
             claim_proof: claim_proof_from_l1(&file.claim_proof)
                 .map_err(|e| anyhow!("Invalid burn proof: {e}"))?,
@@ -182,7 +179,6 @@ impl BurnProof {
             )?,
             mined_height: file.claim_proof.output_proof.block_height,
             mined_in_epoch: file.mined_in_epoch,
-            encrypted_data,
         })
     }
 }
@@ -554,7 +550,6 @@ pub async fn claim_burn(
         let claim = Claim {
             account: &account,
             proof: &proof.claim_proof,
-            encrypted_data: &proof.encrypted_data,
             max_fee: fee,
             max_epoch,
             dry_run,
@@ -614,28 +609,22 @@ fn check_claim_fee(fee: u64, burn_value: u64) -> Result<u64, anyhow::Error> {
 struct Claim<'a> {
     account: &'a AccountWithAddress,
     proof: &'a MinotariBurnClaimProof,
-    encrypted_data: &'a EncryptedData,
     max_fee: u64,
     max_epoch: Epoch,
     dry_run: bool,
 }
 
-/// Builds and signs the claim: mint the burned output, then spend it into a stealth
-/// output for the account, revealing `max_fee` to pay the fee.
+/// Builds and signs the claim: reveal the burned value in a bucket, then pay the bucket
+/// into a stealth output for the account, revealing `max_fee` to pay the fee.
 fn build_claim(sdk: &OotleSdk, claim: Claim<'_>) -> Result<Transaction, anyhow::Error> {
     let network = sdk.network();
     let crypto = sdk.stealth_crypto_api();
     let keys = sdk.key_manager_api();
-    let (owner, stealth_secret, sender_offset) = claim_keys(sdk, claim.account, claim.proof)?;
-    let decrypted = crypto.decrypt_utxo_data(
-        claim.encrypted_data,
-        &claim.proof.commitment,
-        owner.secret(),
-        &sender_offset,
-        true,
-    )?;
-    let amount = decrypted
-        .value()
+    let (owner, stealth_secret) = claim_keys(sdk, claim.account, claim.proof)?;
+    // claim_keys checked the ownership proof, which binds this value to the burn commitment.
+    let amount = claim
+        .proof
+        .value
         .checked_sub(claim.max_fee)
         .filter(|amount| *amount > 0)
         .ok_or_else(|| anyhow!("The claim fee is as large as the burn"))?;
@@ -676,25 +665,22 @@ fn build_claim(sdk: &OotleSdk, claim: Claim<'_>) -> Result<Transaction, anyhow::
         auth: SpendAuthorization::Key(RistrettoPublicKeyBytes::try_from(owner_key.as_bytes())?),
         tag,
     };
-    let input = StealthInputWitness::new(decrypted.into_mask_and_value());
     // The claim key signs, so it is the only badge in scope to take the revealed fee.
     let statement = crypto.generate_transfer_statement(
-        iter::once(input),
-        Amount::zero(),
+        iter::empty::<StealthInputWitness>(),
+        Amount::from(claim.proof.value),
         iter::once(&output),
         Some(RevealedOutput::new(
             Amount::from(claim.max_fee),
             claim.proof.output.features.claim_public_key,
         )),
     )?;
-    let output_data = ClaimBurnOutputData {
-        encrypted_data: claim.encrypted_data.clone(),
-    };
     let transaction = Transaction::builder(network.as_byte(), claim.max_epoch)
         .with_fee_instructions_builder(|builder| {
             builder
-                .claim_burn(claim.proof.clone(), output_data)
-                .stealth_transfer(TARI_TOKEN, statement)
+                .claim_burn(claim.proof.clone())
+                .put_last_instruction_output_on_workspace("claimed")
+                .stealth_transfer_with_input_bucket(TARI_TOKEN, statement, "claimed")
                 .put_last_instruction_output_on_workspace("fee")
                 .pay_fee_from_bucket("fee")
         })
@@ -705,14 +691,14 @@ fn build_claim(sdk: &OotleSdk, claim: Claim<'_>) -> Result<Transaction, anyhow::
         .sign_with_explicit_key(&stealth_secret, transaction)?)
 }
 
-/// The account's owner key, the stealth claim secret `s = H(p·R) + p` and the burn's
-/// sender offset key `R`. Fails unless the burn output names `s·G` as its claim key and
+/// The account's owner key and the stealth claim secret `s = H(p·R) + p`, where `R` is
+/// the burn's sender offset key. Fails unless the burn output names `s·G` as its claim key and
 /// its ownership proof was made for it, which are the checks the network makes too.
 fn claim_keys(
     sdk: &OotleSdk,
     account: &AccountWithAddress,
     proof: &MinotariBurnClaimProof,
-) -> Result<(WalletSecretKey, RistrettoSecretKey, RistrettoPublicKey), anyhow::Error> {
+) -> Result<(WalletSecretKey, RistrettoSecretKey), anyhow::Error> {
     let key_id = account
         .owner_key_id()
         .ok_or_else(|| anyhow!("This L2 account has no owner key to claim with"))?;
@@ -742,7 +728,7 @@ fn claim_keys(
             "ownership proof validation failed: the burn's ownership proof wasn't made for this account's claim key"
         );
     }
-    Ok((owner, stealth_secret, sender_offset))
+    Ok((owner, stealth_secret))
 }
 
 #[cfg(test)]
