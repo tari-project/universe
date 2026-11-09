@@ -932,6 +932,7 @@ pub async fn discard_unreadable_wallet_config(app_handle: tauri::AppHandle) -> R
         .await
         .map_err(|e| e.to_string())?;
     ConfigWallet::migrate().await.map_err(|e| e.to_string())?;
+    InternalWallet::purge_legacy_credential_files(&app_handle).await;
     EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
 
     tauri::async_runtime::spawn(async move {
