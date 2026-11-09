@@ -510,7 +510,8 @@ impl OotleWalletManager {
         let id = claim::claim_burn(&sdk, &transactions, proof, file_name, approve_fee)
             .await
             .map_err(|e| {
-                warn!(target: LOG_TARGET, "L2 claim failed: {e:#}");
+                // The error can name claim keys and the burn amount, so only the UI gets it.
+                warn!(target: LOG_TARGET, "L2 claim failed");
                 TransactionError::WalletError(format!("L2 claim failed: {e}"))
             })?;
         info!(target: LOG_TARGET, "L2 claim submitted: {id}");
