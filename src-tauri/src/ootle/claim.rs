@@ -633,10 +633,23 @@ async fn claim_price(sdk: &OotleSdk, probe: &Transaction) -> Result<u64, anyhow:
         })
         .ok_or_else(|| anyhow!("The claim has no stealth transfer to price"))?;
     let tari = SubstateId::from(TARI_TOKEN);
-    let tari_bytes = sdk
-        .substate_api()
-        .get_substates_from_network(std::slice::from_ref(&tari))
-        .await?
+    // A read that straddles an epoch change fails until the indexer proves it against the new
+    // validator set. Retry those, as walletd does; the caller's indexer timeout bounds the loop.
+    let substates = loop {
+        match sdk
+            .substate_api()
+            .get_substates_from_network(std::slice::from_ref(&tari))
+            .await
+        {
+            Err(
+                SubstateApiError::SubstateUnproven { .. }
+                | SubstateApiError::SubstateProvenPastServedCheckpoints { .. }
+                | SubstateApiError::SubstateProvenBeforeAnchor { .. },
+            ) => tokio::time::sleep(std::time::Duration::from_secs(1)).await,
+            result => break result?,
+        }
+    };
+    let tari_bytes = substates
         .get(&tari)
         // The SDK verifies what the indexer returns, not what it leaves out, and pricing a
         // missing input at zero would underfund the claim.
