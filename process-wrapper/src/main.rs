@@ -123,15 +123,38 @@ fn spawn_child(binary: &str, args: &[String], network: &str) -> Result<Child, st
 
     executable_integrity::verify_launch_path(std::path::Path::new(binary), network)?;
 
+    #[cfg(target_os = "linux")]
+    let wrapper_pid = std::process::id() as libc::pid_t;
     unsafe {
         Command::new(binary)
             .args(args)
-            .pre_exec(|| {
+            .pre_exec(move || {
                 libc::setpgid(0, 0);
+                #[cfg(target_os = "linux")]
+                die_with_wrapper(wrapper_pid)?;
                 Ok(())
             })
             .spawn()
     }
+}
+
+/// Have the kernel SIGKILL the child when the wrapper dies, even by SIGKILL,
+/// which the wrapper cannot handle. Without it a killed wrapper leaves its
+/// child running where the app can no longer find or stop it: the PID file
+/// names the wrapper. SIGKILL, not SIGTERM: the graceful path is the wrapper's
+/// own SIGTERM-then-SIGKILL, and if the wrapper is gone (e.g. the app killed it
+/// mid-shutdown) a child stuck on SIGTERM would survive a second one.
+/// Runs in the forked child before exec.
+#[cfg(target_os = "linux")]
+fn die_with_wrapper(wrapper_pid: libc::pid_t) -> std::io::Result<()> {
+    if unsafe { libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL) } == -1 {
+        return Err(std::io::Error::last_os_error());
+    }
+    // The wrapper may have died before the signal was armed.
+    if unsafe { libc::getppid() } != wrapper_pid {
+        return Err(std::io::Error::from_raw_os_error(libc::ESRCH));
+    }
+    Ok(())
 }
 
 #[cfg(windows)]
@@ -246,5 +269,38 @@ mod tests {
             result.is_err(),
             "wrapper must fail closed for an unpinned child"
         );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn child_is_terminated_when_its_spawner_dies() {
+        use std::os::unix::process::{CommandExt, ExitStatusExt};
+        use std::time::{Duration, Instant};
+
+        let pid = std::process::id() as libc::pid_t;
+        // The death signal follows the spawning thread, so a thread that
+        // exits stands in for a killed wrapper.
+        let mut child = std::thread::spawn(move || unsafe {
+            std::process::Command::new("sleep")
+                .arg("30")
+                .pre_exec(move || super::die_with_wrapper(pid))
+                .spawn()
+                .unwrap()
+        })
+        .join()
+        .unwrap();
+
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let status = loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                break status;
+            }
+            if Instant::now() > deadline {
+                let _ = child.kill();
+                panic!("child outlived its spawner");
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        };
+        assert_eq!(status.signal(), Some(libc::SIGKILL));
     }
 }
