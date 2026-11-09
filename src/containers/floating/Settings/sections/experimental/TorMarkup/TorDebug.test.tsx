@@ -27,6 +27,16 @@ describe('TorDebug', () => {
         expect(screen.queryByText('$NEW~guard2')).not.toBeInTheDocument();
     });
 
+    it('shows no guards when Tor answers with an empty list', async () => {
+        // An empty answer is Tor's current state (e.g. right after a restart), so the
+        // startup list must not be kept: showing guards Tor no longer uses is the bug.
+        invokeMock.mockResolvedValue([]);
+        render(<TorDebug />);
+
+        await waitFor(() => expect(screen.getByText('no-entry-guard')).toBeInTheDocument());
+        expect(screen.queryByText('$OLD~startup')).not.toBeInTheDocument();
+    });
+
     it('keeps the last known guards when Tor cannot be queried', async () => {
         invokeMock.mockRejectedValue('Tor control port is not initialized');
         render(<TorDebug />);
