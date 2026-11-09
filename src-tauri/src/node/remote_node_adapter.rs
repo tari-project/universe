@@ -220,6 +220,9 @@ impl ProcessInstanceTrait for NullProcessInstance {
         true
     }
     async fn start(&mut self, _task_trakcer: TaskTracker) -> Result<(), anyhow::Error> {
+        // Reset like a real process instance, or the watcher treats the node as shutting down
+        // after its first restart and never handles another unhealthy streak.
+        self.shutdown = Shutdown::new();
         Ok(())
     }
 
@@ -230,5 +233,21 @@ impl ProcessInstanceTrait for NullProcessInstance {
 
     fn is_shutdown_triggered(&self) -> bool {
         self.shutdown.is_triggered()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn start_after_stop_clears_the_shutdown_latch() {
+        let mut instance = NullProcessInstance {
+            shutdown: Shutdown::new(),
+        };
+        instance.stop().await.unwrap();
+        assert!(instance.is_shutdown_triggered());
+        instance.start(TaskTracker::new()).await.unwrap();
+        assert!(!instance.is_shutdown_triggered());
     }
 }
