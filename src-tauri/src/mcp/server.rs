@@ -46,6 +46,25 @@ static LIFECYCLE: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 const SHUTDOWN_TIMEOUT_SECS: u64 = 5;
 
+/// Bind the listener to the configured port. There is deliberately no fallback to a
+/// random port: another process could bind that port and intercept bearer tokens.
+async fn bind_configured_port(
+    configured_port: u16,
+) -> Result<tokio::net::TcpListener, anyhow::Error> {
+    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
+    tokio::net::TcpListener::bind(addr).await.map_err(|e| {
+        error!(
+            target: LOG_TARGET_APP_LOGIC,
+            "MCP server failed to bind to configured port {configured_port}: {e}"
+        );
+        anyhow::anyhow!(
+            "MCP server failed to bind to configured port {configured_port}: {e}. \
+             Refusing to fall back to a random port for security reasons — \
+             another process on the configured port could intercept bearer tokens."
+        )
+    })
+}
+
 pub struct McpServerManager {
     server_handle: Option<JoinHandle<()>>,
     shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
@@ -122,18 +141,7 @@ impl McpServerManager {
             })?
         };
 
-        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
-        let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
-            error!(
-                target: LOG_TARGET_APP_LOGIC,
-                "MCP server failed to bind to configured port {configured_port}: {e}"
-            );
-            anyhow::anyhow!(
-                "MCP server failed to bind to configured port {configured_port}: {e}. \
-                 Refusing to fall back to a random port for security reasons — \
-                 another process on the configured port could intercept bearer tokens."
-            )
-        })?;
+        let listener = bind_configured_port(configured_port).await?;
         info!(target: LOG_TARGET_APP_LOGIC, "MCP server bound to configured port {configured_port}");
 
         let bound_port = listener.local_addr()?.port();
@@ -326,5 +334,31 @@ mod tests {
         drop(stop);
         let _unused = finish_tx.send(());
         assert!(LIFECYCLE.try_lock().is_ok());
+    }
+
+    #[tokio::test]
+    async fn occupied_port_fails_with_the_port_and_no_random_fallback() {
+        let occupied = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .expect("bind an ephemeral port");
+        let port = occupied.local_addr().expect("read the bound port").port();
+
+        let error = bind_configured_port(port)
+            .await
+            .expect_err("binding the same port twice must fail");
+
+        let message = error.to_string();
+        assert!(
+            message.contains("failed to bind to configured port"),
+            "{message}"
+        );
+        assert!(
+            message.contains(&format!("configured port {port}")),
+            "{message}"
+        );
+        assert!(
+            message.contains("Refusing to fall back to a random port"),
+            "{message}"
+        );
     }
 }

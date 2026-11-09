@@ -52,16 +52,6 @@ export default function AdvancedSettings() {
         setPortValue(String(storePort));
     }, [storePort]);
 
-    const describePortError = useCallback(
-        (error: unknown, port: number) => {
-            if (isPortInUseError(error)) {
-                return t('mcp.advanced.port-in-use', { port });
-            }
-            return t('mcp.advanced.port-error', { port });
-        },
-        [t]
-    );
-
     const commitPort = useCallback(async () => {
         const trimmed = portValue.trim();
         const num = Number(trimmed);
@@ -78,13 +68,17 @@ export default function AdvancedSettings() {
             await invoke('set_mcp_port', { port: num });
         } catch (e) {
             console.error('Failed to set MCP port:', e);
-            // The backend saves the port before restarting, so keep the configured port
-            // in the panel even if the event that reports the saved config arrives later.
-            useConfigMcpStore.setState((c) => ({ ...c, port: num }));
-            setPortValue(String(num));
-            setPortError(describePortError(e, num));
+            if (isPortInUseError(e)) {
+                // The backend saves the port before restarting, so keep the configured port
+                // in the panel even if the event that reports the saved config arrives later.
+                useConfigMcpStore.setState((c) => ({ ...c, port: num }));
+                setPortValue(String(num));
+                setPortError(t('mcp.advanced.port-in-use', { port: num }));
+            } else {
+                setPortError(t('mcp.advanced.port-error', { port: num }));
+            }
         }
-    }, [portValue, storePort, portError, describePortError, t]);
+    }, [portValue, storePort, portError, t]);
 
     if (!enabled) return null;
 
