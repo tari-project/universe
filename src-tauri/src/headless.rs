@@ -101,6 +101,8 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         | "L2NetworkStats"
         | "BaseNodeUpdate"
         | "NodeTypeUpdate"
+        | "UpdateTorEntryGuards"
+        | "TorFallback"
         | "UpdateCpuMinerControlsState"
         | "UpdateGpuMinerControlsState"
         | "GpuDevicesUpdate"
@@ -307,6 +309,12 @@ mod tests {
             replay_cache_key(&event).as_deref(),
             Some("McpServerStatusUpdate")
         );
+    }
+
+    #[test]
+    fn tor_fallback_is_replayed_last_one_wins() {
+        let event = json!({"event_type": "TorFallback", "payload": {"active": true, "reason": "bootstrap timed out"}});
+        assert_eq!(replay_cache_key(&event).as_deref(), Some("TorFallback"));
     }
 
     #[test]

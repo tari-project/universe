@@ -243,6 +243,7 @@
   "theme": "Theme",
   "tor-bridges": "Tor Bridges",
   "tor-entry-guards": "Tor Entry Guards",
+  "tor-unavailable-fallback": "Tor unavailable, running without it",
   "tribe": "Squad",
   "tribe-earnings": "Squad earnings",
   "tribe-pool-height": "Squad height",

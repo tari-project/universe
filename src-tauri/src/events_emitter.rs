@@ -46,6 +46,7 @@ use crate::{
     events::{
         DetectedDevicesPayload, Event, EventType, NetworkStatusPayload, NodeTypeUpdatePayload,
         ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
+        TorFallbackPayload,
     },
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
@@ -279,6 +280,21 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit UpdateTorEntryGuards event: {e:?}");
+        }
+    }
+
+    pub async fn emit_tor_fallback(active: bool, reason: Option<String>) {
+        #[cfg(not(test))]
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let Some(app_handle) = INSTANCE.app_handle.read().await.clone() else {
+            return;
+        };
+        let event = Event {
+            event_type: EventType::TorFallback,
+            payload: TorFallbackPayload { active, reason },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit TorFallback event: {e:?}");
         }
     }
 

@@ -15,6 +15,7 @@ import {
     SetupPhase,
     ShowReleaseNotesPayload,
     TariAddressUpdatePayload,
+    TorFallbackPayload,
     WalletScanningProgressUpdatePayload,
     TransactionOrigin,
     WalletUIMode,
@@ -43,6 +44,10 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'UpdateTorEntryGuards';
           payload: string[];
+      }
+    | {
+          event_type: 'TorFallback';
+          payload: TorFallbackPayload;
       }
     | {
           event_type: 'SetupProgressUpdate';
