@@ -638,9 +638,10 @@ async fn claim_price(sdk: &OotleSdk, probe: &Transaction) -> Result<u64, anyhow:
         .get_substates_from_network(std::slice::from_ref(&tari))
         .await?
         .get(&tari)
-        .map_or(0, |substate| {
-            declared_input_bytes(substate.substate_value())
-        });
+        // The SDK verifies what the indexer returns, not what it leaves out, and pricing a
+        // missing input at zero would underfund the claim.
+        .map(|substate| declared_input_bytes(substate.substate_value()))
+        .ok_or_else(|| anyhow!("The indexer didn't return the TARI resource to price the claim"))?;
     let input_bytes = if probe
         .all_inputs_iter()
         .any(|input| *input.substate_id() == tari)
