@@ -153,7 +153,7 @@ export const IconWrapper = styled.div<{ $absolute?: boolean }>`
     color: #fff;
     background: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(17px);
+    backdrop-filter: blur(8px);
     svg {
         display: flex;
         max-width: 100%;

@@ -47,6 +47,7 @@ const AddressEditor = ({ initialAddress, onApply, rules, isWXTM, testId }: Addre
         formState: { errors, isDirty },
     } = useForm({
         defaultValues: { address: initialAddress },
+        mode: 'onChange',
     });
     const [editing, setEditing] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();

@@ -7,7 +7,12 @@ const spin = keyframes`
   }
 `;
 
-export const AnimatedBG = styled.div<{ $col1: string; $col2: string; $isWalletFailed?: boolean }>`
+export const AnimatedBG = styled.div<{
+    $col1: string;
+    $col2: string;
+    $isWalletFailed?: boolean;
+    $isSpinning?: boolean;
+}>`
     background-image: ${({ $col1, $col2, $isWalletFailed, theme }) =>
         $isWalletFailed
             ? `linear-gradient(15deg, ${theme.palette.error.main || '#e03244'} 0%, ${theme.palette.error.main || '#e03244'} 100%)`
@@ -18,7 +23,8 @@ export const AnimatedBG = styled.div<{ $col1: string; $col2: string; $isWalletFa
     width: 400px;
     height: 400px;
     transform: translate(-50%, -50%);
-    animation: ${({ $isWalletFailed }) => ($isWalletFailed ? 'none' : spin)} 15s linear infinite;
+    animation: ${({ $isWalletFailed, $isSpinning }) => ($isWalletFailed || !$isSpinning ? 'none' : spin)} 15s linear
+        infinite;
     z-index: 0;
     opacity: ${({ $isWalletFailed }) => ($isWalletFailed ? 0.1 : 1)};
 `;

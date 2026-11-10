@@ -21,7 +21,7 @@ export const ActionButton = styled(m.button)`
     border-radius: 100%;
     border: 1px solid rgba(221, 221, 221, 0.05);
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(77px);
+    backdrop-filter: blur(8px);
     color: #fff;
 
     svg {

@@ -1,4 +1,4 @@
-import { Activity, useCallback } from 'react';
+import { useCallback } from 'react';
 import { ButtonWrapper } from './styles.ts';
 import { AnimatePresence } from 'motion/react';
 import LoadingButton from './LoadingButton/LoadingButton.tsx';
@@ -40,39 +40,28 @@ export default function MiningButtonCombined() {
 
     const controller = <ModeController />;
 
-    const pauseButton = (
-        <Activity mode={isMining ? 'visible' : 'hidden'} key="pause">
-            <MiningButtonPause isMining={isMining} isMiningButtonDisabled={isMiningButtonDisabled}>
-                {controller}
-            </MiningButtonPause>
-        </Activity>
-    );
-    const startButton = (
-        <Activity mode={!isMining ? 'visible' : 'hidden'} key="start">
-            <MiningButton
-                buttonText={resumeTime.displayString ? 'resume' : 'start'}
-                onClick={handleStartMining}
-                disabled={isMiningButtonDisabled || isMiningLoading}
-                icon={<PlayIcon />}
-                isMining={isMining}
-                resumeTime={resumeTime}
-            >
-                {controller}
-            </MiningButton>
-        </Activity>
-    );
-
-    const loader = (
-        <Activity mode={isMiningLoading ? 'visible' : 'hidden'} key="loader">
-            <LoadingButton />
-        </Activity>
-    );
     return (
         <ButtonWrapper>
             <AnimatePresence mode="popLayout">
-                {loader}
-                {startButton}
-                {pauseButton}
+                {isMiningLoading ? (
+                    <LoadingButton key="loader" />
+                ) : isMining ? (
+                    <MiningButtonPause key="pause" isMining={isMining} isMiningButtonDisabled={isMiningButtonDisabled}>
+                        {controller}
+                    </MiningButtonPause>
+                ) : (
+                    <MiningButton
+                        key="start"
+                        buttonText={resumeTime.displayString ? 'resume' : 'start'}
+                        onClick={handleStartMining}
+                        disabled={isMiningButtonDisabled || isMiningLoading}
+                        icon={<PlayIcon />}
+                        isMining={isMining}
+                        resumeTime={resumeTime}
+                    >
+                        {controller}
+                    </MiningButton>
+                )}
             </AnimatePresence>
         </ButtonWrapper>
     );
