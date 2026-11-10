@@ -33,8 +33,21 @@ interface EditedTorConfig {
     bridges: string[];
 }
 
+const cleanBridgeInput = (val: string) => {
+    return val
+        .replace(/&#43;/g, '+')
+        .replace(/&#x2B;/gi, '+')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .trim();
+};
+
 const hasBridgeError = (bridge: string) => {
-    return !bridge || bridge.trim().length === 0;
+    if (!bridge || bridge.trim().length === 0) {
+        return true;
+    }
+    const trimmed = bridge.trim();
+    return trimmed.includes('&#') || trimmed.includes('&amp;') || !trimmed.startsWith('obfs4 ');
 };
 
 const hasControlPortError = (cp: number) => {
@@ -222,7 +235,7 @@ export const TorMarkup = () => {
                                     onChange={({ target }) => {
                                         setEditedConfig((prev) => ({
                                             ...(prev as TorConfig),
-                                            bridges: [target.value.trim(), prev?.bridges[1] || ''],
+                                            bridges: [cleanBridgeInput(target.value), prev?.bridges[1] || ''],
                                         }));
                                     }}
                                 />
@@ -236,7 +249,7 @@ export const TorMarkup = () => {
                                     onChange={(e) => {
                                         setEditedConfig((prev) => ({
                                             ...(prev as TorConfig),
-                                            bridges: [prev?.bridges[0] || '', e.target.value.trim()],
+                                            bridges: [prev?.bridges[0] || '', cleanBridgeInput(e.target.value)],
                                         }));
                                     }}
                                 />
