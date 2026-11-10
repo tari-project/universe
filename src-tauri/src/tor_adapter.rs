@@ -60,16 +60,17 @@ pub(crate) struct TorAdapter {
     status_broadcast: watch::Sender<TorStatus>,
 }
 
-fn prepare_tor_working_dir(data_dir: &Path, is_first_start: bool) -> Result<PathBuf, Error> {
+fn prepare_tor_working_dir(data_dir: &Path, _is_first_start: bool) -> Result<PathBuf, Error> {
     let working_dir: PathBuf = data_dir.join("tor-data");
-    if is_first_start {
-        info!(target: LOG_TARGET_APP_LOGIC, "Clearing tor data directory on first start");
-        if std::fs::exists(&working_dir)? {
-            std::fs::remove_dir_all(&working_dir)?;
-            info!(target: LOG_TARGET_APP_LOGIC, "Removed tor data directory");
+    std::fs::create_dir_all(&working_dir)?;
+
+    // Remove stale lock and transient auth files from previous runs without discarding persistent guards or state
+    for file in ["lock", "control_auth_cookie"] {
+        let p = working_dir.join(file);
+        if p.exists() {
+            let _ = std::fs::remove_file(p);
         }
     }
-    std::fs::create_dir_all(&working_dir)?;
     Ok(working_dir)
 }
 
@@ -363,7 +364,24 @@ impl StatusMonitor for TorStatusMonitor {
         &self,
         _duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
-        fs::remove_dir_all(self.base_path.join("tor-data")).await?;
+        let tor_data = self.base_path.join("tor-data");
+        // On recovery, preserve 'state' (which stores persistent entry guards) and identity keys,
+        // and only remove transient lock/cookie or potentially corrupted cached consensus files.
+        if tor_data.exists() {
+            for entry in [
+                "cached-consensus",
+                "cached-descriptors",
+                "cached-descriptors.new",
+                "diff-cache",
+                "lock",
+                "control_auth_cookie",
+            ] {
+                let target = tor_data.join(entry);
+                if target.exists() {
+                    let _ = fs::remove_file(target).await;
+                }
+            }
+        }
 
         Ok(HandleUnhealthyResult::Continue)
     }
@@ -547,5 +565,31 @@ mod tests {
             });
             assert!(result.is_err(), "must reject {reply:?}");
         }
+    }
+
+    #[test]
+    fn test_prepare_tor_working_dir_preserves_persistent_state() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let tor_data = temp.path().join("tor-data");
+        std::fs::create_dir_all(&tor_data).expect("create tor-data");
+
+        // Simulate persistent state file with entry guards
+        let state_file = tor_data.join("state");
+        std::fs::write(&state_file, b"EntryGuard $1234567890\n").expect("write state");
+
+        // Simulate stale lock file from previous crash
+        let lock_file = tor_data.join("lock");
+        std::fs::write(&lock_file, b"1234\n").expect("write lock");
+
+        let working_dir = prepare_tor_working_dir(temp.path(), true).expect("prepare");
+        assert_eq!(working_dir, tor_data);
+
+        // State file must be preserved
+        assert!(state_file.exists());
+        let content = std::fs::read_to_string(&state_file).expect("read state");
+        assert_eq!(content, "EntryGuard $1234567890\n");
+
+        // Stale lock must be removed
+        assert!(!lock_file.exists());
     }
 }
