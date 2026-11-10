@@ -19,36 +19,42 @@ import { clear, readText, writeText } from '@tauri-apps/plugin-clipboard-manager
  */
 
 /**
- * Raised when neither the webview Clipboard API nor the Tauri plugin could
- * complete a clipboard operation. It carries both underlying failures so a
- * caller (or a log line) can tell which path failed, instead of only seeing
- * whichever error happened to surface last.
+ * Raised when neither the webview Clipboard API, the legacy execCommand copy
+ * nor the Tauri plugin could complete a clipboard operation. It carries every
+ * underlying failure so a caller (or a log line) can tell which path failed,
+ * instead of only seeing whichever error happened to surface last.
  */
 export class ClipboardUnavailableError extends Error {
     readonly pluginError?: unknown;
     readonly webviewError?: unknown;
+    readonly execCommandError?: unknown;
 
-    constructor(message: string, errors?: { pluginError?: unknown; webviewError?: unknown }) {
+    constructor(
+        message: string,
+        errors?: { pluginError?: unknown; webviewError?: unknown; execCommandError?: unknown }
+    ) {
         super(message);
         this.name = 'ClipboardUnavailableError';
         this.pluginError = errors?.pluginError;
         this.webviewError = errors?.webviewError;
+        this.execCommandError = errors?.execCommandError;
     }
 }
 
 /**
  * Legacy synchronous copy through a temporary offscreen textarea.
  *
- * Returns true when the copy landed. Used as a middle fallback for writes
- * that arrive after transient user activation has expired (e.g. after an
- * async PIN prompt or IPC roundtrip): `navigator.clipboard.writeText`
- * rejects those, while the synchronous command still works from a focused
- * document. Restores the previous selection and focus so the copy leaves no
- * trace in the UI.
+ * Returns null when the copy landed, otherwise the reason it did not, so the
+ * caller can report why this fallback failed instead of dropping the cause.
+ * Used as a middle fallback for writes that arrive after transient user
+ * activation has expired (e.g. after an async PIN prompt or IPC roundtrip):
+ * `navigator.clipboard.writeText` rejects those, while the synchronous
+ * command still works from a focused document. Restores the previous
+ * selection and focus so the copy leaves no trace in the UI.
  */
-function execCommandCopy(text: string): boolean {
+function execCommandCopy(text: string): string | null {
     if (typeof document === 'undefined' || typeof document.execCommand !== 'function' || !document.body) {
-        return false;
+        return 'document.execCommand is unavailable';
     }
     const area = document.createElement('textarea');
     area.value = text;
@@ -68,9 +74,12 @@ function execCommandCopy(text: string): boolean {
     try {
         area.focus({ preventScroll: true });
         area.select();
-        return document.execCommand('copy');
-    } catch {
-        return false;
+        if (!document.execCommand('copy')) {
+            return 'document.execCommand("copy") returned false';
+        }
+        return null;
+    } catch (e) {
+        return e instanceof Error ? e.message : String(e);
     } finally {
         document.body.removeChild(area);
         if (selection) {
@@ -105,14 +114,23 @@ export async function writeClipboardText(text: string): Promise<void> {
     // The async Clipboard API needs transient user activation, which may have
     // expired by the time an async step (PIN prompt, IPC roundtrip) finishes.
     // Try the synchronous legacy copy before the native plugin, which has no
-    // path at all under Wayland Flatpak.
-    if (text.length > 0 && execCommandCopy(text)) {
-        return;
+    // path at all under Wayland Flatpak. Keep its failure reason: when every
+    // path fails, the typed error below reports all three causes.
+    let execCommandError: unknown;
+    if (text.length > 0) {
+        execCommandError = execCommandCopy(text);
+        if (!execCommandError) {
+            return;
+        }
     }
     try {
         await writeText(text);
     } catch (pluginError) {
-        throw new ClipboardUnavailableError('Could not write to the clipboard', { pluginError, webviewError });
+        throw new ClipboardUnavailableError('Could not write to the clipboard', {
+            pluginError,
+            webviewError,
+            execCommandError,
+        });
     }
 }
 

@@ -82,8 +82,12 @@ describe('clipboard', () => {
             expect(pluginWriteText).toHaveBeenCalledWith('seed words');
         });
 
-        it('rejects with a typed error carrying both failures when both paths fail', async () => {
+        it('rejects with a typed error carrying all three failures when every path fails', async () => {
             stubWebviewClipboard({ writeText: vi.fn().mockRejectedValue(new Error('denied')) });
+            Object.defineProperty(document, 'execCommand', {
+                value: vi.fn().mockReturnValue(false),
+                configurable: true,
+            });
             pluginWriteText.mockRejectedValue(new Error('X11 server connection timed out'));
 
             try {
@@ -94,6 +98,23 @@ describe('clipboard', () => {
                 expect((e as ClipboardUnavailableError).message).toBe('Could not write to the clipboard');
                 expect((e as ClipboardUnavailableError).pluginError).toBeInstanceOf(Error);
                 expect((e as ClipboardUnavailableError).webviewError).toBeInstanceOf(Error);
+                expect((e as ClipboardUnavailableError).execCommandError).toBe(
+                    'document.execCommand("copy") returned false'
+                );
+            }
+        });
+
+        it('reports the legacy copy as unavailable when execCommand is missing', async () => {
+            stubWebviewClipboard({ writeText: vi.fn().mockRejectedValue(new Error('denied')) });
+            Object.defineProperty(document, 'execCommand', { value: undefined, configurable: true });
+            pluginWriteText.mockRejectedValue(new Error('X11 server connection timed out'));
+
+            try {
+                await writeClipboardText('x');
+                expect.unreachable('write should have thrown');
+            } catch (e) {
+                expect(e).toBeInstanceOf(ClipboardUnavailableError);
+                expect((e as ClipboardUnavailableError).execCommandError).toBe('document.execCommand is unavailable');
             }
         });
     });
