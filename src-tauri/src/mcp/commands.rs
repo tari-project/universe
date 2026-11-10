@@ -104,6 +104,11 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
     ConfigMcp::update_field(ConfigMcpContent::set_port, port)
         .await
         .map_err(|e| e.to_string())?;
+
+    // Emit before the restart: if the new port is already taken the restart fails, and the panel
+    // still has to show which port is configured next to the error.
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
+
     // Restart if currently running so the new port takes effect
     let content = ConfigMcp::content().await;
     if *content.enabled() {
@@ -111,7 +116,6 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
             .await
             .map_err(|e| e.to_string())?;
     }
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 

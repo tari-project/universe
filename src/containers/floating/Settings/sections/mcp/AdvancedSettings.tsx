@@ -10,14 +10,18 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
+import { setMcpPortError, useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
+import PortErrorMessage from './PortErrorMessage';
+import { MCP_PORT_MAX, MCP_PORT_MIN, parsePortError, validatePortInput } from './portErrors';
 
-const PortInput = styled.input`
+const PortInput = styled.input<{ $invalid?: boolean }>`
     width: 90px;
     font-size: 14px;
     height: 32px;
-    border: 1px solid ${({ theme }) => theme.colorsAlpha.darkAlpha[10]};
+    border: 1px solid
+        ${({ theme, $invalid }) => ($invalid ? theme.palette.error.main : theme.colorsAlpha.darkAlpha[10])};
     background-color: ${({ theme }) => theme.palette.background.default};
     border-radius: 8px;
     padding: 4px 8px;
@@ -37,6 +41,7 @@ export default function AdvancedSettings() {
     const readTier = useConfigMcpStore((s) => s.read_tier_enabled);
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
+    const portError = useMcpStore((s) => s.portError);
     const [portValue, setPortValue] = useState(String(storePort));
 
     useEffect(() => {
@@ -44,17 +49,31 @@ export default function AdvancedSettings() {
     }, [storePort]);
 
     const commitPort = useCallback(async () => {
-        const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
+        const inputError = validatePortInput(portValue);
+        if (inputError) {
+            // Keep what the user typed so the invalid value is visible next to the error
+            // instead of silently snapping back to the stored port.
+            setMcpPortError(inputError);
+            return;
+        }
+
+        const num = Number(portValue.trim());
+        if (num === storePort) {
+            setMcpPortError(null);
             setPortValue(String(storePort));
             return;
         }
-        if (num === storePort) return;
+
+        setMcpPortError(null);
         try {
             await invoke('set_mcp_port', { port: num });
+            setPortValue(String(num));
         } catch (e) {
             console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
+            // Leave the attempted port in the field: the server did not move to it, but the user
+            // needs to see what was rejected before picking another one.
+            setPortValue(String(num));
+            setMcpPortError(parsePortError(e, num));
         }
     }, [portValue, storePort]);
 
@@ -80,13 +99,16 @@ export default function AdvancedSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('mcp.advanced.port')}</Typography>
                     </SettingsGroupTitle>
+                    <PortErrorMessage error={portError} />
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <PortInput
                         type="number"
-                        min={1024}
-                        max={65535}
+                        min={MCP_PORT_MIN}
+                        max={MCP_PORT_MAX}
                         data-testid="mcp-port-input"
+                        aria-invalid={portError !== null}
+                        $invalid={portError !== null}
                         value={portValue}
                         onChange={(e) => setPortValue(e.target.value)}
                         onBlur={commitPort}
