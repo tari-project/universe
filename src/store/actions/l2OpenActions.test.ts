@@ -6,7 +6,7 @@ import { useSecurityStore } from '../useSecurityStore.ts';
 import { useUIStore } from '../useUIStore.ts';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
-import { createPinAndOpenL2, openL2 } from './l2OpenActions';
+import { cancelOpenL2Wait, createPinAndOpenL2, openL2 } from './l2OpenActions';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 vi.mock('@tauri-apps/api/window', () => ({
@@ -30,8 +30,10 @@ const serve = (before: L2WalletState, command?: string, after = openState, fail?
 
 describe('openL2', () => {
     beforeEach(() => {
+        cancelOpenL2Wait();
         vi.mocked(invoke).mockReset();
         useL2WalletStore.setState({ ...initialState }, true);
+        useWalletStore.setState({ is_pin_locked: undefined });
         useSecurityStore.setState({ modal: null });
         useUIStore.setState({ l2Open: false });
         useToastStore.setState({ toasts: [] });
@@ -42,6 +44,38 @@ describe('openL2', () => {
         await openL2();
 
         expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        [true, null, true, 2],
+        [false, 'l2_pin_required', false, 0],
+    ] as const)(
+        'waits when PIN state is unknown and resolves when pin_locked arrives as %s',
+        async (resolvedPinState, expectedModal, expectedOpen, expectedInvokeCalls) => {
+            serve(lockedState, 'unlock_l2_wallet');
+            const pending = openL2();
+
+            expect(useSecurityStore.getState().modal).toBeNull();
+            expect(invoke).not.toHaveBeenCalled();
+
+            useWalletStore.setState({ is_pin_locked: resolvedPinState });
+            await pending;
+
+            expect(useSecurityStore.getState().modal).toBe(expectedModal);
+            expect(useUIStore.getState().l2Open).toBe(expectedOpen);
+            expect(invoke).toHaveBeenCalledTimes(expectedInvokeCalls);
+        }
+    );
+
+    it('aborts cleanly if cancelOpenL2Wait is called before pin_locked arrives', async () => {
+        const pending = openL2();
+        cancelOpenL2Wait();
+        await pending;
+
+        useWalletStore.setState({ is_pin_locked: false });
+        expect(useSecurityStore.getState().modal).toBeNull();
         expect(useUIStore.getState().l2Open).toBe(false);
         expect(invoke).not.toHaveBeenCalled();
     });

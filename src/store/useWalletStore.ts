@@ -33,7 +33,9 @@ export interface WalletStoreState {
         progress: number;
         is_initial_scan_complete: boolean;
     };
-    is_pin_locked: boolean;
+    // Undefined until the backend emits the persisted `pin_locked` event from ConfigWallet,
+    // preventing UI consumers from treating an uninitialized store as "no PIN configured".
+    is_pin_locked: boolean | undefined;
     is_seed_backed_up: boolean;
 }
 
@@ -59,7 +61,7 @@ export const initialState: WalletStoreState = {
         progress: 0,
         is_initial_scan_complete: false,
     },
-    is_pin_locked: false,
+    is_pin_locked: undefined,
     is_seed_backed_up: false,
 };
 
@@ -75,15 +77,21 @@ export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()(
     },
 }));
 
+const SCAN_KEYS: (keyof WalletScanningProgressUpdatePayload)[] = [
+    'scanned_height',
+    'total_height',
+    'progress',
+    'is_initial_scan_complete',
+];
+
+const isSameScanningProgress = (
+    prev: WalletStoreState['wallet_scanning'],
+    next: WalletScanningProgressUpdatePayload
+): boolean => SCAN_KEYS.every((key) => prev[key] === next[key]);
+
 export const updateWalletScanningProgress = (payload: WalletScanningProgressUpdatePayload) => {
     useWalletStore.setState((c) => {
-        const prev = c.wallet_scanning;
-        if (
-            prev.scanned_height === payload.scanned_height &&
-            prev.total_height === payload.total_height &&
-            prev.progress === payload.progress &&
-            prev.is_initial_scan_complete === payload.is_initial_scan_complete
-        ) {
+        if (isSameScanningProgress(c.wallet_scanning, payload)) {
             return c;
         }
         return {

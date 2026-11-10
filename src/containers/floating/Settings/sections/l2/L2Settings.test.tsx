@@ -108,6 +108,16 @@ describe('L2Settings', () => {
         expect(invoke).not.toHaveBeenCalled();
     });
 
+    it('hides the PIN-required prompt while PIN state is not yet known', () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(enabledState);
+        render(<L2Settings />);
+
+        expect(screen.queryByTestId('l2-settings-pin-required')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('l2-settings-account')).not.toBeInTheDocument();
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
     it('offers Enable Layer 2 when a PIN is set but L2 is off', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         serve(initialState);

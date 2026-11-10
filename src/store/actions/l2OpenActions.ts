@@ -9,6 +9,40 @@ import { handleL2WalletStateUpdate, PIN_CANCELLED_RE } from './l2WalletStoreActi
 import { setL2Open } from './uiStoreActions.ts';
 
 let opening = false;
+let cancelPendingPinWait: (() => void) | null = null;
+
+// Subscribes to `useWalletStore` until the backend emits a boolean `pin_locked` value.
+// Returns `undefined` if cancelled before the backend event arrives.
+export const waitForPinState = (): Promise<boolean | undefined> => {
+    const current = useWalletStore.getState().is_pin_locked;
+    if (current !== undefined) {
+        return Promise.resolve(current);
+    }
+    return new Promise<boolean | undefined>((resolve) => {
+        const settle = (value: boolean | undefined) => {
+            cancelPendingPinWait = null;
+            unsubscribe();
+            resolve(value);
+        };
+        const unsubscribe = useWalletStore.subscribe((state) => {
+            if (state.is_pin_locked !== undefined) {
+                settle(state.is_pin_locked);
+            }
+        });
+        cancelPendingPinWait = () => settle(undefined);
+
+        // Guard against a state transition occurring between the initial read and subscription registration.
+        const latest = useWalletStore.getState().is_pin_locked;
+        if (latest !== undefined) {
+            settle(latest);
+        }
+    });
+};
+
+// Cancels an in-flight `openL2` call that is still waiting for the backend `pin_locked` event.
+export const cancelOpenL2Wait = () => {
+    cancelPendingPinWait?.();
+};
 
 /** Runs a backend command that asks for the PIN and opens L2, then shows the panel. */
 const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable') => {
@@ -32,10 +66,16 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
 /**
  * The sidebar's way into L2. An open wallet just shows the panel. Without a PIN the user is
  * asked to set one first; otherwise the PIN prompt opens straight away, and the panel only
- * once the wallet is open.
+ * once the wallet is open. When the backend has not yet emitted `pin_locked`, waits for the
+ * authoritative PIN state before deciding which flow to run.
  */
 export const openL2 = async () => {
-    if (!useWalletStore.getState().is_pin_locked) {
+    if (opening || cancelPendingPinWait) return;
+    const isPinLocked = await waitForPinState();
+    if (isPinLocked === undefined) {
+        return;
+    }
+    if (!isPinLocked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;
     }

@@ -27,7 +27,8 @@ export const PinMarkup = () => {
             });
     }, []);
 
-    return !isPinLocked ? (
+    // Render the setup prompt only when the backend has confirmed no PIN is configured (`false`).
+    return isPinLocked === false ? (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
                 <Typography variant="h6" style={{ textTransform: 'uppercase' }}>

@@ -15,32 +15,39 @@ const fetchL2State = () => invoke<L2WalletState>('l2_get_state').then(handleL2Wa
 
 const promptStyle = { justifyContent: 'center', alignItems: 'center', gap: 12, textAlign: 'center' } as const;
 
-export default function L2WalletCard() {
-    const { t } = useTranslation('wallet');
-    const hasPin = useWalletStore((s) => s.is_pin_locked);
-    const enabled = useL2WalletStore((s) => s.enabled);
-    const locked = useL2WalletStore((s) => s.locked);
-    const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
-    const account = useL2WalletStore(selectL2Account);
-    const preLaunch = useIsL2PreLaunch();
-    const open = hasPin && enabled && !locked;
+const isWalletReadyToRender = (open: boolean, hasAccount: boolean, preLaunch: boolean): boolean =>
+    open && (hasAccount || preLaunch);
 
-    // Events keep the store current; this catches up with whatever was sent before the card opened.
+// Synchronizes backend L2 state once a PIN is confirmed and closes the card if the wallet locks again.
+function useSyncL2CardState(pinLocked: boolean | undefined, open: boolean, seedChangePending: boolean) {
+    const hasPin = pinLocked === true;
+
     useEffect(() => {
         if (!hasPin) return;
         fetchL2State().catch((e) => console.warn('Could not load L2 wallet state:', e));
     }, [hasPin]);
 
-    // The sidebar only shows the card once the wallet is open. If it locks again (a wallet
-    // restart), close the card and let the sidebar ask for the PIN next time. A seed change
-    // reopens the wallet itself, so the card waits for it.
     useEffect(() => {
+        if (pinLocked === undefined) return;
         if (!open && !seedChangePending) setL2Open(false);
-    }, [open, seedChangePending]);
+    }, [pinLocked, open, seedChangePending]);
+}
+
+export default function L2WalletCard() {
+    const { t } = useTranslation('wallet');
+    const pinLocked = useWalletStore((s) => s.is_pin_locked);
+    const enabled = useL2WalletStore((s) => s.enabled);
+    const locked = useL2WalletStore((s) => s.locked);
+    const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
+    const account = useL2WalletStore(selectL2Account);
+    const preLaunch = useIsL2PreLaunch();
+    const open = pinLocked === true && enabled && !locked;
+
+    useSyncL2CardState(pinLocked, open, seedChangePending);
 
     // Before launch there is no L2 account to wait for (recovery can't reach the indexer),
     // so the wallet shows a placeholder that can still burn to the default claim key.
-    if (!open || (!account && !preLaunch)) {
+    if (!isWalletReadyToRender(open, Boolean(account), preLaunch)) {
         return (
             <WalletWrapper style={promptStyle} data-testid="l2-loading">
                 <Typography>{t('l2.loading')}</Typography>

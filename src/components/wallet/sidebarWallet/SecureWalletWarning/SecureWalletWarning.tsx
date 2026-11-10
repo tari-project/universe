@@ -26,8 +26,8 @@ export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Pr
     const seedBackedUp = useWalletStore((s) => s.is_seed_backed_up);
     const walletModuleInitialized = useSetupStore(setupStoreSelectors.isWalletModuleInitialized);
 
-    if (!walletModuleInitialized) {
-        // Don't show anything until the wallet module is initialized
+    if (!walletModuleInitialized || pinLocked === undefined) {
+        // Wait until both the wallet module and persisted PIN state are loaded before showing a warning
         return null;
     }
 

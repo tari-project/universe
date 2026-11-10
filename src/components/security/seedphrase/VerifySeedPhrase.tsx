@@ -16,6 +16,7 @@ import PillCloseIcon from '@app/assets/icons/PillCloseIcon.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { useSecurityStore, useWalletStore } from '@app/store';
+import { waitForPinState } from '@app/store/actions/l2OpenActions.ts';
 
 interface VerifySeedPhraseProps {
     words: string[];
@@ -66,8 +67,8 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
         await invoke('set_seed_backed_up').then(() => {
             setModal(null);
         });
-        const isPinLocked = useWalletStore.getState().is_pin_locked;
-        if (!isPinLocked) {
+        const isPinLocked = useWalletStore.getState().is_pin_locked ?? (await waitForPinState());
+        if (isPinLocked === false) {
             await invoke('create_pin');
         }
     };

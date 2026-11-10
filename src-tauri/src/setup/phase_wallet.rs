@@ -46,6 +46,7 @@ use crate::{
 };
 use anyhow::Error;
 use log::info;
+use std::path::Path;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
@@ -71,6 +72,65 @@ pub struct WalletSetupPhase {
     #[allow(dead_code)]
     setup_features: SetupFeaturesList,
     timeout_watcher: TimeoutWatcher,
+}
+
+impl WalletSetupPhase {
+    // Removes obsolete console wallet sidecar storage when upgrading across schema nonces
+    // while preserving the embedded Minotari SQLite database.
+    async fn migrate_legacy_wallet_data(data_dir: &Path) {
+        let latest_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
+        if latest_nonce >= WALLET_MIGRATION_NONCE {
+            return;
+        }
+        info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "Wallet migration required(Nonce {latest_nonce} => {WALLET_MIGRATION_NONCE})"
+        );
+        let legacy_wallet_dir = data_dir
+            .join("wallet")
+            .join(Network::get_current().to_string().to_lowercase());
+        match tokio::fs::remove_dir_all(&legacy_wallet_dir).await {
+            Ok(()) => info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Removed legacy console wallet data folder {}",
+                legacy_wallet_dir.display()
+            ),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => log::warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Failed to remove legacy console wallet data folder {}: {e}",
+                legacy_wallet_dir.display()
+            ),
+        }
+        if let Err(e) = ConfigWallet::update_field(
+            ConfigWalletContent::set_wallet_migration_nonce,
+            WALLET_MIGRATION_NONCE,
+        )
+        .await
+        {
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to update wallet migration nonce: {e}");
+        }
+    }
+
+    // Initializes the embedded Minotari wallet and starts background block scanning
+    // when the user is configured to use the internal wallet rather than an external address.
+    async fn initialize_minotari_step(app_handle: AppHandle) -> Result<(), Error> {
+        MinotariWalletManager::load_app_handle(app_handle).await;
+        if !InternalWallet::is_internal().await {
+            return Ok(());
+        }
+        info!(target: LOG_TARGET_APP_LOGIC, "============================ Setting up Minotari Wallet");
+        if let Err(e) = MinotariWalletManager::import_view_key().await {
+            info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Minotari wallet account not imported (already present?): {e}"
+            );
+        }
+        MinotariWalletManager::initialize_wallet().await?;
+        info!(target: LOG_TARGET_APP_LOGIC, "============================ Scanning blocks for Minotari Wallet");
+        MinotariWalletManager::initialize_blockchain_scanning().await?;
+        Ok(())
+    }
 }
 
 impl SetupPhaseImpl for WalletSetupPhase {
@@ -155,53 +215,18 @@ impl SetupPhaseImpl for WalletSetupPhase {
     async fn setup_inner(&self) -> Result<(), Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, _config_dir, _log_dir) = self.get_app_dirs()?;
-
         let binary_resolver = BinaryResolver::current();
 
-        let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
-        if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
-            info!(target: LOG_TARGET_APP_LOGIC, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
-            // The console wallet sidecar is gone; drop its data folder, leave the minotari DB alone.
-            let legacy_wallet_dir = data_dir
-                .join("wallet")
-                .join(Network::get_current().to_string().to_lowercase());
-            match tokio::fs::remove_dir_all(&legacy_wallet_dir).await {
-                Ok(()) => {
-                    info!(target: LOG_TARGET_APP_LOGIC, "Removed legacy console wallet data folder {}", legacy_wallet_dir.display())
-                }
-                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-                Err(e) => {
-                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove legacy console wallet data folder {}: {e}", legacy_wallet_dir.display())
-                }
-            }
-            if let Err(e) = ConfigWallet::update_field(
-                ConfigWalletContent::set_wallet_migration_nonce,
-                WALLET_MIGRATION_NONCE,
-            )
-            .await
-            {
-                log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to update wallet migration nonce: {e}");
-            }
-        }
+        Self::migrate_legacy_wallet_data(&data_dir).await;
+
+        // Emit persisted PIN status from disk before starting L1/L2 wallet initialization
+        // so the UI can distinguish a PIN-protected wallet while setup steps are still running.
+        EventsEmitter::emit_pin_locked(PinManager::pin_locked().await).await;
 
         let app_handle_clone = self.get_app_handle().clone();
         progress_stepper
-            .complete_step(SetupStep::MinotariWallet, || async {
-                MinotariWalletManager::load_app_handle(app_handle_clone).await;
-                if InternalWallet::is_internal().await {
-                    // The account must exist before `initialize_wallet` looks it up by
-                    // address. `init_with_view_key` refuses an account that already
-                    // exists, which is the normal case after the first launch.
-                    info!(target: LOG_TARGET_APP_LOGIC, "============================ Setting up Minotari Wallet");
-                    if let Err(e) = MinotariWalletManager::import_view_key().await {
-                        info!(target: LOG_TARGET_APP_LOGIC, "Minotari wallet account not imported (already present?): {e}");
-                    }
-                    MinotariWalletManager::initialize_wallet().await?;
-                    info!(target: LOG_TARGET_APP_LOGIC, "============================ Scanning blocks for Minotari Wallet");
-                    MinotariWalletManager::initialize_blockchain_scanning().await?;
-                }
-
-                Ok(())
+            .complete_step(SetupStep::MinotariWallet, || {
+                Self::initialize_minotari_step(app_handle_clone)
             })
             .await?;
 

@@ -3,7 +3,7 @@ import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setL2Open, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { deactivateTapplet } from '@app/store/useTappletsStore.ts';
-import { openL2 } from '@app/store/actions/l2OpenActions.ts';
+import { cancelOpenL2Wait, openL2 } from '@app/store/actions/l2OpenActions.ts';
 
 export default function L2Button() {
     const { t } = useTranslation('wallet');
@@ -21,6 +21,7 @@ export default function L2Button() {
                     setShowTapplet(false);
                     deactivateTapplet();
                 } else if (l2Open) {
+                    cancelOpenL2Wait();
                     setL2Open(false);
                     return;
                 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { IoCheckmarkOutline } from 'react-icons/io5';
 import { QRCode } from 'react-qrcode-logo';
@@ -47,19 +48,9 @@ const FILTER_TYPES = ['all-activity', 'transactions', 'l2.filter.waiting-claims'
 
 const EMPTY_BALANCE = { revealed: 0, confidential: 0 };
 
-/** With no `account` it is the pre-launch wallet: zero balance, no activity, Send and Receive off,
- * and Burn claiming to the key the default account will get. */
-export default function L2Wallet({ account }: { account?: L2Account }) {
-    const { t } = useTranslation('wallet');
-    const [section, setSection] = useState('history');
-    const [filter, setFilter] = useState<string>('all-activity');
-    const hideBalance = useUIStore((s) => s.hideWalletBalance);
-    const { copyToClipboard, isCopied } = useCopyToClipboard();
-    // A burn spends L1 funds, so it waits on the L1 wallet like the L1 send does.
-    const isL1Scanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_complete);
-    const hasPin = useWalletStore((s) => s.is_pin_locked);
+// Derives the default L2 claim public key locally when no L2 account is available yet (pre-launch).
+function useDefaultClaimKey(account?: L2Account): string | undefined {
     const [defaultClaimKey, setDefaultClaimKey] = useState<string>();
-    const claimPublicKey = account ? account.public_key : defaultClaimKey;
 
     useEffect(() => {
         if (account) return;
@@ -74,51 +65,140 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
         };
     }, [account]);
 
+    return account ? account.public_key : defaultClaimKey;
+}
+
+function resolveAccountDisplayName(account: L2Account | undefined, t: TFunction): string {
+    if (!account || account.is_default) {
+        return t('l2.account-name');
+    }
+    return account.name || t('l2.title');
+}
+
+function formatL2Amount(value: number, hideBalance: boolean): string {
+    return hideBalance ? '*******' : formatNumber(value, FormatPreset.XTM_LONG);
+}
+
+function L2BalanceCard({
+    account,
+    isCopied,
+    onCopyAddress,
+}: {
+    account?: L2Account;
+    isCopied: boolean;
+    onCopyAddress: (address: string) => void;
+}) {
+    const { t } = useTranslation('wallet');
+    const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const { revealed, confidential } = account?.balance ?? EMPTY_BALANCE;
-    const xtr = (value: number) => (hideBalance ? '*******' : formatNumber(value, FormatPreset.XTM_LONG));
+    const totalFormatted = formatL2Amount(revealed + confidential, hideBalance);
+
+    return (
+        <DetailsCard $isScrolled={false}>
+            <AnimatedBG $col1="#2b1d5a" $col2="#4c2c8f" />
+            <Content>
+                <DetailsRow>
+                    <Name>{resolveAccountDisplayName(account, t)}</Name>
+                    {account && (
+                        <Actions>
+                            <ActionButton
+                                onClick={() => onCopyAddress(account.address)}
+                                title={account.address}
+                                data-testid="l2-copy-address"
+                            >
+                                {isCopied ? <IoCheckmarkOutline /> : <CopySVG />}
+                            </ActionButton>
+                        </Actions>
+                    )}
+                </DetailsRow>
+                <BottomContent>
+                    <BalanceWrapper
+                        data-testid="l2-balance"
+                        data-balance={hideBalance ? undefined : account?.balance.total}
+                    >
+                        <BalanceTextWrapper>
+                            {hideBalance ? <Hidden>{`*******`}</Hidden> : totalFormatted}
+                            <SuffixWrapper>{` TARI`}</SuffixWrapper>
+                        </BalanceTextWrapper>
+                        <BottomWrapper>
+                            <Typography>
+                                {t('l2.balance-split', {
+                                    revealed: formatL2Amount(revealed, hideBalance),
+                                    confidential: formatL2Amount(confidential, hideBalance),
+                                })}
+                            </Typography>
+                        </BottomWrapper>
+                    </BalanceWrapper>
+                </BottomContent>
+            </Content>
+        </DetailsCard>
+    );
+}
+
+function L2ReceiveModal({
+    address,
+    show,
+    isCopied,
+    onClose,
+    onCopyAddress,
+}: {
+    address: string;
+    show: boolean;
+    isCopied: boolean;
+    onClose: () => void;
+    onCopyAddress: (address: string) => void;
+}) {
+    const { t } = useTranslation('wallet');
+    return (
+        <TransactionModal show={show} title={t('l2.receive-title')} handleClose={onClose}>
+            <ReceiveWrapper>
+                <QRContainer>
+                    <QROutside>
+                        <QRSizer>
+                            <QRCode
+                                value={address}
+                                ecLevel="H"
+                                size={400}
+                                quietZone={20}
+                                qrStyle="dots"
+                                eyeRadius={12}
+                                style={{ width: '100%', height: '100%' }}
+                            />
+                        </QRSizer>
+                    </QROutside>
+                    <AddressContainer>
+                        <Label>{t('receive.label-address')}</Label>
+                        <AddressWrapper title={address}>{truncateMiddle(address, 10)}</AddressWrapper>
+                    </AddressContainer>
+                </QRContainer>
+                <CopyAddressButton onClick={() => onCopyAddress(address)} $isCopied={isCopied}>
+                    {isCopied ? t('receive.copy-address-success') : t('receive.copy-address')}
+                </CopyAddressButton>
+            </ReceiveWrapper>
+        </TransactionModal>
+    );
+}
+
+/** With no `account` it is the pre-launch wallet: zero balance, no activity, Send and Receive off,
+ * and Burn claiming to the key the default account will get. */
+export default function L2Wallet({ account }: { account?: L2Account }) {
+    const { t } = useTranslation('wallet');
+    const [section, setSection] = useState('history');
+    const [filter, setFilter] = useState<string>('all-activity');
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
+    // A burn spends L1 funds, so it waits on the L1 wallet like the L1 send does.
+    const isL1Scanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_complete);
+    const pinLocked = useWalletStore((s) => s.is_pin_locked);
+    const hasPin = pinLocked === true;
+    // Only display the "PIN required" hint when the backend has confirmed no PIN is configured,
+    // avoiding a premature warning while `is_pin_locked` is still `undefined`.
+    const pinHint = pinLocked === false ? t('burn.pin-required') : undefined;
+    const claimPublicKey = useDefaultClaimKey(account);
+    const canBurn = !isL1Scanning && hasPin && Boolean(claimPublicKey);
 
     return (
         <WalletWrapper style={{ minHeight: 0 }} data-testid="l2-wallet">
-            <DetailsCard $isScrolled={false}>
-                <AnimatedBG $col1="#2b1d5a" $col2="#4c2c8f" />
-                <Content>
-                    <DetailsRow>
-                        <Name>
-                            {!account || account.is_default ? t('l2.account-name') : account.name || t('l2.title')}
-                        </Name>
-                        {account && (
-                            <Actions>
-                                <ActionButton
-                                    onClick={() => copyToClipboard(account.address)}
-                                    title={account.address}
-                                    data-testid="l2-copy-address"
-                                >
-                                    {isCopied ? <IoCheckmarkOutline /> : <CopySVG />}
-                                </ActionButton>
-                            </Actions>
-                        )}
-                    </DetailsRow>
-                    <BottomContent>
-                        <BalanceWrapper
-                            data-testid="l2-balance"
-                            data-balance={hideBalance ? undefined : account?.balance.total}
-                        >
-                            <BalanceTextWrapper>
-                                {hideBalance ? <Hidden>{`*******`}</Hidden> : xtr(revealed + confidential)}
-                                <SuffixWrapper>{` TARI`}</SuffixWrapper>
-                            </BalanceTextWrapper>
-                            <BottomWrapper>
-                                <Typography>
-                                    {t('l2.balance-split', {
-                                        revealed: xtr(revealed),
-                                        confidential: xtr(confidential),
-                                    })}
-                                </Typography>
-                            </BottomWrapper>
-                        </BalanceWrapper>
-                    </BottomContent>
-                </Content>
-            </DetailsCard>
+            <L2BalanceCard account={account} isCopied={isCopied} onCopyAddress={copyToClipboard} />
 
             <TabsWrapper>
                 <FilterSelect types={FILTER_TYPES} value={filter} onChange={setFilter} testId="l2-history-filter" />
@@ -142,13 +222,13 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
                         {t('tabs.receive')}
                     </NavButton>
                     {/* The disabled button ignores the pointer, so the hint sits on a wrapper. */}
-                    <BurnHint title={hasPin ? undefined : t('burn.pin-required')}>
+                    <BurnHint title={pinHint}>
                         <NavButton
                             $isActive={section === 'burn'}
                             aria-selected={section === 'burn'}
                             onClick={() => setSection('burn')}
-                            disabled={isL1Scanning || !hasPin || !claimPublicKey}
-                            aria-label={hasPin ? undefined : t('burn.pin-required')}
+                            disabled={!canBurn}
+                            aria-label={pinHint}
                             data-testid="l2-burn-button"
                         >
                             {t('tabs.burn')}
@@ -172,38 +252,13 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
             )}
 
             {account && (
-                <TransactionModal
+                <L2ReceiveModal
+                    address={account.address}
                     show={section === 'receive'}
-                    title={t('l2.receive-title')}
-                    handleClose={() => setSection('history')}
-                >
-                    <ReceiveWrapper>
-                        <QRContainer>
-                            <QROutside>
-                                <QRSizer>
-                                    <QRCode
-                                        value={account.address}
-                                        ecLevel="H"
-                                        size={400}
-                                        quietZone={20}
-                                        qrStyle="dots"
-                                        eyeRadius={12}
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
-                                </QRSizer>
-                            </QROutside>
-                            <AddressContainer>
-                                <Label>{t('receive.label-address')}</Label>
-                                <AddressWrapper title={account.address}>
-                                    {truncateMiddle(account.address, 10)}
-                                </AddressWrapper>
-                            </AddressContainer>
-                        </QRContainer>
-                        <CopyAddressButton onClick={() => copyToClipboard(account.address)} $isCopied={isCopied}>
-                            {isCopied ? t('receive.copy-address-success') : t('receive.copy-address')}
-                        </CopyAddressButton>
-                    </ReceiveWrapper>
-                </TransactionModal>
+                    isCopied={isCopied}
+                    onClose={() => setSection('history')}
+                    onCopyAddress={copyToClipboard}
+                />
             )}
         </WalletWrapper>
     );
