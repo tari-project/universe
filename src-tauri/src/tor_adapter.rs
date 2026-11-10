@@ -58,6 +58,8 @@ pub(crate) struct TorAdapter {
     active_control_port: AtomicU16,
     cookie_path: std::sync::RwLock<Option<PathBuf>>,
     status_broadcast: watch::Sender<TorStatus>,
+    restart_requested: watch::Sender<u64>,
+    restart_generation: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
 fn prepare_tor_working_dir(data_dir: &Path, is_first_start: bool) -> Result<PathBuf, Error> {
@@ -74,7 +76,10 @@ fn prepare_tor_working_dir(data_dir: &Path, is_first_start: bool) -> Result<Path
 }
 
 impl TorAdapter {
-    pub fn new(status_broadcast: watch::Sender<TorStatus>) -> Self {
+    pub fn new(
+        status_broadcast: watch::Sender<TorStatus>,
+        restart_requested: watch::Sender<u64>,
+    ) -> Self {
         let port = PortAllocator::new().assign_port_with_fallback();
         let config = TorConfig::default();
         let initial_control_port = config.control_port;
@@ -86,6 +91,8 @@ impl TorAdapter {
             active_control_port: AtomicU16::new(initial_control_port),
             cookie_path: std::sync::RwLock::new(None),
             status_broadcast,
+            restart_requested,
+            restart_generation: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
     }
 
@@ -308,6 +315,8 @@ impl ProcessAdapter for TorAdapter {
                 control_port,
                 status_broadcast: self.status_broadcast.clone(),
                 base_path: data_dir,
+                restart_requested: self.restart_requested.clone(),
+                restart_generation: self.restart_generation.clone(),
             },
         ))
     }
@@ -326,6 +335,8 @@ pub(crate) struct TorStatusMonitor {
     pub control_port: u16,
     status_broadcast: watch::Sender<TorStatus>,
     base_path: PathBuf,
+    restart_requested: watch::Sender<u64>,
+    restart_generation: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl TorStatusMonitor {
@@ -364,6 +375,8 @@ impl StatusMonitor for TorStatusMonitor {
         _duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         fs::remove_dir_all(self.base_path.join("tor-data")).await?;
+        let generation = self.restart_generation.fetch_add(1, Ordering::Relaxed) + 1;
+        let _ = self.restart_requested.send_replace(generation);
 
         Ok(HandleUnhealthyResult::Continue)
     }
@@ -420,7 +433,8 @@ mod tests {
     fn test_spawn_args_require_cookie_authentication_under_tor_data() {
         let temp = tempfile::tempdir().expect("test setup succeeds");
         let (tx, _rx) = watch::channel(TorStatus::default());
-        let adapter = TorAdapter::new(tx);
+        let (restart_tx, _restart_rx) = watch::channel(0);
+        let adapter = TorAdapter::new(tx, restart_tx);
         let (process, _) = adapter
             .spawn_inner(
                 temp.path().to_path_buf(),
@@ -508,7 +522,8 @@ mod tests {
         });
 
         let (tx, _rx) = watch::channel(TorStatus::default());
-        let adapter = TorAdapter::new(tx);
+        let (restart_tx, _restart_rx) = watch::channel(0);
+        let adapter = TorAdapter::new(tx, restart_tx);
         adapter.active_control_port.store(port, Ordering::Relaxed);
         let temp = tempfile::tempdir().expect("test setup succeeds");
         let cookie_path = temp.path().join("cookie");
@@ -528,7 +543,8 @@ mod tests {
         for reply in ["515 Authentication failed\r\n", "250 OK unexpected\r\n", ""] {
             let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
             let (tx, _rx) = watch::channel(TorStatus::default());
-            let adapter = TorAdapter::new(tx);
+            let (restart_tx, _restart_rx) = watch::channel(0);
+            let adapter = TorAdapter::new(tx, restart_tx);
             adapter.active_control_port.store(
                 listener.local_addr().expect("addr").port(),
                 Ordering::Relaxed,
@@ -547,5 +563,38 @@ mod tests {
             });
             assert!(result.is_err(), "must reject {reply:?}");
         }
+    }
+
+    #[tokio::test]
+    async fn handle_unhealthy_increments_restart_generation_and_notifies() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let tor_data = temp.path().join("tor-data");
+        std::fs::create_dir_all(&tor_data).expect("create tor-data");
+        std::fs::write(tor_data.join("lock"), b"lock").expect("write lock");
+
+        let (status_tx, _status_rx) = watch::channel(TorStatus::default());
+        let (restart_tx, restart_rx) = watch::channel(0);
+        let adapter = TorAdapter::new(status_tx, restart_tx);
+        let (_, monitor) = adapter
+            .spawn_inner(
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().join("tor"),
+                false,
+            )
+            .expect("spawn_inner succeeds");
+
+        assert_eq!(*restart_rx.borrow(), 0);
+        let res = monitor
+            .handle_unhealthy(Duration::from_secs(120))
+            .await
+            .expect("handle_unhealthy");
+        assert!(matches!(res, HandleUnhealthyResult::Continue));
+        assert!(
+            !tor_data.exists(),
+            "tor-data must be cleared on unhealthy restart"
+        );
+        assert_eq!(*restart_rx.borrow(), 1, "restart generation must increment");
     }
 }

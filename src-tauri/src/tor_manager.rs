@@ -38,6 +38,7 @@ const STARTUP_TIMEOUT: u64 = 180; // 3mins
 pub(crate) struct TorManager {
     watcher: Arc<RwLock<ProcessWatcher<TorAdapter>>>,
     status_watch_rx: watch::Receiver<TorStatus>,
+    restart_requested_rx: watch::Receiver<u64>,
 }
 
 impl Clone for TorManager {
@@ -45,6 +46,7 @@ impl Clone for TorManager {
         Self {
             watcher: self.watcher.clone(),
             status_watch_rx: self.status_watch_rx.clone(),
+            restart_requested_rx: self.restart_requested_rx.clone(),
         }
     }
 }
@@ -55,7 +57,8 @@ impl TorManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         let status_watch_rx = status_broadcast.subscribe();
-        let adapter = TorAdapter::new(status_broadcast);
+        let (restart_requested, restart_requested_rx) = watch::channel(0);
+        let adapter = TorAdapter::new(status_broadcast, restart_requested);
         let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
         process_watcher.expected_startup_time = Duration::from_secs(STARTUP_TIMEOUT);
         process_watcher.health_timeout = Duration::from_secs(9);
@@ -64,6 +67,7 @@ impl TorManager {
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             status_watch_rx,
+            restart_requested_rx,
         }
     }
 
@@ -148,6 +152,10 @@ impl TorManager {
         }
 
         Ok(())
+    }
+
+    pub fn subscribe_restart_requested(&self) -> watch::Receiver<u64> {
+        self.restart_requested_rx.clone()
     }
 
     pub async fn get_tor_config(&self) -> TorConfig {
