@@ -69,7 +69,7 @@
 
 use super::internal_wallet::{
     InternalWallet, LegacyWalletConfig, SEED_PIN_REQUIRED, SeedNeedsPin, TariAddressType,
-    decode_plain_seed, decrypt_legacy_tari_seed, previous_wallet_files,
+    decode_plain_seed, decrypt_legacy_tari_seed, modern_wallet_files, previous_wallet_files,
     seed_proves_recorded_address, wipe_and_remove_file,
 };
 use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -477,29 +477,33 @@ fn wipe_and_remove_file_unlinks_symlink_without_touching_target() {
 
 /// The address a wallet that silently replaced the legacy one would record. The gate compares the
 /// recorded strings, so this never has to decode.
-const OTHER_TARI_ADDRESS: &str = "a_different_wallet_address";
-
 #[test]
-fn legacy_config_is_kept_when_the_wallet_in_use_is_a_different_wallet() {
-    let details = sentinel_wallet_details();
+fn modern_wallet_files_reports_unreadable_and_backup() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let config_backup = dir.path().join("config_wallet.json.backup");
 
     assert_eq!(
-        super::internal_wallet::legacy_config_keep_reason(
-            OTHER_TARI_ADDRESS,
-            Some(&details.id),
-            Some(&details),
-        ),
-        Some("address_mismatch"),
-        "a legacy file describing another wallet is the only copy of that wallet's seed"
-    );
-    assert_eq!(
-        super::internal_wallet::legacy_config_keep_reason(
-            TEST_TARI_ADDRESS,
-            Some(&details.id),
-            Some(&details),
-        ),
+        modern_wallet_files(&config_backup),
         None,
-        "the legacy wallet is the wallet in use, so its file may be removed"
+        "a clean install has no modern wallet evidence"
+    );
+
+    std::fs::write(&config_backup, r#"{"tari_wallets":["abc123"]}"#).expect("write backup");
+    assert_eq!(
+        modern_wallet_files(&config_backup),
+        Some("config_backup"),
+        "a backup naming a wallet is evidence of a modern wallet"
+    );
+
+    std::fs::write(
+        dir.path().join("config_wallet.json.corrupt.1790000000"),
+        "\0",
+    )
+    .expect("write corrupt config");
+    assert_eq!(
+        modern_wallet_files(&config_backup),
+        Some("wallet_config_unreadable"),
+        "a moved aside config is evidence of a modern wallet"
     );
 }
 
