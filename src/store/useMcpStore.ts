@@ -36,9 +36,12 @@ export interface McpPendingTransaction {
 
 export type McpTxStatus = 'reviewing' | 'processing' | 'completed';
 
+export type McpPortError = { type: 'in-use'; port: number } | { type: 'out-of-range' };
+
 interface McpStoreState {
     serverRunning: boolean;
     serverPort: number | null;
+    portError: McpPortError | null;
     auditEntries: McpAuditEntry[];
     pendingTransaction: McpPendingTransaction | null;
     mcpTxStatus: McpTxStatus;
@@ -47,6 +50,7 @@ interface McpStoreState {
 const initialState: McpStoreState = {
     serverRunning: false,
     serverPort: null,
+    portError: null,
     auditEntries: [],
     pendingTransaction: null,
     mcpTxStatus: 'reviewing',
@@ -57,7 +61,24 @@ export const useMcpStore = create<McpStoreState>()(() => ({
 }));
 
 export const setMcpServerStatus = (running: boolean, port: number | null) => {
-    useMcpStore.setState({ serverRunning: running, serverPort: port });
+    useMcpStore.setState((state) => ({
+        serverRunning: running,
+        serverPort: port,
+        portError: running ? null : state.portError,
+    }));
+};
+
+export const setMcpPortError = (portError: McpPortError | null) => {
+    useMcpStore.setState({ portError });
+};
+
+export const isMcpPortBindError = (err: unknown): boolean => {
+    const msg = String(err ?? '').toLowerCase();
+    return (
+        msg.includes('failed to bind to configured port') ||
+        msg.includes('address already in use') ||
+        msg.includes('addrinuse')
+    );
 };
 
 export const addMcpAuditEntry = (entry: McpAuditEntry) => {

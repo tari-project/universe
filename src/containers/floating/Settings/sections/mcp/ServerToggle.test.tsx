@@ -1,16 +1,19 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@app/test/test-utils';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
+import { invoke } from '@tauri-apps/api/core';
 import ServerToggle from './ServerToggle';
+import AdvancedSettings from './AdvancedSettings';
 
 describe('ServerToggle', () => {
     beforeEach(() => {
-        useConfigMcpStore.setState({ enabled: false });
-        useMcpStore.setState({ serverRunning: false, serverPort: null });
+        vi.clearAllMocks();
+        useConfigMcpStore.setState({ enabled: false, port: 4444 });
+        useMcpStore.setState({ serverRunning: false, serverPort: null, portError: null });
     });
 
     it('renders title', () => {
@@ -49,5 +52,27 @@ describe('ServerToggle', () => {
         useConfigMcpStore.setState({ enabled: false });
         render(<ServerToggle />);
         expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+
+    it('surfaces port-in-use error and Stopped state when enabling server fails due to occupied saved port', async () => {
+        vi.mocked(invoke).mockRejectedValueOnce(
+            'MCP server failed to bind to configured port 4444: Address already in use (os error 98).'
+        );
+        render(
+            <>
+                <ServerToggle />
+                <AdvancedSettings />
+            </>
+        );
+
+        const toggle = screen.getByTestId('mcp-server-toggle');
+        fireEvent.click(toggle);
+
+        await waitFor(() => {
+            expect(invoke).toHaveBeenCalledWith('set_mcp_enabled', { enabled: true });
+        });
+        expect(await screen.findByTestId('mcp-port-error')).toHaveTextContent('mcp.advanced.port-in-use');
+        expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-stopped');
+        expect((screen.getByTestId('mcp-port-input') as HTMLInputElement).value).toBe('4444');
     });
 });
