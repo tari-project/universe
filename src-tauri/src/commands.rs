@@ -526,6 +526,25 @@ pub async fn get_tor_config(
 }
 
 #[tauri::command]
+pub async fn refresh_tor_entry_guards(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+    let guards = state
+        .tor_manager
+        .get_entry_guards()
+        .await
+        .map_err(|e| e.to_string())?;
+    EventsEmitter::emit_tor_entry_guards(guards.clone()).await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "refresh_tor_entry_guards took too long: {:?}", timer.elapsed());
+    }
+    Ok(guards)
+}
+
+#[tauri::command]
 pub async fn get_airdrop_tokens(
     _window: tauri::Window,
     _app: tauri::AppHandle,
@@ -2407,7 +2426,7 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
 
 /*
  ********** TAPPLETS SECTION **********
-*/
+ */
 
 #[tauri::command]
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
