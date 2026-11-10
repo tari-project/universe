@@ -7543,7 +7543,7 @@ dependencies = [
 
 [[package]]
 name = "process-wrapper"
-version = "1.6.21"
+version = "1.6.23"
 dependencies = [
  "libc",
  "serde_json",
@@ -10120,7 +10120,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "1.6.21"
+version = "1.6.23"
 dependencies = [
  "anyhow",
  "async-trait",
