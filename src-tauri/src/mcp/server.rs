@@ -46,6 +46,10 @@ static LIFECYCLE: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 const SHUTDOWN_TIMEOUT_SECS: u64 = 5;
 
+/// The frontend translates `MCP_PORT_IN_USE:<port>`. The OS error text is not
+/// part of that contract — it is logged here, because it differs per platform.
+const PORT_IN_USE_MARKER: &str = "MCP_PORT_IN_USE";
+
 pub struct McpServerManager {
     server_handle: Option<JoinHandle<()>>,
     shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
@@ -122,14 +126,7 @@ impl McpServerManager {
             })?
         };
 
-        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
-        let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
-            anyhow::anyhow!(
-                "MCP server failed to bind to configured port {configured_port}: {e}. \
-                 Refusing to fall back to a random port for security reasons — \
-                 another process on the configured port could intercept bearer tokens."
-            )
-        })?;
+        let listener = bind_configured_port(configured_port).await?;
         info!(target: LOG_TARGET_APP_LOGIC, "MCP server bound to configured port {configured_port}");
 
         let bound_port = listener.local_addr()?.port();
@@ -244,6 +241,38 @@ impl McpServerManager {
     }
 }
 
+/// Bind exactly `configured_port`. A failure is logged with the port and the OS
+/// error and returned to the caller — the listener is never moved to a free port,
+/// because a process already bound there could read the bearer token.
+async fn bind_configured_port(
+    configured_port: u16,
+) -> Result<tokio::net::TcpListener, anyhow::Error> {
+    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
+    tokio::net::TcpListener::bind(addr)
+        .await
+        .map_err(|err| bind_error(configured_port, err))
+}
+
+fn bind_error(configured_port: u16, err: std::io::Error) -> anyhow::Error {
+    error!(
+        target: LOG_TARGET_APP_LOGIC,
+        "MCP server failed to bind to configured port {configured_port}: {err}. \
+         Refusing to fall back to a random port for security reasons — \
+         another process on the configured port could intercept bearer tokens."
+    );
+    let in_use = err.kind() == std::io::ErrorKind::AddrInUse;
+    let report = anyhow::Error::from(err);
+    if in_use {
+        report.context(format!("{PORT_IN_USE_MARKER}:{configured_port}"))
+    } else {
+        report.context(format!(
+            "MCP server failed to bind to configured port {configured_port}. \
+             Refusing to fall back to a random port for security reasons — \
+             another process on the configured port could intercept bearer tokens."
+        ))
+    }
+}
+
 async fn auth_middleware(
     expected_token: String,
     req: axum::http::Request<axum::body::Body>,
@@ -322,5 +351,41 @@ mod tests {
         drop(stop);
         let _unused = finish_tx.send(());
         assert!(LIFECYCLE.try_lock().is_ok());
+    }
+
+    #[tokio::test]
+    async fn bind_failure_names_the_occupied_port_and_does_not_fall_back() {
+        let held = tokio::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
+            .await
+            .expect("hold port");
+        let port = held.local_addr().expect("held addr").port();
+
+        let err = bind_configured_port(port)
+            .await
+            .expect_err("occupied port must fail");
+        assert_eq!(err.to_string(), format!("{PORT_IN_USE_MARKER}:{port}"));
+        // `bind_error` logs this io::Error with the port. Keep it on the chain
+        // so the OS error is not discarded for a random-port fallback.
+        let kind = err.chain().find_map(|cause| {
+            cause
+                .downcast_ref::<std::io::Error>()
+                .map(std::io::Error::kind)
+        });
+        assert_eq!(kind, Some(std::io::ErrorKind::AddrInUse));
+        assert_eq!(held.local_addr().expect("held addr").port(), port);
+    }
+
+    #[tokio::test]
+    async fn bind_listens_on_the_configured_port() {
+        let probe = tokio::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
+            .await
+            .expect("probe");
+        let port = probe.local_addr().expect("probe addr").port();
+        drop(probe);
+
+        let listener = bind_configured_port(port)
+            .await
+            .expect("bind configured port");
+        assert_eq!(listener.local_addr().expect("bound addr").port(), port);
     }
 }

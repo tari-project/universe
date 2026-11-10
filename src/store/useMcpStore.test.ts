@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
     useMcpStore,
     setMcpServerStatus,
+    reportMcpPortInUse,
+    clearMcpPortInUse,
     addMcpAuditEntry,
     setMcpPendingTransaction,
     McpAuditEntry,
@@ -13,6 +15,7 @@ describe('useMcpStore', () => {
         useMcpStore.setState({
             serverRunning: false,
             serverPort: null,
+            portInUse: null,
             auditEntries: [],
             pendingTransaction: null,
         });
@@ -54,6 +57,37 @@ describe('useMcpStore', () => {
             setMcpServerStatus(true, 19222);
             setMcpServerStatus(true, 8080);
             expect(useMcpStore.getState().serverPort).toBe(8080);
+        });
+
+        it('clears a port-in-use error once the server is running', () => {
+            reportMcpPortInUse(4444);
+            setMcpServerStatus(true, 19223);
+            expect(useMcpStore.getState().portInUse).toBeNull();
+            expect(useMcpStore.getState().serverRunning).toBe(true);
+            expect(useMcpStore.getState().serverPort).toBe(19223);
+        });
+
+        it('keeps a port-in-use error when the server is reported stopped', () => {
+            reportMcpPortInUse(4444);
+            setMcpServerStatus(false, null);
+            expect(useMcpStore.getState().portInUse).toBe(4444);
+            expect(useMcpStore.getState().serverRunning).toBe(false);
+        });
+    });
+
+    describe('reportMcpPortInUse', () => {
+        it('records the blocked port and the stopped server', () => {
+            setMcpServerStatus(true, 19222);
+            reportMcpPortInUse(4444);
+            expect(useMcpStore.getState().portInUse).toBe(4444);
+            expect(useMcpStore.getState().serverRunning).toBe(false);
+            expect(useMcpStore.getState().serverPort).toBeNull();
+        });
+
+        it('clears the blocked port', () => {
+            reportMcpPortInUse(4444);
+            clearMcpPortInUse();
+            expect(useMcpStore.getState().portInUse).toBeNull();
         });
     });
 

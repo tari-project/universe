@@ -57,15 +57,18 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
         *config._get_content_mut() = updated;
     }
 
-    if enabled {
-        McpServerManager::start().await.map_err(|e| e.to_string())?;
+    let started = if enabled {
+        McpServerManager::start().await.map(|_| ())
     } else {
         McpServerManager::stop().await;
-    }
+        Ok(())
+    };
 
+    // Enabled was saved before start. Emit it even when the bind fails so the
+    // panel shows that saved port and the enabled flag, with the server stopped.
     EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
-    Ok(())
+    started.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -104,15 +107,19 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
     ConfigMcp::update_field(ConfigMcpContent::set_port, port)
         .await
         .map_err(|e| e.to_string())?;
-    // Restart if currently running so the new port takes effect
-    let content = ConfigMcp::content().await;
-    if *content.enabled() {
-        McpServerManager::restart()
-            .await
-            .map_err(|e| e.to_string())?;
-    }
+    // Restart when the server is enabled so the new port takes effect.
+    // `restart` stops the listener before binding; a bind failure leaves it stopped.
+    let restarted = if *ConfigMcp::content().await.enabled() {
+        McpServerManager::restart().await.map(|_| ())
+    } else {
+        Ok(())
+    };
+
+    // The new port is already saved. Emit it before returning a bind error so
+    // the field shows the configured port instead of the previous one.
     EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
-    Ok(())
+
+    restarted.map_err(|e| e.to_string())
 }
 
 #[tauri::command]

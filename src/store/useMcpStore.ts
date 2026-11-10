@@ -39,6 +39,8 @@ export type McpTxStatus = 'reviewing' | 'processing' | 'completed';
 interface McpStoreState {
     serverRunning: boolean;
     serverPort: number | null;
+    /** Configured port that failed to bind because another process holds it. */
+    portInUse: number | null;
     auditEntries: McpAuditEntry[];
     pendingTransaction: McpPendingTransaction | null;
     mcpTxStatus: McpTxStatus;
@@ -47,6 +49,7 @@ interface McpStoreState {
 const initialState: McpStoreState = {
     serverRunning: false,
     serverPort: null,
+    portInUse: null,
     auditEntries: [],
     pendingTransaction: null,
     mcpTxStatus: 'reviewing',
@@ -57,7 +60,21 @@ export const useMcpStore = create<McpStoreState>()(() => ({
 }));
 
 export const setMcpServerStatus = (running: boolean, port: number | null) => {
-    useMcpStore.setState({ serverRunning: running, serverPort: port });
+    useMcpStore.setState((state) => ({
+        serverRunning: running,
+        serverPort: port,
+        // A running server is no longer blocked on its port. A stop keeps the
+        // error: restart stops the listener before the new bind is attempted.
+        portInUse: running ? null : state.portInUse,
+    }));
+};
+
+export const reportMcpPortInUse = (port: number) => {
+    useMcpStore.setState({ portInUse: port, serverRunning: false, serverPort: null });
+};
+
+export const clearMcpPortInUse = () => {
+    useMcpStore.setState({ portInUse: null });
 };
 
 export const addMcpAuditEntry = (entry: McpAuditEntry) => {
