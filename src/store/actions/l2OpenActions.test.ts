@@ -29,7 +29,12 @@ const serve = (before: L2WalletState, command?: string, after = openState, fail?
 };
 
 /** Backend calls other than the read-only PIN state query. */
-const stateChangingCalls = () => vi.mocked(invoke).mock.calls.filter((call) => call[0] !== 'is_pin_locked');
+const stateChangingCalls = () =>
+    vi.mocked(invoke).mock.calls.filter(
+        // `mock.calls` narrows the command name to the last declared overload,
+        // so compare it as a plain string instead of the literal type.
+        (call) => (call[0] as string) !== 'is_pin_locked'
+    );
 
 describe('openL2', () => {
     beforeEach(() => {
