@@ -14,7 +14,6 @@ dist-ssr
 *.local
 
 # Editor directories and files
-.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -49,3 +48,4 @@ src-tauri/binaries/
 
 # Patched remote-ui build artifact
 src-tauri/tauri-remote-ui-patched/Cargo.lock
+config.bat

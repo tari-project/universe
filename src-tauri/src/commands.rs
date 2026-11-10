@@ -64,7 +64,7 @@ use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
-use crate::tor_adapter::TorConfig;
+use crate::tor_adapter::{TorConfig, default_builtin_bridges};
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
@@ -290,18 +290,33 @@ pub async fn exit_application(
 #[tauri::command]
 pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
     let timer = Instant::now();
-    let res_html = reqwest::get("https://bridges.torproject.org/bridges?transport=obfs4")
-        .await
-        .map_err(|e| e.to_string())?
-        .text()
-        .await
-        .map_err(|e| e.to_string())?;
+    let bridges: Vec<String> =
+        match reqwest::get("https://bridges.torproject.org/bridges?transport=obfs4").await {
+            Ok(resp) => match resp.text().await {
+                Ok(html) => {
+                    let re = Regex::new(r"obfs4.*?<br/>").map_err(|e| e.to_string())?;
+                    let parsed: Vec<String> = re
+                        .find_iter(&html)
+                        .map(|m| {
+                            m.as_str()
+                                .trim_end_matches(" <br/>")
+                                .trim_end_matches("<br/>")
+                                .trim()
+                                .to_string()
+                        })
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                    if parsed.is_empty() {
+                        default_builtin_bridges()
+                    } else {
+                        parsed
+                    }
+                }
+                Err(_) => default_builtin_bridges(),
+            },
+            Err(_) => default_builtin_bridges(),
+        };
 
-    let re = Regex::new(r"obfs4.*?<br/>").map_err(|e| e.to_string())?;
-    let bridges: Vec<String> = re
-        .find_iter(&res_html)
-        .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
-        .collect();
     info!(target: LOG_TARGET_APP_LOGIC, "Fetched default bridges: {bridges:?}");
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
