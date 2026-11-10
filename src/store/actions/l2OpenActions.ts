@@ -9,6 +9,26 @@ import { handleL2WalletStateUpdate, PIN_CANCELLED_RE } from './l2WalletStoreActi
 import { setL2Open } from './uiStoreActions.ts';
 
 let opening = false;
+let waitingForPin: Promise<boolean> | null = null;
+
+const resolvePinStatus = (): Promise<boolean> => {
+    const current = useWalletStore.getState().is_pin_locked;
+    if (current !== undefined) {
+        return Promise.resolve(current);
+    }
+    if (!waitingForPin) {
+        waitingForPin = new Promise<boolean>((resolve) => {
+            const unsubscribe = useWalletStore.subscribe((state) => {
+                if (state.is_pin_locked !== undefined) {
+                    unsubscribe();
+                    waitingForPin = null;
+                    resolve(state.is_pin_locked);
+                }
+            });
+        });
+    }
+    return waitingForPin;
+};
 
 /** Runs a backend command that asks for the PIN and opens L2, then shows the panel. */
 const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable') => {
@@ -35,7 +55,8 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
  * once the wallet is open.
  */
 export const openL2 = async () => {
-    if (!useWalletStore.getState().is_pin_locked) {
+    const isPinLocked = await resolvePinStatus();
+    if (!isPinLocked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;
     }

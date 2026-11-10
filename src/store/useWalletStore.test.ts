@@ -62,8 +62,8 @@ describe('useWalletStore', () => {
             expect(scanning.progress).toBe(0);
         });
 
-        it('has is_pin_locked as false', () => {
-            expect(useWalletStore.getState().is_pin_locked).toBe(false);
+        it('has is_pin_locked as undefined until wallet setup reports PIN status', () => {
+            expect(useWalletStore.getState().is_pin_locked).toBeUndefined();
         });
 
         it('has is_seed_backed_up as false', () => {

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { setL2Open, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { deactivateTapplet } from '@app/store/useTappletsStore.ts';
 import { openL2 } from '@app/store/actions/l2OpenActions.ts';
@@ -9,12 +10,14 @@ export default function L2Button() {
     const { t } = useTranslation('wallet');
     const l2Open = useUIStore((s) => s.l2Open);
     const showTapplet = useUIStore((s) => s.showTapplet);
+    const pinLoading = useWalletStore((s) => s.is_pin_locked === undefined);
 
     return (
         <Button
             $isActive={l2Open}
             $isToggle={true}
             type="button"
+            aria-busy={pinLoading}
             onClick={() => {
                 if (showTapplet) {
                     // Leave the bridge the way the Mine button does, then open the L2 card.
@@ -26,8 +29,8 @@ export default function L2Button() {
                 }
                 void openL2();
             }}
-            aria-label={t('l2.title')}
-            title={t('l2.title')}
+            aria-label={pinLoading ? t('l2.loading') : t('l2.title')}
+            title={pinLoading ? t('l2.loading') : t('l2.title')}
             data-testid="sidebar-l2-button"
             data-active={l2Open}
         >

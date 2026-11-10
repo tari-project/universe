@@ -57,7 +57,9 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     // A burn spends L1 funds, so it waits on the L1 wallet like the L1 send does.
     const isL1Scanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_complete);
-    const hasPin = useWalletStore((s) => s.is_pin_locked);
+    const pinLocked = useWalletStore((s) => s.is_pin_locked);
+    const hasPin = pinLocked === true;
+    const noPinSet = pinLocked === false;
     const [defaultClaimKey, setDefaultClaimKey] = useState<string>();
     const claimPublicKey = account ? account.public_key : defaultClaimKey;
 
@@ -142,13 +144,13 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
                         {t('tabs.receive')}
                     </NavButton>
                     {/* The disabled button ignores the pointer, so the hint sits on a wrapper. */}
-                    <BurnHint title={hasPin ? undefined : t('burn.pin-required')}>
+                    <BurnHint title={noPinSet ? t('burn.pin-required') : undefined}>
                         <NavButton
                             $isActive={section === 'burn'}
                             aria-selected={section === 'burn'}
                             onClick={() => setSection('burn')}
                             disabled={isL1Scanning || !hasPin || !claimPublicKey}
-                            aria-label={hasPin ? undefined : t('burn.pin-required')}
+                            aria-label={noPinSet ? t('burn.pin-required') : undefined}
                             data-testid="l2-burn-button"
                         >
                             {t('tabs.burn')}

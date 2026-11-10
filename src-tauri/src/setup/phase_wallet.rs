@@ -158,6 +158,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let binary_resolver = BinaryResolver::current();
 
+        EventsEmitter::emit_pin_locked(PinManager::pin_locked().await).await;
+
         let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
         if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
             info!(target: LOG_TARGET_APP_LOGIC, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");

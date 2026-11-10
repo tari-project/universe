@@ -17,7 +17,9 @@ const promptStyle = { justifyContent: 'center', alignItems: 'center', gap: 12, t
 
 export default function L2WalletCard() {
     const { t } = useTranslation('wallet');
-    const hasPin = useWalletStore((s) => s.is_pin_locked);
+    const pinLocked = useWalletStore((s) => s.is_pin_locked);
+    const hasPin = pinLocked === true;
+    const pinLoading = pinLocked === undefined;
     const enabled = useL2WalletStore((s) => s.enabled);
     const locked = useL2WalletStore((s) => s.locked);
     const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
@@ -35,8 +37,9 @@ export default function L2WalletCard() {
     // restart), close the card and let the sidebar ask for the PIN next time. A seed change
     // reopens the wallet itself, so the card waits for it.
     useEffect(() => {
+        if (pinLoading) return;
         if (!open && !seedChangePending) setL2Open(false);
-    }, [open, seedChangePending]);
+    }, [open, pinLoading, seedChangePending]);
 
     // Before launch there is no L2 account to wait for (recovery can't reach the indexer),
     // so the wallet shows a placeholder that can still burn to the default claim key.

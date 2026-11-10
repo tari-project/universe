@@ -46,6 +46,36 @@ describe('openL2', () => {
         expect(invoke).not.toHaveBeenCalled();
     });
 
+    it('waits while PIN status is unknown and unlocks L2 once PIN status loads as true', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(lockedState, 'unlock_l2_wallet');
+
+        const pending = openL2();
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).not.toHaveBeenCalled();
+
+        useWalletStore.setState({ is_pin_locked: true });
+        await pending;
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet');
+        expect(useUIStore.getState().l2Open).toBe(true);
+    });
+
+    it('waits while PIN status is unknown and opens create-PIN dialog if PIN status loads as false', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+
+        const pending = openL2();
+        expect(useSecurityStore.getState().modal).toBeNull();
+
+        useWalletStore.setState({ is_pin_locked: false });
+        await pending;
+
+        expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
     it('opens the panel straight away when L2 is already open', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         serve(openState);
