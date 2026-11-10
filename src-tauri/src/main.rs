@@ -560,6 +560,7 @@ fn main() {
             commands::get_wallet_output_statuses,
             commands::get_base_node_status,
             commands::get_local_block_stats,
+            commands::pin_locked,
             commands::create_pin,
             commands::forgot_pin,
             commands::set_seed_backed_up,

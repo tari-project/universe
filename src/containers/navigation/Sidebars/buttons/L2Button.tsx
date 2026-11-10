@@ -1,20 +1,30 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setL2Open, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { deactivateTapplet } from '@app/store/useTappletsStore.ts';
-import { openL2 } from '@app/store/actions/l2OpenActions.ts';
+import { ensurePinLockedState, openL2 } from '@app/store/actions/l2OpenActions.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 export default function L2Button() {
     const { t } = useTranslation('wallet');
     const l2Open = useUIStore((s) => s.l2Open);
     const showTapplet = useUIStore((s) => s.showTapplet);
+    const pinStateKnown = useWalletStore((s) => s.is_pin_locked !== undefined);
+
+    // The wallet phase also emits this, but a click during node sync should not have to wait for it.
+    useEffect(() => {
+        void ensurePinLockedState();
+    }, []);
 
     return (
         <Button
             $isActive={l2Open}
             $isToggle={true}
             type="button"
+            aria-busy={!pinStateKnown}
+            data-loading={!pinStateKnown}
             onClick={() => {
                 if (showTapplet) {
                     // Leave the bridge the way the Mine button does, then open the L2 card.
@@ -26,8 +36,8 @@ export default function L2Button() {
                 }
                 void openL2();
             }}
-            aria-label={t('l2.title')}
-            title={t('l2.title')}
+            aria-label={pinStateKnown ? t('l2.title') : t('l2.pin-loading')}
+            title={pinStateKnown ? t('l2.title') : t('l2.pin-loading')}
             data-testid="sidebar-l2-button"
             data-active={l2Open}
         >

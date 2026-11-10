@@ -35,6 +35,49 @@ describe('openL2', () => {
         useSecurityStore.setState({ modal: null });
         useUIStore.setState({ l2Open: false });
         useToastStore.setState({ toasts: [] });
+        useWalletStore.setState({ is_pin_locked: undefined });
+    });
+
+    it('does not open PIN setup while the PIN state is still loading', async () => {
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'pin_locked') return true;
+            if (cmd === 'l2_get_state') return lockedState;
+            if (cmd === 'unlock_l2_wallet') return undefined;
+        }) as typeof invoke);
+
+        await openL2();
+
+        expect(useSecurityStore.getState().modal).not.toBe('l2_pin_required');
+        expect(invoke).toHaveBeenCalledWith('pin_locked');
+        expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet');
+        expect(useUIStore.getState().l2Open).toBe(true);
+        expect(useWalletStore.getState().is_pin_locked).toBe(true);
+    });
+
+    it('opens PIN setup when loading finishes with no PIN set', async () => {
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'pin_locked') return false;
+        }) as typeof invoke);
+
+        await openL2();
+
+        expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(invoke).toHaveBeenCalledWith('pin_locked');
+        expect(invoke).not.toHaveBeenCalledWith('unlock_l2_wallet');
+        expect(invoke).not.toHaveBeenCalledWith('l2_create_pin_and_enable');
+    });
+
+    it('does not guess that there is no PIN when the PIN state cannot be read', async () => {
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'pin_locked') throw new Error('wallet not ready');
+        }) as typeof invoke);
+
+        await openL2();
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(useToastStore.getState().toasts).toHaveLength(1);
     });
 
     it('asks for a PIN to be set first, without touching L2', async () => {

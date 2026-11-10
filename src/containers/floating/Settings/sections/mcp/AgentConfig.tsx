@@ -129,6 +129,7 @@ export default function AgentConfig() {
         async (buildText: (token: string) => string) => {
             try {
                 let token: string | null = null;
+                if (isPinLocked === undefined) return;
                 if (isPinLocked) {
                     const pin = await requestPin();
                     if (!pin) return;

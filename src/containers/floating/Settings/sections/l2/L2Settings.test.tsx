@@ -98,6 +98,17 @@ describe('L2Settings', () => {
         useConfigCoreStore.setState({ ootle_indexer_url: undefined });
     });
 
+    it('does not ask for a PIN while the PIN flag is still unknown', () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(enabledState);
+        render(<L2Settings />);
+
+        expect(screen.getByTestId('l2-settings-pin-loading')).toBeInTheDocument();
+        expect(screen.queryByTestId('l2-settings-pin-required')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('l2-settings-enable')).not.toBeInTheDocument();
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
     it('asks for a PIN and does not touch L2 when none is set', () => {
         useWalletStore.setState({ is_pin_locked: false });
         serve(enabledState);

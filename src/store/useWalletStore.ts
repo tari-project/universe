@@ -33,7 +33,8 @@ export interface WalletStoreState {
         progress: number;
         is_initial_scan_complete: boolean;
     };
-    is_pin_locked: boolean;
+    /** `undefined` until the backend reports it. `false` means no PIN, not "still loading". */
+    is_pin_locked: boolean | undefined;
     is_seed_backed_up: boolean;
 }
 
@@ -59,7 +60,7 @@ export const initialState: WalletStoreState = {
         progress: 0,
         is_initial_scan_complete: false,
     },
-    is_pin_locked: false,
+    is_pin_locked: undefined,
     is_seed_backed_up: false,
 };
 

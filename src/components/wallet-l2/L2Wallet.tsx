@@ -142,13 +142,13 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
                         {t('tabs.receive')}
                     </NavButton>
                     {/* The disabled button ignores the pointer, so the hint sits on a wrapper. */}
-                    <BurnHint title={hasPin ? undefined : t('burn.pin-required')}>
+                    <BurnHint title={hasPin === false ? t('burn.pin-required') : undefined}>
                         <NavButton
                             $isActive={section === 'burn'}
                             aria-selected={section === 'burn'}
                             onClick={() => setSection('burn')}
-                            disabled={isL1Scanning || !hasPin || !claimPublicKey}
-                            aria-label={hasPin ? undefined : t('burn.pin-required')}
+                            disabled={isL1Scanning || hasPin !== true || !claimPublicKey}
+                            aria-label={hasPin === false ? t('burn.pin-required') : undefined}
                             data-testid="l2-burn-button"
                         >
                             {t('tabs.burn')}

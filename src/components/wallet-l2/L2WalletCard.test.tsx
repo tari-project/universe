@@ -48,6 +48,17 @@ describe('L2WalletCard', () => {
         useAirdropStore.setState({ features: undefined });
     });
 
+    it('stays on the loading state while the PIN flag is unknown and does not fetch or close', () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        useUIStore.setState({ l2Open: true });
+        serve(enabledState);
+        render(<L2WalletCard />);
+
+        expect(screen.getByTestId('l2-loading')).toBeInTheDocument();
+        expect(useUIStore.getState().l2Open).toBe(true);
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
     it('closes itself without a PIN and does not touch L2', () => {
         useWalletStore.setState({ is_pin_locked: false });
         useUIStore.setState({ l2Open: true });

@@ -30,12 +30,43 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
 };
 
 /**
+ * The wallet store starts with an unknown PIN state. Ask the backend rather than treating
+ * that as "no PIN", which used to open the create-PIN dialog while the L1 wallet was loading.
+ */
+/** Reads the persisted PIN flag once. Later events still win if they arrive first. */
+export async function ensurePinLockedState(): Promise<boolean | undefined> {
+    const current = useWalletStore.getState().is_pin_locked;
+    if (current !== undefined) return current;
+    try {
+        const locked = await invoke<boolean>('pin_locked');
+        if (typeof locked !== 'boolean') return useWalletStore.getState().is_pin_locked;
+        if (useWalletStore.getState().is_pin_locked === undefined) {
+            useWalletStore.setState({ is_pin_locked: locked });
+        }
+        return useWalletStore.getState().is_pin_locked;
+    } catch (e) {
+        console.warn('Could not read PIN state:', e);
+        return useWalletStore.getState().is_pin_locked;
+    }
+}
+
+/**
  * The sidebar's way into L2. An open wallet just shows the panel. Without a PIN the user is
  * asked to set one first; otherwise the PIN prompt opens straight away, and the panel only
- * once the wallet is open.
+ * once the wallet is open. While the PIN state is still unknown this waits for the backend
+ * instead of opening PIN setup.
  */
 export const openL2 = async () => {
-    if (!useWalletStore.getState().is_pin_locked) {
+    const pinLocked = await ensurePinLockedState();
+    if (pinLocked === undefined) {
+        addToast({
+            title: t('l2.open-error', { ns: 'wallet' }),
+            text: t('l2.pin-still-loading', { ns: 'wallet' }),
+            type: 'error',
+        });
+        return;
+    }
+    if (!pinLocked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;
     }

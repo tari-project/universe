@@ -48,6 +48,18 @@ describe('SendModal', () => {
         }) as typeof invoke);
     });
 
+    it('does not take the no-PIN send path while the PIN flag is unknown', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        render(<SendModal section="send" setSection={vi.fn()} />);
+
+        const submit = await screen.findByTestId('send-review-button');
+        expect(submit).toHaveTextContent('send.cta-review');
+        fireEvent.click(submit);
+
+        expect(await screen.findByText('send.review-title')).toBeInTheDocument();
+        expect(sendCalls()).toHaveLength(0);
+    });
+
     it('sends on submit when there is no PIN', async () => {
         useWalletStore.setState({ is_pin_locked: false });
         render(<SendModal section="send" setSection={vi.fn()} />);

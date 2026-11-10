@@ -2382,6 +2382,12 @@ pub async fn reset_cpu_pool_config(cpu_pool_type: String) -> Result<(), InvokeEr
     Ok(())
 }
 
+/// Persisted PIN flag. Safe to call before the wallet scan finishes: it reads config, not the node.
+#[tauri::command]
+pub async fn pin_locked() -> bool {
+    PinManager::pin_locked().await
+}
+
 #[tauri::command]
 pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
     InternalWallet::create_pin(&app_handle)

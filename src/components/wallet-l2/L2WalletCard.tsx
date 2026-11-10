@@ -23,11 +23,13 @@ export default function L2WalletCard() {
     const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
     const account = useL2WalletStore(selectL2Account);
     const preLaunch = useIsL2PreLaunch();
-    const open = hasPin && enabled && !locked;
+    const pinKnown = hasPin !== undefined;
+    const open = hasPin === true && enabled && !locked;
 
     // Events keep the store current; this catches up with whatever was sent before the card opened.
+    // Unknown is not "no PIN": don't fetch, and don't treat the card as closed for lack of one.
     useEffect(() => {
-        if (!hasPin) return;
+        if (hasPin !== true) return;
         fetchL2State().catch((e) => console.warn('Could not load L2 wallet state:', e));
     }, [hasPin]);
 
@@ -35,8 +37,9 @@ export default function L2WalletCard() {
     // restart), close the card and let the sidebar ask for the PIN next time. A seed change
     // reopens the wallet itself, so the card waits for it.
     useEffect(() => {
+        if (!pinKnown) return;
         if (!open && !seedChangePending) setL2Open(false);
-    }, [open, seedChangePending]);
+    }, [pinKnown, open, seedChangePending]);
 
     // Before launch there is no L2 account to wait for (recovery can't reach the indexer),
     // so the wallet shows a placeholder that can still burn to the default claim key.

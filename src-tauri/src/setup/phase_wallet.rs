@@ -153,6 +153,10 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
+        // The persisted PIN flag is already in the wallet config. Publish it before the
+        // scan so the UI can tell "no PIN" from "not loaded yet" while this phase runs.
+        emit_current_pin_state().await;
+
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, _config_dir, _log_dir) = self.get_app_dirs()?;
 
@@ -236,11 +240,14 @@ impl SetupPhaseImpl for WalletSetupPhase {
         }
 
         let config_wallet = ConfigWallet::content().await;
-        let is_pin_locked = PinManager::pin_locked().await;
-        EventsEmitter::emit_pin_locked(is_pin_locked).await;
+        emit_current_pin_state().await;
         let is_seed_backed_up = *config_wallet.seed_backed_up();
         EventsEmitter::emit_seed_backed_up(is_seed_backed_up).await;
 
         Ok(())
     }
+}
+
+async fn emit_current_pin_state() {
+    EventsEmitter::emit_pin_locked(PinManager::pin_locked().await).await;
 }

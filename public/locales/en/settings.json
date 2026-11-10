@@ -264,6 +264,7 @@
   "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
   "l2": {
     "status": "Layer 2",
+    "pin-loading": "Checking whether a PIN is set…",
     "pin-required": "You must set a PIN to use Layer 2",
     "set-pin": "Set a PIN",
     "enable-description": "Layer 2 uses a wallet made from your existing seed words. You'll be asked for your PIN.",

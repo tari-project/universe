@@ -131,8 +131,9 @@ export const L2Settings = () => {
     const [error, setError] = useState('');
 
     // The panel may never have been opened, so catch up with the backend here too.
+    // Unknown is not "no PIN", so don't fetch and don't offer to create one.
     useEffect(() => {
-        if (!hasPin) return;
+        if (hasPin !== true) return;
         fetchL2State().catch((e) => console.warn('Could not load L2 wallet state:', e));
     }, [hasPin]);
 
@@ -150,7 +151,15 @@ export const L2Settings = () => {
     }
 
     let status;
-    if (!hasPin) {
+    if (hasPin === undefined) {
+        status = (
+            <SettingsGroup data-testid="l2-settings-pin-loading">
+                <SettingsGroupContent>
+                    <Typography>{t('l2.pin-loading')}</Typography>
+                </SettingsGroupContent>
+            </SettingsGroup>
+        );
+    } else if (!hasPin) {
         status = (
             <SettingsGroup data-testid="l2-settings-pin-required">
                 <SettingsGroupContent>
