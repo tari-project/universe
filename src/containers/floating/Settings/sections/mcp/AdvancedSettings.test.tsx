@@ -195,5 +195,30 @@ describe('AdvancedSettings', () => {
             expect(mockInvoke).not.toHaveBeenCalled();
             useMcpStore.setState({ serverRunning: false, serverPort: null });
         });
+
+        it.each(['0', '1023', '65536'])(
+            'shows range feedback for out-of-range port %s without calling the backend',
+            (value) => {
+                render(<AdvancedSettings />);
+                commitValue(value);
+                expect(screen.getByTestId('mcp-port-error')).toHaveTextContent('mcp.advanced.port-range-error');
+                expect(mockInvoke).not.toHaveBeenCalled();
+            }
+        );
+
+        it('shows not-a-number feedback for an empty port and does not call the backend', () => {
+            render(<AdvancedSettings />);
+            commitValue('');
+            expect(screen.getByTestId('mcp-port-error')).toHaveTextContent('mcp.advanced.port-invalid-error');
+            expect(mockInvoke).not.toHaveBeenCalled();
+        });
+
+        it.each([1024, 65535])('commits boundary port %i without showing an error', async (port) => {
+            render(<AdvancedSettings />);
+            commitValue(String(port));
+            await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith('set_mcp_port', { port }));
+            expect(screen.queryByTestId('mcp-port-error')).toBeNull();
+            expect(useConfigMcpStore.getState().port).toBe(port);
+        });
     });
 });
