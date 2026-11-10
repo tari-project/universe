@@ -30,7 +30,7 @@ import { StatusList, StatusListEntry } from '@app/components/transactions/compon
 import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/ProcessingIcon';
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
-import { setError as setStoreError } from '@app/store';
+import { enforceMandatoryWalletSecurity, getIsWalletSecurityMandatory, setError as setStoreError } from '@app/store';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useIsL2PreLaunch } from '@app/hooks/wallet/useIsL2PreLaunch.ts';
 import { FormatPreset, formatNumber } from '@app/utils/formatters.ts';
@@ -156,6 +156,10 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
 
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
+            if (getIsWalletSecurityMandatory()) {
+                enforceMandatoryWalletSecurity();
+                return;
+            }
             if (status === 'fields') {
                 setStatus('reviewing');
                 return;

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
@@ -9,7 +10,13 @@ import { Content, Header, Subtitle, Title, Wrapper, CTAWrapper, ContentWrapper }
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { invoke } from '@tauri-apps/api/core';
-import { useSecurityStore, useWalletStore } from '@app/store';
+import {
+    enforceMandatoryWalletSecurity,
+    openCreatePinFlow,
+    useIsWalletSecurityMandatory,
+    useSecurityStore,
+    useWalletStore,
+} from '@app/store';
 
 export default function SecurityPromptDialog() {
     const { t } = useTranslation(['staged-security']);
@@ -20,9 +27,19 @@ export default function SecurityPromptDialog() {
 
     const seedBackedUp = useWalletStore((s) => s.is_seed_backed_up);
     const pinLocked = useWalletStore((s) => s.is_pin_locked);
+    const isMandatory = useIsWalletSecurityMandatory();
+
+    useEffect(() => {
+        if (isMandatory) {
+            enforceMandatoryWalletSecurity();
+        }
+    }, [isMandatory]);
 
     function handleClose() {
-        invoke('set_security_warning_dismissed').then(() => {
+        if (isMandatory) {
+            return;
+        }
+        Promise.resolve(invoke('set_security_warning_dismissed')).then(() => {
             setModal(null);
         });
     }
@@ -30,7 +47,7 @@ export default function SecurityPromptDialog() {
         if (!seedBackedUp) {
             setModal('verify_seedphrase');
         } else if (!pinLocked) {
-            void invoke('create_pin');
+            openCreatePinFlow();
         }
     }
 
@@ -50,12 +67,10 @@ export default function SecurityPromptDialog() {
     ];
 
     return (
-        <Dialog open={isOpen} onOpenChange={handleClose}>
+        <Dialog open={isOpen} onOpenChange={handleClose} disableClose={isMandatory}>
             <DialogContent variant="transparent">
                 <Wrapper>
-                    <Header>
-                        <CloseButton onClick={handleClose} />
-                    </Header>
+                    <Header>{!isMandatory && <CloseButton onClick={handleClose} />}</Header>
                     <Content>
                         <AlertChip text={t('intro.warning')} />
                         <Title>{t('intro.title')}</Title>
@@ -69,7 +84,7 @@ export default function SecurityPromptDialog() {
                             <Button fluid variant="black" size="xlarge" onClick={handleClick}>
                                 {t('intro.button')}
                             </Button>
-                            <TextButton onClick={handleClose}>{t('skip')}</TextButton>
+                            {!isMandatory && <TextButton onClick={handleClose}>{t('skip')}</TextButton>}
                         </CTAWrapper>
                     </Content>
                 </Wrapper>

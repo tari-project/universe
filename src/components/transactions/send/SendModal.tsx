@@ -10,7 +10,12 @@ import { SendReview } from './SendReview/SendReview.tsx';
 import { StyledForm, Wrapper } from './Send.styles.ts';
 import { FormRootError } from './FormRootError.tsx';
 import { invoke } from '@tauri-apps/api/core';
-import { setError as setStoreError } from '@app/store';
+import {
+    enforceMandatoryWalletSecurity,
+    getIsWalletSecurityMandatory,
+    setError as setStoreError,
+    useIsWalletSecurityMandatory,
+} from '@app/store';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import type { EffectiveL1PaymentId } from '@app/types/events-payloads.ts';
@@ -33,6 +38,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const [resolvedPaymentId, setResolvedPaymentId] = useState<EffectiveL1PaymentId | null>(null);
     // Without a PIN the backend's confirmation dialog is the review step.
     const hasReviewStep = useWalletStore((s) => s.is_pin_locked);
+    const isSecurityMandatory = useIsWalletSecurityMandatory();
 
     const methods = useForm<SendInputs>({
         defaultValues,
@@ -48,7 +54,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         }
     }, [section]);
 
-    const resetForm = () => {
+    const resetForm = useCallback(() => {
         estimateRequestIdRef.current += 1;
         reset();
         setIsBack(false);
@@ -58,7 +64,15 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         setFeeMicroMinotari(null);
         setResolvedPaymentId(null);
         setStatus('fields');
-    };
+    }, [reset]);
+
+    useEffect(() => {
+        if (section === 'send' && isSecurityMandatory) {
+            enforceMandatoryWalletSecurity();
+            resetForm();
+            setSection('history');
+        }
+    }, [section, isSecurityMandatory, resetForm, setSection]);
 
     function handleClose() {
         resetForm();
@@ -76,6 +90,10 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
+            if (getIsWalletSecurityMandatory()) {
+                enforceMandatoryWalletSecurity();
+                return;
+            }
             const effectivePaymentId = () =>
                 invoke('effective_l1_payment_id', { destination: data.address, paymentId: data.message });
 

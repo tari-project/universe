@@ -1,6 +1,6 @@
 import { ViewSeedPhrase } from '@app/components/security/seedphrase/ViewSeedPhrase.tsx';
 
-import { setError, useSecurityStore } from '@app/store';
+import { setError, useIsWalletSecurityMandatory, useSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Content, ContentWrapper, Header, StepChip, Subtitle, Title, Wrapper } from '../common.styles.ts';
 import { VerifySeedPhrase } from '@app/components/security/seedphrase/VerifySeedPhrase.tsx';
@@ -13,6 +13,7 @@ export default function SeedPhrase() {
     const { t } = useTranslation('staged-security');
     const modal = useSecurityStore((s) => s.modal);
     const setModal = useSecurityStore((s) => s.setModal);
+    const isMandatory = useIsWalletSecurityMandatory();
 
     const isOpen = modal === 'verify_seedphrase';
 
@@ -20,30 +21,35 @@ export default function SeedPhrase() {
     const [isVerify, setIsVerify] = useState(false);
 
     function handleClose() {
+        if (isMandatory) {
+            return;
+        }
         setModal(null);
     }
 
     useEffect(() => {
-        if (isOpen) {
-            if (seedPhrase?.length && seedPhrase?.length > 0) return;
-            invoke('get_seed_words')
-                .then((r) => {
-                    if (r?.length) {
-                        setSeedPhrase(r);
-                        setModal('verify_seedphrase');
-                    }
-                })
-                .catch((error) => {
-                    const errorMessage = error as unknown as string;
-                    console.error('Error fetching seed words:', errorMessage);
-                    if (
-                        !errorMessage.includes('User canceled the operation') &&
-                        !errorMessage.includes('PIN entry cancelled')
-                    ) {
-                        setError(errorMessage);
-                    }
-                });
+        if (!isOpen) {
+            setIsVerify(false);
+            return;
         }
+        if (seedPhrase?.length && seedPhrase?.length > 0) return;
+        Promise.resolve(invoke('get_seed_words'))
+            .then((r) => {
+                if (r?.length) {
+                    setSeedPhrase(r);
+                    setModal('verify_seedphrase');
+                }
+            })
+            .catch((error) => {
+                const errorMessage = error as unknown as string;
+                console.error('Error fetching seed words:', errorMessage);
+                if (
+                    !errorMessage.includes('User canceled the operation') &&
+                    !errorMessage.includes('PIN entry cancelled')
+                ) {
+                    setError(errorMessage);
+                }
+            });
     }, [isOpen, seedPhrase?.length, setModal]);
 
     const content = isVerify ? (
@@ -65,12 +71,10 @@ export default function SeedPhrase() {
     );
 
     return (
-        <Dialog open={isOpen} onOpenChange={handleClose}>
+        <Dialog open={isOpen} onOpenChange={handleClose} disableClose={isMandatory}>
             <DialogContent variant="transparent">
                 <Wrapper>
-                    <Header>
-                        <CloseButton onClick={handleClose} />
-                    </Header>
+                    <Header>{!isMandatory && <CloseButton onClick={handleClose} />}</Header>
 
                     <Content>
                         <StepChip>{t('steps.chip', { step: 1, total: 2 })}</StepChip>

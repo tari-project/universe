@@ -7,6 +7,7 @@ import {
     stopGpuMining,
 } from './miningStoreActions';
 import {
+    enforceMandatoryWalletSecurity,
     fetchApplicationsVersionsWithRetry,
     // fetchTransactionsHistory,
     useConfigMiningStore,
@@ -107,6 +108,7 @@ export const updateAppModule = (state: AppModuleState) => {
 export const handleWalletModuleUpdateSideEffects = async (state: AppModuleState) => {
     switch (state.status) {
         case AppModuleStatus.Initialized: {
+            enforceMandatoryWalletSecurity();
             break;
         }
         case AppModuleStatus.Failed:

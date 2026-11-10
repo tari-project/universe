@@ -13,6 +13,7 @@ import { FormField } from './FormField.tsx';
 import { BottomWrapper, FormFieldsWrapper, MiniButton } from './Send.styles';
 
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
+import { useIsWalletSecurityMandatory } from '@app/store/useSecurityStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 
@@ -32,6 +33,7 @@ export function SendForm({ isBack, hasReviewStep = true }: Props) {
     const availableBalance = accountBalance?.available;
     const numericAvailableBalance = Number(Math.floor((availableBalance || 0) / 1_000_000).toFixed(2));
     const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
+    const isSecurityMandatory = useIsWalletSecurityMandatory();
 
     const { control, formState, setError, setValue, clearErrors, getValues } = useFormContext<SendInputs>();
     const { isSubmitting, errors } = formState;
@@ -186,7 +188,7 @@ export function SendForm({ isBack, hasReviewStep = true }: Props) {
             </FormFieldsWrapper>
             <BottomWrapper>
                 <Button
-                    disabled={isSubmitting || !isValid}
+                    disabled={isSubmitting || !isValid || isSecurityMandatory}
                     type="submit"
                     fluid
                     variant="green"
