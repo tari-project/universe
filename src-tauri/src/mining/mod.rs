@@ -22,9 +22,83 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::LOG_TARGET_APP_LOGIC;
+use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, MiningModeType};
+use crate::configs::trait_config::ConfigImpl;
+use crate::events_emitter::EventsEmitter;
+use crate::mining::cpu::manager::CpuManager;
+use crate::mining::gpu::manager::GpuManager;
+use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
+use log::{error, info};
+
 pub mod cpu;
 pub mod gpu;
 pub mod pools;
+
+/// Updates the selected mining mode and restarts or starts miners according to the new mode.
+///
+/// If `start_if_stopped` is true (e.g. when triggered by a scheduled window), miners that were
+/// stopped are started in the new mode if they are enabled.
+/// If miners are already running and the mode changed, they are stopped and restarted with the
+/// new mode settings. If the mode did not change, running miners are left undisturbed.
+pub async fn apply_mining_mode(mode: String, start_if_stopped: bool) -> Result<(), anyhow::Error> {
+    let current_config = ConfigMining::content().await;
+    let old_mode = current_config.selected_mining_mode().clone();
+    let mode_changed = old_mode != mode;
+
+    let cpu_running = CpuManager::read().await.is_running();
+    let gpu_running = GpuManager::read().await.is_running();
+    let cpu_enabled = *current_config.cpu_mining_enabled();
+    let gpu_enabled = *current_config.gpu_mining_enabled();
+
+    let should_restart_cpu = cpu_running && mode_changed;
+    let should_restart_gpu = gpu_running && mode_changed;
+
+    if should_restart_cpu {
+        info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "Stopping running CPU miner to apply mode {mode} (was {old_mode})"
+        );
+        let _unused = CpuManager::write().await.stop_mining().await;
+    }
+    if should_restart_gpu {
+        info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "Stopping running GPU miner to apply mode {mode} (was {old_mode})"
+        );
+        let _unused = GpuManager::write().await.stop_mining().await;
+    }
+
+    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone()).await?;
+
+    if mode != "Eco" {
+        ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false).await?;
+    }
+
+    let updated_config = ConfigMining::content().await;
+    EventsEmitter::emit_mining_config_loaded(&updated_config).await;
+
+    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
+        mode.clone(),
+    )))
+    .await;
+
+    if cpu_enabled && (should_restart_cpu || (!cpu_running && start_if_stopped)) {
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting CPU miner in mode {mode}");
+        if let Err(e) = CpuManager::write().await.start_mining().await {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU miner in mode {mode}: {e}");
+        }
+    }
+
+    if gpu_enabled && (should_restart_gpu || (!gpu_running && start_if_stopped)) {
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting GPU miner in mode {mode}");
+        if let Err(e) = GpuManager::write().await.start_mining().await {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU miner in mode {mode}: {e}");
+        }
+    }
+
+    Ok(())
+}
 
 /// Errors that represent user-environment issues rather than application bugs.
 /// These should never be reported to Sentry.
