@@ -262,6 +262,32 @@ impl SetupPhaseImpl for NodeSetupPhase {
             Ok(())
         }).await?;
 
+        if use_tor {
+            let node_manager = state.node_manager.clone();
+            let tor_manager = state.tor_manager.clone();
+            let mut restart_rx = tor_manager.subscribe_restart_requested();
+            self.get_task_tracker().await.spawn(async move {
+                let mut generation = *restart_rx.borrow();
+                let mut shutdown = TasksTrackers::current().node_phase.get_signal().await;
+                loop {
+                    tokio::select! {
+                        _ = shutdown.wait() => break,
+                        changed = restart_rx.changed() => {
+                            if changed.is_err() { break; }
+                            let requested = *restart_rx.borrow_and_update();
+                            if requested <= generation { continue; }
+                            generation = requested;
+                            if tor_manager.wait_ready().await.is_ok()
+                                && let Err(error) = node_manager.restart_local_node().await
+                            {
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart local node after Tor recovery: {error}");
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         let migration_tracker =
             progress_stepper.track_step_incrementally(SetupStep::MigratingDatabase);
         progress_stepper
