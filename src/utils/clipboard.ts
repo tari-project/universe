@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core';
 import { clear, readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 
 /**
@@ -16,6 +17,12 @@ import { clear, readText, writeText } from '@tauri-apps/plugin-clipboard-manager
  * first: the timed read-back that verifies a secret before clearing it runs outside
  * a user gesture, where the webview read is usually denied, while the plugin read is
  * the path that already works on every platform that supports it today.
+ *
+ * Inside a Flatpak sandbox on Wayland with no X11 display at all, the plugin has
+ * no path that could ever work — calling it only hangs on the X11 timeout — so
+ * the `clipboard_needs_webview` command detects that sandbox once and every
+ * operation skips the plugin there, failing fast with the webview error.
+ * Outside the sandbox the order above is unchanged.
  */
 
 /**
@@ -97,6 +104,30 @@ function webviewClipboard(): Clipboard | undefined {
     return navigator.clipboard;
 }
 
+/**
+ * Whether the app runs in a Flatpak sandbox on Wayland with no X11 display,
+ * where the native plugin can never work (see the module comment). Detected
+ * once through the backend and cached for the lifetime of the module; when
+ * the backend cannot be reached the answer is false, which keeps the
+ * current behaviour everywhere else. The answer is only trusted when it is
+ * exactly `true`: anything else (a stale backend, a test double returning a
+ * placeholder) must not silently switch the app to webview-only clipboard.
+ */
+let webviewOnlyClipboard: Promise<boolean> | null = null;
+
+function needsWebviewOnlyClipboard(): Promise<boolean> {
+    if (!webviewOnlyClipboard) {
+        try {
+            webviewOnlyClipboard = invoke<boolean>('clipboard_needs_webview')
+                .then((value) => value === true)
+                .catch(() => false);
+        } catch {
+            webviewOnlyClipboard = Promise.resolve(false);
+        }
+    }
+    return webviewOnlyClipboard;
+}
+
 export async function writeClipboardText(text: string): Promise<void> {
     const webview = webviewClipboard();
     let webviewError: unknown;
@@ -123,6 +154,15 @@ export async function writeClipboardText(text: string): Promise<void> {
             return;
         }
     }
+    if (await needsWebviewOnlyClipboard()) {
+        // Inside the Flatpak/Wayland sandbox the plugin would only fall back
+        // to an X11 server that does not exist and hang on its timeout, so
+        // fail fast with the webview failures instead of calling it.
+        throw new ClipboardUnavailableError('Could not write to the clipboard', {
+            webviewError,
+            execCommandError,
+        });
+    }
     try {
         await writeText(text);
     } catch (pluginError) {
@@ -135,40 +175,49 @@ export async function writeClipboardText(text: string): Promise<void> {
 }
 
 export async function readClipboardText(): Promise<string> {
-    try {
-        return await readText();
-    } catch (pluginError) {
-        const webview = webviewClipboard();
-        if (webview?.readText) {
-            try {
-                return await webview.readText();
-            } catch (webviewError) {
-                throw new ClipboardUnavailableError('Could not read from the clipboard', {
-                    pluginError,
-                    webviewError,
-                });
-            }
+    let pluginError: unknown;
+    if (!(await needsWebviewOnlyClipboard())) {
+        try {
+            return await readText();
+        } catch (e) {
+            pluginError = e;
         }
-        throw new ClipboardUnavailableError('Could not read from the clipboard', { pluginError });
     }
+    const webview = webviewClipboard();
+    if (webview?.readText) {
+        try {
+            return await webview.readText();
+        } catch (webviewError) {
+            throw new ClipboardUnavailableError('Could not read from the clipboard', {
+                pluginError,
+                webviewError,
+            });
+        }
+    }
+    throw new ClipboardUnavailableError('Could not read from the clipboard', { pluginError });
 }
 
 export async function clearClipboardText(): Promise<void> {
-    try {
-        await clear();
-    } catch (pluginError) {
-        const webview = webviewClipboard();
-        if (webview?.writeText) {
-            try {
-                await webview.writeText('');
-                return;
-            } catch (webviewError) {
-                throw new ClipboardUnavailableError('Could not clear the clipboard', {
-                    pluginError,
-                    webviewError,
-                });
-            }
+    let pluginError: unknown;
+    if (!(await needsWebviewOnlyClipboard())) {
+        try {
+            await clear();
+            return;
+        } catch (e) {
+            pluginError = e;
         }
-        throw new ClipboardUnavailableError('Could not clear the clipboard', { pluginError });
     }
+    const webview = webviewClipboard();
+    if (webview?.writeText) {
+        try {
+            await webview.writeText('');
+            return;
+        } catch (webviewError) {
+            throw new ClipboardUnavailableError('Could not clear the clipboard', {
+                pluginError,
+                webviewError,
+            });
+        }
+    }
+    throw new ClipboardUnavailableError('Could not clear the clipboard', { pluginError });
 }

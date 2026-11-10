@@ -3,11 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const pluginWriteText = vi.fn();
 const pluginReadText = vi.fn();
 const pluginClear = vi.fn();
+const invokeMock = vi.fn();
 
 vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
     writeText: (...args: unknown[]) => pluginWriteText(...args),
     readText: (...args: unknown[]) => pluginReadText(...args),
     clear: (...args: unknown[]) => pluginClear(...args),
+}));
+
+vi.mock('@tauri-apps/api/core', () => ({
+    invoke: (...args: unknown[]) => invokeMock(...args),
 }));
 
 import { ClipboardUnavailableError, clearClipboardText, readClipboardText, writeClipboardText } from './clipboard';
@@ -24,6 +29,7 @@ describe('clipboard', () => {
         pluginWriteText.mockReset().mockResolvedValue(undefined);
         pluginReadText.mockReset().mockResolvedValue('plugin text');
         pluginClear.mockReset().mockResolvedValue(undefined);
+        invokeMock.mockReset().mockResolvedValue(false);
         stubWebviewClipboard(undefined);
     });
 
@@ -197,6 +203,76 @@ describe('clipboard', () => {
                 expect((e as ClipboardUnavailableError).pluginError).toBeInstanceOf(Error);
                 expect((e as ClipboardUnavailableError).webviewError).toBeInstanceOf(Error);
             }
+        });
+    });
+
+    describe('Flatpak/Wayland sandbox without X11', () => {
+        // The sandbox answer is cached per module instance, so these tests
+        // re-import the module fresh with the backend reporting a sandbox.
+        // The fresh module carries its own copy of the error class, so the
+        // instanceof checks below use that copy, not the statically imported one.
+        let sandboxWrite: typeof writeClipboardText;
+        let sandboxRead: typeof readClipboardText;
+        let sandboxClear: typeof clearClipboardText;
+        let sandboxError: typeof ClipboardUnavailableError;
+
+        beforeEach(async () => {
+            invokeMock.mockResolvedValue(true);
+            vi.resetModules();
+            const fresh = await import('./clipboard');
+            sandboxWrite = fresh.writeClipboardText;
+            sandboxRead = fresh.readClipboardText;
+            sandboxClear = fresh.clearClipboardText;
+            sandboxError = fresh.ClipboardUnavailableError;
+        });
+
+        afterEach(() => {
+            invokeMock.mockResolvedValue(false);
+        });
+
+        it('fails fast on write without calling the plugin', async () => {
+            stubWebviewClipboard({ writeText: vi.fn().mockRejectedValue(new Error('NotAllowedError')) });
+            Object.defineProperty(document, 'execCommand', {
+                value: vi.fn().mockReturnValue(false),
+                configurable: true,
+            });
+
+            try {
+                await sandboxWrite('seed words');
+                expect.unreachable('write should have thrown');
+            } catch (e) {
+                expect(e).toBeInstanceOf(sandboxError);
+                expect((e as ClipboardUnavailableError).pluginError).toBeUndefined();
+                expect((e as ClipboardUnavailableError).webviewError).toBeInstanceOf(Error);
+            }
+            expect(pluginWriteText).not.toHaveBeenCalled();
+            expect(invokeMock).toHaveBeenCalledWith('clipboard_needs_webview');
+        });
+
+        it('reads through the webview without touching the plugin', async () => {
+            stubWebviewClipboard({ readText: vi.fn().mockResolvedValue('webview text') });
+
+            await expect(sandboxRead()).resolves.toBe('webview text');
+            expect(pluginReadText).not.toHaveBeenCalled();
+        });
+
+        it('clears through the webview without touching the plugin', async () => {
+            const webviewWrite = vi.fn().mockResolvedValue(undefined);
+            stubWebviewClipboard({ writeText: webviewWrite });
+
+            await sandboxClear();
+
+            expect(webviewWrite).toHaveBeenCalledWith('');
+            expect(pluginClear).not.toHaveBeenCalled();
+        });
+
+        it('detects the sandbox once and reuses the result', async () => {
+            stubWebviewClipboard({ readText: vi.fn().mockResolvedValue('webview text') });
+
+            await sandboxRead();
+            await sandboxRead();
+
+            expect(invokeMock).toHaveBeenCalledTimes(1);
         });
     });
 });
