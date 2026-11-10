@@ -46,12 +46,14 @@ static LIFECYCLE: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 const SHUTDOWN_TIMEOUT_SECS: u64 = 5;
 
+type NodeStatusRx = Arc<tokio::sync::watch::Receiver<BaseNodeStatus>>;
+
 pub struct McpServerManager {
     server_handle: Option<JoinHandle<()>>,
     shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
     request_cancel: Option<CancellationToken>,
     bound_port: Option<u16>,
-    node_status_rx: Option<Arc<tokio::sync::watch::Receiver<BaseNodeStatus>>>,
+    node_status_rx: Option<NodeStatusRx>,
 }
 
 impl McpServerManager {
@@ -69,7 +71,7 @@ impl McpServerManager {
         &INSTANCE
     }
 
-    pub async fn initialize(node_status_rx: Arc<tokio::sync::watch::Receiver<BaseNodeStatus>>) {
+    pub async fn initialize(node_status_rx: NodeStatusRx) {
         let mut manager = Self::current().write().await;
         manager.node_status_rx = Some(node_status_rx);
     }
@@ -88,7 +90,6 @@ impl McpServerManager {
     }
 
     async fn start_locked() -> Result<u16, anyhow::Error> {
-        // Check if already running
         {
             let manager = Self::current().read().await;
             if manager.is_running()
@@ -100,7 +101,6 @@ impl McpServerManager {
         }
 
         let config = ConfigMcp::content().await;
-
         if !*config.enabled() {
             anyhow::bail!("MCP server is not enabled");
         }
@@ -109,33 +109,13 @@ impl McpServerManager {
             .bearer_token()
             .clone()
             .ok_or_else(|| anyhow::anyhow!("MCP server has no bearer token configured"))?;
-
         let configured_port = *config.port();
+        let node_status_rx = Self::node_status_receiver().await?;
 
-        // Get the node status receiver for chain tools
-        let node_status_rx = {
-            let manager = Self::current().read().await;
-            manager.node_status_rx.clone().ok_or_else(|| {
-                anyhow::anyhow!(
-                    "MCP server not initialized — call McpServerManager::initialize() first"
-                )
-            })?
-        };
-
-        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
-        let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
-            anyhow::anyhow!(
-                "MCP server failed to bind to configured port {configured_port}: {e}. \
-                 Refusing to fall back to a random port for security reasons — \
-                 another process on the configured port could intercept bearer tokens."
-            )
-        })?;
-        info!(target: LOG_TARGET_APP_LOGIC, "MCP server bound to configured port {configured_port}");
-
+        let listener = bind_port(configured_port).await?;
         let bound_port = listener.local_addr()?.port();
         info!(target: LOG_TARGET_APP_LOGIC, "MCP server listening on 127.0.0.1:{bound_port}");
 
-        // Build the rmcp StreamableHttpService
         let request_cancel = CancellationToken::new();
         let handler_cancel = request_cancel.clone();
         let mcp_service: StreamableHttpService<TariMcpHandler, LocalSessionManager> =
@@ -151,7 +131,6 @@ impl McpServerManager {
                     .with_cancellation_token(request_cancel.clone()),
             );
 
-        // Build axum 0.8 router with bearer auth middleware
         let protected_router =
             axum::Router::new()
                 .nest_service("/mcp", mcp_service)
@@ -160,9 +139,7 @@ impl McpServerManager {
                     auth_middleware(token, req, next)
                 }));
 
-        // Shutdown channel
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::watch::channel(false);
-
         let handle = tokio::spawn(async move {
             if let Err(e) = axum::serve(listener, protected_router)
                 .with_graceful_shutdown(async move {
@@ -175,7 +152,6 @@ impl McpServerManager {
             info!(target: LOG_TARGET_APP_LOGIC, "MCP server stopped");
         });
 
-        // Store state
         {
             let mut manager = Self::current().write().await;
             manager.server_handle = Some(handle);
@@ -185,8 +161,16 @@ impl McpServerManager {
         }
 
         EventsEmitter::emit_mcp_server_status_update(true, Some(bound_port)).await;
-
         Ok(bound_port)
+    }
+
+    async fn node_status_receiver() -> Result<NodeStatusRx, anyhow::Error> {
+        let manager = Self::current().read().await;
+        manager.node_status_rx.clone().ok_or_else(|| {
+            anyhow::anyhow!(
+                "MCP server not initialized — call McpServerManager::initialize() first"
+            )
+        })
     }
 
     pub async fn stop() {
@@ -244,44 +228,59 @@ impl McpServerManager {
     }
 }
 
+// Binds strictly to the configured loopback port and logs any OS bind error before failing closed.
+async fn bind_port(configured_port: u16) -> Result<tokio::net::TcpListener, anyhow::Error> {
+    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
+    let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
+        error!(
+            target: LOG_TARGET_APP_LOGIC,
+            "MCP server failed to bind to configured port {configured_port}: {e}"
+        );
+        anyhow::anyhow!(
+            "MCP server failed to bind to configured port {configured_port}: {e}. \
+             Refusing to fall back to a random port for security reasons — \
+             another process on the configured port could intercept bearer tokens."
+        )
+    })?;
+    info!(target: LOG_TARGET_APP_LOGIC, "MCP server bound to configured port {configured_port}");
+    Ok(listener)
+}
+
 async fn auth_middleware(
     expected_token: String,
     req: axum::http::Request<axum::body::Body>,
     next: axum::middleware::Next,
 ) -> Result<axum::response::Response, axum::http::StatusCode> {
-    let auth_header = req
+    let provided = req
         .headers()
         .get("Authorization")
-        .and_then(|v: &axum::http::HeaderValue| v.to_str().ok());
+        .and_then(|v: &axum::http::HeaderValue| v.to_str().ok())
+        .and_then(|header| header.strip_prefix("Bearer "))
+        .ok_or(axum::http::StatusCode::UNAUTHORIZED)?;
 
-    match auth_header {
-        Some(header) if header.starts_with("Bearer ") => {
-            let provided = &header[7..];
-            // Constant-time comparison via hashing to avoid timing side-channels
-            let provided_hash = Sha256::digest(provided.as_bytes());
-            let expected_hash = Sha256::digest(expected_token.as_bytes());
-            if provided_hash == expected_hash {
-                let config = ConfigMcp::content().await;
-                if config.is_token_expired() {
-                    return Err(axum::http::StatusCode::UNAUTHORIZED);
-                }
-                // Sliding-window refresh: bump expiry on each successful request
-                // so the token only expires after `token_expiry_days` of inactivity.
-                let _unused = ConfigMcp::update_field(
-                    ConfigMcpContent::set_token_expires_at,
-                    Some(compute_token_expiry(
-                        SystemTime::now(),
-                        *config.token_expiry_days(),
-                    )),
-                )
-                .await;
-                Ok(next.run(req).await)
-            } else {
-                Err(axum::http::StatusCode::UNAUTHORIZED)
-            }
-        }
-        _ => Err(axum::http::StatusCode::UNAUTHORIZED),
+    // Constant-time comparison via hashing to avoid timing side-channels
+    let provided_hash = Sha256::digest(provided.as_bytes());
+    let expected_hash = Sha256::digest(expected_token.as_bytes());
+    if provided_hash != expected_hash {
+        return Err(axum::http::StatusCode::UNAUTHORIZED);
     }
+
+    let config = ConfigMcp::content().await;
+    if config.is_token_expired() {
+        return Err(axum::http::StatusCode::UNAUTHORIZED);
+    }
+
+    // Sliding-window refresh: bump expiry on each successful request
+    // so the token only expires after `token_expiry_days` of inactivity.
+    let _unused = ConfigMcp::update_field(
+        ConfigMcpContent::set_token_expires_at,
+        Some(compute_token_expiry(
+            SystemTime::now(),
+            *config.token_expiry_days(),
+        )),
+    )
+    .await;
+    Ok(next.run(req).await)
 }
 
 #[cfg(test)]
@@ -322,5 +321,20 @@ mod tests {
         drop(stop);
         let _unused = finish_tx.send(());
         assert!(LIFECYCLE.try_lock().is_ok());
+    }
+
+    #[tokio::test]
+    async fn bind_port_reports_port_in_use_without_falling_back() {
+        let occupied = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind ephemeral port");
+        let port = occupied.local_addr().expect("local addr").port();
+
+        let err = bind_port(port)
+            .await
+            .expect_err("binding an occupied port must fail");
+        let msg = err.to_string();
+        assert!(msg.contains(&format!("configured port {port}")));
+        assert!(msg.contains("Refusing to fall back to a random port for security reasons"));
     }
 }
