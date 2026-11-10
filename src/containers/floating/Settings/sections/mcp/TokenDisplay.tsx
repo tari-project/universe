@@ -9,10 +9,112 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { useCallback, useState } from 'react';
 import { requestPin } from '@app/store/useSecurityStore';
 import { addToast } from '@app/components/ToastStack/useToastStore';
+
+interface EpochTimestamp {
+    secs_since_epoch: number;
+}
+
+const formatEpochDate = (ts?: EpochTimestamp): string =>
+    ts ? new Date(ts.secs_since_epoch * 1000).toLocaleDateString() : '';
+
+const computeDaysRemaining = (expiresAt?: EpochTimestamp | null): number | null =>
+    expiresAt ? Math.max(0, Math.ceil((expiresAt.secs_since_epoch * 1000 - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+
+// Fail closed while the PIN state is unknown (undefined): only a wallet known
+// to have no PIN reveals the token without a PIN prompt (#3518).
+async function requestUnredactedMcpToken(isPinLocked: boolean | undefined): Promise<string | null | 'cancelled'> {
+    if (isPinLocked === false) {
+        return invoke<string | null>('get_mcp_token', { pin: null });
+    }
+    const pin = await requestPin();
+    if (!pin) return 'cancelled';
+    return invoke<string | null>('get_mcp_token', { pin });
+}
+
+async function refreshTokenExpiry(): Promise<void> {
+    try {
+        await invoke('refresh_mcp_token_expiry');
+    } catch (e) {
+        console.error('Failed to refresh token expiry:', e);
+    }
+}
+
+async function revokeMcpToken(confirmText: string, onRevoked: () => void): Promise<void> {
+    if (!confirm(confirmText)) return;
+    try {
+        await invoke('revoke_mcp_token');
+        onRevoked();
+    } catch (e) {
+        console.error('Failed to revoke token:', e);
+    }
+}
+
+function TokenExpiryFooter({
+    createdAt,
+    expiresAt,
+}: {
+    createdAt?: EpochTimestamp | null;
+    expiresAt?: EpochTimestamp | null;
+}) {
+    const { t } = useTranslation(['settings'], { useSuspense: false });
+    if (!createdAt) return null;
+    const daysRemaining = computeDaysRemaining(expiresAt);
+
+    return (
+        <Typography variant="p" style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>
+            {t('mcp.token-display.created')}: {formatEpochDate(createdAt)}
+            {expiresAt && ` · ${t('mcp.token-display.expires')}: ${formatEpochDate(expiresAt)}`}
+            {daysRemaining !== null && ` (${t('mcp.token-display.days-remaining', { days: daysRemaining })})`}
+        </Typography>
+    );
+}
+
+function useTokenRevealAndCopy(isPinLocked: boolean | undefined) {
+    const [revealed, setRevealed] = useState(false);
+    const [fullToken, setFullToken] = useState<string | null>(null);
+    const { copyToClipboard, isCopied: copied } = useCopyToClipboard();
+
+    const clearRevealed = useCallback(() => {
+        setRevealed(false);
+        setFullToken(null);
+    }, []);
+
+    const handleReveal = useCallback(async () => {
+        if (revealed) {
+            clearRevealed();
+            return;
+        }
+        try {
+            const token = await requestUnredactedMcpToken(isPinLocked);
+            if (token === 'cancelled') return;
+            setFullToken(token);
+            setRevealed(true);
+        } catch (e) {
+            addToast({ title: 'Failed to reveal token', text: String(e), type: 'error' });
+        }
+    }, [clearRevealed, isPinLocked, revealed]);
+
+    const handleCopy = useCallback(async () => {
+        if (fullToken) {
+            copyToClipboard(fullToken);
+            return;
+        }
+        try {
+            const token = await requestUnredactedMcpToken(isPinLocked);
+            if (token && token !== 'cancelled') {
+                copyToClipboard(token);
+            }
+        } catch (e) {
+            addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
+        }
+    }, [copyToClipboard, fullToken, isPinLocked]);
+
+    return { revealed, fullToken, copied, clearRevealed, handleReveal, handleCopy };
+}
 
 export default function TokenDisplay() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -21,108 +123,18 @@ export default function TokenDisplay() {
     const tokenCreatedAt = useConfigMcpStore((s) => s.token_created_at);
     const tokenExpiresAt = useConfigMcpStore((s) => s.token_expires_at);
     const isPinLocked = useWalletStore((s) => s.is_pin_locked);
-    const [revealed, setRevealed] = useState(false);
-    const [fullToken, setFullToken] = useState<string | null>(null);
-    const [copied, setCopied] = useState(false);
 
-    const fetchToken = useCallback(async (pinValue?: string) => {
-        return invoke<string | null>('get_mcp_token', { pin: pinValue ?? null });
-    }, []);
+    const { revealed, fullToken, copied, clearRevealed, handleReveal, handleCopy } =
+        useTokenRevealAndCopy(isPinLocked);
 
-    const handleReveal = useCallback(async () => {
-        if (revealed) {
-            setRevealed(false);
-            setFullToken(null);
-            return;
-        }
-        // Fail closed while the PIN state is unknown (undefined): only a wallet
-        // known to have no PIN reveals the token without a PIN prompt (#3518).
-        if (isPinLocked !== false) {
-            const pin = await requestPin();
-            if (!pin) return;
-            try {
-                const token = await fetchToken(pin);
-                setFullToken(token);
-                setRevealed(true);
-            } catch (e) {
-                addToast({ title: 'Failed to reveal token', text: String(e), type: 'error' });
-            }
-        } else {
-            try {
-                const token = await fetchToken();
-                setFullToken(token);
-                setRevealed(true);
-            } catch (e) {
-                addToast({ title: 'Failed to reveal token', text: String(e), type: 'error' });
-            }
-        }
-    }, [revealed, isPinLocked, fetchToken]);
-
-    const handleCopy = useCallback(async () => {
-        if (fullToken) {
-            await writeText(fullToken);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-            return;
-        }
-        if (isPinLocked !== false) {
-            const pin = await requestPin();
-            if (!pin) return;
-            try {
-                const token = await fetchToken(pin);
-                if (token) {
-                    await writeText(token);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                }
-            } catch (e) {
-                addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
-            }
-        } else {
-            try {
-                const token = await fetchToken();
-                if (token) {
-                    await writeText(token);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                }
-            } catch (e) {
-                addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
-            }
-        }
-    }, [fullToken, isPinLocked, fetchToken]);
-
-    const handleRefreshExpiry = useCallback(async () => {
-        try {
-            await invoke('refresh_mcp_token_expiry');
-        } catch (e) {
-            console.error('Failed to refresh token expiry:', e);
-        }
-    }, []);
-
-    const handleRevoke = useCallback(async () => {
-        if (!confirm(t('mcp.token-display.revoke-confirm'))) return;
-        try {
-            await invoke('revoke_mcp_token');
-            setRevealed(false);
-            setFullToken(null);
-        } catch (e) {
-            console.error('Failed to revoke token:', e);
-        }
-    }, [t]);
+    const handleRevoke = useCallback(
+        () => revokeMcpToken(t('mcp.token-display.revoke-confirm'), clearRevealed),
+        [clearRevealed, t]
+    );
 
     if (!enabled || !redactedToken) return null;
 
     const displayToken = revealed && fullToken ? fullToken : redactedToken;
-
-    const formatDate = (ts?: { secs_since_epoch: number }) => {
-        if (!ts) return '';
-        return new Date(ts.secs_since_epoch * 1000).toLocaleDateString();
-    };
-
-    const daysRemaining = tokenExpiresAt
-        ? Math.max(0, Math.ceil((tokenExpiresAt.secs_since_epoch * 1000 - Date.now()) / (1000 * 60 * 60 * 24)))
-        : null;
 
     return (
         <SettingsGroupWrapper>
@@ -153,7 +165,7 @@ export default function TokenDisplay() {
                             {copied ? t('mcp.token-display.copied') : t('mcp.token-display.copy')}
                         </button>
                         <button
-                            onClick={handleRefreshExpiry}
+                            onClick={refreshTokenExpiry}
                             style={{ fontSize: 11, cursor: 'pointer' }}
                             data-testid="mcp-token-refresh"
                         >
@@ -167,14 +179,7 @@ export default function TokenDisplay() {
                             {t('mcp.token-display.revoke')}
                         </button>
                     </div>
-                    {tokenCreatedAt && (
-                        <Typography variant="p" style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>
-                            {t('mcp.token-display.created')}: {formatDate(tokenCreatedAt)}
-                            {tokenExpiresAt && ` · ${t('mcp.token-display.expires')}: ${formatDate(tokenExpiresAt)}`}
-                            {daysRemaining !== null &&
-                                ` (${t('mcp.token-display.days-remaining', { days: daysRemaining })})`}
-                        </Typography>
-                    )}
+                    <TokenExpiryFooter createdAt={tokenCreatedAt} expiresAt={tokenExpiresAt} />
                 </SettingsGroupContent>
             </SettingsGroup>
         </SettingsGroupWrapper>

@@ -9,8 +9,10 @@ import {
 } from './ProcessingTransaction.styles';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { useCallback, useMemo, useState } from 'react';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
 import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
 import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/ProcessingIcon';
@@ -42,171 +44,177 @@ interface Props extends ProccessingTransactionProps {
 const mainnetExplorerUrl = 'https://etherscan.io';
 const CONTRACT_ADDRESS = '0xfD36fA88bb3feA8D1264fc89d70723b6a2B56958';
 
-export const ProcessingTransaction = ({
-    handleAddXtmToWallet,
-    status,
-    isOpen,
-    setIsOpen,
-    transactionId,
-    fromTokenSymbol,
-    fromTokenAmount,
-    toTokenSymbol,
-    toTokenAmount,
-    fees,
-    txBlockHash,
-    errorMessage,
-}: Props) => {
-    const { t } = useTranslation(['wallet'], { useSuspense: false });
-    const explorerUrl = mainnetExplorerUrl;
-    const [copied, setCopied] = useState(false);
+function resolveStatusLabel(status: SwapStatus | undefined, t: TFunction): string | undefined {
+    if (status === 'success') return t('swap.completed');
+    if (status === 'processingapproval' || status === 'processingswap') return t('swap.processing');
+    if (status === 'error') return t('swap.failed');
+    return undefined;
+}
 
-    const handleCopyAddress = useCallback(() => {
-        navigator.clipboard.writeText(CONTRACT_ADDRESS);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    }, []);
+function buildStatusEntries(props: ProccessingTransactionProps, t: TFunction): StatusListEntry[] {
+    const { status, fees, transactionId, txBlockHash, errorMessage } = props;
+    const items: StatusListEntry[] = [];
 
-    const statusItems: StatusListEntry[] = useMemo(() => {
-        const items: StatusListEntry[] = [];
-
-        if (status === 'processingswap') {
-            items.push({
-                label: 'Official wXTM Contract Address',
-                value: CONTRACT_ADDRESS,
-            });
-        }
-
+    if (status === 'processingswap') {
         items.push({
-            label: t('swap.status'),
-            value: (
-                <StatusValue $status={status}>
-                    {status === 'success' && t('swap.completed')}
-                    {(status === 'processingapproval' || status === 'processingswap') && t('swap.processing')}
-                    {status === 'error' && t('swap.failed')}
-                </StatusValue>
-            ),
+            label: 'Official wXTM Contract Address',
+            value: CONTRACT_ADDRESS,
         });
+    }
 
-        items.push({
+    items.push(
+        {
+            label: t('swap.status'),
+            value: <StatusValue $status={status}>{resolveStatusLabel(status, t)}</StatusValue>,
+        },
+        {
             label: t('swap.total-fees-swap'),
             value: fees?.swap ?? <LoadingDots />,
-        });
-
-        items.push({
+        },
+        {
             label: t('swap.transaction-id'),
-            externalLink: transactionId ? `${explorerUrl}/tx/${transactionId}` : undefined,
+            externalLink: transactionId ? `${mainnetExplorerUrl}/tx/${transactionId}` : undefined,
             value: transactionId ? truncateMiddle(transactionId, 15) : <LoadingDots />,
-        });
-
-        items.push({
+        },
+        {
             label: t('swap.block-hash'),
-            externalLink: txBlockHash ? `${explorerUrl}/block/${txBlockHash}` : undefined,
+            externalLink: txBlockHash ? `${mainnetExplorerUrl}/block/${txBlockHash}` : undefined,
             value: txBlockHash ? truncateMiddle(txBlockHash, 15) : <LoadingDots />,
+        }
+    );
+
+    if (status === 'error' && errorMessage) {
+        items.push({
+            label: t('swap.error-message'),
+            value: <span style={{ color: 'red', wordBreak: 'break-word' }}>{errorMessage}</span>,
         });
+    }
 
-        if (status === 'error' && errorMessage) {
-            items.push({
-                label: t('swap.error-message'),
-                value: <span style={{ color: 'red', wordBreak: 'break-word' }}>{errorMessage}</span>, // Basic styling for error
-            });
-        }
+    return items.filter((item) => item.value !== undefined);
+}
 
-        return items.filter((item) => item.value !== undefined);
-    }, [status, fees, transactionId, txBlockHash, errorMessage, t, explorerUrl]);
+function getHeroCopy(props: ProccessingTransactionProps, t: TFunction) {
+    const { status, fromTokenAmount, fromTokenSymbol, toTokenAmount, toTokenSymbol } = props;
+    if (status === 'processingapproval' || status === 'processingswap') {
+        return {
+            title: 'Confirm swap in wallet',
+            message: 'Please approve the transaction request in your connected wallet.',
+            cta: status === 'processingapproval' ? t('swap.awaiting-approval') : t('swap.processing'),
+        };
+    }
+    if (status === 'success') {
+        return {
+            title: 'Swapped!',
+            message: `You’ve successfully swapped ${fromTokenAmount} ${fromTokenSymbol} for ${toTokenAmount} ${toTokenSymbol}`,
+            cta: t('swap.done'),
+        };
+    }
+    if (status === 'error') {
+        return {
+            title: t('swap.swap-failed'),
+            message: t('swap.transaction-could-not-be-completed'),
+            cta: t('swap.close'),
+        };
+    }
+    return { title: '', message: undefined, cta: undefined };
+}
 
-    const heroTitle = useMemo(() => {
-        switch (status) {
-            case 'processingapproval':
-            case 'processingswap':
-                return 'Confirm swap in wallet';
-            case 'success':
-                return 'Swapped!';
-            case 'error':
-                return t('swap.swap-failed');
-        }
-    }, [status, t]);
+function SuccessContractSection({
+    copied,
+    onCopyAddress,
+    onAddXtmToWallet,
+}: {
+    copied: boolean;
+    onCopyAddress: () => void;
+    onAddXtmToWallet?: () => void;
+}) {
+    return (
+        <>
+            <OfficialContractAddressConainer>
+                <OfficialContractAddressWrapper>
+                    <span className="label">{'Official wXTM Token Address'}</span>
+                    <span className="address">{CONTRACT_ADDRESS}</span>
+                </OfficialContractAddressWrapper>
+                <CopyIconWrapper onClick={onCopyAddress}>
+                    <CopyIcon size={16} />
+                    <AnimatePresence>
+                        {copied && (
+                            <CopyText
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                            >
+                                {'Copied!'}
+                            </CopyText>
+                        )}
+                    </AnimatePresence>
+                </CopyIconWrapper>
+            </OfficialContractAddressConainer>
+            <HelperText>
+                <div className="strong">{'How to view wXTM in your wallet?'}</div>
+                <div>
+                    {'To see your balance, add wXTM to your wallet by importing the '}
+                    <span className="strong">{'token address'}</span>
+                    {' on the '}
+                    <span className="strong">{'Ethereum mainnet'}</span>
+                    {' network. Alternatively, '}
+                    <span className="btn" onClick={onAddXtmToWallet}>
+                        {'click here'}
+                    </span>
+                    {" to send the request directly to your mobile wallet app - you'll need to approve it on your phone."}
+                </div>
+            </HelperText>
+        </>
+    );
+}
 
-    const heroMessage = useMemo(() => {
-        switch (status) {
-            case 'processingapproval':
-            case 'processingswap':
-                return `Please approve the transaction request in your connected wallet.`;
-            case 'success':
-                return `You’ve successfully swapped ${fromTokenAmount} ${fromTokenSymbol} for ${toTokenAmount} ${toTokenSymbol}`;
-            case 'error':
-                return t('swap.transaction-could-not-be-completed');
-        }
-    }, [fromTokenAmount, fromTokenSymbol, status, t, toTokenAmount, toTokenSymbol]);
+export const ProcessingTransaction = (props: Props) => {
+    const {
+        handleAddXtmToWallet,
+        status,
+        isOpen,
+        setIsOpen,
+        transactionId,
+        fromTokenSymbol,
+        fromTokenAmount,
+        toTokenSymbol,
+        toTokenAmount,
+        fees,
+        txBlockHash,
+        errorMessage,
+    } = props;
+    const { t } = useTranslation(['wallet'], { useSuspense: false });
+    const { copyToClipboard, isCopied: copied } = useCopyToClipboard();
 
-    const ctaMessage = useMemo(() => {
-        switch (status) {
-            case 'processingapproval':
-                return t('swap.awaiting-approval');
-            case 'processingswap':
-                return t('swap.processing');
-            case 'success':
-                return t('swap.done');
-            case 'error':
-                return t('swap.close'); // Or "Try Again" if you have that logic
-        }
-    }, [status, t]);
+    const handleCopyAddress = useCallback(() => {
+        copyToClipboard(CONTRACT_ADDRESS);
+    }, [copyToClipboard]);
 
-    const statusIcon = useMemo(() => {
-        switch (status) {
-            case 'success':
-                return <CompletedIcon />;
-            // case 'error':
-            //     return <ErrorIcon />;
-            default: // processingapproval, processingswap
-                return <ProcessingIcon />;
-        }
-    }, [status]);
+    const statusItems = useMemo(
+        () => buildStatusEntries({ status, fees, transactionId, txBlockHash, errorMessage }, t),
+        [status, fees, transactionId, txBlockHash, errorMessage, t]
+    );
+
+    const hero = useMemo(
+        () => getHeroCopy({ status, fromTokenAmount, fromTokenSymbol, toTokenAmount, toTokenSymbol }, t),
+        [status, fromTokenAmount, fromTokenSymbol, toTokenAmount, toTokenSymbol, t]
+    );
+
+    const statusIcon = status === 'success' ? <CompletedIcon /> : <ProcessingIcon />;
+    const isBusy = status === 'processingswap' || status === 'processingapproval';
 
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
-            <StatusHero icon={statusIcon} title={heroTitle || ''}>
-                <p>{heroMessage}</p>
+            <StatusHero icon={statusIcon} title={hero.title}>
+                <p>{hero.message}</p>
             </StatusHero>
 
             {status === 'success' && (
-                <>
-                    <OfficialContractAddressConainer>
-                        <OfficialContractAddressWrapper>
-                            <span className="label">{'Official wXTM Token Address'}</span>
-                            <span className="address">{CONTRACT_ADDRESS}</span>
-                        </OfficialContractAddressWrapper>
-                        <CopyIconWrapper onClick={handleCopyAddress}>
-                            <CopyIcon size={16} />
-                            <AnimatePresence>
-                                {copied && (
-                                    <CopyText
-                                        initial={{ opacity: 0, scale: 0.8 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.8 }}
-                                    >
-                                        {'Copied!'}
-                                    </CopyText>
-                                )}
-                            </AnimatePresence>
-                        </CopyIconWrapper>
-                    </OfficialContractAddressConainer>
-                    <HelperText>
-                        <div className="strong">{'How to view wXTM in your wallet?'}</div>
-                        <div>
-                            {'To see your balance, add wXTM to your wallet by importing the '}
-                            <span className="strong">{'token address'}</span>
-                            {' on the '}
-                            <span className="strong">{'Ethereum mainnet'}</span>
-                            {' network. Alternatively, '}
-                            <span className="btn" onClick={handleAddXtmToWallet}>
-                                {'click here'}
-                            </span>
-                            {
-                                " to send the request directly to your mobile wallet app—you'll need to approve it on your phone."
-                            }
-                        </div>
-                    </HelperText>
-                </>
+                <SuccessContractSection
+                    copied={copied}
+                    onCopyAddress={handleCopyAddress}
+                    onAddXtmToWallet={handleAddXtmToWallet}
+                />
             )}
 
             <ProcessingDetailsWrapper>
@@ -214,12 +222,12 @@ export const ProcessingTransaction = ({
             </ProcessingDetailsWrapper>
 
             <WalletButton
-                variant={status === 'error' ? 'error' : 'primary'} // Example: use danger variant for error
+                variant={status === 'error' ? 'error' : 'primary'}
                 size="xl"
-                disabled={status === 'processingswap' || status === 'processingapproval'}
+                disabled={isBusy}
                 onClick={() => setIsOpen(false)}
             >
-                {ctaMessage}
+                {hero.cta}
             </WalletButton>
         </TransactionModal>
     );

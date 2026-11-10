@@ -1,4 +1,4 @@
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import GreenModal from '@app/components/GreenModal/GreenModal';
 import { AnimatePresence } from 'motion/react';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
@@ -19,48 +19,38 @@ import {
 import genericHeroImage from './images/generic-image.png';
 import gemImage from '@app/assets/images/gem.png';
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
 
+function useShareRewardDetails() {
+    const item = useShareRewardStore((s) => s.item);
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdrop_url ?? '');
+    const referralCode = useAirdropStore((s) => s.userDetails?.user?.referral_code ?? '');
+    const block = item?.blockchain.block_height ?? 0;
+    const reward = item?.amount ?? 0;
+    const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.XTM_COMPACT).toLowerCase(), [reward]);
+    const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
+    return { block, earningsFormatted, shareUrl };
+}
+
 const ShareRewardModal = memo(function ShareRewardModal() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
-
     const { setShowModal, setItemData } = useShareRewardStore((s) => s);
     const showModal = useShareRewardStore((s) => s.showModal);
-    const item = useShareRewardStore((s) => s.item);
-
-    const [copied, setCopied] = useState(false);
-
-    useEffect(() => {
-        if (copied) {
-            setTimeout(() => {
-                setCopied(false);
-            }, 2000);
-        }
-    }, [copied]);
+    const { copyToClipboard, isCopied: copied } = useCopyToClipboard();
+    const { block, earningsFormatted, shareUrl } = useShareRewardDetails();
+    const gemsValue = GIFT_GEMS.toLocaleString();
 
     const handleClose = () => {
         setShowModal(false);
         setItemData(null);
     };
 
-    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdrop_url || '');
-    const userDetails = useAirdropStore((s) => s.userDetails);
-    const referralCode = userDetails?.user?.referral_code || '';
-    const gemsValue = GIFT_GEMS.toLocaleString();
-    const block = item?.blockchain.block_height || 0;
-    const reward = item?.amount || 0;
-    const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.XTM_COMPACT).toLowerCase(), [reward]);
-
-    const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
-
     const handleCopy = useCallback(() => {
-        writeText(shareUrl).then(() => {
-            setCopied(true);
-        });
-    }, [shareUrl]);
+        copyToClipboard(shareUrl);
+    }, [copyToClipboard, shareUrl]);
 
     return (
         <GreenModal onClose={handleClose} padding={30} showModal={showModal}>

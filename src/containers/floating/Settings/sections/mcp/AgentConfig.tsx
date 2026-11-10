@@ -5,7 +5,7 @@ import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { useCallback, useMemo, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { requestPin } from '@app/store/useSecurityStore';
@@ -68,7 +68,7 @@ function buildSnippets(port: number, token: string): Record<AgentId, AgentSnippe
                 null,
                 2
             ),
-            instructions: 'Open Cursor Settings → MCP → Add Server, or paste this into `.cursor/mcp.json`:',
+            instructions: 'Open Cursor Settings -> MCP -> Add Server, or paste this into `.cursor/mcp.json`:',
         },
         windsurf: {
             description: 'Add to your Windsurf MCP configuration:',
@@ -87,7 +87,7 @@ function buildSnippets(port: number, token: string): Record<AgentId, AgentSnippe
                 2
             ),
             instructions:
-                'Open Windsurf Settings → MCP → Add Server, or paste this into `~/.codeium/windsurf/mcp_config.json`:',
+                'Open Windsurf Settings -> MCP -> Add Server, or paste this into `~/.codeium/windsurf/mcp_config.json`:',
         },
         custom: {
             description: 'Use these details to configure any MCP-compatible client:',
@@ -109,6 +109,24 @@ function buildSnippets(port: number, token: string): Record<AgentId, AgentSnippe
 
 const PLACEHOLDER_TOKEN = '••••••••••••••••';
 
+// Fail closed while the PIN state is unknown (undefined): only a wallet known
+// to have no PIN skips the PIN prompt (#3518).
+async function fetchMcpTokenForCopy(isPinLocked: boolean | undefined): Promise<string | null> {
+    if (isPinLocked === false) {
+        return invoke<string | null>('get_mcp_token');
+    }
+    const pin = await requestPin();
+    if (!pin) return null;
+    return invoke<string | null>('get_mcp_token', { pin });
+}
+
+const isAgentConfigReady = (
+    enabled: boolean,
+    redactedToken: string | null | undefined,
+    serverRunning: boolean,
+    serverPort: number | null | undefined
+): serverPort is number => Boolean(enabled && redactedToken && serverRunning && serverPort);
+
 export default function AgentConfig() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const enabled = useConfigMcpStore((s) => s.enabled);
@@ -118,42 +136,31 @@ export default function AgentConfig() {
     const isPinLocked = useWalletStore((s) => s.is_pin_locked);
 
     const [activeAgent, setActiveAgent] = useState<AgentId>('claude-code');
-    const [copied, setCopied] = useState(false);
+    const { copyToClipboard, isCopied: copied } = useCopyToClipboard();
 
-    const displaySnippets = useMemo(() => {
-        if (!serverPort) return null;
-        return buildSnippets(serverPort, PLACEHOLDER_TOKEN);
-    }, [serverPort]);
+    const displaySnippets = useMemo(
+        () => (serverPort ? buildSnippets(serverPort, PLACEHOLDER_TOKEN) : null),
+        [serverPort]
+    );
 
     const handleCopy = useCallback(
         async (buildText: (token: string) => string) => {
             try {
-                let token: string | null = null;
-                // Fail closed while the PIN state is unknown (undefined): only a
-                // wallet known to have no PIN skips the PIN prompt (#3518).
-                if (isPinLocked !== false) {
-                    const pin = await requestPin();
-                    if (!pin) return;
-                    token = await invoke<string | null>('get_mcp_token', { pin });
-                } else {
-                    token = await invoke<string | null>('get_mcp_token');
-                }
+                const token = await fetchMcpTokenForCopy(isPinLocked);
                 if (!token) return;
-                const text = buildText(token);
-                await writeText(text);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
+                copyToClipboard(buildText(token));
             } catch (e) {
                 addToast({ title: 'Failed to copy', text: String(e), type: 'error' });
             }
         },
-        [isPinLocked]
+        [copyToClipboard, isPinLocked]
     );
 
-    if (!enabled || !redactedToken || !serverRunning || !serverPort || !displaySnippets) return null;
+    if (!isAgentConfigReady(enabled, redactedToken, serverRunning, serverPort) || !displaySnippets) {
+        return null;
+    }
 
     const activeDisplaySnippet = displaySnippets[activeAgent];
-    const port = serverPort;
 
     return (
         <SettingsGroupWrapper>
@@ -176,7 +183,9 @@ export default function AgentConfig() {
                     <CodeBlock>
                         <code>{activeDisplaySnippet.config}</code>
                     </CodeBlock>
-                    <CopyButton onClick={() => handleCopy((token) => buildSnippets(port, token)[activeAgent].config)}>
+                    <CopyButton
+                        onClick={() => handleCopy((token) => buildSnippets(serverPort, token)[activeAgent].config)}
+                    >
                         {copied ? t('mcp.agent-config.copied') : t('mcp.agent-config.copy')}
                     </CopyButton>
                     {activeDisplaySnippet.jsonConfig && (
@@ -189,7 +198,7 @@ export default function AgentConfig() {
                             </CodeBlock>
                             <CopyButton
                                 onClick={() =>
-                                    handleCopy((token) => buildSnippets(port, token)[activeAgent].jsonConfig!)
+                                    handleCopy((token) => buildSnippets(serverPort, token)[activeAgent].jsonConfig!)
                                 }
                             >
                                 {t('mcp.agent-config.copy')} JSON
