@@ -30,6 +30,7 @@ use ring_compat::pkcs8::SubjectPublicKeyInfo;
 use ring_compat::pkcs8::spki::AlgorithmIdentifier;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::sync::LazyLock;
 use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
 
@@ -176,6 +177,28 @@ pub fn get_der_encode_pub_key(key_pair: &Ed25519KeyPair) -> anyhow::Result<Strin
 
     let der_encoded = spki.to_der().map_err(|e| anyhow::anyhow!(e.to_string()))?;
     Ok(hex::encode(der_encoded))
+}
+
+pub struct CachedWsKey {
+    pub key: Ed25519KeyPair,
+    pub pub_key: String,
+}
+
+static CACHED_WS_KEY: LazyLock<Result<CachedWsKey, String>> = LazyLock::new(|| {
+    let key = get_websocket_key().map_err(|e| format!("Failed to load Ed25519 key: {e}"))?;
+    let pub_key = get_der_encode_pub_key(&key)
+        .map_err(|e| format!("Failed to encode DER SPKI public key: {e}"))?;
+    Ok(CachedWsKey { key, pub_key })
+});
+
+pub fn get_cached_ws_key() -> Result<&'static CachedWsKey, &'static str> {
+    match &*CACHED_WS_KEY {
+        Ok(cached) => Ok(cached),
+        Err(e) => {
+            warn!(target: LOG_TARGET_APP_LOGIC, "error ws key handling: {e}");
+            Err("sign_ws_data: error ws key handling")
+        }
+    }
 }
 
 /// Fire-and-forget report of a node-accepted burn so pre-launch burns can be counted; advisory, the backend verifies on chain.

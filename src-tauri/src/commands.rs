@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
+use crate::airdrop::get_cached_ws_key;
 use crate::app_in_memory_config::{AppInMemoryConfig, DEFAULT_EXCHANGE_ID, ExchangeMiner};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -92,7 +92,6 @@ use std::fs::{File, read_dir, remove_dir_all, remove_file};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
-use std::thread::sleep;
 use std::time::{Duration, Instant};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
@@ -218,7 +217,7 @@ pub async fn frontend_ready(
         .await
         .spawn(async move {
             // Give the splash screen a few seconds to show before closing it
-            sleep(Duration::from_secs(3));
+            tokio::time::sleep(Duration::from_secs(3)).await;
             EventsEmitter::emit_close_splashscreen().await;
             // In test mode the release-notes dialog would land on whichever
             // test page happens to trigger the once-guard, seconds after it
@@ -1044,26 +1043,12 @@ pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
 
 #[tauri::command]
 pub async fn sign_ws_data(data: String) -> Result<SignWsDataResponse, String> {
-    let key: ring::signature::Ed25519KeyPair = get_websocket_key().map_err(|e| {
-        warn!(target: LOG_TARGET_APP_LOGIC,
-            "error ws key handling:{:?}",
-            e.to_string()
-        );
-        "sign_ws_data: error ws key handling"
-    })?;
-    let pub_key = get_der_encode_pub_key(&key).map_err(|e| {
-        warn!(target: LOG_TARGET_APP_LOGIC,
-            "error ws pub key handling:{:?}",
-            e.to_string()
-        );
-        "sign_ws_data: error ws pub key handling"
-    })?;
-
-    let signature = key.sign(data.as_bytes());
+    let cached = get_cached_ws_key().map_err(|e| e.to_string())?;
+    let signature = cached.key.sign(data.as_bytes());
 
     Ok(SignWsDataResponse {
         signature: BASE64_STANDARD.encode(signature.as_ref()),
-        pub_key,
+        pub_key: cached.pub_key.clone(),
     })
 }
 

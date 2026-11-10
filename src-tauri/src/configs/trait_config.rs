@@ -85,6 +85,16 @@ pub(crate) fn atomic_write(path: &Path, contents: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
+static FILE_WRITE_MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+/// Writes serialized config to the specified path atomically, ensuring parent directory exists.
+fn write_serialized_config(path: &Path, bytes: &[u8]) -> Result<(), Error> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    atomic_write(path, bytes)
+}
+
 /// Clamps the app config root, `app_configs/`, each network dir under it to 0700 and the
 /// files directly inside each network dir to 0600. Runs on every startup to fix installs
 /// that were written world-readable. Best-effort: every failure is logged and skipped.
@@ -199,11 +209,8 @@ pub trait ConfigImpl {
 
     fn _save_config(config_content: Self::Config) -> Result<(), Error> {
         let config_path = Self::_get_config_path();
-        if let Some(parent) = config_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
         let config_content_serialized = serde_json::to_string_pretty(&config_content)?;
-        atomic_write(&config_path, config_content_serialized.as_bytes())
+        write_serialized_config(&config_path, config_content_serialized.as_bytes())
     }
     fn _load_config() -> Result<Self::Config, Error> {
         let config_path = Self::_get_config_path();
@@ -230,15 +237,25 @@ pub trait ConfigImpl {
         Self: 'static,
     {
         debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] with function: {:?} and value of type: {:?}", Self::_get_name(), std::any::type_name::<F>(), std::any::type_name::<I>());
-        {
-            // Mutate and save under one write lock: two updates that each dropped the
-            // lock before saving could interleave their writes to the same file.
+        let _queue_guard = FILE_WRITE_MUTEX.lock().await;
+        let (config_path, config_content_serialized, config_name) = {
             let mut config = Self::current().write().await;
             setter_callback(config._get_content_mut(), value.clone());
-            Self::_save_config(config._get_content().clone()).inspect_err(|error|
-                debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
-            )?;
-        }
+            let config_path = Self::_get_config_path();
+            let config_content_serialized = serde_json::to_string_pretty(config._get_content())?;
+            (config_path, config_content_serialized, Self::_get_name())
+        };
+
+        tokio::task::spawn_blocking(move || {
+            write_serialized_config(&config_path, config_content_serialized.as_bytes())
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("spawn_blocking join error: {e}"))?
+        .inspect_err(|error| {
+            debug!(target: LOG_TARGET_APP_LOGIC, "[{config_name}] [update_field] error: {error:?}")
+        })?;
+        drop(_queue_guard);
+
         Self::current()
             .read()
             .await

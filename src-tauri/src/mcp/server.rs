@@ -21,9 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::sync::{Arc, LazyLock};
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
-use axum08 as axum;
+use axum;
 use log::{error, info, warn};
 use rmcp::transport::StreamableHttpServerConfig;
 use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
@@ -244,6 +244,27 @@ impl McpServerManager {
     }
 }
 
+const TOKEN_REFRESH_THROTTLE: Duration = Duration::from_secs(3600); // 1 hour
+
+/// Checks whether token expiry refresh is needed.
+/// Updates only if token_expires_at is None or if >= 1 hour has elapsed since last update.
+pub(crate) fn should_refresh_token_expiry(
+    token_expires_at: Option<SystemTime>,
+    now: SystemTime,
+    token_expiry_days: u32,
+) -> bool {
+    match token_expires_at {
+        None => true,
+        Some(current_expiry) => {
+            let new_expiry = compute_token_expiry(now, token_expiry_days);
+            match new_expiry.duration_since(current_expiry) {
+                Ok(elapsed) => elapsed >= TOKEN_REFRESH_THROTTLE,
+                Err(_) => false,
+            }
+        }
+    }
+}
+
 async fn auth_middleware(
     expected_token: String,
     req: axum::http::Request<axum::body::Body>,
@@ -265,16 +286,20 @@ async fn auth_middleware(
                 if config.is_token_expired() {
                     return Err(axum::http::StatusCode::UNAUTHORIZED);
                 }
-                // Sliding-window refresh: bump expiry on each successful request
-                // so the token only expires after `token_expiry_days` of inactivity.
-                let _unused = ConfigMcp::update_field(
-                    ConfigMcpContent::set_token_expires_at,
-                    Some(compute_token_expiry(
-                        SystemTime::now(),
-                        *config.token_expiry_days(),
-                    )),
-                )
-                .await;
+                // Sliding-window refresh: throttle updating token_expires_at (at most once per hour)
+                let now = SystemTime::now();
+                if should_refresh_token_expiry(
+                    *config.token_expires_at(),
+                    now,
+                    *config.token_expiry_days(),
+                ) {
+                    let new_expiry = compute_token_expiry(now, *config.token_expiry_days());
+                    let _unused = ConfigMcp::update_field(
+                        ConfigMcpContent::set_token_expires_at,
+                        Some(new_expiry),
+                    )
+                    .await;
+                }
                 Ok(next.run(req).await)
             } else {
                 Err(axum::http::StatusCode::UNAUTHORIZED)
@@ -322,5 +347,49 @@ mod tests {
         drop(stop);
         let _unused = finish_tx.send(());
         assert!(LIFECYCLE.try_lock().is_ok());
+    }
+
+    #[test]
+    fn test_should_refresh_token_expiry_when_none() {
+        assert!(should_refresh_token_expiry(None, SystemTime::now(), 30));
+    }
+
+    #[test]
+    fn test_should_refresh_token_expiry_throttles_within_one_hour() {
+        let now = SystemTime::now();
+        let days = 30;
+        let initial_expiry = compute_token_expiry(now, days);
+
+        // 10 seconds later: do not refresh
+        let ten_secs_later = now + Duration::from_secs(10);
+        assert!(!should_refresh_token_expiry(
+            Some(initial_expiry),
+            ten_secs_later,
+            days
+        ));
+
+        // 59 minutes later: do not refresh
+        let fifty_nine_mins = now + Duration::from_secs(59 * 60);
+        assert!(!should_refresh_token_expiry(
+            Some(initial_expiry),
+            fifty_nine_mins,
+            days
+        ));
+
+        // 60 minutes (1 hour) later: refresh
+        let sixty_mins = now + Duration::from_secs(60 * 60);
+        assert!(should_refresh_token_expiry(
+            Some(initial_expiry),
+            sixty_mins,
+            days
+        ));
+
+        // 2 hours later: refresh
+        let two_hours = now + Duration::from_secs(2 * 3600);
+        assert!(should_refresh_token_expiry(
+            Some(initial_expiry),
+            two_hours,
+            days
+        ));
     }
 }

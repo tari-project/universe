@@ -74,13 +74,25 @@ pub trait NodeAdapter {
     fn set_ab_group(&mut self, ab_group: ABTestSelector);
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct NodeAdapterService {
     connection_address: String,
     http_address: String,
     network: Network,
     required_sync_peers: u32,
     consensus_manager: ConsensusManager,
+    http_client: minotari_node_wallet_client::http::Client,
+}
+
+impl std::fmt::Debug for NodeAdapterService {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NodeAdapterService")
+            .field("connection_address", &self.connection_address)
+            .field("http_address", &self.http_address)
+            .field("network", &self.network)
+            .field("required_sync_peers", &self.required_sync_peers)
+            .finish_non_exhaustive()
+    }
 }
 
 /// Remote nodes don't expose sync progress over HTTP: report Done once the node
@@ -139,12 +151,19 @@ impl NodeAdapterService {
         required_sync_peers: u32,
         consensus_manager: ConsensusManager,
     ) -> Self {
+        let parsed_url: Url = http_address
+            .parse()
+            .unwrap_or_else(|_| Url::parse("http://127.0.0.1:18142").expect("valid default url"));
+        let http_client =
+            minotari_node_wallet_client::http::Client::new(parsed_url.clone(), parsed_url);
+
         Self {
             connection_address,
             http_address,
             network,
             required_sync_peers,
             consensus_manager,
+            http_client,
         }
     }
 
@@ -158,14 +177,7 @@ impl NodeAdapterService {
         &self,
         remote: bool,
     ) -> Result<BaseNodeStatus, NodeStatusMonitorError> {
-        let http_address: Url = self
-            .http_address
-            .parse()
-            .map_err(|e| anyhow::anyhow!("base node URL is invalid:{e}"))?;
-        let http_client =
-            minotari_node_wallet_client::http::Client::new(http_address.clone(), http_address);
-
-        let tip = http_client.get_tip_info().await?;
+        let tip = self.http_client.get_tip_info().await?;
 
         let block_height = tip
             .metadata
@@ -212,15 +224,9 @@ impl NodeAdapterService {
         &self,
         heights: Vec<u64>,
     ) -> Result<Vec<(u64, String)>, Error> {
-        let address: Url = self
-            .http_address
-            .parse()
-            .map_err(|e| anyhow::anyhow!("base node URL is invalid:{e}"))?;
-        let client = minotari_node_wallet_client::http::Client::new(address.clone(), address);
-
         let mut blocks: Vec<(u64, String)> = Vec::new();
         for height in heights {
-            if let Some(header) = client.get_header_by_height(height).await? {
+            if let Some(header) = self.http_client.get_header_by_height(height).await? {
                 blocks.push((height, header.hash.to_hex()));
             };
         }
@@ -313,20 +319,13 @@ impl NodeAdapterService {
             )
         };
 
-        let http_address: Url = self
-            .http_address
-            .parse()
-            .map_err(|e| anyhow::anyhow!("base node URL is invalid:{e}"))?;
-        let http_client =
-            minotari_node_wallet_client::http::Client::new(http_address.clone(), http_address);
-
         loop {
             if shutdown_signal.is_triggered() {
                 return Ok(0);
             }
 
             let (initial_sync_achieved, best_block_height) = if remote {
-                let tip = http_client.get_tip_info().await?;
+                let tip = self.http_client.get_tip_info().await?;
                 (
                     tip.is_synced,
                     tip.metadata.as_ref().map(|meta| meta.best_block_height()),
@@ -547,22 +546,31 @@ impl StatusMonitor for NodeStatusMonitor {
                 stale_status.readiness_status = ReadinessStatus::NOT_READY;
                 let _ = self.status_broadcast.send(stale_status);
 
-                match self.node_service.get_identity().await {
-                    Ok(identity) => {
+                match timeout(timeout_duration, self.node_service.get_identity()).await {
+                    Ok(Ok(identity)) => {
                         info!(target: LOG_TARGET_STATUSES, "{:?} Node checking base node identity success: {:?}", self.node_type, identity);
                         return HealthStatus::WarningWithReason(
                             "get_network_state timed out, but identity succeeded".to_string(),
                         );
                     }
-                    Err(e) => {
+                    Ok(Err(e)) => {
                         warn!(
                             "{:?} Node Health Check Error: checking base node identity: {:?}",
                             self.node_type, e
                         );
                         return HealthStatus::UnhealthyWithReason(format!(
-                            "Both network state and identity timed out: {}",
+                            "Both network state and identity failed: {}",
                             e
                         ));
+                    }
+                    Err(_) => {
+                        warn!(
+                            "{:?} Node Health Check Error: checking base node identity timed out",
+                            self.node_type
+                        );
+                        return HealthStatus::UnhealthyWithReason(
+                            "Both network state and identity timed out".to_string(),
+                        );
                     }
                 }
             }
