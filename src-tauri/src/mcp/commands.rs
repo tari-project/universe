@@ -57,13 +57,15 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
         *config._get_content_mut() = updated;
     }
 
+    // Persisted intent is distinct from whether the listener starts successfully.
+    // Publish it even when start fails so the user can edit the saved port.
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
+
     if enabled {
         McpServerManager::start().await.map_err(|e| e.to_string())?;
     } else {
         McpServerManager::stop().await;
     }
-
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
     Ok(())
 }
@@ -106,12 +108,12 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     // Restart if currently running so the new port takes effect
     let content = ConfigMcp::content().await;
+    EventsEmitter::emit_mcp_config_loaded(&content).await;
     if *content.enabled() {
         McpServerManager::restart()
             .await
             .map_err(|e| e.to_string())?;
     }
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 

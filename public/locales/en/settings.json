@@ -84,6 +84,7 @@
   "mcp": {
     "advanced": {
       "control-tier": "Control Tier",
+      "invalid-port": "Port must be a whole number between 1024 and 65535.",
       "port": "Server Port",
       "read-tier": "Read Tier"
     },
@@ -104,7 +105,9 @@
     "server-toggle": {
       "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
       "status-running": "Running on port {{port}}",
-      "status-stopped": "Stopped",
+      "status-stopped": "Stopped (configured port {{port}})",
+      "port-in-use": "Port {{port}} is already in use. Choose another port.",
+      "update-failed": "Could not update the MCP server. Check the logs for details and try again.",
       "title": "MCP Server"
     },
     "token-display": {

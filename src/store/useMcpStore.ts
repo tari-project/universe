@@ -39,6 +39,8 @@ export type McpTxStatus = 'reviewing' | 'processing' | 'completed';
 interface McpStoreState {
     serverRunning: boolean;
     serverPort: number | null;
+    settingsPending: boolean;
+    settingsError: { kind: 'port-in-use'; port: number } | { kind: 'update-failed' } | null;
     auditEntries: McpAuditEntry[];
     pendingTransaction: McpPendingTransaction | null;
     mcpTxStatus: McpTxStatus;
@@ -47,6 +49,8 @@ interface McpStoreState {
 const initialState: McpStoreState = {
     serverRunning: false,
     serverPort: null,
+    settingsPending: false,
+    settingsError: null,
     auditEntries: [],
     pendingTransaction: null,
     mcpTxStatus: 'reviewing',
@@ -57,7 +61,7 @@ export const useMcpStore = create<McpStoreState>()(() => ({
 }));
 
 export const setMcpServerStatus = (running: boolean, port: number | null) => {
-    useMcpStore.setState({ serverRunning: running, serverPort: port });
+    useMcpStore.setState({ serverRunning: running, serverPort: port, ...(running ? { settingsError: null } : {}) });
 };
 
 export const addMcpAuditEntry = (entry: McpAuditEntry) => {

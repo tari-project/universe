@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
@@ -12,6 +12,8 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
+import { useMcpStore } from '@app/store/useMcpStore';
+import { updateServerSettings } from './serverSettings';
 
 const PortInput = styled.input`
     width: 90px;
@@ -38,24 +40,24 @@ export default function AdvancedSettings() {
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
     const [portValue, setPortValue] = useState(String(storePort));
+    const [invalidPort, setInvalidPort] = useState(false);
+    const pending = useMcpStore((s) => s.settingsPending);
+    const validationId = useId();
 
     useEffect(() => {
         setPortValue(String(storePort));
+        setInvalidPort(false);
     }, [storePort]);
 
     const commitPort = useCallback(async () => {
         const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
-            setPortValue(String(storePort));
+        if (!/^\d+$/.test(portValue) || !Number.isInteger(num) || num < 1024 || num > 65535) {
+            setInvalidPort(true);
             return;
         }
+        setInvalidPort(false);
         if (num === storePort) return;
-        try {
-            await invoke('set_mcp_port', { port: num });
-        } catch (e) {
-            console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
-        }
+        await updateServerSettings({ command: 'set_mcp_port', args: { port: num } });
     }, [portValue, storePort]);
 
     if (!enabled) return null;
@@ -80,15 +82,26 @@ export default function AdvancedSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('mcp.advanced.port')}</Typography>
                     </SettingsGroupTitle>
+                    {invalidPort && (
+                        <Typography variant="p" role="alert" id={validationId}>
+                            {t('mcp.advanced.invalid-port')}
+                        </Typography>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <PortInput
-                        type="number"
-                        min={1024}
-                        max={65535}
+                        type="text"
+                        inputMode="numeric"
+                        aria-label={t('mcp.advanced.port')}
+                        aria-invalid={invalidPort}
+                        aria-describedby={invalidPort ? validationId : undefined}
+                        disabled={pending}
                         data-testid="mcp-port-input"
                         value={portValue}
-                        onChange={(e) => setPortValue(e.target.value)}
+                        onChange={(e) => {
+                            setPortValue(e.target.value);
+                            setInvalidPort(false);
+                        }}
                         onBlur={commitPort}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') commitPort();

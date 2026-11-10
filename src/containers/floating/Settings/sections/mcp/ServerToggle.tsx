@@ -10,32 +10,24 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
-import { invoke } from '@tauri-apps/api/core';
-import { useState } from 'react';
+import { updateServerSettings } from './serverSettings';
 
 export default function ServerToggle() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const enabled = useConfigMcpStore((s) => s.enabled);
     const serverRunning = useMcpStore((s) => s.serverRunning);
     const serverPort = useMcpStore((s) => s.serverPort);
-    const [loading, setLoading] = useState(false);
+    const configuredPort = useConfigMcpStore((s) => s.port);
+    const loading = useMcpStore((s) => s.settingsPending);
+    const error = useMcpStore((s) => s.settingsError);
 
-    const handleToggle = async (checked: boolean) => {
-        setLoading(true);
-        try {
-            await invoke('set_mcp_enabled', { enabled: checked });
-            useConfigMcpStore.setState((c) => ({ ...c, enabled: checked }));
-        } catch (e) {
-            console.error('Failed to toggle MCP server:', e);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const handleToggle = (checked: boolean) =>
+        updateServerSettings({ command: 'set_mcp_enabled', args: { enabled: checked } });
 
     const statusText =
         serverRunning && serverPort
             ? t('mcp.server-toggle.status-running', { port: serverPort })
-            : t('mcp.server-toggle.status-stopped');
+            : t('mcp.server-toggle.status-stopped', { port: configuredPort });
 
     return (
         <SettingsGroupWrapper>
@@ -48,6 +40,13 @@ export default function ServerToggle() {
                     <Typography variant="p" style={{ opacity: 0.7 }} data-testid="mcp-server-status">
                         {statusText}
                     </Typography>
+                    {error && (
+                        <Typography variant="p" role="alert">
+                            {error.kind === 'port-in-use'
+                                ? t('mcp.server-toggle.port-in-use', { port: error.port })
+                                : t('mcp.server-toggle.update-failed')}
+                        </Typography>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch
