@@ -1,16 +1,21 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@app/test/test-utils';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
+import { invoke } from '@tauri-apps/api/core';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import ServerToggle from './ServerToggle';
+import AdvancedSettings from './AdvancedSettings';
+
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 
 describe('ServerToggle', () => {
     beforeEach(() => {
-        useConfigMcpStore.setState({ enabled: false });
-        useMcpStore.setState({ serverRunning: false, serverPort: null });
+        vi.mocked(invoke).mockReset();
+        useConfigMcpStore.setState({ enabled: false, port: 4444 });
+        useMcpStore.setState({ serverRunning: false, serverPort: null, portError: null });
     });
 
     it('renders title', () => {
@@ -49,5 +54,24 @@ describe('ServerToggle', () => {
         useConfigMcpStore.setState({ enabled: false });
         render(<ServerToggle />);
         expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+
+    it('surfaces port-in-use error and keeps advanced port visible when enabling fails due to port conflict', async () => {
+        vi.mocked(invoke).mockRejectedValueOnce('MCP server failed to bind to configured port 4444: Address already in use');
+        render(
+            <>
+                <ServerToggle />
+                <AdvancedSettings />
+            </>
+        );
+
+        fireEvent.click(screen.getByTestId('mcp-server-toggle'));
+
+        await waitFor(() => {
+            expect(invoke).toHaveBeenCalledWith('set_mcp_enabled', { enabled: true });
+        });
+        expect(useConfigMcpStore.getState().enabled).toBe(true);
+        expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-stopped');
+        expect(await screen.findByTestId('mcp-port-error')).toHaveTextContent('mcp.advanced.port-in-use');
     });
 });

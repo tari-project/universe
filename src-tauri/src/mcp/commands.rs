@@ -57,13 +57,16 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
         *config._get_content_mut() = updated;
     }
 
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
+
     if enabled {
-        McpServerManager::start().await.map_err(|e| e.to_string())?;
+        if let Err(e) = McpServerManager::start().await {
+            EventsEmitter::emit_mcp_server_status_update(false, None).await;
+            return Err(e.to_string());
+        }
     } else {
         McpServerManager::stop().await;
     }
-
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
     Ok(())
 }
@@ -101,17 +104,20 @@ pub async fn revoke_mcp_token() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn set_mcp_port(port: u16) -> Result<(), String> {
+    if port < 1024 {
+        return Err("Port must be between 1024 and 65535".to_string());
+    }
     ConfigMcp::update_field(ConfigMcpContent::set_port, port)
         .await
         .map_err(|e| e.to_string())?;
-    // Restart if currently running so the new port takes effect
     let content = ConfigMcp::content().await;
+    EventsEmitter::emit_mcp_config_loaded(&content).await;
+    // Restart if currently running so the new port takes effect
     if *content.enabled() {
         McpServerManager::restart()
             .await
             .map_err(|e| e.to_string())?;
     }
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 
