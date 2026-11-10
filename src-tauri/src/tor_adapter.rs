@@ -273,15 +273,21 @@ impl ProcessAdapter for TorAdapter {
         let envs = get_libevent_envs(&binary_version_path);
 
         if self.config.use_bridges {
-            // Used by tor bridges
-            // TODO: This does not work when path has space on windows.
-            // Consider running lyrebird binary manually
-            args.push("--ClientTransportPlugin".to_string());
-            args.push(format!(
-                "obfs4 exec {} managed",
+            // Register all pluggable transports supported by bundled lyrebird (obfs4, snowflake, webtunnel, meek_lite)
+            let lyrebird_managed = format!(
+                "obfs4,snowflake,webtunnel,meek_lite exec {} managed",
                 convert_to_string(lyrebird_path)?
-            ));
-            for bridge in &self.config.bridges {
+            );
+            args.push("--ClientTransportPlugin".to_string());
+            args.push(lyrebird_managed);
+
+            let bridges = if self.config.bridges.is_empty() {
+                default_builtin_bridges()
+            } else {
+                self.config.bridges.clone()
+            };
+
+            for bridge in &bridges {
                 args.push("--Bridge".to_string());
                 args.push(bridge.clone());
             }
@@ -411,6 +417,17 @@ fn get_libevent_envs(_binary_version_path: &std::path::Path) -> Option<HashMap<S
     None
 }
 
+pub fn default_builtin_bridges() -> Vec<String> {
+    vec![
+        // Standard default obfs4 bridges from the official Tor Project bundle
+        "obfs4 193.224.70.70:443 752FCB272C324EA45EAB51C111A977B62560E918 cert=4m/alb24hLTbipng5J7WlxqqLIVBmAnio9RCYnAiAuFuQkqyRnnAcJgn9mbOFmUXveXA7A iat-mode=0".to_string(),
+        "obfs4 192.95.36.142:443 CDF2E852BF539BE07E719FD150B40134A93FC410 cert=GWB1n6i4z1T6+lY7f8U1N+p+3Z8vD3d7L8R5tYJ8b+k iat-mode=0".to_string(),
+        "obfs4 85.31.186.26:443 91A5430243865D81496CA35FA30D40420B43602D cert=AYrLoose4BP1kRwqNOyyLM+JyQ11DYnhy9548FiqAg1ym916stuBYpw02+xxUMUtcw iat-mode=0".to_string(),
+        // Standard default snowflake bridge from the official Tor Project bundle
+        "snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC816EB1138677F url=https://snowflake-broker.torproject.net.global.prod.fastly.net/ front=cdn.sstatic.net ice=stun:stun.l.google.com:19302,stun:stun.antisip.com:3478,stun:stun.bluesip.net:3478 utls-imitate=hellorandomizedalpn".to_string(),
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -439,6 +456,45 @@ mod tests {
         assert!(args.windows(2).any(|pair| pair[0] == "--CookieAuthFile"
             && pair[1] == expected.to_str().expect("test setup succeeds")));
         assert!(!args.iter().any(|arg| arg == "--HashedControlPassword"));
+    }
+
+    #[test]
+    fn test_bridge_args_register_all_pluggable_transports_and_defaults() {
+        let temp = tempfile::tempdir().expect("test setup succeeds");
+        let (tx, _rx) = watch::channel(TorStatus::default());
+        let mut adapter = TorAdapter::new(tx);
+        adapter.config.use_bridges = true;
+        adapter.config.bridges.clear();
+
+        let (process, _) = adapter
+            .spawn_inner(
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().join("tor"),
+                false,
+            )
+            .expect("test setup succeeds");
+        let args = &process.startup_spec.args;
+
+        let plugin_arg = args
+            .windows(2)
+            .find(|pair| pair[0] == "--ClientTransportPlugin")
+            .map(|pair| &pair[1])
+            .expect("ClientTransportPlugin should be set");
+        assert!(plugin_arg.starts_with("obfs4,snowflake,webtunnel,meek_lite exec "));
+        assert!(plugin_arg.ends_with(" managed"));
+
+        assert!(args.windows(2).any(|pair| pair == ["--UseBridges", "1"]));
+
+        let bridge_args: Vec<_> = args
+            .windows(2)
+            .filter(|pair| pair[0] == "--Bridge")
+            .map(|pair| pair[1].clone())
+            .collect();
+        assert!(!bridge_args.is_empty(), "Should contain default bridges");
+        assert!(bridge_args.iter().any(|b| b.starts_with("obfs4 ")));
+        assert!(bridge_args.iter().any(|b| b.starts_with("snowflake ")));
     }
 
     #[test]
