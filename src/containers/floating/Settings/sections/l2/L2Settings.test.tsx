@@ -118,6 +118,17 @@ describe('L2Settings', () => {
         expect(invoke).not.toHaveBeenCalled();
     });
 
+    it('shows a loading line and no PIN actions while the PIN state is unknown', () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(enabledState);
+        render(<L2Settings />);
+
+        expect(screen.getByTestId('l2-settings-pin-loading')).toBeInTheDocument();
+        expect(screen.queryByTestId('l2-settings-pin-required')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('l2-settings-enable')).not.toBeInTheDocument();
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
     it('offers Enable Layer 2 when a PIN is set but L2 is off', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         serve(initialState);
