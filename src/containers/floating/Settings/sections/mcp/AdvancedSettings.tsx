@@ -141,6 +141,7 @@ export default function AdvancedSettings() {
                         min={1024}
                         max={65535}
                         data-testid="mcp-port-input"
+                        aria-invalid={Boolean(portError)}
                         $hasError={Boolean(portError)}
                         value={portValue}
                         onChange={(e) => {

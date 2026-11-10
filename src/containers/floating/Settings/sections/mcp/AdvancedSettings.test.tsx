@@ -182,6 +182,33 @@ describe('AdvancedSettings', () => {
             expect(useConfigMcpStore.getState().port).toBe(19222);
         });
 
+        it('marks the port input invalid while an error is shown', async () => {
+            mockInvoke.mockRejectedValueOnce(BIND_ERROR);
+            render(<AdvancedSettings />);
+            const input = commitValue('4444');
+            const error = await screen.findByTestId('mcp-port-error');
+            expect(error).toHaveTextContent('mcp.advanced.port-in-use');
+            expect(input).toHaveAttribute('aria-invalid', 'true');
+            // Commit again without editing: the bind now succeeds, so the
+            // input must report valid again through the success path.
+            fireEvent.keyDown(input, { key: 'Enter' });
+            await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(2));
+            expect(screen.queryByTestId('mcp-port-error')).toBeNull();
+            expect(input).toHaveAttribute('aria-invalid', 'false');
+        });
+
+        it('clears a previous error when a later port is accepted', async () => {
+            mockInvoke.mockRejectedValueOnce(BIND_ERROR);
+            render(<AdvancedSettings />);
+            const input = commitValue('4444');
+            await screen.findByTestId('mcp-port-error');
+            // No edit in between: the error must clear through the commit
+            // success path, not the edit path that clears it on typing.
+            fireEvent.keyDown(input, { key: 'Enter' });
+            await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(2));
+            expect(screen.queryByTestId('mcp-port-error')).toBeNull();
+        });
+
         it('commits a valid free port without showing an error', async () => {
             render(<AdvancedSettings />);
             commitValue('4444');
