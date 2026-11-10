@@ -9,7 +9,7 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { useCallback, useState } from 'react';
 import { requestPin } from '@app/store/useSecurityStore';
 import { addToast } from '@app/components/ToastStack/useToastStore';
@@ -23,7 +23,7 @@ export default function TokenDisplay() {
     const isPinLocked = useWalletStore((s) => s.is_pin_locked);
     const [revealed, setRevealed] = useState(false);
     const [fullToken, setFullToken] = useState<string | null>(null);
-    const [copied, setCopied] = useState(false);
+    const { copyToClipboard, isCopied: copied } = useCopyToClipboard();
 
     const fetchToken = useCallback(async (pinValue?: string) => {
         return invoke<string | null>('get_mcp_token', { pin: pinValue ?? null });
@@ -58,9 +58,7 @@ export default function TokenDisplay() {
 
     const handleCopy = useCallback(async () => {
         if (fullToken) {
-            await writeText(fullToken);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            copyToClipboard(fullToken);
             return;
         }
         if (isPinLocked) {
@@ -69,9 +67,7 @@ export default function TokenDisplay() {
             try {
                 const token = await fetchToken(pin);
                 if (token) {
-                    await writeText(token);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
+                    copyToClipboard(token);
                 }
             } catch (e) {
                 addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
@@ -80,15 +76,13 @@ export default function TokenDisplay() {
             try {
                 const token = await fetchToken();
                 if (token) {
-                    await writeText(token);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
+                    copyToClipboard(token);
                 }
             } catch (e) {
                 addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
             }
         }
-    }, [fullToken, isPinLocked, fetchToken]);
+    }, [fullToken, isPinLocked, fetchToken, copyToClipboard]);
 
     const handleRefreshExpiry = useCallback(async () => {
         try {
