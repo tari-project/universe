@@ -1177,20 +1177,9 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[select_mining_mode] called with mode: {mode:?}");
 
-    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
+    crate::mining::apply_mining_mode(mode, false)
         .await
         .map_err(InvokeError::from_anyhow)?;
-
-    if mode != "Eco" {
-        ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false)
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-    }
-
-    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
-        mode.clone(),
-    )))
-    .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "select_mining_mode took too long: {:?}", timer.elapsed());

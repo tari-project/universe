@@ -298,6 +298,38 @@ describe('appConfigStoreActions', () => {
             };
             expect(shouldRestartGpuAfterModeChange(state)).toBe(true);
         });
+
+        it('restarts running enabled miners when scheduled window changes mode, but skips restart when mode is unchanged', () => {
+            const planMinerTransition = (
+                enabled: boolean,
+                wasRunning: boolean,
+                modeChanged: boolean,
+                startEnabledMiners: boolean
+            ) => ({
+                shouldStop: wasRunning && modeChanged,
+                shouldStart: enabled && (startEnabledMiners ? !wasRunning || modeChanged : wasRunning && modeChanged),
+            });
+
+            // Scheduled window starts while mining in Eco -> switches to Ludicrous
+            expect(planMinerTransition(true, true, true, true)).toEqual({
+                shouldStop: true,
+                shouldStart: true,
+            });
+            // Scheduled window starts while already mining in the same mode
+            expect(planMinerTransition(true, true, false, true)).toEqual({
+                shouldStop: false,
+                shouldStart: false,
+            });
+            // Scheduled window starts while stopped -> starts enabled miners, leaves disabled miners off
+            expect(planMinerTransition(true, false, false, true)).toEqual({
+                shouldStop: false,
+                shouldStart: true,
+            });
+            expect(planMinerTransition(false, false, true, true)).toEqual({
+                shouldStop: false,
+                shouldStart: false,
+            });
+        });
     });
 
     describe('updateCustomMiningMode state transformation', () => {

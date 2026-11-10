@@ -114,3 +114,170 @@ impl Default for CpuConnectionType {
         }
     }
 }
+
+/// Determines `(should_stop_first, should_start_after)` for a single miner (CPU or GPU)
+/// when applying a mining mode.
+///
+/// - `enabled`: whether this miner type is enabled in `ConfigMining`.
+/// - `was_running`: whether this miner process is currently running.
+/// - `mode_changed`: whether the target mining mode differs from the currently selected mode.
+/// - `start_enabled_miners`: `true` for a scheduled `Mine` window (which starts enabled miners
+///   even if they were stopped prior to the window); `false` for a manual mode change (which only
+///   restarts miners that were already running).
+pub fn plan_miner_mode_transition(
+    enabled: bool,
+    was_running: bool,
+    mode_changed: bool,
+    start_enabled_miners: bool,
+) -> (bool, bool) {
+    let should_stop = was_running && mode_changed;
+    let should_start = enabled
+        && if start_enabled_miners {
+            !was_running || mode_changed
+        } else {
+            was_running && mode_changed
+        };
+    (should_stop, should_start)
+}
+
+/// Shared backend helper that applies `mode` and coordinates stopping/restarting active miners.
+///
+/// Used by:
+/// - `EventScheduler::handle_enter_callback` (`SchedulerEventType::Mine`, with `start_enabled_miners = true`)
+/// - `commands::select_mining_mode` and `mcp::tools::mining::set_mining_mode` (`start_enabled_miners = false`)
+pub async fn apply_mining_mode(
+    mode: String,
+    start_enabled_miners: bool,
+) -> Result<(), anyhow::Error> {
+    use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, MiningModeType};
+    use crate::configs::trait_config::ConfigImpl;
+    use crate::constants::LOG_TARGET_APP_LOGIC;
+    use crate::events_emitter::EventsEmitter;
+    use crate::mining::cpu::manager::CpuManager;
+    use crate::mining::gpu::manager::GpuManager;
+    use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
+
+    let previous_config = ConfigMining::content().await;
+    let mode_changed = previous_config.selected_mining_mode() != &mode;
+
+    let gpu_was_running = GpuManager::read().await.is_running();
+    let cpu_was_running = CpuManager::read().await.is_running();
+
+    let (stop_gpu, _) = plan_miner_mode_transition(
+        *previous_config.gpu_mining_enabled(),
+        gpu_was_running,
+        mode_changed,
+        start_enabled_miners,
+    );
+    let (stop_cpu, _) = plan_miner_mode_transition(
+        *previous_config.cpu_mining_enabled(),
+        cpu_was_running,
+        mode_changed,
+        start_enabled_miners,
+    );
+
+    if stop_gpu {
+        if let Err(e) = GpuManager::write().await.stop_mining().await {
+            log::error!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Failed to stop GPU mining before switching to mode {mode:?}: {e}"
+            );
+        }
+    }
+
+    if stop_cpu {
+        if let Err(e) = CpuManager::write().await.stop_mining().await {
+            log::error!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Failed to stop CPU mining before switching to mode {mode:?}: {e}"
+            );
+        }
+    }
+
+    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone()).await?;
+
+    if mode != "Eco" {
+        ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false).await?;
+    }
+
+    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
+        mode.clone(),
+    )))
+    .await;
+
+    let config = ConfigMining::content().await;
+    EventsEmitter::emit_mining_config_loaded(&config).await;
+
+    let (_, start_gpu) = plan_miner_mode_transition(
+        *config.gpu_mining_enabled(),
+        gpu_was_running,
+        mode_changed,
+        start_enabled_miners,
+    );
+    let (_, start_cpu) = plan_miner_mode_transition(
+        *config.cpu_mining_enabled(),
+        cpu_was_running,
+        mode_changed,
+        start_enabled_miners,
+    );
+
+    if start_gpu {
+        if let Err(e) = GpuManager::write().await.start_mining().await {
+            log::error!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Failed to start GPU mining in mode {mode:?}: {e}"
+            );
+        }
+    }
+
+    if start_cpu {
+        if let Err(e) = CpuManager::write().await.start_mining().await {
+            log::error!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Failed to start CPU mining in mode {mode:?}: {e}"
+            );
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::plan_miner_mode_transition;
+
+    #[test]
+    fn scheduled_window_restarts_running_enabled_miner_when_mode_changes() {
+        let (should_stop, should_start) = plan_miner_mode_transition(true, true, true, true);
+        assert!(should_stop);
+        assert!(should_start);
+    }
+
+    #[test]
+    fn scheduled_window_does_not_restart_running_miner_when_mode_is_unchanged() {
+        let (should_stop, should_start) = plan_miner_mode_transition(true, true, false, true);
+        assert!(!should_stop);
+        assert!(!should_start);
+    }
+
+    #[test]
+    fn scheduled_window_starts_stopped_enabled_miner_regardless_of_mode_change() {
+        assert_eq!(plan_miner_mode_transition(true, false, true, true), (false, true));
+        assert_eq!(plan_miner_mode_transition(true, false, false, true), (false, true));
+    }
+
+    #[test]
+    fn scheduled_window_never_starts_disabled_miner() {
+        assert_eq!(plan_miner_mode_transition(false, false, true, true), (false, false));
+        assert_eq!(plan_miner_mode_transition(false, false, false, true), (false, false));
+        assert_eq!(plan_miner_mode_transition(false, true, true, true), (true, false));
+    }
+
+    #[test]
+    fn manual_mode_change_only_restarts_previously_running_enabled_miners() {
+        assert_eq!(plan_miner_mode_transition(true, true, true, false), (true, true));
+        assert_eq!(plan_miner_mode_transition(true, false, true, false), (false, false));
+        assert_eq!(plan_miner_mode_transition(true, true, false, false), (false, false));
+    }
+}
+
