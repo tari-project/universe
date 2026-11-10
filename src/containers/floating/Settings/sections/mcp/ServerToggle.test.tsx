@@ -50,4 +50,12 @@ describe('ServerToggle', () => {
         render(<ServerToggle />);
         expect(screen.getByRole('checkbox')).not.toBeChecked();
     });
+
+    it('shows port error message when portError is present in store', () => {
+        useMcpStore.setState({ portError: 'Port 4444 is already in use. Choose another port.' });
+        render(<ServerToggle />);
+        expect(screen.getByTestId('mcp-server-error')).toHaveTextContent(
+            'Port 4444 is already in use. Choose another port.'
+        );
+    });
 });

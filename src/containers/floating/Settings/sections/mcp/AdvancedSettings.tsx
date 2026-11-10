@@ -10,6 +10,7 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
+import { setMcpPortError, useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
 
@@ -31,32 +32,60 @@ const PortInput = styled.input`
     }
 `;
 
+const PortErrorMessage = styled(Typography).attrs({ variant: 'p' })`
+    color: ${({ theme }) => theme.palette.error.main};
+    font-size: 12px;
+    margin-top: 4px;
+`;
+
 export default function AdvancedSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const enabled = useConfigMcpStore((s) => s.enabled);
     const readTier = useConfigMcpStore((s) => s.read_tier_enabled);
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
+    const portError = useMcpStore((s) => s.portError);
     const [portValue, setPortValue] = useState(String(storePort));
+    const [validationError, setValidationError] = useState<string | null>(null);
 
     useEffect(() => {
         setPortValue(String(storePort));
     }, [storePort]);
 
+    const handlePortChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setPortValue(val);
+        if (portError) {
+            setMcpPortError(null);
+        }
+        const trimmed = val.trim();
+        const num = Number(trimmed);
+        if (trimmed !== '' && (isNaN(num) || num < 1024 || num > 65535)) {
+            setValidationError(t('mcp.advanced.port-range-error'));
+        } else {
+            setValidationError(null);
+        }
+    };
+
     const commitPort = useCallback(async () => {
-        const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
-            setPortValue(String(storePort));
+        const trimmed = portValue.trim();
+        const num = Number(trimmed);
+        if (trimmed === '' || isNaN(num) || num < 1024 || num > 65535) {
+            setValidationError(t('mcp.advanced.port-range-error'));
             return;
         }
-        if (num === storePort) return;
+        setValidationError(null);
+        if (num === storePort && !portError) return;
         try {
             await invoke('set_mcp_port', { port: num });
+            useConfigMcpStore.setState((c) => ({ ...c, port: num }));
+            setMcpPortError(null);
         } catch (e) {
             console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
+            useConfigMcpStore.setState((c) => ({ ...c, port: num }));
+            setMcpPortError(t('mcp.advanced.port-in-use', { port: num }));
         }
-    }, [portValue, storePort]);
+    }, [portValue, storePort, portError, t]);
 
     if (!enabled) return null;
 
@@ -73,6 +102,8 @@ export default function AdvancedSettings() {
         }
     };
 
+    const activeError = validationError || portError;
+
     return (
         <SettingsGroupWrapper $advanced>
             <SettingsGroup>
@@ -80,6 +111,7 @@ export default function AdvancedSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('mcp.advanced.port')}</Typography>
                     </SettingsGroupTitle>
+                    {activeError && <PortErrorMessage data-testid="mcp-port-error">{activeError}</PortErrorMessage>}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <PortInput
@@ -88,7 +120,7 @@ export default function AdvancedSettings() {
                         max={65535}
                         data-testid="mcp-port-input"
                         value={portValue}
-                        onChange={(e) => setPortValue(e.target.value)}
+                        onChange={handlePortChange}
                         onBlur={commitPort}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') commitPort();
