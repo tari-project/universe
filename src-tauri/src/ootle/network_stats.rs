@@ -24,17 +24,18 @@
 //! top of the L2 panel, and sends the L2NetworkStats event whenever the numbers change.
 //! The same tick checks for new burns to L2, which no wallet event reports.
 
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use log::warn;
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
+use tari_ootle_wallet_sdk_services::transaction_service::TransactionServiceHandle;
 use tari_transaction_components::consensus::{ConsensusConstants, ConsensusManager};
 use url::Url;
 
 use crate::events_emitter::EventsEmitter;
 
-use super::{LOG_TARGET, OotleSdk, emit_state_on_new_burns};
+use super::{LOG_TARGET, OotleSdk, poll_burns};
 
 const POLL_INTERVAL: Duration = Duration::from_secs(30);
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
@@ -69,9 +70,15 @@ struct Economics {
     total_exhaust_burned: String,
 }
 
-/// Runs straight away and then every 30 seconds, until the wallet stops. Asks whichever
-/// indexer the wallet uses at the time, so a changed indexer URL applies on the next tick.
-pub async fn poll(sdk: OotleSdk, network: Network) -> Result<(), anyhow::Error> {
+/// Runs straight away, when woken, and every 30 seconds, until the wallet stops. Asks
+/// whichever indexer the wallet uses at the time, so a changed indexer URL applies on the
+/// next tick.
+pub async fn poll(
+    sdk: OotleSdk,
+    transactions: TransactionServiceHandle,
+    network: Network,
+    wake: Arc<tokio::sync::Notify>,
+) -> Result<(), anyhow::Error> {
     let client = reqwest::Client::builder()
         .timeout(REQUEST_TIMEOUT)
         .build()?;
@@ -80,7 +87,10 @@ pub async fn poll(sdk: OotleSdk, network: Network) -> Result<(), anyhow::Error> 
     let mut last_burns = None;
     let mut interval = tokio::time::interval(POLL_INTERVAL);
     loop {
-        interval.tick().await;
+        tokio::select! {
+            _ = interval.tick() => {}
+            _ = wake.notified() => {}
+        }
         let indexer = sdk.get_network_interface().get_endpoint();
         match fetch_stats(&client, &indexer, &consensus).await {
             Ok(stats) if last_stats.as_ref() != Some(&stats) => {
@@ -90,7 +100,7 @@ pub async fn poll(sdk: OotleSdk, network: Network) -> Result<(), anyhow::Error> 
             Ok(_) => {}
             Err(e) => warn!(target: LOG_TARGET, "Could not fetch L2 network stats: {e}"),
         }
-        emit_state_on_new_burns(&sdk, &mut last_burns).await;
+        poll_burns(&sdk, &transactions, &mut last_burns, last_stats.as_ref()).await;
     }
 }
 
