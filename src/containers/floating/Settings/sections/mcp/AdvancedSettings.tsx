@@ -99,6 +99,12 @@ export default function AdvancedSettings() {
                 useConfigMcpStore.setState((c) => ({ ...c, port: num }));
                 setPortError(t('mcp.advanced.port-in-use', { port: num }));
             } else {
+                // The port was never persisted (a save error returns before
+                // the backend emits), so the field must go back to the port
+                // that is actually configured - otherwise the panel keeps
+                // showing a value that was never saved. The generic message
+                // stays: unlike a silent revert, the user sees why it moved.
+                setPortValue(String(storePort));
                 setPortError(t('mcp.advanced.port-update-failed'));
             }
         } finally {

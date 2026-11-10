@@ -169,6 +169,19 @@ describe('AdvancedSettings', () => {
             expect(error).not.toHaveTextContent('port-in-use');
         });
 
+        it('reverts the field to the stored port when the backend fails to save it', async () => {
+            mockInvoke.mockRejectedValueOnce('failed to write config file: disk full');
+            render(<AdvancedSettings />);
+            const input = commitValue('4444');
+            const error = await screen.findByTestId('mcp-port-error');
+            expect(error).toHaveTextContent('mcp.advanced.port-update-failed');
+            expect(error).not.toHaveTextContent('port-in-use');
+            // The new port was never persisted, so the field goes back to the
+            // port that is actually configured instead of a phantom value.
+            expect(input).toHaveValue(19222);
+            expect(useConfigMcpStore.getState().port).toBe(19222);
+        });
+
         it('commits a valid free port without showing an error', async () => {
             render(<AdvancedSettings />);
             commitValue('4444');
