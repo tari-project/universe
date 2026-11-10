@@ -28,6 +28,9 @@ const serve = (before: L2WalletState, command?: string, after = openState, fail?
     }) as typeof invoke);
 };
 
+/** Backend calls other than the read-only PIN state query. */
+const stateChangingCalls = () => vi.mocked(invoke).mock.calls.filter((call) => call[0] !== 'is_pin_locked');
+
 describe('openL2', () => {
     beforeEach(() => {
         cancelOpenL2Wait();
@@ -46,7 +49,7 @@ describe('openL2', () => {
         const pending = openL2();
 
         expect(useSecurityStore.getState().modal).toBeNull();
-        expect(invoke).not.toHaveBeenCalled();
+        expect(stateChangingCalls()).toHaveLength(0);
 
         useWalletStore.setState({ is_pin_locked: true });
         await pending;
@@ -62,14 +65,14 @@ describe('openL2', () => {
         const pending = openL2();
 
         expect(useSecurityStore.getState().modal).toBeNull();
-        expect(invoke).not.toHaveBeenCalled();
+        expect(stateChangingCalls()).toHaveLength(0);
 
         useWalletStore.setState({ is_pin_locked: false });
         await pending;
 
         expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
         expect(useUIStore.getState().l2Open).toBe(false);
-        expect(invoke).not.toHaveBeenCalled();
+        expect(stateChangingCalls()).toHaveLength(0);
     });
 
     it('opens nothing when the wait is cancelled before the PIN state arrives', async () => {
@@ -81,7 +84,63 @@ describe('openL2', () => {
 
         expect(useSecurityStore.getState().modal).toBeNull();
         expect(useUIStore.getState().l2Open).toBe(false);
-        expect(invoke).not.toHaveBeenCalled();
+        expect(stateChangingCalls()).toHaveLength(0);
+    });
+
+    it('asks the backend when the PIN state is unknown and unlocks once it answers true', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        let l2State = lockedState;
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'is_pin_locked') return true;
+            if (cmd === 'l2_get_state') return l2State;
+            if (cmd === 'unlock_l2_wallet') {
+                l2State = openState;
+            }
+            return undefined;
+        }) as typeof invoke);
+
+        await openL2();
+
+        expect(invoke).toHaveBeenCalledWith('is_pin_locked');
+        expect(useWalletStore.getState().is_pin_locked).toBe(true);
+        expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet');
+        expect(useUIStore.getState().l2Open).toBe(true);
+        expect(useSecurityStore.getState().modal).toBeNull();
+    });
+
+    it('asks the backend when the PIN state is unknown and asks for a PIN once it answers false', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'is_pin_locked') return false;
+            return undefined;
+        }) as typeof invoke);
+
+        await openL2();
+
+        expect(useWalletStore.getState().is_pin_locked).toBe(false);
+        expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(stateChangingCalls()).toHaveLength(0);
+    });
+
+    it('keeps waiting for the setup event when the backend query fails', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'is_pin_locked') throw new Error('backend not ready');
+            if (cmd === 'l2_get_state') return openState;
+            return undefined;
+        }) as typeof invoke);
+
+        const pending = openL2();
+        // Let the failed query settle; the click must still be waiting, not guessing.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(useUIStore.getState().l2Open).toBe(false);
+
+        useWalletStore.setState({ is_pin_locked: true });
+        await pending;
+
+        expect(useUIStore.getState().l2Open).toBe(true);
     });
 
     it('asks for a PIN to be set first, without touching L2', async () => {

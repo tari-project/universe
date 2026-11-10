@@ -153,6 +153,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
+        // Whether a PIN exists comes from the persisted wallet config, so it
+        // is known long before the wallet finishes loading. Report it up
+        // front as well as at the end of this phase: the frontend treats the
+        // PIN state as unknown until it hears otherwise (#3518), and an
+        // early report means the L2 entry is not stuck waiting on the load.
+        EventsEmitter::emit_pin_locked(PinManager::pin_locked().await).await;
+
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, _config_dir, _log_dir) = self.get_app_dirs()?;
 

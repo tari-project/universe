@@ -2382,6 +2382,16 @@ pub async fn reset_cpu_pool_config(cpu_pool_type: String) -> Result<(), InvokeEr
     Ok(())
 }
 
+/// Reports whether the wallet currently has a PIN, straight from the
+/// persisted wallet state. The frontend normally learns this from the
+/// `pin_locked` event during wallet setup; this command exists so a flow
+/// that reaches the decision before that event arrives (or after it was
+/// missed) can ask instead of guessing (#3518).
+#[tauri::command]
+pub async fn is_pin_locked() -> Result<bool, String> {
+    Ok(PinManager::pin_locked().await)
+}
+
 #[tauri::command]
 pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
     InternalWallet::create_pin(&app_handle)
