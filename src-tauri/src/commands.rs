@@ -2383,6 +2383,11 @@ pub async fn reset_cpu_pool_config(cpu_pool_type: String) -> Result<(), InvokeEr
 }
 
 #[tauri::command]
+pub async fn is_pin_locked() -> Result<bool, String> {
+    Ok(PinManager::pin_locked().await)
+}
+
+#[tauri::command]
 pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
     InternalWallet::create_pin(&app_handle)
         .await
@@ -2407,7 +2412,7 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
 
 /*
  ********** TAPPLETS SECTION **********
-*/
+ */
 
 #[tauri::command]
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {

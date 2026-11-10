@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
@@ -9,13 +10,15 @@ export default function L2Button() {
     const { t } = useTranslation('wallet');
     const l2Open = useUIStore((s) => s.l2Open);
     const showTapplet = useUIStore((s) => s.showTapplet);
+    const [loading, setLoading] = useState(false);
 
     return (
         <Button
             $isActive={l2Open}
             $isToggle={true}
             type="button"
-            onClick={() => {
+            disabled={loading}
+            onClick={async () => {
                 if (showTapplet) {
                     // Leave the bridge the way the Mine button does, then open the L2 card.
                     setShowTapplet(false);
@@ -24,7 +27,12 @@ export default function L2Button() {
                     setL2Open(false);
                     return;
                 }
-                void openL2();
+                setLoading(true);
+                try {
+                    await openL2();
+                } finally {
+                    setLoading(false);
+                }
             }}
             aria-label={t('l2.title')}
             title={t('l2.title')}

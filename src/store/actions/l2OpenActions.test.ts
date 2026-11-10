@@ -46,6 +46,37 @@ describe('openL2', () => {
         expect(invoke).not.toHaveBeenCalled();
     });
 
+    it('queries PIN status when unknown, and proceeds to unlock if PIN is set', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'is_pin_locked') return true;
+            if (cmd === 'l2_get_state') return openState;
+            return undefined;
+        }) as typeof invoke);
+
+        await openL2();
+
+        expect(invoke).toHaveBeenCalledWith('is_pin_locked');
+        expect(useWalletStore.getState().is_pin_locked).toBe(true);
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(useUIStore.getState().l2Open).toBe(true);
+    });
+
+    it('queries PIN status when unknown, and prompts for PIN creation if wallet really has no PIN', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'is_pin_locked') return false;
+            return undefined;
+        }) as typeof invoke);
+
+        await openL2();
+
+        expect(invoke).toHaveBeenCalledWith('is_pin_locked');
+        expect(useWalletStore.getState().is_pin_locked).toBe(false);
+        expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+        expect(useUIStore.getState().l2Open).toBe(false);
+    });
+
     it('opens the panel straight away when L2 is already open', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         serve(openState);

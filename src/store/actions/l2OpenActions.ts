@@ -35,7 +35,19 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
  * once the wallet is open.
  */
 export const openL2 = async () => {
-    if (!useWalletStore.getState().is_pin_locked) {
+    let isPinLocked = useWalletStore.getState().is_pin_locked;
+    if (isPinLocked === undefined) {
+        try {
+            isPinLocked = await invoke<boolean>('is_pin_locked');
+            useWalletStore.setState({ is_pin_locked: isPinLocked });
+        } catch (e) {
+            console.warn('Could not load PIN state:', e);
+        }
+    }
+    if (isPinLocked === undefined) {
+        return;
+    }
+    if (!isPinLocked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;
     }

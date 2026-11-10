@@ -153,6 +153,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
+        let is_pin_locked = PinManager::pin_locked().await;
+        EventsEmitter::emit_pin_locked(is_pin_locked).await;
+
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, _config_dir, _log_dir) = self.get_app_dirs()?;
 
