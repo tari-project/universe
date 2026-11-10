@@ -45,11 +45,17 @@ export default function useResumeCountdown() {
     }, [durationMs, selectedResumeDuration, timeStampMs]);
 
     useEffect(() => {
+        if (!selectedResumeDuration || !timeStampMs) {
+            setFullTimeString(undefined);
+            setDisplayString(undefined);
+            setHasHours(false);
+            return;
+        }
         const interval = hasHours ? 1000 * 45 : 1000;
         const countdown = setInterval(() => handleCountdown(), interval);
         handleCountdown();
         return () => clearInterval(countdown);
-    }, [handleCountdown, hasHours]);
+    }, [handleCountdown, hasHours, selectedResumeDuration, timeStampMs]);
 
     return { displayString, fullTimeString };
 }

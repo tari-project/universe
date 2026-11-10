@@ -1,45 +1,47 @@
 // the sauce of truth for all block time fmts
 
-import { useEffect, useState } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import calculateTimeSince, { TimeSince } from '@app/utils/calculateTimeSince.ts';
 import { useBlockTip } from '@app/hooks/mining/useBlockTip.ts';
 
+const listeners = new Set<() => void>();
+let sharedInterval: ReturnType<typeof setInterval> | null = null;
+let currentTick = 0;
+
+function subscribeSecondTick(listener: () => void): () => void {
+    listeners.add(listener);
+    if (sharedInterval === null) {
+        sharedInterval = setInterval(() => {
+            currentTick += 1;
+            listeners.forEach((cb) => cb());
+        }, 1000);
+    }
+    return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0 && sharedInterval !== null) {
+            clearInterval(sharedInterval);
+            sharedInterval = null;
+        }
+    };
+}
+
+function getTickSnapshot(): number {
+    return currentTick;
+}
+
 export default function useBlockTime() {
     const { data } = useBlockTip();
+    const tick = useSyncExternalStore(subscribeSecondTick, getTickSnapshot);
 
-    const [currentTimeShort, setCurrentTimeShort] = useState('00:00');
-    const [currentTimeParts, setCurrentTimeParts] = useState<TimeSince>();
-    const [seconds, setSeconds] = useState(0);
-
-    useEffect(() => {
-        if (data && data.timestamp) {
-            const startTime = new Date(data.timestamp * 1000).getTime();
-            const now = Date.now();
-            const elapsedSeconds = Math.floor((now - startTime) / 1000);
-            setSeconds(elapsedSeconds);
-        }
-    }, [data]);
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setSeconds((prevSeconds) => prevSeconds + 1);
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, []);
-
-    useEffect(() => {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        const formattedTime = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-        setCurrentTimeShort(formattedTime);
-    }, [seconds]);
-
-    useEffect(() => {
-        if (!data?.timestamp) return;
-        const now = new Date().getTime();
-        setCurrentTimeParts(calculateTimeSince(Number(data?.timestamp), now));
-    }, [data?.timestamp, seconds]);
-
-    return { currentTimeParts, currentTimeShort };
+    return useMemo<{ currentTimeParts: TimeSince | undefined; currentTimeShort: string }>(() => {
+        void tick;
+        const timestamp = data?.timestamp;
+        const now = Date.now();
+        const elapsedSeconds = timestamp ? Math.max(0, Math.floor((now - timestamp * 1000) / 1000)) : tick;
+        const minutes = Math.floor(elapsedSeconds / 60);
+        const remainingSeconds = elapsedSeconds % 60;
+        const currentTimeShort = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        const currentTimeParts = timestamp ? calculateTimeSince(Number(timestamp), now) : undefined;
+        return { currentTimeParts, currentTimeShort };
+    }, [data?.timestamp, tick]);
 }

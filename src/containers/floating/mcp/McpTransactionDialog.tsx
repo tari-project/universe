@@ -46,17 +46,18 @@ export default function McpTransactionDialog() {
 
     useEffect(() => {
         if (!pending) return;
+        let remaining = TIMEOUT_SECS;
         setCountdown(TIMEOUT_SECS);
 
         const interval = setInterval(() => {
-            setCountdown((prev) => {
-                if (prev <= 1) {
-                    clearInterval(interval);
-                    handleDeny();
-                    return 0;
-                }
-                return prev - 1;
-            });
+            remaining -= 1;
+            if (remaining <= 0) {
+                clearInterval(interval);
+                setCountdown(0);
+                void handleDeny();
+                return;
+            }
+            setCountdown(remaining);
         }, 1000);
 
         return () => clearInterval(interval);
