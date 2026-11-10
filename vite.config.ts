@@ -5,8 +5,8 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import eslintPlugin from '@nabla/vite-plugin-eslint';
 
 const ReactCompilerConfig = {
-    sources: (filename) => {
-        return filename.indexOf('src/App') !== -1;
+    sources: (filename: string) => {
+        return filename.includes('src/') && !filename.includes('node_modules');
     },
 };
 
@@ -72,7 +72,7 @@ export default defineConfig(({ command }) => {
         ...baseOptions,
         plugins,
         build: {
-            sourcemap: true,
+            sourcemap: false,
         },
     };
 });

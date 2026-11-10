@@ -23,7 +23,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { convertEthAddressToTariAddress } from '@app/store/actions/bridgeApiActions.ts';
-import { isAddress } from 'ethers';
+import { isAddress } from '@app/utils/address.ts';
 import { useTranslation } from 'react-i18next';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { setAllowTelemetry } from '@app/store/actions/config/core.ts';

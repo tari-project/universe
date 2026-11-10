@@ -3,4 +3,7 @@ members = ["src-tauri", "process-wrapper"]
 resolver = "2"
 
 [profile.release]
-debug = true
+debug = false
+strip = "symbols"
+lto = "thin"
+codegen-units = 1
