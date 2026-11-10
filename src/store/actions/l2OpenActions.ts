@@ -10,6 +10,26 @@ import { setL2Open } from './uiStoreActions.ts';
 
 let opening = false;
 
+const PIN_LOAD_TIMEOUT_MS = 30_000;
+
+const waitForPinStatus = (): Promise<boolean | undefined> => {
+    const current = useWalletStore.getState().is_pin_locked;
+    if (current !== undefined) return Promise.resolve(current);
+    return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+            unsubscribe();
+            resolve(useWalletStore.getState().is_pin_locked);
+        }, PIN_LOAD_TIMEOUT_MS);
+        const unsubscribe = useWalletStore.subscribe((state) => {
+            if (state.is_pin_locked !== undefined) {
+                clearTimeout(timeout);
+                unsubscribe();
+                resolve(state.is_pin_locked);
+            }
+        });
+    });
+};
+
 /** Runs a backend command that asks for the PIN and opens L2, then shows the panel. */
 const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable') => {
     if (opening) return;
@@ -35,7 +55,9 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
  * once the wallet is open.
  */
 export const openL2 = async () => {
-    if (!useWalletStore.getState().is_pin_locked) {
+    const isPinLocked = await waitForPinStatus();
+    if (isPinLocked === undefined) return;
+    if (!isPinLocked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;
     }

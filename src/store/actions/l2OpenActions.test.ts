@@ -84,6 +84,52 @@ describe('openL2', () => {
         expect(useUIStore.getState().l2Open).toBe(false);
         expect(useToastStore.getState().toasts).toHaveLength(1);
     });
+
+    it('waits for PIN status when L1 wallet is still loading and unlocks L2 once PIN is known to be set', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        serve(lockedState, 'unlock_l2_wallet');
+
+        const promise = openL2();
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).not.toHaveBeenCalled();
+
+        useWalletStore.setState({ is_pin_locked: true });
+        await promise;
+
+        expect(useSecurityStore.getState().modal).toBeNull();
+        expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet');
+        expect(useUIStore.getState().l2Open).toBe(true);
+    });
+
+    it('waits for PIN status when L1 wallet is still loading and opens PIN setup once known to have no PIN', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+
+        const promise = openL2();
+        expect(useSecurityStore.getState().modal).toBeNull();
+
+        useWalletStore.setState({ is_pin_locked: false });
+        await promise;
+
+        expect(useSecurityStore.getState().modal).toBe('l2_pin_required');
+        expect(useUIStore.getState().l2Open).toBe(false);
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it('gives up without opening PIN setup if PIN status never arrives within the timeout', async () => {
+        vi.useFakeTimers();
+        try {
+            useWalletStore.setState({ is_pin_locked: undefined });
+            const promise = openL2();
+            await vi.advanceTimersByTimeAsync(30_000);
+            await promise;
+
+            expect(useSecurityStore.getState().modal).toBeNull();
+            expect(useUIStore.getState().l2Open).toBe(false);
+            expect(invoke).not.toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
 });
 
 describe('createPinAndOpenL2', () => {

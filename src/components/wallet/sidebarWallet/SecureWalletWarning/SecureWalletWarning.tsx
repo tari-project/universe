@@ -35,7 +35,7 @@ export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Pr
         setModal(isExchangeMiner ? 'create_pin' : 'intro');
     };
 
-    const isHidden = isExchangeMiner ? pinLocked : seedBackedUp && pinLocked;
+    const isHidden = isExchangeMiner ? Boolean(pinLocked) : seedBackedUp && Boolean(pinLocked);
 
     return !isHidden ? (
         <AnimatePresence>
@@ -54,7 +54,7 @@ export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Pr
                                 <StepsText>{t('warning.steps')}</StepsText>
                                 <StepsDots>
                                     <StepsDot $isActive={seedBackedUp} />
-                                    <StepsDot $isActive={pinLocked} />
+                                    <StepsDot $isActive={Boolean(pinLocked)} />
                                 </StepsDots>
                             </StepsWrapper>
                         )}

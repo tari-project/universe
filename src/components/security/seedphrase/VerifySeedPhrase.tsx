@@ -67,7 +67,7 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
             setModal(null);
         });
         const isPinLocked = useWalletStore.getState().is_pin_locked;
-        if (!isPinLocked) {
+        if (isPinLocked === false) {
             await invoke('create_pin');
         }
     };
