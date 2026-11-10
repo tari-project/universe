@@ -343,6 +343,15 @@ impl GpuManager {
         }
     }
 
+    // Stops the active GPU miner process if running and starts it again so newly persisted mode
+    // intensity settings take effect instead of hitting the early return in start_mining_inner.
+    pub async fn restart_mining(&mut self) -> Result<(), anyhow::Error> {
+        if self.is_running() {
+            self.stop_mining().await?;
+        }
+        self.start_mining().await
+    }
+
     async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
         let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
 

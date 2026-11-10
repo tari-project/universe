@@ -18,11 +18,22 @@ import { ConfigUI, MiningModeType, PauseOnBatteryModeState } from '@app/types/co
 import { setError } from './appStateStoreActions.ts';
 import {
     handleConfigUILoaded,
+    selectMiningMode,
     setApplicationLanguage,
     setMoneroAddress,
     setShouldAlwaysUseSystemLanguage,
 } from './appConfigStoreActions.ts';
-import { useConfigUIStore, useConfigWalletStore } from '../useAppConfigStore.ts';
+import {
+    setLastSelectedMiningModeNameForSchedulerEvent,
+    startCpuMining,
+    startGpuMining,
+    stopCpuMining,
+    stopGpuMining,
+} from './miningStoreActions';
+import { updateSetMiningModeAsSchedulerEventMode } from './uiStoreActions';
+import { useConfigMiningStore, useConfigUIStore, useConfigWalletStore } from '../useAppConfigStore.ts';
+import { useMiningStore } from '../useMiningStore.ts';
+import { useUIStore } from '../useUIStore.ts';
 
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: vi.fn(),
@@ -205,98 +216,48 @@ describe('appConfigStoreActions', () => {
     });
 
     describe('selectMiningMode logic', () => {
-        interface ModeChangeState {
-            shouldSetMiningModeAsSchedulerEventMode: boolean;
-            cpuMining: boolean;
-            gpuMining: boolean;
-            wasCpuMiningInitiated: boolean;
-            wasGpuMiningInitiated: boolean;
-        }
+        const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
+        const setErrorMock = setError as unknown as ReturnType<typeof vi.fn>;
 
-        const shouldSkipModeChange = (state: ModeChangeState): boolean => {
-            return state.shouldSetMiningModeAsSchedulerEventMode;
-        };
-
-        const shouldStopCpuBeforeModeChange = (state: ModeChangeState): boolean => {
-            return state.cpuMining;
-        };
-
-        const shouldStopGpuBeforeModeChange = (state: ModeChangeState): boolean => {
-            return state.gpuMining || state.wasGpuMiningInitiated;
-        };
-
-        const shouldRestartCpuAfterModeChange = (state: ModeChangeState): boolean => {
-            return state.wasCpuMiningInitiated;
-        };
-
-        const shouldRestartGpuAfterModeChange = (state: ModeChangeState): boolean => {
-            return state.wasGpuMiningInitiated;
-        };
-
-        it('should skip mode change when setting for scheduler event', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: true,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: false,
-                wasGpuMiningInitiated: false,
-            };
-            expect(shouldSkipModeChange(state)).toBe(true);
+        beforeEach(() => {
+            vi.clearAllMocks();
+            useUIStore.setState({ setMiningModeAsSchedulerEventMode: false });
+            useConfigMiningStore.setState({ selected_mining_mode: 'Eco' });
+            useMiningStore.setState({ isChangingMode: false });
         });
 
-        it('should not skip mode change in normal operation', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: true,
-                gpuMining: true,
-                wasCpuMiningInitiated: true,
-                wasGpuMiningInitiated: true,
-            };
-            expect(shouldSkipModeChange(state)).toBe(false);
+        it('records scheduler event mode when setMiningModeAsSchedulerEventMode is active', async () => {
+            useUIStore.setState({ setMiningModeAsSchedulerEventMode: true });
+
+            await selectMiningMode('Ludicrous');
+
+            expect(setLastSelectedMiningModeNameForSchedulerEvent).toHaveBeenCalledWith('Ludicrous');
+            expect(updateSetMiningModeAsSchedulerEventMode).toHaveBeenCalledWith(false);
+            expect(invokeMock).not.toHaveBeenCalled();
         });
 
-        it('should stop CPU before mode change if currently mining', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: true,
-                gpuMining: false,
-                wasCpuMiningInitiated: true,
-                wasGpuMiningInitiated: false,
-            };
-            expect(shouldStopCpuBeforeModeChange(state)).toBe(true);
+        it('delegates mode switch to select_mining_mode without duplicate stop/start calls', async () => {
+            invokeMock.mockResolvedValueOnce(undefined);
+
+            await selectMiningMode('Ludicrous');
+
+            expect(invokeMock).toHaveBeenCalledWith('select_mining_mode', { mode: 'Ludicrous' });
+            expect(useConfigMiningStore.getState().selected_mining_mode).toBe('Ludicrous');
+            expect(useMiningStore.getState().isChangingMode).toBe(false);
+            expect(stopCpuMining).not.toHaveBeenCalled();
+            expect(stopGpuMining).not.toHaveBeenCalled();
+            expect(startCpuMining).not.toHaveBeenCalled();
+            expect(startGpuMining).not.toHaveBeenCalled();
         });
 
-        it('should stop GPU before mode change if currently mining or was initiated', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: false,
-                wasGpuMiningInitiated: true,
-            };
-            expect(shouldStopGpuBeforeModeChange(state)).toBe(true);
-        });
+        it('reports an error and clears isChangingMode when select_mining_mode rejects', async () => {
+            invokeMock.mockRejectedValueOnce(new Error('backend failure'));
 
-        it('should restart CPU after mode change if was initiated', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: true,
-                wasGpuMiningInitiated: false,
-            };
-            expect(shouldRestartCpuAfterModeChange(state)).toBe(true);
-        });
+            await selectMiningMode('Ludicrous');
 
-        it('should restart GPU after mode change if was initiated', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: false,
-                wasGpuMiningInitiated: true,
-            };
-            expect(shouldRestartGpuAfterModeChange(state)).toBe(true);
+            expect(setErrorMock).toHaveBeenCalledWith('Could not change mining mode');
+            expect(useConfigMiningStore.getState().selected_mining_mode).toBe('Eco');
+            expect(useMiningStore.getState().isChangingMode).toBe(false);
         });
     });
 
