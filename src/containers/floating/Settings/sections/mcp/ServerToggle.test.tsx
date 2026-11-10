@@ -1,7 +1,9 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, waitFor } from '@testing-library/react';
+import { invoke } from '@tauri-apps/api/core';
 import { render, screen } from '@app/test/test-utils';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
@@ -9,8 +11,25 @@ import ServerToggle from './ServerToggle';
 
 describe('ServerToggle', () => {
     beforeEach(() => {
-        useConfigMcpStore.setState({ enabled: false });
-        useMcpStore.setState({ serverRunning: false, serverPort: null });
+        vi.mocked(invoke).mockReset().mockResolvedValue(undefined);
+        useConfigMcpStore.setState({ enabled: false, port: 4444 });
+        useMcpStore.setState({ serverRunning: false, serverPort: null, serverError: null });
+    });
+
+    it('shows saved-port conflicts when enabling and clears the error after retry', async () => {
+        vi.mocked(invoke).mockImplementationOnce(async () => {
+            useConfigMcpStore.setState({ enabled: true });
+            throw 'MCP_PORT_IN_USE:4444: address already in use';
+        });
+        render(<ServerToggle />);
+        fireEvent.click(screen.getByRole('checkbox'));
+        await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('mcp.errors.port-in-use'));
+        expect(useMcpStore.getState().serverError?.port).toBe(4444);
+        expect(screen.getByRole('checkbox')).toBeChecked();
+        expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-stopped');
+        fireEvent.click(screen.getByRole('checkbox'));
+        await waitFor(() => expect(screen.getByRole('checkbox')).not.toBeDisabled());
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('renders title', () => {

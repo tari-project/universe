@@ -37,6 +37,7 @@ export interface McpPendingTransaction {
 export type McpTxStatus = 'reviewing' | 'processing' | 'completed';
 
 interface McpStoreState {
+    serverError: { key: 'port-in-use' | 'start-failed'; port: number } | null;
     serverRunning: boolean;
     serverPort: number | null;
     auditEntries: McpAuditEntry[];
@@ -45,6 +46,7 @@ interface McpStoreState {
 }
 
 const initialState: McpStoreState = {
+    serverError: null,
     serverRunning: false,
     serverPort: null,
     auditEntries: [],

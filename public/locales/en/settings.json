@@ -101,6 +101,11 @@
       "export": "Export Log",
       "title": "Audit Log"
     },
+    "errors": {
+      "invalid-port": "Port must be a whole number between 1024 and 65535.",
+      "port-in-use": "Port {{port}} is already in use. Choose another port.",
+      "start-failed": "Could not apply MCP server settings for port {{port}}. Check the configured port and logs, then try again."
+    },
     "server-toggle": {
       "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
       "status-running": "Running on port {{port}}",
