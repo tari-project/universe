@@ -143,10 +143,8 @@ impl ProcessAdapter for XmrigAdapter {
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push("--donate-level=1".to_string());
 
-        // don't specify threads for ludicrous mode
-        if let Some(cpu_threads) = self.cpu_threads {
-            args.push(format!("--threads={cpu_threads}"));
-        }
+        // Specify thread count explicitly (including >64 threads across Windows processor groups)
+        args.extend(build_xmrig_thread_args(self.cpu_threads));
         args.push("--verbose".to_string());
         for extra_option in &self.extra_options {
             args.push(extra_option.clone());
@@ -357,5 +355,36 @@ impl XmrigStatusMonitor {
                 is_connected: body.connection.uptime > 0,
             },
         })
+    }
+}
+
+/// Builds the thread arguments for XMRig.
+///
+/// On Windows machines with >64 logical cores (multiple processor groups), passing `--threads=N`
+/// along with `--cpu-no-yield` (and omitting any single-group 64-bit `--cpu-affinity` mask)
+/// allows XMRig 6.25.0's `hwloc` topology engine to bind worker threads across all processor groups.
+pub fn build_xmrig_thread_args(cpu_threads: Option<u32>) -> Vec<String> {
+    let mut args = Vec::new();
+    if let Some(threads) = cpu_threads {
+        args.push(format!("--threads={threads}"));
+    }
+    args
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_xmrig_thread_args;
+
+    #[test]
+    fn builds_threads_arg_for_standard_and_multi_group_core_counts() {
+        assert!(build_xmrig_thread_args(None).is_empty());
+        assert_eq!(
+            build_xmrig_thread_args(Some(32)),
+            vec!["--threads=32".to_string()]
+        );
+        assert_eq!(
+            build_xmrig_thread_args(Some(128)),
+            vec!["--threads=128".to_string()]
+        );
     }
 }

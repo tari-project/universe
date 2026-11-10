@@ -283,11 +283,10 @@ impl CpuManager {
     }
 
     async fn determine_number_of_cores_to_use(cpu_usage_percentage: u32) -> u32 {
-        let max_cpu_available = thread::available_parallelism();
-        let max_cpu_available = match max_cpu_available {
+        let max_cpu_available = match detect_total_logical_cpus() {
             Ok(available_cpus) => {
-                info!(target:LOG_TARGET_APP_LOGIC, "Available CPU cores: {available_cpus}");
-                u32::try_from(available_cpus.get()).unwrap_or(1)
+                info!(target: LOG_TARGET_APP_LOGIC, "Available CPU cores across all processor groups: {available_cpus}");
+                available_cpus
             }
             Err(err) => {
                 error!("Available CPU cores: Unknown, error: {err}");
@@ -295,17 +294,11 @@ impl CpuManager {
             }
         };
 
-        // LocalNet's difficulty is 1, so every xmrig hash is a block the node has to process. On
-        // a 64 core CI runner the Eco share alone is 6 threads, enough block submissions to swamp
-        // the node whenever the host is busy. Test builds mine with a single thread.
-        let cpu_cores_to_use = if cfg!(feature = "test-mode") {
-            1
-        } else {
-            max_cpu_available
-                .saturating_mul(cpu_usage_percentage)
-                .saturating_div(100)
-                .clamp(1, max_cpu_available)
-        };
+        let cpu_cores_to_use = calculate_cores_to_use(
+            max_cpu_available,
+            cpu_usage_percentage,
+            cfg!(feature = "test-mode"),
+        );
 
         info!(target: LOG_TARGET_APP_LOGIC, "Using {cpu_cores_to_use} CPU cores for mining");
 
@@ -421,6 +414,58 @@ impl CpuManager {
     }
 }
 
+/// Counts active logical processors across all Windows processor groups (`ALL_PROCESSOR_GROUPS = 0xFFFF`),
+/// avoiding the 64-thread single-group ceiling in `std::thread::available_parallelism()` on Windows.
+pub fn detect_total_logical_cpus() -> Result<u32, std::io::Error> {
+    #[cfg(target_os = "windows")]
+    {
+        const ALL_PROCESSOR_GROUPS: u16 = 0xFFFF;
+        #[link(name = "kernel32")]
+        unsafe extern "system" {
+            fn GetActiveProcessorCount(group_number: u16) -> u32;
+        }
+        // SAFETY: `GetActiveProcessorCount(ALL_PROCESSOR_GROUPS)` is a standard Win32 API
+        // available on all 64-bit Windows releases that queries the total number of active
+        // logical processors across all processor groups without side effects.
+        let all_groups_count = unsafe { GetActiveProcessorCount(ALL_PROCESSOR_GROUPS) };
+        let std_count = std::thread::available_parallelism()
+            .map(|n| u32::try_from(n.get()).unwrap_or(1))
+            .unwrap_or(1);
+        let best = all_groups_count.max(std_count);
+        if best > 0 {
+            return Ok(best);
+        }
+        Err(std::io::Error::last_os_error())
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::thread::available_parallelism()
+            .map(|n| u32::try_from(n.get()).unwrap_or(1))
+    }
+}
+
+/// Computes the target thread count for CPU mining from the total logical CPU count and usage percentage.
+///
+/// LocalNet's difficulty is 1, so every xmrig hash is a block the node has to process. On
+/// a 64+ core CI runner the Eco share alone is enough block submissions to swamp the node
+/// whenever the host is busy. Test builds mine with a single thread.
+pub fn calculate_cores_to_use(
+    max_cpu_available: u32,
+    cpu_usage_percentage: u32,
+    is_test_mode: bool,
+) -> u32 {
+    if is_test_mode {
+        1
+    } else {
+        let clamped_max = max_cpu_available.max(1);
+        clamped_max
+            .saturating_mul(cpu_usage_percentage)
+            .saturating_div(100)
+            .clamp(1, clamped_max)
+    }
+}
+
 /// Solo CPU mining pays out to the Monero address, which may be blank: refuse with a message the
 /// "Could not start CPU mining" toast shows as is.
 fn solo_mining_address(monero_address: String) -> Result<String, anyhow::Error> {
@@ -434,7 +479,7 @@ fn solo_mining_address(monero_address: String) -> Result<String, anyhow::Error> 
 
 #[cfg(test)]
 mod tests {
-    use super::solo_mining_address;
+    use super::{calculate_cores_to_use, detect_total_logical_cpus, solo_mining_address};
 
     #[test]
     fn test_solo_mining_address_blank_address_errors_with_where_to_set_it() {
@@ -453,5 +498,26 @@ mod tests {
             solo_mining_address(address.clone()).expect("a set address mines"),
             address
         );
+    }
+
+    #[test]
+    fn test_calculate_cores_scales_beyond_64_threads_across_processor_groups() {
+        // 128-thread dual-group workstation (e.g., Threadripper / EPYC)
+        assert_eq!(calculate_cores_to_use(128, 25, false), 32);
+        assert_eq!(calculate_cores_to_use(128, 50, false), 64);
+        assert_eq!(calculate_cores_to_use(128, 75, false), 96);
+        assert_eq!(calculate_cores_to_use(128, 100, false), 128);
+
+        // 96-thread dual-group machine
+        assert_eq!(calculate_cores_to_use(96, 100, false), 96);
+
+        // Test mode always uses 1 thread
+        assert_eq!(calculate_cores_to_use(128, 100, true), 1);
+    }
+
+    #[test]
+    fn test_detect_total_logical_cpus_returns_positive_count() {
+        let count = detect_total_logical_cpus().expect("logical CPU count should succeed");
+        assert!(count >= 1);
     }
 }
