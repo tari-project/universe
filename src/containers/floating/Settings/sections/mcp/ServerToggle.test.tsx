@@ -81,6 +81,21 @@ describe('ServerToggle', () => {
         expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-running');
     });
 
+    it('shows a generic start message when enabling fails for a reason other than the bind', async () => {
+        mockInvoke.mockReset();
+        mockInvoke.mockRejectedValueOnce('MCP server has no bearer token configured');
+        useConfigMcpStore.setState({ enabled: false, port: 19222 });
+        render(<ServerToggle />);
+        fireEvent.click(screen.getByRole('checkbox'));
+        const error = await screen.findByTestId('mcp-server-error');
+        expect(error).toHaveTextContent('mcp.server-toggle.start-failed');
+        expect(error).not.toHaveTextContent('port-in-use');
+        // The persisted flag was not saved as enabled in this failure mode, so
+        // the store must not pretend otherwise
+        expect(useConfigMcpStore.getState().enabled).toBe(false);
+        expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+
     it('clears the error when the server is disabled again', async () => {
         mockInvoke.mockReset();
         mockInvoke.mockRejectedValueOnce(

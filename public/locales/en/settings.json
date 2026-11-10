@@ -88,6 +88,7 @@
       "port-in-use": "Port {{port}} is already in use. Choose another port.",
       "port-invalid-error": "Port must be a number between 1024 and 65535",
       "port-range-error": "Port must be between 1024 and 65535",
+      "port-update-failed": "Could not update the MCP server port. Check the logs and try again.",
       "read-tier": "Read Tier"
     },
     "agent-config": {
@@ -107,6 +108,7 @@
     "server-toggle": {
       "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
       "port-in-use": "Port {{port}} is already in use. Choose another port.",
+      "start-failed": "Could not change the MCP server state. Check the logs and try again.",
       "status-running": "Running on port {{port}}",
       "status-stopped": "Stopped",
       "title": "MCP Server"

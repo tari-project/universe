@@ -58,7 +58,7 @@ export default function ServerToggle() {
                 }
                 setError(t('mcp.server-toggle.port-in-use', { port: configuredPort }));
             } else {
-                setError(String(e));
+                setError(t('mcp.server-toggle.start-failed'));
             }
         } finally {
             setLoading(false);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
@@ -10,6 +10,7 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
+import { useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
 
@@ -48,30 +49,43 @@ export default function AdvancedSettings() {
     const readTier = useConfigMcpStore((s) => s.read_tier_enabled);
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
+    const serverRunning = useMcpStore((s) => s.serverRunning);
     const [portValue, setPortValue] = useState(String(storePort));
     const [portError, setPortError] = useState<string | null>(null);
+    const commitInFlight = useRef(false);
 
     useEffect(() => {
         setPortValue(String(storePort));
     }, [storePort]);
 
     const commitPort = useCallback(async () => {
-        const num = Number(portValue);
-        // Not a number at all (empty, text, fractional) gets its own message so the
-        // user fixes the right problem; a whole number outside the allowed range
-        // gets the range message.
-        if (portValue.trim() === '' || isNaN(num) || !Number.isInteger(num)) {
+        // The field must hold a plain whole number written out in digits.
+        // Number() alone would also accept "4e3" (4000), "0x1000" (4096) or
+        // "4444.0", silently configuring a port the user never typed. Input
+        // that is not a number at all gets its own message so the user fixes
+        // the right problem; a whole number outside the allowed range gets
+        // the range message.
+        if (!/^\d+$/.test(portValue)) {
             setPortError(t('mcp.advanced.port-invalid-error'));
             return;
         }
+        const num = Number(portValue);
         if (num < 1024 || num > 65535) {
             setPortError(t('mcp.advanced.port-range-error'));
             return;
         }
-        if (num === storePort) {
-            setPortError(null);
+        // Committing the saved value again is only a no-op while the server
+        // is already running on it with no error showing. When the server is
+        // stopped - for example the toggle failed to start it because the
+        // port was occupied - or an error is showing, it is a retry: whatever
+        // blocked the port may have gone away since the failed attempt.
+        if (num === storePort && serverRunning && !portError) {
             return;
         }
+        // Enter and blur can both fire for a single edit; never run two
+        // commits (and two server restarts) at the same time.
+        if (commitInFlight.current) return;
+        commitInFlight.current = true;
         try {
             await invoke('set_mcp_port', { port: num });
             // The backend persists the port before restarting, and the panel
@@ -85,10 +99,12 @@ export default function AdvancedSettings() {
                 useConfigMcpStore.setState((c) => ({ ...c, port: num }));
                 setPortError(t('mcp.advanced.port-in-use', { port: num }));
             } else {
-                setPortError(String(e));
+                setPortError(t('mcp.advanced.port-update-failed'));
             }
+        } finally {
+            commitInFlight.current = false;
         }
-    }, [portValue, storePort, t]);
+    }, [portValue, storePort, serverRunning, portError, t]);
 
     if (!enabled) return null;
 
