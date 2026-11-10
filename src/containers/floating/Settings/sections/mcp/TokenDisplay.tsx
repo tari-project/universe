@@ -9,7 +9,7 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { writeClipboardText } from '@app/hooks/helpers/useCopyToClipboard';
 import { useCallback, useState } from 'react';
 import { requestPin } from '@app/store/useSecurityStore';
 import { addToast } from '@app/components/ToastStack/useToastStore';
@@ -58,9 +58,13 @@ export default function TokenDisplay() {
 
     const handleCopy = useCallback(async () => {
         if (fullToken) {
-            await writeText(fullToken);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            try {
+                await writeClipboardText(fullToken);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch (e) {
+                addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
+            }
             return;
         }
         if (isPinLocked) {
@@ -69,7 +73,7 @@ export default function TokenDisplay() {
             try {
                 const token = await fetchToken(pin);
                 if (token) {
-                    await writeText(token);
+                    await writeClipboardText(token);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                 }
@@ -80,7 +84,7 @@ export default function TokenDisplay() {
             try {
                 const token = await fetchToken();
                 if (token) {
-                    await writeText(token);
+                    await writeClipboardText(token);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                 }

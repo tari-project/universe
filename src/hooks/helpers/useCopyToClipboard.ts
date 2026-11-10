@@ -1,4 +1,5 @@
 import { clear, readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface CopyOptions {
@@ -8,6 +9,67 @@ interface CopyOptions {
      * so copying something else in the meantime is left alone.
      */
     clearAfterMs?: number;
+}
+
+/**
+ * Writes text to the clipboard using the Tauri native clipboard plugin first,
+ * falling back to the WebView `navigator.clipboard.writeText` API (e.g. under
+ * Wayland Flatpak sandboxes where `arboard`'s X11 backend is unavailable).
+ */
+export async function writeClipboardText(value: string): Promise<void> {
+    let firstError: unknown;
+    try {
+        await writeText(value);
+        return;
+    } catch (e) {
+        firstError = e;
+    }
+
+    if (typeof navigator !== 'undefined' && typeof navigator.clipboard?.writeText === 'function') {
+        try {
+            await navigator.clipboard.writeText(value);
+            return;
+        } catch (fallbackError) {
+            throw fallbackError ?? firstError;
+        }
+    }
+
+    throw firstError;
+}
+
+async function readClipboardText(): Promise<string> {
+    try {
+        return await readText();
+    } catch (firstError) {
+        if (typeof navigator !== 'undefined' && typeof navigator.clipboard?.readText === 'function') {
+            return await navigator.clipboard.readText();
+        }
+        throw firstError;
+    }
+}
+
+async function clearClipboardText(): Promise<void> {
+    let tauriSucceeded = false;
+    let firstError: unknown;
+    try {
+        await clear();
+        tauriSucceeded = true;
+    } catch (e) {
+        firstError = e;
+    }
+
+    if (typeof navigator !== 'undefined' && typeof navigator.clipboard?.writeText === 'function') {
+        try {
+            await navigator.clipboard.writeText('');
+            return;
+        } catch (fallbackError) {
+            if (!tauriSucceeded) {
+                throw fallbackError ?? firstError;
+            }
+        }
+    } else if (!tauriSucceeded) {
+        throw firstError;
+    }
 }
 
 export function useCopyToClipboard() {
@@ -28,7 +90,7 @@ export function useCopyToClipboard() {
     }, [isCopied]);
 
     const copyToClipboard = useCallback((value: string, onCopied?: () => void, options?: CopyOptions) => {
-        writeText(value)
+        writeClipboardText(value)
             .then(() => {
                 setIsCopied(true);
                 onCopied?.();
@@ -37,10 +99,10 @@ export function useCopyToClipboard() {
                 clearTimeout(clearTimer.current);
                 if (options?.clearAfterMs) {
                     clearTimer.current = setTimeout(() => {
-                        readText()
+                        readClipboardText()
                             .then((current) => {
                                 if (current === value) {
-                                    return clear();
+                                    return clearClipboardText();
                                 }
                             })
                             .catch((e) => {
@@ -51,6 +113,11 @@ export function useCopyToClipboard() {
             })
             .catch((e) => {
                 console.error('Could not copy to clipboard', e);
+                addToast({
+                    title: 'Failed to copy to clipboard',
+                    text: e instanceof Error ? e.message : String(e),
+                    type: 'error',
+                });
             });
     }, []);
 

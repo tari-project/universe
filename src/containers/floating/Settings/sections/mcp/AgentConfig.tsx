@@ -5,7 +5,7 @@ import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { writeClipboardText } from '@app/hooks/helpers/useCopyToClipboard';
 import { useCallback, useMemo, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { requestPin } from '@app/store/useSecurityStore';
@@ -138,7 +138,7 @@ export default function AgentConfig() {
                 }
                 if (!token) return;
                 const text = buildText(token);
-                await writeText(text);
+                await writeClipboardText(text);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
             } catch (e) {
