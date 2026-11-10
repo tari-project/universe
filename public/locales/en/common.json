@@ -8,6 +8,7 @@
   "connection": "Connection",
   "continue": "Continue",
   "copied": "Copied",
+  "copy-failed": "Couldn't copy to the clipboard",
   "critical-error": "Critical error",
   "day": "Day",
   "disconnect": "Disconnect",

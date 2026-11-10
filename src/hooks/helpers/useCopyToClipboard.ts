@@ -1,5 +1,26 @@
-import { clear, readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { t } from 'i18next';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { addToast } from '@app/components/ToastStack/useToastStore';
+import { clearClipboardText, readClipboardText, writeClipboardText } from '@app/utils/clipboard';
+
+/**
+ * Wipe `value` only if the clipboard still holds it. A Wayland compositor can refuse
+ * the read or the clear while the window is in the background; retry once it is focused
+ * so a seed phrase does not stay on the clipboard just because the timer fired unfocused.
+ */
+async function clearCopiedSecret(value: string, retryOnFocus: boolean): Promise<void> {
+    try {
+        const current = await readClipboardText();
+        if (current === value) {
+            await clearClipboardText();
+        }
+    } catch (e) {
+        console.error('Could not clear clipboard', e);
+        if (retryOnFocus && typeof document !== 'undefined' && !document.hasFocus()) {
+            window.addEventListener('focus', () => void clearCopiedSecret(value, false), { once: true });
+        }
+    }
+}
 
 interface CopyOptions {
     /**
@@ -28,7 +49,7 @@ export function useCopyToClipboard() {
     }, [isCopied]);
 
     const copyToClipboard = useCallback((value: string, onCopied?: () => void, options?: CopyOptions) => {
-        writeText(value)
+        return writeClipboardText(value)
             .then(() => {
                 setIsCopied(true);
                 onCopied?.();
@@ -37,20 +58,13 @@ export function useCopyToClipboard() {
                 clearTimeout(clearTimer.current);
                 if (options?.clearAfterMs) {
                     clearTimer.current = setTimeout(() => {
-                        readText()
-                            .then((current) => {
-                                if (current === value) {
-                                    return clear();
-                                }
-                            })
-                            .catch((e) => {
-                                console.error('Could not clear clipboard', e);
-                            });
+                        void clearCopiedSecret(value, true);
                     }, options.clearAfterMs);
                 }
             })
             .catch((e) => {
                 console.error('Could not copy to clipboard', e);
+                addToast({ title: t('copy-failed', { ns: 'common' }), type: 'error' });
             });
     }, []);
 

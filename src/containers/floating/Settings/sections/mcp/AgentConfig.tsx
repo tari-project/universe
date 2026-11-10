@@ -5,11 +5,11 @@ import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useCallback, useMemo, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { requestPin } from '@app/store/useSecurityStore';
 import { addToast } from '@app/components/ToastStack/useToastStore';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 
 const AGENTS = ['claude-code', 'cursor', 'windsurf', 'custom'] as const;
 type AgentId = (typeof AGENTS)[number];
@@ -118,7 +118,7 @@ export default function AgentConfig() {
     const isPinLocked = useWalletStore((s) => s.is_pin_locked);
 
     const [activeAgent, setActiveAgent] = useState<AgentId>('claude-code');
-    const [copied, setCopied] = useState(false);
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
 
     const displaySnippets = useMemo(() => {
         if (!serverPort) return null;
@@ -137,15 +137,12 @@ export default function AgentConfig() {
                     token = await invoke<string | null>('get_mcp_token');
                 }
                 if (!token) return;
-                const text = buildText(token);
-                await writeText(text);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
+                copyToClipboard(buildText(token));
             } catch (e) {
                 addToast({ title: 'Failed to copy', text: String(e), type: 'error' });
             }
         },
-        [isPinLocked]
+        [copyToClipboard, isPinLocked]
     );
 
     if (!enabled || !redactedToken || !serverRunning || !serverPort || !displaySnippets) return null;
@@ -175,7 +172,7 @@ export default function AgentConfig() {
                         <code>{activeDisplaySnippet.config}</code>
                     </CodeBlock>
                     <CopyButton onClick={() => handleCopy((token) => buildSnippets(port, token)[activeAgent].config)}>
-                        {copied ? t('mcp.agent-config.copied') : t('mcp.agent-config.copy')}
+                        {isCopied ? t('mcp.agent-config.copied') : t('mcp.agent-config.copy')}
                     </CopyButton>
                     {activeDisplaySnippet.jsonConfig && (
                         <>

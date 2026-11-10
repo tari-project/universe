@@ -1172,6 +1172,34 @@ pub async fn set_mine_on_app_start(mine_on_app_start: bool) -> Result<(), Invoke
     Ok(())
 }
 
+/// Whether clipboard writes must go through the webview instead of the clipboard plugin.
+///
+/// Flatpak on a Wayland session is given the Wayland socket and, because the manifest
+/// asks only for `--socket=fallback-x11`, no `DISPLAY`. arboard then cannot use the
+/// privileged data-control protocol and blocks on an X11 server that is not there.
+/// An empty variable counts as unset: some launchers export `DISPLAY=` rather than
+/// omitting it.
+pub fn sandbox_clipboard_needs_webview(
+    flatpak_id: bool,
+    wayland_display: bool,
+    x11_display: bool,
+) -> bool {
+    flatpak_id && wayland_display && !x11_display
+}
+
+fn env_var_present(key: &str) -> bool {
+    std::env::var_os(key).is_some_and(|value| !value.is_empty())
+}
+
+#[tauri::command]
+pub fn clipboard_needs_webview() -> bool {
+    sandbox_clipboard_needs_webview(
+        env_var_present("FLATPAK_ID"),
+        env_var_present("WAYLAND_DISPLAY"),
+        env_var_present("DISPLAY"),
+    )
+}
+
 #[tauri::command]
 pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
@@ -3019,5 +3047,27 @@ mod pin_gate_tests {
     #[test]
     fn test_revert_to_internal_wallet_pin_checked_before_side_effects() {
         assert_pin_gated_before_side_effects("revert_to_internal_wallet");
+    }
+}
+
+#[cfg(test)]
+mod clipboard_sandbox_tests {
+    use super::sandbox_clipboard_needs_webview;
+
+    #[test]
+    fn flatpak_wayland_without_x11_uses_the_webview() {
+        assert!(sandbox_clipboard_needs_webview(true, true, false));
+    }
+
+    #[test]
+    fn flatpak_with_x11_keeps_the_plugin() {
+        assert!(!sandbox_clipboard_needs_webview(true, true, true));
+        assert!(!sandbox_clipboard_needs_webview(true, false, true));
+    }
+
+    #[test]
+    fn unpackaged_linux_keeps_the_plugin() {
+        assert!(!sandbox_clipboard_needs_webview(false, true, false));
+        assert!(!sandbox_clipboard_needs_webview(false, false, false));
     }
 }

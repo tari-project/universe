@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 
 const writeText = vi.fn();
 const readText = vi.fn();
@@ -19,6 +20,21 @@ describe('useCopyToClipboard', () => {
         writeText.mockReset().mockResolvedValue(undefined);
         readText.mockReset();
         clear.mockReset().mockResolvedValue(undefined);
+        useToastStore.setState({ toasts: [] });
+        // Detection says "use the plugin". A failed plugin write must not be rescued by
+        // jsdom's clipboard stubs, or the failure-path assertions never see a rejection.
+        Object.defineProperty(document, 'execCommand', {
+            configurable: true,
+            writable: true,
+            value: vi.fn(() => false),
+        });
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: {
+                writeText: vi.fn().mockRejectedValue(new Error('webview clipboard unavailable')),
+                readText: vi.fn().mockRejectedValue(new Error('webview clipboard unavailable')),
+            },
+        });
     });
 
     afterEach(() => {
@@ -97,6 +113,27 @@ describe('useCopyToClipboard', () => {
         await act(async () => result.current.copyToClipboard('new value'));
         expect(clear).not.toHaveBeenCalled();
         await act(async () => vi.advanceTimersByTimeAsync(60_000));
+        expect(clear).toHaveBeenCalledTimes(1);
+        expect(useToastStore.getState().toasts).toHaveLength(1);
+        expect(useToastStore.getState().toasts[0]?.title).toBe('copy-failed');
+        consoleError.mockRestore();
+    });
+
+    it('retries the secret clear once the unfocused window is focused again', async () => {
+        const seed = 'word '.repeat(24).trim();
+        readText.mockRejectedValueOnce(new Error('clipboard unavailable')).mockResolvedValueOnce(seed);
+        vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const { result } = renderHook(() => useCopyToClipboard());
+
+        await act(async () => result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 }));
+        await act(async () => vi.advanceTimersByTimeAsync(60_000));
+        expect(clear).not.toHaveBeenCalled();
+
+        await act(async () => {
+            window.dispatchEvent(new Event('focus'));
+        });
+
         expect(clear).toHaveBeenCalledTimes(1);
         consoleError.mockRestore();
     });

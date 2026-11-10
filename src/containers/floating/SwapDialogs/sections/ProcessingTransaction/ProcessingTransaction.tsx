@@ -9,7 +9,8 @@ import {
 } from './ProcessingTransaction.styles';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { useTranslation } from 'react-i18next';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
 import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
@@ -58,13 +59,11 @@ export const ProcessingTransaction = ({
 }: Props) => {
     const { t } = useTranslation(['wallet'], { useSuspense: false });
     const explorerUrl = mainnetExplorerUrl;
-    const [copied, setCopied] = useState(false);
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
 
     const handleCopyAddress = useCallback(() => {
-        navigator.clipboard.writeText(CONTRACT_ADDRESS);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    }, []);
+        copyToClipboard(CONTRACT_ADDRESS);
+    }, [copyToClipboard]);
 
     const statusItems: StatusListEntry[] = useMemo(() => {
         const items: StatusListEntry[] = [];
@@ -178,7 +177,7 @@ export const ProcessingTransaction = ({
                         <CopyIconWrapper onClick={handleCopyAddress}>
                             <CopyIcon size={16} />
                             <AnimatePresence>
-                                {copied && (
+                                {isCopied && (
                                     <CopyText
                                         initial={{ opacity: 0, scale: 0.8 }}
                                         animate={{ opacity: 1, scale: 1 }}

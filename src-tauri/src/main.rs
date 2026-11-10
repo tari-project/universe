@@ -470,6 +470,7 @@ fn main() {
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,
+            commands::clipboard_needs_webview,
             commands::get_app_in_memory_config,
             commands::get_applications_versions,
             commands::get_application_language,

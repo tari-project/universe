@@ -1,5 +1,5 @@
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import GreenModal from '@app/components/GreenModal/GreenModal';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { AnimatePresence } from 'motion/react';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
 import {
@@ -19,7 +19,7 @@ import {
 import genericHeroImage from './images/generic-image.png';
 import gemImage from '@app/assets/images/gem.png';
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
@@ -31,15 +31,7 @@ const ShareRewardModal = memo(function ShareRewardModal() {
     const showModal = useShareRewardStore((s) => s.showModal);
     const item = useShareRewardStore((s) => s.item);
 
-    const [copied, setCopied] = useState(false);
-
-    useEffect(() => {
-        if (copied) {
-            setTimeout(() => {
-                setCopied(false);
-            }, 2000);
-        }
-    }, [copied]);
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
 
     const handleClose = () => {
         setShowModal(false);
@@ -57,10 +49,8 @@ const ShareRewardModal = memo(function ShareRewardModal() {
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
     const handleCopy = useCallback(() => {
-        writeText(shareUrl).then(() => {
-            setCopied(true);
-        });
-    }, [shareUrl]);
+        copyToClipboard(shareUrl);
+    }, [copyToClipboard, shareUrl]);
 
     return (
         <GreenModal onClose={handleClose} padding={30} showModal={showModal}>
@@ -76,7 +66,7 @@ const ShareRewardModal = memo(function ShareRewardModal() {
 
                 <BlackButton onClick={handleCopy}>
                     <AnimatePresence>
-                        {copied && (
+                        {isCopied && (
                             <Copied initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                 {t('share.copied')}
                             </Copied>

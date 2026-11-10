@@ -9,10 +9,10 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useCallback, useState } from 'react';
 import { requestPin } from '@app/store/useSecurityStore';
 import { addToast } from '@app/components/ToastStack/useToastStore';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 
 export default function TokenDisplay() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -23,7 +23,7 @@ export default function TokenDisplay() {
     const isPinLocked = useWalletStore((s) => s.is_pin_locked);
     const [revealed, setRevealed] = useState(false);
     const [fullToken, setFullToken] = useState<string | null>(null);
-    const [copied, setCopied] = useState(false);
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
 
     const fetchToken = useCallback(async (pinValue?: string) => {
         return invoke<string | null>('get_mcp_token', { pin: pinValue ?? null });
@@ -58,9 +58,7 @@ export default function TokenDisplay() {
 
     const handleCopy = useCallback(async () => {
         if (fullToken) {
-            await writeText(fullToken);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            copyToClipboard(fullToken);
             return;
         }
         if (isPinLocked) {
@@ -68,27 +66,19 @@ export default function TokenDisplay() {
             if (!pin) return;
             try {
                 const token = await fetchToken(pin);
-                if (token) {
-                    await writeText(token);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                }
+                if (token) copyToClipboard(token);
             } catch (e) {
                 addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
             }
         } else {
             try {
                 const token = await fetchToken();
-                if (token) {
-                    await writeText(token);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                }
+                if (token) copyToClipboard(token);
             } catch (e) {
                 addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
             }
         }
-    }, [fullToken, isPinLocked, fetchToken]);
+    }, [copyToClipboard, fullToken, isPinLocked, fetchToken]);
 
     const handleRefreshExpiry = useCallback(async () => {
         try {
@@ -148,7 +138,7 @@ export default function TokenDisplay() {
                             style={{ fontSize: 11, cursor: 'pointer' }}
                             data-testid="mcp-token-copy"
                         >
-                            {copied ? t('mcp.token-display.copied') : t('mcp.token-display.copy')}
+                            {isCopied ? t('mcp.token-display.copied') : t('mcp.token-display.copy')}
                         </button>
                         <button
                             onClick={handleRefreshExpiry}
