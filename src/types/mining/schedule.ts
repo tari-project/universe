@@ -2,7 +2,8 @@ export const TIME_PERIOD = ['AM', 'PM'] as const;
 type TimePeriodTuple = typeof TIME_PERIOD;
 export type TimePeriod = TimePeriodTuple[number];
 
-export type SchedulerEventType = 'ResumeMining' | { Mine: { mining_mode: string } };
+import type { MiningModeType } from '@app/types/configs';
+export type SchedulerEventType = 'ResumeMining' | { Mine: { mining_mode: MiningModeType } };
 export type SchedulerEventTiming = { In: InTime } | { Between: BetweenTime };
 
 export interface TimeParts {
