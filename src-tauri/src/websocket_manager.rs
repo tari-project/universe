@@ -26,7 +26,7 @@ use std::time::Duration;
 use futures::SinkExt;
 use futures::StreamExt;
 use log::trace;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -142,6 +142,13 @@ impl WebsocketManager {
         self.app.is_some()
     }
 
+    #[allow(dead_code)]
+    pub async fn stop(&self) {
+        info!(target: LOG_TARGET_APP_LOGIC, "stopping websocket_manager");
+        let _ = self.close_channel_tx.send(true);
+        self.wait_for_stopped_status().await;
+    }
+
     async fn connect_to_url(
         in_memory_config: &Arc<RwLock<AppInMemoryConfig>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
@@ -218,6 +225,7 @@ impl WebsocketManager {
                                 status_update_channel_tx.clone(),
                                 close_channel_tx.clone()).await
                         }
+                        let _ = status_update_channel_tx.send(WebsocketManagerStatusMessage::Starting);
                         sleep(Duration::from_millis(5000)).await;
                         Ok::<(),anyhow::Error>(())
                     } => {},
@@ -279,28 +287,50 @@ impl WebsocketManager {
         info!(target:LOG_TARGET_APP_LOGIC,"listening to websocket events");
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
-        let close_channel_tx_sender = close_channel_tx.clone();
-        let close_channel_tx_receiver = close_channel_tx.clone();
+        let (session_close_tx, _) = tokio::sync::broadcast::channel::<bool>(1);
+        let session_close_tx_sender = session_close_tx.clone();
+        let session_close_tx_receiver = session_close_tx.clone();
 
         if let Err(e) = status_update_channel_tx.send(WebsocketManagerStatusMessage::Connected) {
             info!(target: LOG_TARGET_APP_LOGIC, "Could not send connected channel message: {e}");
         }
 
+        let mut receiver_handle = tauri::async_runtime::spawn(async move {
+            receiver_task(app, read_stream, session_close_tx_receiver).await;
+        });
+        let mut sender_handle = tauri::async_runtime::spawn(async move {
+            drop(
+                sender_task(
+                    message_receiver_channel,
+                    write_stream,
+                    session_close_tx_sender,
+                )
+                .await,
+            );
+        });
+
         tokio::select! {
-            _= tauri::async_runtime::spawn(async move {
-                receiver_task(app, read_stream, close_channel_tx_receiver.clone()).await;
-            })=>{},
-            _=tauri::async_runtime::spawn(async move {
-                drop(sender_task(message_receiver_channel, write_stream, close_channel_tx_sender.clone()).await);
-            })=>{},
-            _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
-                return;
+            res = &mut receiver_handle => {
+                debug!(target: LOG_TARGET_APP_LOGIC, "receiver_task finished: {:?}", res);
             },
-            _=shutdown_signal.wait()=>{
-                return;
+            res = &mut sender_handle => {
+                debug!(target: LOG_TARGET_APP_LOGIC, "sender_task finished: {:?}", res);
+            },
+            _ = wait_for_close_signal(session_close_tx.clone().subscribe()) => {
+                debug!(target: LOG_TARGET_APP_LOGIC, "session close signal received in websocket listen");
+            },
+            _ = wait_for_close_signal(close_channel_tx.clone().subscribe()) => {
+                debug!(target: LOG_TARGET_APP_LOGIC, "close signal received in websocket listen");
+            },
+            _ = shutdown_signal.wait() => {
+                debug!(target: LOG_TARGET_APP_LOGIC, "shutdown signal received in websocket listen");
             }
         }
-        info!(target:LOG_TARGET_APP_LOGIC, "websocket task closed");
+
+        let _ = session_close_tx.send(true);
+        receiver_handle.abort();
+        sender_handle.abort();
+        info!(target:LOG_TARGET_APP_LOGIC, "websocket session closed");
     }
 
     async fn wait_for_stopped_status(&self) {
@@ -329,7 +359,7 @@ async fn sender_task(
         WebSocketStream<MaybeTlsStream<TcpStream>>,
         Message,
     >,
-    close_channel_tx: tokio::sync::broadcast::Sender<bool>,
+    session_close_tx: tokio::sync::broadcast::Sender<bool>,
 ) -> Result<(), WebsocketError> {
     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
@@ -363,7 +393,7 @@ async fn sender_task(
                         error!(target:LOG_TARGET_APP_LOGIC,"Failed to send websocket message: {e}");
                     })?;
             },
-            _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
+            _=wait_for_close_signal(session_close_tx.clone().subscribe())=>{
                 info!(target:LOG_TARGET_APP_LOGIC, "exiting websocket_manager sender task");
                 return Result::Ok(());
             },
@@ -389,49 +419,58 @@ async fn wait_for_close_signal(mut channel: broadcast::Receiver<bool>) {
 async fn receiver_task(
     app: AppHandle,
     mut read_stream: futures::stream::SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-    close_channel_tx: tokio::sync::broadcast::Sender<bool>,
+    session_close_tx: tokio::sync::broadcast::Sender<bool>,
 ) {
     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
     info!(target:LOG_TARGET_APP_LOGIC,"websocket_manager: rx loop initialized...");
     loop {
         tokio::select! {
-                Some(msg_or_error) = read_stream.next() => {
+                msg_or_error = read_stream.next() => {
                     match msg_or_error {
-                        Result::Ok(msg) => match msg {
-                            Message::Text(text) => {
-                                info!(target:LOG_TARGET_APP_LOGIC,"websocket message received {text}");
-                                let message_as_str = text.as_str();
-                                let messsage_value = serde_json::from_str::<Value>(message_as_str).inspect_err(|e|{
-                                            error!(target:LOG_TARGET_APP_LOGIC,"Received text websocket message that cannot be transformed to JSON: {e}");
-                                        }).ok();
+                        Some(msg_result) => match msg_result {
+                            Result::Ok(msg) => match msg {
+                                Message::Text(text) => {
+                                    info!(target:LOG_TARGET_APP_LOGIC,"websocket message received {text}");
+                                    let message_as_str = text.as_str();
+                                    let messsage_value = serde_json::from_str::<Value>(message_as_str).inspect_err(|e|{
+                                                error!(target:LOG_TARGET_APP_LOGIC,"Received text websocket message that cannot be transformed to JSON: {e}");
+                                            }).ok();
 
-                                if let Some(message) = messsage_value {
-                                    drop(app.emit("ws-rx", message).inspect_err(|e|{
-                                                error!(target:LOG_TARGET_APP_LOGIC,"Received text websocket message cannot be sent to frontend: {e}");
-                                            }));
+                                    if let Some(message) = messsage_value {
+                                        drop(app.emit("ws-rx", message).inspect_err(|e|{
+                                                    error!(target:LOG_TARGET_APP_LOGIC,"Received text websocket message cannot be sent to frontend: {e}");
+                                                }));
+                                    }
                                 }
-                            }
-                            Message::Close(_) => {
-                                info!(target:LOG_TARGET_APP_LOGIC, "webSocket connection got closed.");
+                                Message::Close(_) => {
+                                    info!(target:LOG_TARGET_APP_LOGIC, "webSocket connection got closed.");
+                                    let _ = session_close_tx.send(true);
+                                    return;
+                                }
+                                Message::Binary(_) => {
+                                    trace!(target: LOG_TARGET_APP_LOGIC,"Received binary message (ignoring)");
+                                }
+                                Message::Frame(_) => {
+                                    trace!(target: LOG_TARGET_APP_LOGIC,"Received raw frame (ignoring)");
+                                }
+                                _ => {
+                                    warn!(target: LOG_TARGET_APP_LOGIC,"Received unknown message type {:?}", msg);
+                                }
+                            },
+                            Result::Err(e) => {
+                                error!(target: LOG_TARGET_APP_LOGIC,"error at receiving websocket stream message {e}");
+                                let _ = session_close_tx.send(true);
                                 return;
                             }
-                            Message::Binary(_) => {
-                                trace!(target: LOG_TARGET_APP_LOGIC,"Received binary message (ignoring)");
-                            }
-                            Message::Frame(_) => {
-                                trace!(target: LOG_TARGET_APP_LOGIC,"Received raw frame (ignoring)");
-                            }
-                            _ => {
-                                warn!(target: LOG_TARGET_APP_LOGIC,"Received unknown message type {:?}", msg);
-                            }
                         },
-                        Result::Err(e) => {
-                            error!(target: LOG_TARGET_APP_LOGIC,"error at receiving websocket stream message {e}");
+                        None => {
+                            info!(target: LOG_TARGET_APP_LOGIC, "websocket read stream reached EOF");
+                            let _ = session_close_tx.send(true);
                             return;
                         }
                     }
             },
-            _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
+            _=wait_for_close_signal(session_close_tx.clone().subscribe())=>{
                 info!(target:LOG_TARGET_APP_LOGIC, "exiting websocket_manager receiver task");
                 return;
             },

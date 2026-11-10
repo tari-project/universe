@@ -154,7 +154,7 @@ where
     ))
 }
 
-pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> {
+pub async fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> {
     // Record the process start time alongside the PID. On the next launch this
     // lets cleanup tell our process apart from an unrelated one that reused the
     // PID after we exited (the start time would differ). Legacy single-line pid
@@ -169,7 +169,7 @@ pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> 
             start_time = Some(process.start_time());
             break;
         }
-        std::thread::sleep(Duration::from_millis(10));
+        tokio::time::sleep(Duration::from_millis(10)).await;
     }
     let contents = match start_time {
         Some(start_time) => format!("{id}\n{start_time}"),
@@ -211,10 +211,21 @@ pub async fn graceful_kill(child: &mut tokio::process::Child) -> Result<(), std:
 
             let _ = kill(Pid::from_raw(pid.cast_signed()), Signal::SIGTERM);
 
-            tokio::time::sleep(Duration::from_secs(GRACEFUL_SHUTDOWN_WAIT_SECS)).await;
-
-            if let Ok(Some(_)) = child.try_wait() {
-                return Ok(());
+            match tokio::time::timeout(
+                Duration::from_secs(GRACEFUL_SHUTDOWN_WAIT_SECS),
+                child.wait(),
+            )
+            .await
+            {
+                Ok(Ok(_)) => return Ok(()),
+                Ok(Err(e)) => {
+                    log::warn!("Error waiting for child process {pid}: {e}");
+                }
+                Err(_) => {
+                    log::warn!(
+                        "Process {pid} did not exit within {GRACEFUL_SHUTDOWN_WAIT_SECS}s, falling back to SIGKILL"
+                    );
+                }
             }
 
             child.kill().await?;
@@ -262,4 +273,91 @@ pub async fn graceful_kill(child: &mut tokio::process::Child) -> Result<(), std:
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Instant;
+
+    #[tokio::test]
+    async fn test_graceful_kill_already_exited_process() {
+        let mut child = tokio::process::Command::new("true")
+            .spawn()
+            .expect("Failed to spawn true");
+
+        // Wait for it to exit completely
+        let _ = child.wait().await;
+
+        let start = Instant::now();
+        let res = graceful_kill(&mut child).await;
+        let elapsed = start.elapsed();
+
+        assert!(
+            res.is_ok(),
+            "graceful_kill should succeed on already exited process: {:?}",
+            res
+        );
+        assert!(
+            elapsed < Duration::from_millis(500),
+            "graceful_kill should return within milliseconds on already exited process, took {:?}",
+            elapsed
+        );
+    }
+
+    #[tokio::test]
+    async fn test_graceful_kill_quickly_exiting_process() {
+        // Process is sleeping, but will exit immediately on SIGTERM
+        let mut child = tokio::process::Command::new("sleep")
+            .arg("30")
+            .spawn()
+            .expect("Failed to spawn sleep");
+
+        let start = Instant::now();
+        let res = graceful_kill(&mut child).await;
+        let elapsed = start.elapsed();
+
+        assert!(
+            res.is_ok(),
+            "graceful_kill should succeed on running process: {:?}",
+            res
+        );
+        assert!(
+            elapsed < Duration::from_secs(2),
+            "graceful_kill should terminate on SIGTERM within milliseconds, not wait 10s; took {:?}",
+            elapsed
+        );
+    }
+
+    #[tokio::test]
+    async fn test_graceful_kill_escalates_to_sigkill_on_ignored_sigterm() {
+        // Spawn a process that ignores SIGTERM
+        let mut child = tokio::process::Command::new("sh")
+            .args(["-c", "trap '' TERM; sleep 30"])
+            .spawn()
+            .expect("Failed to spawn sh ignoring SIGTERM");
+
+        // Give sh a few milliseconds to set up the trap
+        tokio::time::sleep(Duration::from_millis(100)).await;
+
+        let start = Instant::now();
+        let res = graceful_kill(&mut child).await;
+        let elapsed = start.elapsed();
+
+        assert!(
+            res.is_ok(),
+            "graceful_kill should succeed by escalating to SIGKILL: {:?}",
+            res
+        );
+        assert!(
+            elapsed >= Duration::from_secs(9),
+            "Should wait ~10s before escalating to SIGKILL, took {:?}",
+            elapsed
+        );
+        assert!(
+            elapsed < Duration::from_secs(14),
+            "Should terminate promptly after SIGKILL, took {:?}",
+            elapsed
+        );
+    }
 }
