@@ -26,6 +26,7 @@ use crate::events_emitter::EventsEmitter;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
+use crate::mining::mode_switch::apply_mining_mode;
 use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use serde_json::json;
 
@@ -156,18 +157,9 @@ pub async fn set_mining_mode(mode: String) -> Result<String, String> {
         resolve_canonical_mining_mode(&mode, current_config.mining_modes())?
     };
 
-    let cpu_was_running = CpuManager::read().await.is_running();
-    let gpu_was_running = GpuManager::read().await.is_running();
-
-    // Stop running miners before changing mode
-    if cpu_was_running {
-        let _unused = CpuManager::write().await.stop_mining().await;
-    }
-    if gpu_was_running {
-        let _unused = GpuManager::write().await.stop_mining().await;
-    }
-
-    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
+    // Same helper as the scheduler and the in-app mode selector. A stopped miner stays
+    // stopped; a running one restarts only when the mode string actually changes.
+    apply_mining_mode(mode.clone(), false)
         .await
         .map_err(|e| format!("Failed to set mining mode: {e}"))?;
 
@@ -183,14 +175,6 @@ pub async fn set_mining_mode(mode: String) -> Result<String, String> {
     .await;
 
     EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
-
-    // Restart miners that were previously running
-    if cpu_was_running {
-        let _unused = CpuManager::write().await.start_mining().await;
-    }
-    if gpu_was_running {
-        let _unused = GpuManager::write().await.start_mining().await;
-    }
 
     let config = ConfigMining::content().await;
     let modes = config.mining_modes();

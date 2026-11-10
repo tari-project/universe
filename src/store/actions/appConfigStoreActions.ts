@@ -252,41 +252,17 @@ export const selectMiningMode = async (mode: string) => {
 
     useMiningStore.setState((c) => ({ ...c, isChangingMode: true }));
 
-    const cpu_mining_status = useMiningMetricsStore.getState().cpu_mining_status;
-    const gpu_mining_status = useMiningMetricsStore.getState().gpu_mining_status;
-    const wasCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
-    const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
-
-    if (cpu_mining_status.is_mining) {
-        console.info('Stopping CPU mining...');
-        await stopCpuMining();
+    // The backend stops and starts miners that are already running when the mode changes.
+    // Doing it again here would restart them twice, and would turn a stopped miner back on.
+    try {
+        await invoke('select_mining_mode', { mode });
+        useConfigMiningStore.setState((c) => ({ ...c, selected_mining_mode: mode }));
+    } catch (e) {
+        console.error('Could not select mining mode', e);
+        setError('Could not change mining mode');
+    } finally {
+        useMiningStore.setState((c) => ({ ...c, isChangingMode: false }));
     }
-
-    if (gpu_mining_status.is_mining || wasGpuMiningInitiated) {
-        console.info('Stopping GPU mining...');
-        await stopGpuMining();
-    }
-
-    invoke('select_mining_mode', { mode })
-        .then(() => {
-            useConfigMiningStore.setState((c) => ({ ...c, selected_mining_mode: mode }));
-            if (wasCpuMiningInitiated) {
-                console.info('Restarting CPU mining...');
-                startCpuMining();
-            }
-
-            if (wasGpuMiningInitiated) {
-                console.info('Restarting GPU mining...');
-                startGpuMining();
-            }
-        })
-        .catch((e) => {
-            console.error('Could not select mining mode', e);
-            setError('Could not change mining mode');
-        })
-        .finally(() => {
-            useMiningStore.setState((c) => ({ ...c, isChangingMode: false }));
-        });
 };
 
 export const updateCustomMiningMode = async (customCpuUsage: number, customGpuUsage: number) => {

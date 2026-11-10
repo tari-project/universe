@@ -1177,7 +1177,10 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[select_mining_mode] called with mode: {mode:?}");
 
-    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
+    // Restarts miners that are already running when the mode actually changes, and
+    // leaves a stopped miner stopped. The scheduler uses the same helper with the
+    // opposite "start if stopped" flag.
+    crate::mining::mode_switch::apply_mining_mode(mode.clone(), false)
         .await
         .map_err(InvokeError::from_anyhow)?;
 

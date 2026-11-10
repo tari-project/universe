@@ -92,11 +92,11 @@ use crate::{
     LOG_TARGET_APP_LOGIC,
     configs::{
         config_core::{ConfigCore, ConfigCoreContent},
-        config_mining::{ConfigMining, ConfigMiningContent},
+        config_mining::ConfigMining,
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
-    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
+    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager, mode_switch::apply_mining_mode},
     tasks_tracker::TasksTrackers,
 };
 
@@ -1093,22 +1093,14 @@ impl EventScheduler {
                     }
                 }
                 SchedulerEventType::Mine { mining_mode } => {
-                    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
-                    });
+                    // start_if_stopped: a window starts enabled miners that are off, and restarts
+                    // ones already running when this mode differs from the selected mode.
+                    if let Err(e) = apply_mining_mode(mining_mode.clone(), true).await {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to apply mining mode {mining_mode} during Mine event {event_id:?}: {e}");
+                    }
                     // TODO: Replace with emiting specific value only
                     let config = ConfigMining::content().await;
                     EventsEmitter::emit_mining_config_loaded(&config).await;
-                    if *config.gpu_mining_enabled() {
-                        GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
-                        });
-                    }
-                    if *config.cpu_mining_enabled() {
-                        CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
-                        });
-                    }
                 }
             }
         }
