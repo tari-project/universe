@@ -1093,18 +1093,51 @@ impl EventScheduler {
                     }
                 }
                 SchedulerEventType::Mine { mining_mode } => {
+                    let previous_config = ConfigMining::content().await;
+                    let mode_changed =
+                        !previous_config.selected_mining_mode().eq_ignore_ascii_case(&mining_mode);
+
+                    let cpu_was_running = CpuManager::read().await.is_running();
+                    let gpu_was_running = GpuManager::read().await.is_running();
+
+                    let (stop_gpu, _) =
+                        plan_scheduled_miner_transition(mode_changed, true, gpu_was_running);
+                    let (stop_cpu, _) =
+                        plan_scheduled_miner_transition(mode_changed, true, cpu_was_running);
+
+                    if stop_gpu {
+                        GpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop GPU mining before mode change during Mine event {:?}: {}", event_id, e);
+                        });
+                    }
+                    if stop_cpu {
+                        CpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop CPU mining before mode change during Mine event {:?}: {}", event_id, e);
+                        });
+                    }
+
                     ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
                         error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
                     });
                     // TODO: Replace with emiting specific value only
                     let config = ConfigMining::content().await;
                     EventsEmitter::emit_mining_config_loaded(&config).await;
-                    if *config.gpu_mining_enabled() {
+                    let (_, start_gpu) = plan_scheduled_miner_transition(
+                        mode_changed,
+                        *config.gpu_mining_enabled(),
+                        gpu_was_running,
+                    );
+                    let (_, start_cpu) = plan_scheduled_miner_transition(
+                        mode_changed,
+                        *config.cpu_mining_enabled(),
+                        cpu_was_running,
+                    );
+                    if start_gpu {
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                             error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
                         });
                     }
-                    if *config.cpu_mining_enabled() {
+                    if start_cpu {
                         CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                             error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
                         });
@@ -1270,5 +1303,50 @@ impl EventScheduler {
         };
 
         Ok(handle)
+    }
+}
+
+/// Decides which miners need to be stopped before and started after a scheduled
+/// `Mine { mining_mode }` event updates `selected_mining_mode`.
+///
+/// Returns `(stop_running, start_enabled)`.
+fn plan_scheduled_miner_transition(
+    mode_changed: bool,
+    miner_enabled: bool,
+    miner_was_running: bool,
+) -> (bool, bool) {
+    let stop_running = mode_changed && miner_was_running;
+    let start_enabled = miner_enabled && (!miner_was_running || mode_changed);
+    (stop_running, start_enabled)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::plan_scheduled_miner_transition;
+
+    #[test]
+    fn restarts_running_enabled_miner_when_scheduled_mode_differs() {
+        let (stop, start) = plan_scheduled_miner_transition(true, true, true);
+        assert!(stop, "running miner must be stopped so new mode takes effect");
+        assert!(start, "enabled miner must be restarted with the new mode");
+    }
+
+    #[test]
+    fn does_not_restart_running_miner_when_scheduled_mode_matches_active_mode() {
+        let (stop, start) = plan_scheduled_miner_transition(false, true, true);
+        assert!(!stop, "running miner must not be stopped when mode is unchanged");
+        assert!(!start, "running miner must not be restarted when mode is unchanged");
+    }
+
+    #[test]
+    fn starts_stopped_enabled_miner_regardless_of_mode_change() {
+        assert_eq!(plan_scheduled_miner_transition(false, true, false), (false, true));
+        assert_eq!(plan_scheduled_miner_transition(true, true, false), (false, true));
+    }
+
+    #[test]
+    fn never_starts_disabled_miner() {
+        assert_eq!(plan_scheduled_miner_transition(false, false, false), (false, false));
+        assert_eq!(plan_scheduled_miner_transition(true, false, false), (false, false));
     }
 }
