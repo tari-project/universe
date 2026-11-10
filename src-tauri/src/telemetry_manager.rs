@@ -55,7 +55,7 @@ use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
 use std::{sync::Arc, time::Duration};
-use sysinfo::{Disks, System};
+use sysinfo::{CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind, System};
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
@@ -212,6 +212,65 @@ impl From<TelemetryData> for NotificationData {
     }
 }
 
+struct SystemMetricsCollector {
+    system: System,
+    disks: Disks,
+}
+
+impl SystemMetricsCollector {
+    fn new() -> Self {
+        Self {
+            system: System::new_with_specifics(
+                RefreshKind::new()
+                    .with_cpu(CpuRefreshKind::new().with_cpu_usage())
+                    .with_memory(MemoryRefreshKind::everything()),
+            ),
+            disks: Disks::new_with_refreshed_list(),
+        }
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn refresh_and_collect(
+        &mut self,
+    ) -> (
+        f32,
+        u64,
+        u64,
+        u64,
+        Option<usize>,
+        Option<String>,
+        Vec<(u64, u64, String)>,
+    ) {
+        self.system.refresh_cpu_usage();
+        self.system.refresh_memory();
+        self.disks.refresh_list();
+
+        let disk_info: Vec<(u64, u64, String)> = self
+            .disks
+            .list()
+            .iter()
+            .map(|disk| {
+                let kind = match disk.kind() {
+                    sysinfo::DiskKind::HDD => "HDD".to_string(),
+                    sysinfo::DiskKind::SSD => "SSD".to_string(),
+                    sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
+                };
+                (disk.total_space(), disk.available_space(), kind)
+            })
+            .collect();
+
+        (
+            self.system.global_cpu_usage(),
+            self.system.total_memory(),
+            self.system.free_memory(),
+            self.system.used_memory(),
+            self.system.physical_core_count(),
+            System::cpu_arch(),
+            disk_info,
+        )
+    }
+}
+
 pub struct TelemetryManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -221,6 +280,7 @@ pub struct TelemetryManager {
     tor_status: watch::Receiver<TorStatus>,
     process_stats_collector: ProcessStatsCollector,
     node_manager: NodeManager,
+    sys_collector: Arc<std::sync::Mutex<SystemMetricsCollector>>,
 }
 
 impl TelemetryManager {
@@ -244,6 +304,7 @@ impl TelemetryManager {
             tor_status,
             process_stats_collector,
             node_manager,
+            sys_collector: Arc::new(std::sync::Mutex::new(SystemMetricsCollector::new())),
         }
     }
 
@@ -318,23 +379,51 @@ impl TelemetryManager {
         let mut interval = interval(timeout);
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
+        let sys_collector = self.sys_collector.clone();
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             loop {
-                let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
-                let allow_telemetry = *ConfigCore::content().await.allow_telemetry();
-                let allow_notifications = *ConfigCore::content().await.allow_notifications();
                 tokio::select! {
                     _ = interval.tick() => {
-                        debug!(target: LOG_TARGET_APP_LOGIC, "TelemetryManager::start_telemetry_process has  been started");
+                        let config = ConfigCore::content().await;
+                        let allow_telemetry = *config.allow_telemetry();
+                        let allow_notifications = *config.allow_notifications();
+
+                        if !allow_telemetry && !allow_notifications {
+                            debug!(target: LOG_TARGET_APP_LOGIC, "TelemetryManager: telemetry and notifications disabled; skipping collection");
+                            continue;
+                        }
+
+                        debug!(target: LOG_TARGET_APP_LOGIC, "TelemetryManager::start_telemetry_process has been started");
+                        let airdrop_tokens = config.airdrop_tokens().clone();
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
                         let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
                         let (exchange_id, airdrop_api_url) = {
                             let memory_config = in_memory_config_cloned.read().await;
                             (memory_config.exchange_id.clone(), memory_config.airdrop_api_url.clone())
                         };
-                        let telemetry_data = cancellable_get_telemetry_data(app_handle.clone(),&cpu_miner_status_watch_rx, &gpu_status, &node_status,
-                            &tor_status, network, exchange_id, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
-                        handle_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone(), &mut (shutdown_signal.clone()), allow_telemetry, allow_notifications).await;
+                        let telemetry_data = cancellable_get_telemetry_data(
+                            app_handle.clone(),
+                            &cpu_miner_status_watch_rx,
+                            &gpu_status,
+                            &node_status,
+                            &tor_status,
+                            network,
+                            exchange_id,
+                            uptime,
+                            &stats_collector,
+                            &node_manager,
+                            &mut (shutdown_signal.clone()),
+                            sys_collector.clone(),
+                        ).await;
+                        handle_data(
+                            telemetry_data,
+                            airdrop_api_url,
+                            airdrop_access_token_validated,
+                            app_handle.clone(),
+                            &mut (shutdown_signal.clone()),
+                            allow_telemetry,
+                            allow_notifications,
+                        ).await;
 
                     },
                     _ = shutdown_signal.wait() => {
@@ -361,8 +450,21 @@ async fn cancellable_get_telemetry_data(
     stats_collector: &ProcessStatsCollector,
     node_manager: &NodeManager,
     shutdown_signal: &mut ShutdownSignal,
+    sys_collector: Arc<std::sync::Mutex<SystemMetricsCollector>>,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    tokio::select! {result = get_telemetry_data_inner(app_handle.clone(),cpu_miner_status_watch_rx, gpu_latest_miner_stats, node_latest_status, tor_latest_status, network, started, stats_collector, node_manager, exchange_id) => {
+    tokio::select! {result = get_telemetry_data_inner(
+            app_handle.clone(),
+            cpu_miner_status_watch_rx,
+            gpu_latest_miner_stats,
+            node_latest_status,
+            tor_latest_status,
+            network,
+            started,
+            stats_collector,
+            node_manager,
+            exchange_id,
+            sys_collector,
+        ) => {
             result
         }
         _ = shutdown_signal.wait() => {
@@ -384,6 +486,7 @@ async fn get_telemetry_data_inner(
     stats_collector: &ProcessStatsCollector,
     node_manager: &NodeManager,
     exchange_id: String,
+    sys_collector: Arc<std::sync::Mutex<SystemMetricsCollector>>,
 ) -> Result<TelemetryData, TelemetryManagerError> {
     let BaseNodeStatus {
         block_height,
@@ -541,38 +644,15 @@ async fn get_telemetry_data_inner(
         extra_data.insert("all_gpus".to_string(), all_gpus.join(","));
     }
 
-    let sys_info = tokio::task::spawn_blocking(|| {
-        let mut system = System::new_all();
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        system.refresh_cpu_usage();
-        system.refresh_memory();
-
-        let disks = Disks::new_with_refreshed_list();
-        let disk_info: Vec<(u64, u64, String)> = disks
-            .list()
-            .iter()
-            .map(|disk| {
-                let kind = match disk.kind() {
-                    sysinfo::DiskKind::HDD => "HDD".to_string(),
-                    sysinfo::DiskKind::SSD => "SSD".to_string(),
-                    sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
-                };
-                (disk.total_space(), disk.available_space(), kind)
-            })
-            .collect();
-
-        (
-            system.global_cpu_usage(),
-            system.total_memory(),
-            system.free_memory(),
-            system.used_memory(),
-            system.physical_core_count(),
-            System::cpu_arch(),
-            disk_info,
-        )
+    let sys_collector_cloned = sys_collector.clone();
+    let sys_info = tokio::task::spawn_blocking(move || {
+        let mut guard = sys_collector_cloned
+            .lock()
+            .map_err(|e| anyhow::anyhow!("sys_collector lock poisoned: {e}"))?;
+        Ok::<_, anyhow::Error>(guard.refresh_and_collect())
     })
     .await
-    .map_err(|e| anyhow::anyhow!("spawn_blocking(sysinfo) join error: {e}"))?;
+    .map_err(|e| anyhow::anyhow!("spawn_blocking(sysinfo) join error: {e}"))??;
 
     let (cpu_usage, total_memory, free_memory, used_memory, core_count, cpu_arch, disk_info) =
         sys_info;

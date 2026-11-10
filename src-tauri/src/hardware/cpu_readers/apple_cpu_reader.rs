@@ -20,25 +20,41 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ops::DerefMut;
+use std::sync::Arc;
 
 use anyhow::Error;
 use async_trait::async_trait;
-use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
+use sysinfo::Component;
+use tokio::sync::Mutex;
 
 use crate::{
     hardware::hardware_status_monitor::DeviceParameters,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
 
-use super::CpuParametersReader;
+use super::{CpuParametersReader, CpuReaderState};
 
 #[derive(Clone)]
-pub struct AppleCpuParametersReader {}
+pub struct AppleCpuParametersReader {
+    state: Arc<Mutex<CpuReaderState>>,
+}
 
 impl AppleCpuParametersReader {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            state: Arc::new(Mutex::new(CpuReaderState::new())),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn new_with_state(state: Arc<Mutex<CpuReaderState>>) -> Self {
+        Self { state }
+    }
+}
+
+impl Default for AppleCpuParametersReader {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -51,36 +67,53 @@ impl CpuParametersReader for AppleCpuParametersReader {
             CurrentOperatingSystem::MacOS => true,
         }
     }
+
     async fn get_device_parameters(
         &self,
         old_device_parameters: Option<DeviceParameters>,
     ) -> Result<DeviceParameters, Error> {
-        let mut system =
-            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
-        let mut components = Components::new_with_refreshed_list();
+        let mut guard = self.state.lock().await;
+        guard.system.refresh_cpu_usage();
+        guard.components.refresh();
 
-        let available_cpu_components: Vec<&Component> = components
-            .deref_mut()
+        let mut available_cpu_components: Vec<&Component> = guard
+            .components
             .iter()
             .filter(|c| c.label().contains("MTR"))
             .collect();
 
-        let avarage_temperature = available_cpu_components
+        if available_cpu_components.is_empty() {
+            available_cpu_components = guard
+                .components
+                .iter()
+                .filter(|c| {
+                    let label = c.label();
+                    label.contains("CPU")
+                        || label.contains("Die")
+                        || label.to_lowercase().contains("pmu")
+                })
+                .collect();
+        }
+
+        let valid_temps: Vec<f32> = available_cpu_components
             .iter()
             .map(|c| c.temperature())
-            .sum::<f32>()
-            / available_cpu_components.len() as f32;
+            .filter(|t| !t.is_nan())
+            .collect();
 
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        system.refresh_cpu_all();
+        let average_temperature = if valid_temps.is_empty() {
+            0.0
+        } else {
+            valid_temps.iter().sum::<f32>() / valid_temps.len() as f32
+        };
 
-        let usage = system.global_cpu_usage();
+        let usage = guard.system.global_cpu_usage();
 
         let device_parameters = DeviceParameters {
             usage_percentage: usage,
-            current_temperature: avarage_temperature,
-            max_temperature: old_device_parameters.map_or(avarage_temperature, |old| {
-                old.max_temperature.max(avarage_temperature)
+            current_temperature: average_temperature,
+            max_temperature: old_device_parameters.map_or(average_temperature, |old| {
+                old.max_temperature.max(average_temperature)
             }),
         };
 
