@@ -4,7 +4,7 @@ _November 10, 2026_
 
 ✨ WHAT'S FIXED
 
-- 🌊 **Burn claims ready for the Ootle** – The Ootle network is changing how burns are claimed on L2, and claims built the old way will be rejected once it does. Tari Universe now builds claims the new way, so the XTM you burn today can still be claimed when the Ootle launches. The change also stops anyone else from grabbing a claim's spot on L2 before you do.
+- 🌊 **Burn claims ready for the Ootle** – Tari Universe now claims burns the way the Ootle will expect at launch, so the XTM you burn today is ready to claim on L2 when it goes live.
 - 💸 **Claim fees checked locally** – The fee for a claim is now worked out by Tari Universe itself instead of being taken from the network's quote, so an overpriced quote can't eat into your claim.
 - 🔧 **Under the hood** – Updated the Layer 2 libraries to tari-ootle v0.52.0.
 
