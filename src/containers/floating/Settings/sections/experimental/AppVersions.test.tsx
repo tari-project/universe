@@ -16,6 +16,7 @@ const sampleVersions: ApplicationsVersions = {
     xmrig: { version: '6.22.2', port: 0 },
     mm_proxy: { version: '6.3.0', port: 18081 },
     lolminer: { version: '1.98a', port: 0 },
+    tariminer: { version: '1.1.6', port: 0 },
     bridge: { version: '0.1.69' },
 };
 
@@ -31,6 +32,8 @@ describe('AppVersions', () => {
 
         expect(screen.getByText('lolminer')).toBeInTheDocument();
         expect(screen.getByText('1.98a')).toBeInTheDocument();
+        expect(screen.getByText('tariminer')).toBeInTheDocument();
+        expect(screen.getByText('1.1.6')).toBeInTheDocument();
         expect(screen.queryByText('xtrgpuminer')).not.toBeInTheDocument();
     });
 
