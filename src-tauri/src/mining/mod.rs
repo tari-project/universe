@@ -333,6 +333,21 @@ mod scheduled_mine_action_tests {
         );
     }
 
+    #[test]
+    fn test_scheduled_mine_action_failed_or_unchanged_save_still_restarts() {
+        // The `Mine` handler passes the scheduled mode whether or not saving
+        // it succeeded (`update_field` already set it in memory) and whether
+        // or not the config already held it. A miner still running Eco must
+        // restart for a Ludicrous window either way; deciding from the old
+        // config mode instead would turn this into a no-op `Start`.
+        let applied = Some("Eco");
+        let scheduled = "Ludicrous";
+        assert_eq!(
+            scheduled_mine_action(true, true, applied, scheduled),
+            ScheduledMineAction::Restart
+        );
+    }
+
     // ----- Sequence: several windows and a manual change in between -----
 
     /// Minimal simulation of one miner across scheduler events. It mirrors

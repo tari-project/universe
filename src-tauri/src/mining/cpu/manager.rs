@@ -146,15 +146,14 @@ impl CpuManager {
     pub async fn start_mining(&mut self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET_APP_LOGIC, "Starting cpu miner");
         match self.start_mining_inner().await {
-            Ok(started) => {
-                if started {
-                    // Record what this process actually runs with: the
-                    // config mode at spawn time. The scheduler compares
-                    // against this, not the config, so a restart that
-                    // failed halfway cannot leave the miner stuck on an
-                    // old mode the config already claims is gone.
-                    self.applied_mining_mode =
-                        Some(ConfigMining::content().await.selected_mining_mode().clone());
+            Ok(started_mode) => {
+                if let Some(mode) = started_mode {
+                    // Record what this process actually runs with: the mode
+                    // read together with the usage percentage at spawn time.
+                    // The scheduler compares against this, not the config, so
+                    // a restart that failed halfway cannot leave the miner
+                    // stuck on an old mode the config already claims is gone.
+                    self.applied_mining_mode = Some(mode);
                 }
                 info!(target: LOG_TARGET_APP_LOGIC, "Started cpu miner");
                 EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Started).await;
@@ -193,10 +192,10 @@ impl CpuManager {
         self.start_mining().await
     }
 
-    /// Returns whether a new process was actually started. `false` means the
-    /// miner was already running (and therefore still uses its previous mode)
-    /// or that no app handle was available.
-    async fn start_mining_inner(&mut self) -> Result<bool, anyhow::Error> {
+    /// Returns the mining mode a new process was started with. `None` means
+    /// the miner was already running (and therefore still uses its previous
+    /// mode) or that no app handle was available.
+    async fn start_mining_inner(&mut self) -> Result<Option<String>, anyhow::Error> {
         let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
 
         if !cpu_mining_enabled {
@@ -205,7 +204,7 @@ impl CpuManager {
 
         if self.process_watcher.is_running() {
             info!(target: LOG_TARGET_APP_LOGIC, "CPU miner is already running");
-            return Ok(false);
+            return Ok(None);
         }
 
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Initiated).await;
@@ -273,9 +272,9 @@ impl CpuManager {
 
             let binary = crate::binaries::Binaries::Xmrig;
 
-            let cpu_usage_percentage = ConfigMining::content()
-                .await
-                .get_selected_cpu_usage_percentage();
+            let mining_config = ConfigMining::content().await;
+            let cpu_usage_percentage = mining_config.get_selected_cpu_usage_percentage();
+            let started_mode = mining_config.selected_mining_mode().clone();
 
             if cpu_usage_percentage <= 1 {
                 self.process_watcher.adapter.cpu_threads =
@@ -307,10 +306,10 @@ impl CpuManager {
 
             self.initialize_status_updates().await;
 
-            Ok(true)
+            Ok(Some(started_mode))
         } else {
             info!(target: LOG_TARGET_APP_LOGIC, "CPU miner was not started because the app handle is not set");
-            Ok(false)
+            Ok(None)
         }
     }
 
