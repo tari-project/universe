@@ -147,7 +147,9 @@ zip = { version = "9.1", default-features = false, features = [
 ] }
 
 # zbus 3 is already in the tree through psp; used to probe logind before psp unwraps on it.
+# dbus-secret-service 4 is already in the tree through keyring; used to enumerate entries.
 [target.'cfg(target_os = "linux")'.dependencies]
+dbus-secret-service = "4"
 zbus = "3"
 
 # The Ootle wallet SDK pulls in OpenSSL through webauthn-rs. The macOS runner's OpenSSL is
@@ -157,6 +159,8 @@ openssl = { version = "0.10", features = ["vendored"] }
 # async-compression's xz codec finds liblzma through pkg-config, which on the runner is
 # Homebrew's. A signed app can't load that, so build liblzma from source instead.
 liblzma-sys = { version = "0.4", features = ["static"] }
+# security-framework 3 is already in the tree through keyring; used to enumerate entries.
+security-framework = "3"
 
 [target.'cfg(windows)'.dependencies]
 device_query = "2.1.0"
@@ -173,6 +177,7 @@ windows-sys = { version = "0.52", features = [
   "Win32_Foundation",
   "Win32_Security",
   "Win32_Security_Authorization",
+  "Win32_Security_Credentials",
   "Win32_System_Memory",
   "Win32_System_Threading",
   "Win32_System_WindowsProgramming",

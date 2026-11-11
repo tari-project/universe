@@ -11,6 +11,7 @@ import ShutdownSelectionDialog from './ShutdownSelectionDialog/index.ts';
 import CreatePinDialog from './security/pin/CreatePinDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog.tsx';
+import OrphanedWalletRecoveryDialog from './OrphanedWalletRecoveryDialog/OrphanedWalletRecoveryDialog.tsx';
 import ExitFeedbackSurveyDialog from './user/surveys/ExitFeedbackSurveyDialog.tsx';
 import LongTimeUserFeedbackDialog from './user/surveys/LongTimeUserFeedbackDialog.tsx';
 
@@ -49,6 +50,7 @@ const FloatingElements = () => {
             <ShareRewardModal />
             <ToastStack />
             <CriticalProblemDialog />
+            <OrphanedWalletRecoveryDialog />
             <ReleaseNotesDialog />
             <XSpaceEventBanner />
             <CustomPowerLevelsDialogContainer />

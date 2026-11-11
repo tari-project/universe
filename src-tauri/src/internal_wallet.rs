@@ -58,7 +58,10 @@ use crate::consts::DEFAULT_MONERO_ADDRESS;
 use crate::credential_manager::{
     Credential, CredentialError, CredentialManager, LegacyCredential, LegacyCredentialManager,
 };
-use crate::events::{CriticalProblemPayload, PinPromptContext};
+use crate::events::{
+    CriticalProblemPayload, OrphanedWalletCandidate, OrphanedWalletRecoveryPayload,
+    PinPromptContext,
+};
 use crate::events_emitter::EventsEmitter;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
@@ -278,11 +281,16 @@ impl InternalWallet {
                 // `from_binary` would decode it into a garbage seed whose details are then
                 // persisted and become what every later proof compares against.
                 let tari_cipher_seed = if PinManager::pin_locked().await {
-                    let pin_password = PinManager::get_validated_pin(
-                        app_handle,
-                        Some(PinPromptContext::RestoreWalletDetails),
-                    )
-                    .await?;
+                    let pin_password = match take_recovery_pin() {
+                        Some(pin) => pin,
+                        None => {
+                            PinManager::get_validated_pin(
+                                app_handle,
+                                Some(PinPromptContext::RestoreWalletDetails),
+                            )
+                            .await?
+                        }
+                    };
                     CipherSeed::from_enciphered_bytes(&tari_seed_binary, Some(pin_password))
                         .map_err(|_| anyhow!("Wrong PIN entered!"))?
                 } else {
@@ -342,6 +350,7 @@ impl InternalWallet {
                     }
                 } else {
                     refuse_if_previous_wallet_evident(&app_config_dir)?;
+                    refuse_if_orphaned_wallet_credentials_found().await?;
                     // Checked before anything is persisted: a new Tari wallet written to the
                     // config and then a Monero failure leaves a config the next launch cannot
                     // load. A custom Monero address generates no seed, so it still passes.
@@ -378,6 +387,8 @@ impl InternalWallet {
     // Handle all side effects here
     async fn post_init(&self) -> Result<(), anyhow::Error> {
         InternalWallet::set_current(self.clone()).await?;
+        START_FRESH_OFFERED.store(false, Ordering::SeqCst);
+        clear_orphaned_wallet_recovery_state().await;
 
         MinotariWalletManager::handle_side_effects_after_wallet_import(
             self.tari_address_type.clone(),
@@ -2060,6 +2071,351 @@ pub(crate) fn plain_monero_seed_address(
         return None;
     };
     MoneroSeed::new(seed_bytes).to_address::<Mainnet>().ok()
+}
+
+/// Derives the Monero mainnet address from a stored Monero credential, unlocking a PIN-enciphered
+/// seed when `pin_password` is provided.
+pub(crate) fn monero_seed_address_with_pin(
+    credential: Result<Credential, CredentialError>,
+    pin_password: Option<&SafePassword>,
+) -> Option<String> {
+    let credential = credential.ok()?;
+    if let Ok(seed_bytes) = <[u8; 32]>::try_from(credential.encrypted_seed.as_slice()) {
+        return MoneroSeed::new(seed_bytes).to_address::<Mainnet>().ok();
+    }
+    let pin_password = pin_password?;
+    let decrypted = cryptography::decrypt(&credential.encrypted_seed, pin_password).ok()?;
+    let seed_bytes = <[u8; 32]>::try_from(decrypted.as_slice()).ok()?;
+    MoneroSeed::new(seed_bytes).to_address::<Mainnet>().ok()
+}
+
+#[derive(Clone)]
+struct OrphanedWalletEntry {
+    candidate: OrphanedWalletCandidate,
+    encrypted_seed: Hidden<Vec<u8>>,
+    unlocked_pin: Option<SafePassword>,
+}
+
+static ORPHANED_WALLET_RECOVERY: std::sync::LazyLock<RwLock<Option<Vec<OrphanedWalletEntry>>>> =
+    std::sync::LazyLock::new(|| RwLock::new(None));
+
+static RECOVERY_PIN: std::sync::LazyLock<std::sync::Mutex<Option<SafePassword>>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new(None));
+
+fn set_recovery_pin(pin: Option<SafePassword>) {
+    if let Ok(mut guard) = RECOVERY_PIN.lock() {
+        *guard = pin;
+    }
+}
+
+fn take_recovery_pin() -> Option<SafePassword> {
+    RECOVERY_PIN.lock().ok()?.take()
+}
+
+pub(crate) async fn clear_orphaned_wallet_recovery_state() {
+    set_recovery_pin(None);
+    *ORPHANED_WALLET_RECOVERY.write().await = None;
+}
+
+/// Sorts discovered Tari wallet credentials into plain entries (whose Tari address is derived
+/// immediately) followed by PIN-encrypted entries (whose address stays `None` until unlocked),
+/// preserving the caller's ordering within each group.
+pub(crate) async fn classify_orphaned_wallet_candidates(
+    entries: Vec<(WalletId, Credential)>,
+) -> Vec<(OrphanedWalletCandidate, Vec<u8>)> {
+    let mut plain_entries = Vec::new();
+    let mut pin_entries = Vec::new();
+
+    for (wallet_id, credential) in entries {
+        if credential.encrypted_seed.is_empty() {
+            continue;
+        }
+        if let Ok(seed) = decode_plain_seed(&credential.encrypted_seed) {
+            if let Ok(details) =
+                InternalWallet::get_tari_wallet_details(wallet_id.clone(), seed).await
+            {
+                plain_entries.push((
+                    OrphanedWalletCandidate {
+                        id: wallet_id,
+                        pin_protected: false,
+                        tari_address_base58: Some(details.tari_address.to_base58()),
+                        tari_address_emoji: Some(details.tari_address.to_emoji_string()),
+                    },
+                    credential.encrypted_seed,
+                ));
+            }
+        } else {
+            pin_entries.push((
+                OrphanedWalletCandidate {
+                    id: wallet_id,
+                    pin_protected: true,
+                    tari_address_base58: None,
+                    tari_address_emoji: None,
+                },
+                credential.encrypted_seed,
+            ));
+        }
+    }
+
+    plain_entries.extend(pin_entries);
+    plain_entries
+}
+
+/// Tries `pin` against each PIN-enciphered seed blob and returns the `(WalletId, CipherSeed)`
+/// pairs that authenticated and decrypted.
+pub(crate) fn decrypt_orphaned_wallet_entries(
+    entries: &[(WalletId, Vec<u8>)],
+    pin: &SafePassword,
+) -> Vec<(WalletId, CipherSeed)> {
+    entries
+        .iter()
+        .filter_map(|(wallet_id, encrypted_seed)| {
+            CipherSeed::from_enciphered_bytes(encrypted_seed, Some(pin.clone()))
+                .ok()
+                .map(|seed| (wallet_id.clone(), seed))
+        })
+        .collect()
+}
+
+/// Applies the chosen orphaned wallet id and its `pin_locked` state to `ConfigWalletContent`.
+pub(crate) fn adopt_orphaned_wallet_in_config(
+    content: &mut ConfigWalletContent,
+    (wallet_id, pin_locked): (WalletId, bool),
+) -> &mut ConfigWalletContent {
+    content.set_tari_wallets(vec![wallet_id]);
+    content.set_tari_wallet_details(None);
+    let mut pin_locker_state = PinLockerState::default();
+    pin_locker_state.set_pin_locked(pin_locked);
+    content.set_pin_locker_state(pin_locker_state)
+}
+
+async fn refuse_if_orphaned_wallet_credentials_found() -> Result<(), anyhow::Error> {
+    let wallet_ids = match CredentialManager::enumerate_tari_wallet_ids() {
+        Ok(ids) => ids,
+        Err(e) => {
+            log::warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[refuse_if_orphaned_wallet_credentials_found] Could not enumerate credential store: {}",
+                credential_error_tag(&e)
+            );
+            return Ok(());
+        }
+    };
+    if wallet_ids.is_empty() {
+        return Ok(());
+    }
+
+    let mut raw_entries = Vec::new();
+    for wallet_id in wallet_ids {
+        if let Ok(credential) = CredentialManager::new_default(wallet_id.clone())
+            .get_credentials()
+            .await
+        {
+            raw_entries.push((wallet_id, credential));
+        }
+    }
+
+    let classified = classify_orphaned_wallet_candidates(raw_entries).await;
+    if classified.is_empty() {
+        return Ok(());
+    }
+
+    let mut state_entries = Vec::with_capacity(classified.len());
+    let mut candidates = Vec::with_capacity(classified.len());
+    for (candidate, encrypted_seed) in classified {
+        candidates.push(candidate.clone());
+        state_entries.push(OrphanedWalletEntry {
+            candidate,
+            encrypted_seed: Hidden::hide(encrypted_seed),
+            unlocked_pin: None,
+        });
+    }
+
+    let payload = OrphanedWalletRecoveryPayload { candidates };
+    let (plain_count, pin_count) = payload.plain_and_pin_counts();
+
+    START_FRESH_OFFERED.store(true, Ordering::SeqCst);
+    *ORPHANED_WALLET_RECOVERY.write().await = Some(state_entries);
+
+    log::error!(
+        target: LOG_TARGET_APP_LOGIC,
+        "{PREVIOUS_WALLET_EVIDENT}: orphaned_keyring_credentials (plain={plain_count}, pin={pin_count})"
+    );
+    sentry::with_scope(
+        |scope| {
+            scope.set_tag("previous_wallet_evidence", "orphaned_keyring_credentials");
+            scope.set_tag("orphaned_plain_candidates", plain_count.to_string());
+            scope.set_tag("orphaned_pin_candidates", pin_count.to_string());
+        },
+        || sentry::capture_message(PREVIOUS_WALLET_EVIDENT, sentry::Level::Error),
+    );
+
+    Err(anyhow::Error::new(payload))
+}
+
+pub(crate) async fn list_orphaned_wallet_candidates() -> Vec<OrphanedWalletCandidate> {
+    ORPHANED_WALLET_RECOVERY
+        .read()
+        .await
+        .as_ref()
+        .map(|entries| entries.iter().map(|e| e.candidate.clone()).collect())
+        .unwrap_or_default()
+}
+
+/// Tries `pin` against every PIN-protected orphaned wallet candidate off the UI thread, without
+/// touching `PinManager::validate_pin` or setting `pin_locked` on the empty config.
+pub(crate) async fn unlock_orphaned_wallet_candidates(
+    pin: SafePassword,
+) -> Result<Vec<OrphanedWalletCandidate>, anyhow::Error> {
+    let encrypted_pairs: Vec<(WalletId, Vec<u8>)> = {
+        let guard = ORPHANED_WALLET_RECOVERY.read().await;
+        let entries = guard
+            .as_ref()
+            .ok_or_else(|| anyhow!("No orphaned wallet recovery is in progress"))?;
+        entries
+            .iter()
+            .filter(|entry| entry.candidate.pin_protected)
+            .map(|entry| {
+                (
+                    entry.candidate.id.clone(),
+                    entry.encrypted_seed.reveal().clone(),
+                )
+            })
+            .collect()
+    };
+
+    if encrypted_pairs.is_empty() {
+        return Err(anyhow!("No PIN-protected wallet candidates to unlock"));
+    }
+
+    let pin_for_decrypt = pin.clone();
+    let unlocked = tokio::task::spawn_blocking(move || {
+        decrypt_orphaned_wallet_entries(&encrypted_pairs, &pin_for_decrypt)
+    })
+    .await
+    .map_err(|e| anyhow!("PIN decryption task failed: {e}"))?;
+
+    if unlocked.is_empty() {
+        return Err(anyhow!("Wrong PIN entered!"));
+    }
+
+    let mut derived_addresses = Vec::with_capacity(unlocked.len());
+    for (wallet_id, seed) in unlocked {
+        let details = InternalWallet::get_tari_wallet_details(wallet_id.clone(), seed).await?;
+        derived_addresses.push((
+            wallet_id,
+            details.tari_address.to_base58(),
+            details.tari_address.to_emoji_string(),
+        ));
+    }
+
+    let mut guard = ORPHANED_WALLET_RECOVERY.write().await;
+    let entries = guard
+        .as_mut()
+        .ok_or_else(|| anyhow!("No orphaned wallet recovery is in progress"))?;
+    for (wallet_id, base58, emoji) in derived_addresses {
+        if let Some(entry) = entries.iter_mut().find(|e| e.candidate.id == wallet_id) {
+            entry.candidate.tari_address_base58 = Some(base58);
+            entry.candidate.tari_address_emoji = Some(emoji);
+            entry.unlocked_pin = Some(pin.clone());
+        }
+    }
+
+    Ok(entries.iter().map(|e| e.candidate.clone()).collect())
+}
+
+/// Adopts the chosen orphaned `<wallet_id>` into `ConfigWallet`, restores the `monero` keyring
+/// entry (plain or unlocked with the same PIN), and prepares `RECOVERY_PIN` so the caller's
+/// `InternalWallet::initialize_with_seed` backfills `tari_wallet_details` in place.
+pub(crate) async fn restore_orphaned_wallet_candidate(
+    wallet_id: WalletId,
+) -> Result<bool, anyhow::Error> {
+    if InternalWallet::is_initialized() {
+        return Err(anyhow!(
+            "A wallet is already loaded, refusing to restore over it"
+        ));
+    }
+
+    let (pin_protected, unlocked_pin) = {
+        let guard = ORPHANED_WALLET_RECOVERY.read().await;
+        let entries = guard
+            .as_ref()
+            .ok_or_else(|| anyhow!("No orphaned wallet recovery is in progress"))?;
+        let entry = entries
+            .iter()
+            .find(|e| e.candidate.id == wallet_id)
+            .ok_or_else(|| anyhow!("Selected wallet is not an offered recovery candidate"))?;
+        if entry.candidate.pin_protected && entry.unlocked_pin.is_none() {
+            return Err(anyhow!("Enter the PIN for this wallet before restoring it"));
+        }
+        (entry.candidate.pin_protected, entry.unlocked_pin.clone())
+    };
+
+    let credential = CredentialManager::new_default(wallet_id.clone())
+        .get_credentials()
+        .await?;
+    let pin_locked = !seed_is_plain(&credential.encrypted_seed);
+    if pin_locked && unlocked_pin.is_none() {
+        return Err(anyhow!("Enter the PIN for this wallet before restoring it"));
+    }
+
+    ConfigWallet::update_field(adopt_orphaned_wallet_in_config, (wallet_id, pin_locked)).await?;
+
+    let current_monero = ConfigWallet::content().await.monero_address().clone();
+    let restored_monero = restore_blank_monero_address(current_monero).await?;
+    if restored_monero.is_empty()
+        && let Some(ref pin) = unlocked_pin
+    {
+        let monero_credential =
+            CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()))
+                .get_credentials()
+                .await;
+        let pin_clone = pin.clone();
+        let derived_monero = tokio::task::spawn_blocking(move || {
+            monero_seed_address_with_pin(monero_credential, Some(&pin_clone))
+        })
+        .await
+        .ok()
+        .flatten();
+        if let Some(address) = derived_monero {
+            ConfigWallet::update_field(ConfigWalletContent::set_generated_monero_address, address)
+                .await?;
+            let _ = InternalWallet::upgrade_monero_seed_cipher(pin).await;
+        }
+    }
+
+    set_recovery_pin(unlocked_pin);
+
+    let outcome = if pin_protected || pin_locked {
+        "orphaned_wallet_recovered_pin"
+    } else {
+        "orphaned_wallet_recovered_plain"
+    };
+    log::warn!(target: LOG_TARGET_APP_LOGIC, "[restore_orphaned_wallet_candidate] {outcome}");
+    sentry::with_scope(
+        |scope| scope.set_tag("previous_wallet_evidence", outcome),
+        || {
+            sentry::capture_message(
+                "Orphaned wallet recovered from the OS credential store",
+                sentry::Level::Warning,
+            )
+        },
+    );
+
+    Ok(pin_locked)
+}
+
+pub(crate) async fn rollback_failed_orphaned_wallet_restore() {
+    set_recovery_pin(None);
+    let _ = ConfigWallet::update_field(
+        |content, ()| {
+            content.set_tari_wallets(Vec::new());
+            content.set_tari_wallet_details(None);
+            content.set_pin_locker_state(PinLockerState::default())
+        },
+        (),
+    )
+    .await;
 }
 
 /// Evidence that this machine already held a Tari wallet, as an enum-like tag. Only files that

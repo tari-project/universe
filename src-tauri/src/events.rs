@@ -21,13 +21,14 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
+    configs::config_wallet::WalletId,
     internal_wallet::TariAddressType,
     mining::gpu::miners::GpuCommonInformation,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::{listeners::AppModule, setup_manager::SetupPhase},
 };
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
@@ -56,6 +57,7 @@ pub enum EventType {
     AskForRestart,
     ShowReleaseNotes,
     CriticalProblem,
+    OrphanedWalletRecovery,
     #[cfg(target_os = "windows")]
     SystemDependenciesLoaded,
     StuckOnOrphanChain,
@@ -181,6 +183,61 @@ impl std::fmt::Display for CriticalProblemPayload {
 }
 
 impl std::error::Error for CriticalProblemPayload {}
+
+/// A candidate Tari wallet discovered in the OS credential store after `config_wallet.json` was
+/// wiped. Plain entries carry their derived Tari address immediately; PIN-protected entries keep
+/// `tari_address_base58` and `tari_address_emoji` as `None` until unlocked with the old PIN.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct OrphanedWalletCandidate {
+    pub id: WalletId,
+    pub pin_protected: bool,
+    pub tari_address_base58: Option<String>,
+    pub tari_address_emoji: Option<String>,
+}
+
+/// Redacts wallet ids and full addresses from `Debug` output so `{:?}` never logs them.
+impl std::fmt::Debug for OrphanedWalletCandidate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OrphanedWalletCandidate")
+            .field("pin_protected", &self.pin_protected)
+            .field("address_known", &self.tari_address_base58.is_some())
+            .finish()
+    }
+}
+
+/// Carried as the error from `InternalWallet::initialize_with_seed` when a wiped install still
+/// has Tari wallet entries in the OS credential store, so `setup_manager` opens the dedicated
+/// recovery dialog instead of the generic `CriticalProblemDialog`.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct OrphanedWalletRecoveryPayload {
+    pub candidates: Vec<OrphanedWalletCandidate>,
+}
+
+impl OrphanedWalletRecoveryPayload {
+    pub fn plain_and_pin_counts(&self) -> (usize, usize) {
+        let plain = self.candidates.iter().filter(|c| !c.pin_protected).count();
+        let pin = self.candidates.len() - plain;
+        (plain, pin)
+    }
+}
+
+impl std::fmt::Display for OrphanedWalletRecoveryPayload {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (plain, pin) = self.plain_and_pin_counts();
+        write!(
+            formatter,
+            "Orphaned wallet keys found in credential store (plain={plain}, pin={pin})"
+        )
+    }
+}
+
+impl std::fmt::Debug for OrphanedWalletRecoveryPayload {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, formatter)
+    }
+}
+
+impl std::error::Error for OrphanedWalletRecoveryPayload {}
 
 #[derive(Debug, Serialize, Clone)]
 pub struct NodeTypeUpdatePayload {
