@@ -4,6 +4,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import { invoke } from '@tauri-apps/api/core';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { requestPin } from '@app/store/useSecurityStore';
@@ -13,6 +15,9 @@ vi.mock('@app/store/useSecurityStore', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@app/store/useSecurityStore')>()),
     requestPin: vi.fn(),
 }));
+// The shared clipboard module also imports readText and clear from the
+// plugin, so the mock has to provide all three entry points.
+vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({ writeText: vi.fn(), readText: vi.fn(), clear: vi.fn() }));
 
 describe('TokenDisplay', () => {
     beforeEach(() => {
@@ -123,6 +128,43 @@ describe('TokenDisplay', () => {
             await waitFor(() => expect(screen.getByText('full-token-xyz')).toBeInTheDocument());
             expect(requestPin).not.toHaveBeenCalled();
             expect(invoke).toHaveBeenCalledWith('get_mcp_token', { pin: null });
+        });
+    });
+
+    describe('copy through the shared clipboard path (#3489)', () => {
+        beforeEach(() => {
+            vi.mocked(writeText).mockReset();
+            vi.mocked(writeText).mockResolvedValue(undefined as never);
+            useToastStore.setState({ toasts: [] });
+            useWalletStore.setState({ is_pin_locked: false });
+            vi.mocked(invoke).mockReset();
+            vi.mocked(invoke).mockImplementation((async (cmd: string) =>
+                cmd === 'get_mcp_token' ? 'tu_full_token' : undefined) as typeof invoke);
+            useConfigMcpStore.setState({ enabled: true, bearer_token_redacted: 'tu_••••••••' });
+        });
+
+        it('copies the fetched token through the shared clipboard path', async () => {
+            render(<TokenDisplay />);
+            fireEvent.click(screen.getByText('mcp.token-display.copy'));
+
+            await waitFor(() => expect(writeText).toHaveBeenCalledWith('tu_full_token'));
+            await waitFor(() => expect(screen.getByText('mcp.token-display.copied')).toBeInTheDocument());
+        });
+
+        it('shows manual-copy guidance instead of a raw error when the copy fails', async () => {
+            vi.mocked(writeText).mockRejectedValue(
+                new Error('X11 server connection timed out because it was unreachable')
+            );
+            const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+            render(<TokenDisplay />);
+            fireEvent.click(screen.getByText('mcp.token-display.copy'));
+
+            await waitFor(() => expect(useToastStore.getState().toasts.length).toBe(1));
+            const toast = useToastStore.getState().toasts[0];
+            expect(toast.title).toBe('Failed to copy to clipboard');
+            expect(toast.text).toContain('copy it manually');
+            expect(screen.getByText('mcp.token-display.copy')).toBeInTheDocument();
+            consoleError.mockRestore();
         });
     });
 });
