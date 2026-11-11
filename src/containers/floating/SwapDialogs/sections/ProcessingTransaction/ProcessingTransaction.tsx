@@ -18,8 +18,7 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
 import { SwapStatus } from '@app/hooks/swap/lib/types';
 import { truncateMiddle } from '@app/utils';
-import { writeClipboardText } from '@app/utils/clipboard';
-import { addToast } from '@app/components/ToastStack/useToastStore';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { CopyIcon } from '../../icons/copyIcon';
 import { AnimatePresence } from 'motion/react';
 
@@ -62,21 +61,14 @@ export const ProcessingTransaction = ({
     const explorerUrl = mainnetExplorerUrl;
     const [copied, setCopied] = useState(false);
 
+    const { copyToClipboard } = useCopyToClipboard();
+
     const handleCopyAddress = useCallback(() => {
-        writeClipboardText(CONTRACT_ADDRESS)
-            .then(() => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-            })
-            .catch((e) => {
-                console.error('Could not copy to clipboard', e);
-                addToast({
-                    title: 'Failed to copy to clipboard',
-                    text: 'The clipboard did not accept the value. Select the text and copy it manually.',
-                    type: 'error',
-                });
-            });
-    }, []);
+        copyToClipboard(CONTRACT_ADDRESS, () => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        });
+    }, [copyToClipboard]);
 
     const statusItems: StatusListEntry[] = useMemo(() => {
         const items: StatusListEntry[] = [];

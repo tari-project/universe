@@ -95,8 +95,8 @@ describe('AgentConfig copy (#3489)', () => {
 
         await waitFor(() => expect(useToastStore.getState().toasts.length).toBe(1));
         const toast = useToastStore.getState().toasts[0];
-        expect(toast.title).toBe('Failed to copy to clipboard');
-        expect(toast.text).toContain('copy it manually');
+        expect(toast.title).toBe('common:clipboard.copy-failed-title');
+        expect(toast.text).toBe('common:clipboard.copy-failed-text');
         expect(screen.getByText('mcp.agent-config.copy')).toBeInTheDocument();
         consoleError.mockRestore();
     });

@@ -1,5 +1,4 @@
-import { writeClipboardText } from '@app/utils/clipboard';
-import { addToast } from '@app/components/ToastStack/useToastStore';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import GreenModal from '@app/components/GreenModal/GreenModal';
 import { AnimatePresence } from 'motion/react';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
@@ -57,16 +56,11 @@ const ShareRewardModal = memo(function ShareRewardModal() {
 
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
+    const { copyToClipboard } = useCopyToClipboard();
+
     const handleCopy = useCallback(() => {
-        writeClipboardText(shareUrl)
-            .then(() => {
-                setCopied(true);
-            })
-            .catch((e) => {
-                console.error('Could not copy to clipboard', e);
-                addToast({ title: 'Failed to copy', text: String(e), type: 'error' });
-            });
-    }, [shareUrl]);
+        copyToClipboard(shareUrl, () => setCopied(true));
+    }, [shareUrl, copyToClipboard]);
 
     return (
         <GreenModal onClose={handleClose} padding={30} showModal={showModal}>

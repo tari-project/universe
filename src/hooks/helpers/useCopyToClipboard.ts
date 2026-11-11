@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { clearClipboardText, readClipboardText, writeClipboardText } from '@app/utils/clipboard';
+import i18n from 'i18next';
+import {
+    clearClipboardText,
+    needsWebviewOnlyClipboard,
+    readClipboardText,
+    writeClipboardText,
+} from '@app/utils/clipboard';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 
 interface CopyOptions {
@@ -33,10 +39,25 @@ export function useCopyToClipboard() {
             .then(() => {
                 setIsCopied(true);
                 onCopied?.();
-                // This write replaced whatever the previous timer was guarding, so that
-                // timer could only clear the new value early. A failed write leaves it.
-                clearTimeout(clearTimer.current);
-                if (options?.clearAfterMs) {
+                if (!options?.clearAfterMs) {
+                    clearTimeout(clearTimer.current);
+                    return;
+                }
+                const clearAfterMs = options.clearAfterMs;
+                return needsWebviewOnlyClipboard().then((webviewOnly) => {
+                    // This write replaced whatever the previous timer was guarding, so that
+                    // timer could only clear the new value early. A failed write leaves it.
+                    clearTimeout(clearTimer.current);
+                    if (webviewOnly) {
+                        // Flatpak/Wayland: the timed wipe runs without a user gesture, which
+                        // WebKitGTK refuses, so it could never clear. Tell the user instead.
+                        addToast({
+                            title: i18n.t('common:clipboard.not-auto-cleared-title'),
+                            text: i18n.t('common:clipboard.not-auto-cleared-text'),
+                            type: 'warning',
+                        });
+                        return;
+                    }
                     clearTimer.current = setTimeout(() => {
                         readClipboardText()
                             .then((current) => {
@@ -47,19 +68,19 @@ export function useCopyToClipboard() {
                             .catch((e) => {
                                 console.error('Could not clear clipboard', e);
                                 addToast({
-                                    title: 'Could not clear the clipboard',
-                                    text: 'The copied value may still be on the clipboard.',
+                                    title: i18n.t('common:clipboard.clear-failed-title'),
+                                    text: i18n.t('common:clipboard.clear-failed-text'),
                                     type: 'warning',
                                 });
                             });
-                    }, options.clearAfterMs);
-                }
+                    }, clearAfterMs);
+                });
             })
             .catch((e) => {
                 console.error('Could not copy to clipboard', e);
                 addToast({
-                    title: 'Failed to copy to clipboard',
-                    text: 'The clipboard did not accept the value. Select the text and copy it manually.',
+                    title: i18n.t('common:clipboard.copy-failed-title'),
+                    text: i18n.t('common:clipboard.copy-failed-text'),
                     type: 'error',
                 });
             });

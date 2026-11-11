@@ -115,7 +115,7 @@ function webviewClipboard(): Clipboard | undefined {
  */
 let webviewOnlyClipboard: Promise<boolean> | null = null;
 
-function needsWebviewOnlyClipboard(): Promise<boolean> {
+export function needsWebviewOnlyClipboard(): Promise<boolean> {
     if (!webviewOnlyClipboard) {
         try {
             webviewOnlyClipboard = invoke<boolean>('clipboard_needs_webview')
