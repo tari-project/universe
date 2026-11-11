@@ -358,6 +358,7 @@ impl BetweenTimeVariantPayload {
     ///
     /// ### Returns
     /// * `Ok(CronSchedule)` - Schedule created successfully
+    /// * `Err(SchedulerError::InvalidTimingFormat)` - If start and end times are identical or out of range
     /// * `Err(SchedulerError::InvalidCronPattern)` - If cron generation fails
     pub fn to_cron_schedule(&self) -> Result<CronSchedule, SchedulerError> {
         let start_cron = SchedulerEventTiming::parse_cron(
@@ -370,6 +371,11 @@ impl BetweenTimeVariantPayload {
             self.end_minute,
             self.end_period.clone(),
         )?;
+        if start_cron == end_cron {
+            return Err(SchedulerError::InvalidTimingFormat(
+                "Start time and end time cannot be identical".to_string(),
+            ));
+        }
         CronSchedule::new(&start_cron, &end_cron)
     }
 }
@@ -772,22 +778,32 @@ impl EventScheduler {
     /// ### Returns
     /// * `Ok(HashMap)` - Map of restored scheduled events
     /// * `Err(SchedulerError)` - If loading fails
+    fn restore_scheduled_events(
+        persistent_events: HashMap<String, ScheduledEventInfo>,
+    ) -> HashMap<String, ScheduledEvent> {
+        HashMap::from_iter(persistent_events.into_iter().map(|(id, info)| {
+            let state = match info.state {
+                SchedulerEventState::Paused => SchedulerEventState::Paused,
+                _ => SchedulerEventState::Active,
+            };
+            (
+                id,
+                ScheduledEvent {
+                    id: info.id,
+                    event_type: info.event_type,
+                    timing: info.timing,
+                    state,
+                    task_handle: None,
+                },
+            )
+        }))
+    }
+
     async fn load_persistent_events() -> Result<HashMap<String, ScheduledEvent>, SchedulerError> {
         let persistent_events_from_config = ConfigCore::content().await.scheduler_events().clone();
-        let scheduled_events =
-            HashMap::from_iter(persistent_events_from_config.into_iter().map(|(id, info)| {
-                (
-                    id,
-                    ScheduledEvent {
-                        id: info.id,
-                        event_type: info.event_type,
-                        timing: info.timing,
-                        state: SchedulerEventState::Active,
-                        task_handle: None,
-                    },
-                )
-            }));
-        Ok(scheduled_events)
+        Ok(Self::restore_scheduled_events(
+            persistent_events_from_config,
+        ))
     }
 
     /// Starts the scheduler's main event loop.
@@ -823,10 +839,14 @@ impl EventScheduler {
         task_tracker.spawn(async move {
             let mut internal_events: HashMap<String, ScheduledEvent> = HashMap::new();
             for (id, event) in persistent_events_from_config {
-                Self::handle_add_event(&mut internal_events, event.event_type.clone(), id.clone(), event.timing.clone()).await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to reschedule persistent event {:?}: {}", id, e);
-                    e.to_string()
-                });
+                if event.state == SchedulerEventState::Paused {
+                    internal_events.insert(id, event);
+                } else {
+                    Self::handle_add_event(&mut internal_events, event.event_type.clone(), id.clone(), event.timing.clone()).await.unwrap_or_else(|e| {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to reschedule persistent event {:?}: {}", id, e);
+                        e.to_string()
+                    });
+                }
             }
 
             let message_receiver = &mut *INSTANCE.message_receiver.write().await;
@@ -859,11 +879,21 @@ impl EventScheduler {
                                 }
                             },
                             Some(SchedulerMessage::PauseEvent { event_id, response }) => {
-                                let result = Self::handle_pause_event(&mut internal_events, event_id);
+                                let result = Self::pause_event_with_persistence(
+                                    &mut internal_events,
+                                    event_id,
+                                    Self::save_persistent_events_to_config,
+                                )
+                                .await;
                                 let _unused = response.send(result);
                             },
                             Some(SchedulerMessage::ResumeEvent { event_id, response }) => {
-                                let result = Self::handle_resume_event(&mut internal_events, event_id).await;
+                                let result = Self::resume_event_with_persistence(
+                                    &mut internal_events,
+                                    event_id,
+                                    Self::save_persistent_events_to_config,
+                                )
+                                .await;
                                 let _unused = response.send(result);
                             },
                             Some(SchedulerMessage::TriggerEnterCallback { event_id }) => {
@@ -1023,6 +1053,34 @@ impl EventScheduler {
         }
     }
 
+    async fn pause_event_with_persistence<'a, F, Fut>(
+        events: &'a mut HashMap<String, ScheduledEvent>,
+        event_id: String,
+        persist: F,
+    ) -> Result<(), SchedulerError>
+    where
+        F: FnOnce(&'a HashMap<String, ScheduledEvent>) -> Fut,
+        Fut: std::future::Future<Output = ()>,
+    {
+        Self::handle_pause_event(events, event_id)?;
+        persist(events).await;
+        Ok(())
+    }
+
+    async fn resume_event_with_persistence<'a, F, Fut>(
+        events: &'a mut HashMap<String, ScheduledEvent>,
+        event_id: String,
+        persist: F,
+    ) -> Result<(), SchedulerError>
+    where
+        F: FnOnce(&'a HashMap<String, ScheduledEvent>) -> Fut,
+        Fut: std::future::Future<Output = ()>,
+    {
+        Self::handle_resume_event(events, event_id).await?;
+        persist(events).await;
+        Ok(())
+    }
+
     /// Internal handler for resuming paused events.
     ///
     /// Processes ResumeEvent messages, changes the event state back to Active,
@@ -1044,8 +1102,6 @@ impl EventScheduler {
                 return Err(SchedulerError::EventAlreadyRunning(event_id));
             }
 
-            event.state = SchedulerEventState::Active;
-
             let task_handle = Self::create_scheduling_task(
                 event_id.clone(),
                 event.event_type.clone(),
@@ -1053,6 +1109,7 @@ impl EventScheduler {
             )
             .await?;
 
+            event.state = SchedulerEventState::Active;
             event.task_handle = Some(task_handle);
 
             info!(target: LOG_TARGET_APP_LOGIC, "Resumed event with ID {:?}", event_id);
@@ -1360,5 +1417,136 @@ impl EventScheduler {
         };
 
         Ok(handle)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn snapshot_persist(
+        out: &mut Vec<SchedulerEventState>,
+    ) -> impl FnOnce(&HashMap<String, ScheduledEvent>) -> std::future::Ready<()> + '_ {
+        move |ev| {
+            out.push(ev["night_mine"].state.clone());
+            std::future::ready(())
+        }
+    }
+
+    #[test]
+    fn parse_between_variant_rejects_identical_start_and_end_time() {
+        let same = SchedulerEventTiming::parse_between_variant(
+            10,
+            30,
+            TimePeriod::PM,
+            10,
+            30,
+            TimePeriod::PM,
+        );
+        assert!(matches!(same, Err(SchedulerError::InvalidTimingFormat(_))));
+        let valid = SchedulerEventTiming::parse_between_variant(
+            10,
+            0,
+            TimePeriod::PM,
+            6,
+            0,
+            TimePeriod::AM,
+        );
+        assert!(valid.is_ok());
+    }
+
+    #[tokio::test]
+    async fn pause_and_resume_handlers_update_state_and_reject_duplicate_transitions() {
+        let timing = SchedulerEventTiming::parse_between_variant(
+            10,
+            0,
+            TimePeriod::PM,
+            6,
+            0,
+            TimePeriod::AM,
+        )
+        .unwrap();
+        let id = "night_mine".to_string();
+        let mut events = HashMap::from([(
+            id.clone(),
+            ScheduledEvent {
+                id: id.clone(),
+                event_type: SchedulerEventType::Mine {
+                    mining_mode: "Eco".to_string(),
+                },
+                timing,
+                state: SchedulerEventState::Active,
+                task_handle: None,
+            },
+        )]);
+
+        let mut persisted = Vec::new();
+        EventScheduler::pause_event_with_persistence(
+            &mut events,
+            id.clone(),
+            snapshot_persist(&mut persisted),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            (&events[&id].state, &persisted[..]),
+            (
+                &SchedulerEventState::Paused,
+                &[SchedulerEventState::Paused][..]
+            )
+        );
+
+        let dup_pause = EventScheduler::pause_event_with_persistence(
+            &mut events,
+            id.clone(),
+            snapshot_persist(&mut persisted),
+        )
+        .await;
+        assert!(matches!(
+            dup_pause,
+            Err(SchedulerError::EventAlreadyPaused(_))
+        ));
+        assert_eq!(persisted.len(), 1);
+
+        let restored = EventScheduler::restore_scheduled_events(HashMap::from([(
+            id.clone(),
+            ScheduledEventInfo {
+                id: id.clone(),
+                event_type: events[&id].event_type.clone(),
+                timing: events[&id].timing.clone(),
+                state: persisted[0].clone(),
+            },
+        )]));
+        assert_eq!(restored[&id].state, SchedulerEventState::Paused);
+        assert!(restored[&id].task_handle.is_none());
+
+        EventScheduler::resume_event_with_persistence(
+            &mut events,
+            id.clone(),
+            snapshot_persist(&mut persisted),
+        )
+        .await
+        .unwrap();
+        assert_eq!(events[&id].state, SchedulerEventState::Active);
+        assert!(events[&id].task_handle.is_some());
+        assert_eq!(
+            persisted,
+            vec![SchedulerEventState::Paused, SchedulerEventState::Active]
+        );
+
+        let dup_resume = EventScheduler::resume_event_with_persistence(
+            &mut events,
+            id.clone(),
+            snapshot_persist(&mut persisted),
+        )
+        .await;
+        assert!(matches!(
+            dup_resume,
+            Err(SchedulerError::EventAlreadyRunning(_))
+        ));
+        assert_eq!(persisted.len(), 2);
+        if let Some(h) = events.get_mut(&id).and_then(|e| e.task_handle.take()) {
+            h.abort();
+        }
     }
 }

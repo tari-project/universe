@@ -288,8 +288,9 @@ impl ConfigMcpContent {
     /// Returns a redacted version of the token for safe display
     pub fn redacted_token(&self) -> Option<String> {
         self.bearer_token.as_ref().map(|t| {
-            if t.len() > 7 {
-                format!("{}••••••••", &t[..3])
+            if t.chars().count() > 7 {
+                let prefix: String = t.chars().take(3).collect();
+                format!("{prefix}••••••••")
             } else {
                 "tu_••••••••".to_string()
             }
@@ -297,14 +298,17 @@ impl ConfigMcpContent {
     }
 
     /// Returns a JSON value with the bearer token replaced by a redacted version,
-    /// suitable for sending to the frontend.
+    /// suitable for sending to the frontend without invoking the OS keyring cipher.
     pub fn to_redacted_value(&self) -> Result<serde_json::Value, serde_json::Error> {
-        let mut value = serde_json::to_value(self)?;
+        let redacted = self.redacted_token();
+        let mut scrubbed = self.clone();
+        scrubbed.bearer_token = None;
+        let mut value = serde_json::to_value(&scrubbed)?;
         if let Some(obj) = value.as_object_mut() {
-            if obj.get("bearer_token").and_then(|v| v.as_str()).is_some() {
+            if let Some(redacted_str) = redacted {
                 obj.insert(
                     "bearer_token_redacted".to_string(),
-                    serde_json::Value::String(self.redacted_token().unwrap_or_default()),
+                    serde_json::Value::String(redacted_str),
                 );
             }
             obj.remove("bearer_token");
@@ -444,5 +448,27 @@ mod tests {
         assert_eq!(*loaded.rate_limit_transaction(), 12);
         assert!(!loaded.read_tier_enabled());
         assert!(!loaded.control_tier_enabled());
+    }
+
+    #[test]
+    fn to_redacted_value_succeeds_without_keyring_and_handles_multibyte_prefixes() {
+        let _unavailable_key = token_cipher::test_key(None);
+        let mut cfg = ConfigMcpContent::default();
+        cfg.set_bearer_token(Some("tok_secret_value".to_string()));
+        assert!(
+            serde_json::to_value(&cfg).is_err(),
+            "direct serde_json::to_value must fail when the OS keyring cipher key is unavailable"
+        );
+        let value = cfg
+            .to_redacted_value()
+            .expect("to_redacted_value should not require OS keyring encryption");
+        assert!(value.get("bearer_token").is_none());
+        assert_eq!(
+            value.get("bearer_token_redacted").and_then(|v| v.as_str()),
+            Some("tok••••••••")
+        );
+
+        cfg.set_bearer_token(Some("🔑🔑🔑🔑🔑🔑🔑🔑".to_string()));
+        assert_eq!(cfg.redacted_token().as_deref(), Some("🔑🔑🔑••••••••"));
     }
 }
