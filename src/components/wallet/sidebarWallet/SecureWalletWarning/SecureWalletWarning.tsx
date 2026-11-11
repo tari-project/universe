@@ -31,6 +31,12 @@ export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Pr
         return null;
     }
 
+    if (pinLocked === undefined) {
+        // Don't flash the "set a PIN" warning until the backend has reported
+        // whether a PIN is set at all (#3518).
+        return null;
+    }
+
     const handleClick = () => {
         setModal(isExchangeMiner ? 'create_pin' : 'intro');
     };

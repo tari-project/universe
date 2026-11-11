@@ -2,6 +2,14 @@
   "back": "Back",
   "cancel": "Cancel",
   "click-to-view-details": "Click to view details",
+  "clipboard": {
+    "clear-failed-text": "The copied value may still be on the clipboard.",
+    "clear-failed-title": "Could not clear the clipboard",
+    "copy-failed-text": "The clipboard did not accept the value. Please try again.",
+    "copy-failed-title": "Failed to copy to clipboard",
+    "not-auto-cleared-text": "This system does not let Tari Universe clear the clipboard automatically. Clear it yourself after pasting.",
+    "not-auto-cleared-title": "Clipboard will not be cleared"
+  },
   "close": "Close",
   "close-tari-universe": "Close Tari Universe",
   "complete": "Complete",

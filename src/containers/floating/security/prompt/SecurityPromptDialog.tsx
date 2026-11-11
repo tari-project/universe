@@ -29,7 +29,9 @@ export default function SecurityPromptDialog() {
     function handleClick() {
         if (!seedBackedUp) {
             setModal('verify_seedphrase');
-        } else if (!pinLocked) {
+        } else if (pinLocked === false) {
+            // Only when the wallet is known to have no PIN — while the state is
+            // unknown, create_pin can fail with "A PIN is already set" (#3518).
             void invoke('create_pin');
         }
     }
@@ -43,7 +45,7 @@ export default function SecurityPromptDialog() {
         },
         {
             stepNumber: 2,
-            completed: pinLocked,
+            completed: pinLocked === true,
             title: t('steps.title-pin'),
             subtitle: t('steps.subtitle-pin'),
         },

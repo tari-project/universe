@@ -509,7 +509,11 @@ impl OotleWalletManager {
         let approve_fee = async |fee| approve_l2_fee(app_handle, pin_context, fee).await;
         let id = claim::claim_burn(&sdk, &transactions, proof, file_name, approve_fee)
             .await
-            .map_err(|e| TransactionError::WalletError(format!("L2 claim failed: {e}")))?;
+            .map_err(|e| {
+                // The error can name claim keys and the burn amount, so only the UI gets it.
+                warn!(target: LOG_TARGET, "L2 claim failed");
+                TransactionError::WalletError(format!("L2 claim failed: {e}"))
+            })?;
         info!(target: LOG_TARGET, "L2 claim submitted: {id}");
         emit_state(&sdk).await;
         Ok(id.to_string())

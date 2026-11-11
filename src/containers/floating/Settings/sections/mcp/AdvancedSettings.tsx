@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
@@ -10,6 +10,7 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
+import { setMcpServerError, useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
 
@@ -23,12 +24,6 @@ const PortInput = styled.input`
     padding: 4px 8px;
     color: ${({ theme }) => theme.palette.text.primary};
     text-align: center;
-
-    &::-webkit-inner-spin-button,
-    &::-webkit-outer-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
 `;
 
 export default function AdvancedSettings() {
@@ -37,28 +32,61 @@ export default function AdvancedSettings() {
     const readTier = useConfigMcpStore((s) => s.read_tier_enabled);
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
+    const serverRunning = useMcpStore((s) => s.serverRunning);
+    const serverError = useMcpStore((s) => s.serverError);
+    // Bind errors belong next to the port; configuration errors from the toggle stay at the toggle.
+    const serverErrorText =
+        !serverError || serverError.kind === 'configuration'
+            ? null
+            : t(serverError.kind === 'port_in_use' ? 'mcp.errors.port-in-use' : 'mcp.errors.start-failed', {
+                  port: serverError.port,
+              });
     const [portValue, setPortValue] = useState(String(storePort));
+    const [invalidPort, setInvalidPort] = useState(false);
+    const [saveFailed, setSaveFailed] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const committing = useRef(false);
+    const portErrorId = useId();
 
     useEffect(() => {
         setPortValue(String(storePort));
     }, [storePort]);
 
     const commitPort = useCallback(async () => {
+        if (committing.current) return;
         const num = Number(portValue);
-        if (isNaN(num) || num < 1024 || num > 65535) {
-            setPortValue(String(storePort));
+        if (!/^\d+$/.test(portValue) || !Number.isInteger(num) || num < 1024 || num > 65535) {
+            setInvalidPort(true);
             return;
         }
-        if (num === storePort) return;
+        setInvalidPort(false);
+        setSaveFailed(false);
+        // A stopped server may retry the same port (e.g. the process holding it has exited);
+        // a running one must not be restarted just because the field lost focus.
+        if (num === storePort && serverRunning) return;
+        committing.current = true;
+        setSaving(true);
+        setMcpServerError(null);
         try {
             await invoke('set_mcp_port', { port: num });
         } catch (e) {
             console.error('Failed to set MCP port:', e);
-            setPortValue(String(storePort));
+            const kind = (e as { kind?: unknown } | null)?.kind;
+            if (kind === 'port_in_use' || kind === 'start_failed') setMcpServerError(e);
+            else setSaveFailed(true);
+        } finally {
+            committing.current = false;
+            setSaving(false);
         }
-    }, [portValue, storePort]);
+    }, [portValue, storePort, serverRunning]);
 
     if (!enabled) return null;
+
+    const portErrorText = invalidPort
+        ? t('mcp.advanced.invalid-port')
+        : saveFailed
+          ? t('mcp.errors.configuration')
+          : serverErrorText;
 
     const handleTierToggle = async (tier: string, checked: boolean) => {
         try {
@@ -80,15 +108,27 @@ export default function AdvancedSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('mcp.advanced.port')}</Typography>
                     </SettingsGroupTitle>
+                    {portErrorText && (
+                        <Typography variant="p" role="alert" id={portErrorId}>
+                            {portErrorText}
+                        </Typography>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <PortInput
-                        type="number"
-                        min={1024}
-                        max={65535}
+                        type="text"
+                        inputMode="numeric"
+                        aria-label={t('mcp.advanced.port')}
+                        aria-invalid={!!portErrorText}
+                        aria-describedby={portErrorText ? portErrorId : undefined}
+                        disabled={saving}
                         data-testid="mcp-port-input"
                         value={portValue}
-                        onChange={(e) => setPortValue(e.target.value)}
+                        onChange={(e) => {
+                            setPortValue(e.target.value);
+                            setInvalidPort(false);
+                            setSaveFailed(false);
+                        }}
                         onBlur={commitPort}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') commitPort();

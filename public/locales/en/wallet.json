@@ -278,6 +278,7 @@
     "pin-dialog-button": "Set PIN",
     "open-error": "Couldn't open Layer 2",
     "loading": "Loading your Layer 2 wallet...",
+    "waiting-for-wallet": "Waiting for the wallet to finish loading…",
     "balance-split": "Revealed {{revealed}} · Confidential {{confidential}}",
     "receive-title": "Receive on Layer 2",
     "empty": "No Layer 2 activity yet",

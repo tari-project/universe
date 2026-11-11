@@ -1,3 +1,15 @@
+🚀 TARI UNIVERSE v1.6.23: L2 Claim Update
+
+_November 10, 2026_
+
+✨ WHAT'S FIXED
+
+- 🌊 **L2 claims updated** – The Ootle updated how burns are claimed on L2, and Tari Universe now matches it.
+- 💸 **Claim fees checked locally** – The fee for a claim is now worked out by Tari Universe itself instead of being taken from the network's quote, so an overpriced quote can't eat into your claim.
+- 🔧 **Under the hood** – Updated the Layer 2 libraries to tari-ootle v0.52.0.
+
+---
+
 🚀 TARI UNIVERSE v1.6.22: Windows GPU Mining Fix
 
 _November 7, 2026_
