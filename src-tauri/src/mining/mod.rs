@@ -183,6 +183,26 @@ pub fn scheduled_mine_action(
     }
 }
 
+/// Resolves a raw mode string to the exact key in `mining_modes`.
+///
+/// Scheduled events carry raw strings, and the CPU/GPU usage percentages
+/// are looked up by exact key: persisting a value that only differs in
+/// case or surrounding whitespace would silently select 0% usage while
+/// the UI shows the requested mode. Returns `None` when no key matches,
+/// so the caller can keep the mode already in effect instead of writing
+/// a key nothing can use.
+pub fn canonical_mining_mode<'a>(
+    mut keys: impl Iterator<Item = &'a str>,
+    requested: &str,
+) -> Option<String> {
+    let trimmed = requested.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    keys.find(|key| key.eq_ignore_ascii_case(trimmed))
+        .map(str::to_string)
+}
+
 #[cfg(test)]
 mod tests {
     use super::mode_change_requires_restart;
@@ -330,21 +350,6 @@ mod scheduled_mine_action_tests {
         assert_eq!(
             scheduled_mine_action(true, false, Some("Eco"), "Eco"),
             ScheduledMineAction::Start
-        );
-    }
-
-    #[test]
-    fn test_scheduled_mine_action_failed_or_unchanged_save_still_restarts() {
-        // The `Mine` handler passes the scheduled mode whether or not saving
-        // it succeeded (`update_field` already set it in memory) and whether
-        // or not the config already held it. A miner still running Eco must
-        // restart for a Ludicrous window either way; deciding from the old
-        // config mode instead would turn this into a no-op `Start`.
-        let applied = Some("Eco");
-        let scheduled = "Ludicrous";
-        assert_eq!(
-            scheduled_mine_action(true, true, applied, scheduled),
-            ScheduledMineAction::Restart
         );
     }
 
@@ -512,5 +517,52 @@ mod scheduled_mine_action_tests {
 
         miner.on_mine_event("Eco");
         assert!(!miner.running);
+    }
+}
+
+#[cfg(test)]
+mod canonical_mining_mode_tests {
+    use super::canonical_mining_mode;
+
+    fn keys() -> Vec<&'static str> {
+        vec!["Eco", "Turbo", "Ludicrous", "Custom"]
+    }
+
+    #[test]
+    fn test_canonical_mining_mode_matches_case_insensitively() {
+        assert_eq!(
+            canonical_mining_mode(keys().into_iter(), "ludicrous").as_deref(),
+            Some("Ludicrous")
+        );
+        assert_eq!(
+            canonical_mining_mode(keys().into_iter(), "eco").as_deref(),
+            Some("Eco")
+        );
+    }
+
+    #[test]
+    fn test_canonical_mining_mode_trims_whitespace() {
+        assert_eq!(
+            canonical_mining_mode(keys().into_iter(), " TURBO ").as_deref(),
+            Some("Turbo")
+        );
+    }
+
+    #[test]
+    fn test_canonical_mining_mode_exact_key_unchanged() {
+        assert_eq!(
+            canonical_mining_mode(keys().into_iter(), "Custom").as_deref(),
+            Some("Custom")
+        );
+    }
+
+    #[test]
+    fn test_canonical_mining_mode_unknown_or_empty_returns_none() {
+        assert_eq!(
+            canonical_mining_mode(keys().into_iter(), "invalid_mode"),
+            None
+        );
+        assert_eq!(canonical_mining_mode(keys().into_iter(), ""), None);
+        assert_eq!(canonical_mining_mode(keys().into_iter(), "   "), None);
     }
 }
