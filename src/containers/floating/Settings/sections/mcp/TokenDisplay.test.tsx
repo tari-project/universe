@@ -151,6 +151,18 @@ describe('TokenDisplay', () => {
             await waitFor(() => expect(screen.getByText('mcp.token-display.copied')).toBeInTheDocument());
         });
 
+        it('asks for a PIN before copying while the PIN state is unknown', async () => {
+            useWalletStore.setState({ is_pin_locked: undefined });
+            vi.mocked(requestPin).mockReset();
+            vi.mocked(requestPin).mockResolvedValue('1234');
+            render(<TokenDisplay />);
+            fireEvent.click(screen.getByText('mcp.token-display.copy'));
+
+            await waitFor(() => expect(requestPin).toHaveBeenCalledOnce());
+            await waitFor(() => expect(invoke).toHaveBeenCalledWith('get_mcp_token', { pin: '1234' }));
+            await waitFor(() => expect(writeText).toHaveBeenCalledWith('tu_full_token'));
+        });
+
         it('shows manual-copy guidance instead of a raw error when the copy fails', async () => {
             vi.mocked(writeText).mockRejectedValue(
                 new Error('X11 server connection timed out because it was unreachable')

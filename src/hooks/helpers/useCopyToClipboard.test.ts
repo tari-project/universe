@@ -128,6 +128,35 @@ describe('useCopyToClipboard', () => {
         consoleError.mockRestore();
     });
 
+    it('copies through the webview when the plugin write fails', async () => {
+        // Flatpak/Wayland: the native plugin has no X11 display, so it rejects;
+        // the webview Clipboard API is the path that reaches the clipboard there.
+        const webWriteText = vi.fn().mockResolvedValue(undefined);
+        const originalClipboard = navigator.clipboard;
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText: webWriteText },
+        });
+        writeText.mockRejectedValue(new Error('No X11 display'));
+        try {
+            const { result } = renderHook(() => useCopyToClipboard());
+
+            await act(async () => {
+                result.current.copyToClipboard('tari address');
+            });
+
+            expect(result.current.isCopied).toBe(true);
+            expect(webWriteText).toHaveBeenCalledWith('tari address');
+            expect(writeText).not.toHaveBeenCalled();
+            expect(useToastStore.getState().toasts).toHaveLength(0);
+        } finally {
+            Object.defineProperty(navigator, 'clipboard', {
+                configurable: true,
+                value: originalClipboard,
+            });
+        }
+    });
+
     it('warns when the scheduled wipe of a secret fails', async () => {
         const seed = 'word '.repeat(24).trim();
         readText.mockResolvedValue(seed);
