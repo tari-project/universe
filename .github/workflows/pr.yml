@@ -47,16 +47,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Install Jsonlint
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends --assume-yes \
-            python3-demjson
-
+      # Stdlib only: an apt install here fails the job whenever the runner can't reach the
+      # Ubuntu mirrors. Duplicate keys and NaN fail it, as they did under demjson's jsonlint.
       - name: Basic Jsonlint
+        shell: python3 {0}
         run: |
-          find public -iname '*.json'  -print0 | \
-            xargs -0 -n1 jsonlint -v
+          import json, pathlib, sys
+
+          def no_duplicates(pairs):
+              keys = [key for key, _ in pairs]
+              duplicates = sorted({key for key in keys if keys.count(key) > 1})
+              if duplicates:
+                  raise ValueError(f"duplicate keys {duplicates}")
+              return dict(pairs)
+
+          def no_constants(name):
+              raise ValueError(f"{name} is not valid JSON")
+
+          failed = False
+          for path in sorted(pathlib.Path("public").rglob("*")):
+              if path.suffix.lower() != ".json" or not path.is_file():
+                  continue
+              try:
+                  json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=no_duplicates, parse_constant=no_constants)
+              except ValueError as error:
+                  print(f"::error file={path}::{error}")
+                  failed = True
+          sys.exit(failed)
 
       - name: Setup folder for logs
         run: |
