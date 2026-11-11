@@ -1,35 +1,21 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@app/test/test-utils';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import { invoke } from '@tauri-apps/api/core';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useWalletStore } from '@app/store/useWalletStore';
-import { useToastStore } from '@app/components/ToastStack/useToastStore';
+import { requestPin } from '@app/store/useSecurityStore';
 import TokenDisplay from './TokenDisplay';
 
-const invokeMock = vi.mocked(invoke) as unknown as Mock<(command: string) => Promise<unknown>>;
-
-const writeText = vi.fn();
-const readText = vi.fn();
-const clear = vi.fn();
-
-vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
-    writeText: (...args: unknown[]) => writeText(...args),
-    readText: (...args: unknown[]) => readText(...args),
-    clear: (...args: unknown[]) => clear(...args),
+vi.mock('@app/store/useSecurityStore', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@app/store/useSecurityStore')>()),
+    requestPin: vi.fn(),
 }));
 
 describe('TokenDisplay', () => {
     beforeEach(() => {
-        writeText.mockReset().mockResolvedValue(undefined);
-        readText.mockReset();
-        clear.mockReset().mockResolvedValue(undefined);
-        useToastStore.setState({ toasts: [] });
-        useWalletStore.setState({ is_pin_locked: false });
-        invokeMock.mockReset();
-        invokeMock.mockResolvedValue('tu_full_token');
         useConfigMcpStore.setState({
             enabled: false,
             bearer_token_redacted: undefined,
@@ -95,7 +81,7 @@ describe('TokenDisplay', () => {
         expect(screen.getByText(/mcp\.token-display\.created/)).toBeInTheDocument();
     });
 
-    it('shows days remaining when expiry is set', async () => {
+    it('shows days remaining when expiry is set', () => {
         const futureEpoch = Math.floor(Date.now() / 1000) + 86400 * 30;
         useConfigMcpStore.setState({
             enabled: true,
@@ -107,27 +93,36 @@ describe('TokenDisplay', () => {
         expect(screen.getByText(/mcp\.token-display\.days-remaining/)).toBeInTheDocument();
     });
 
-    it('copies the fetched token through the shared clipboard path', async () => {
-        useConfigMcpStore.setState({ enabled: true, bearer_token_redacted: 'tu_••••••••' });
-        render(<TokenDisplay />);
-        fireEvent.click(screen.getByText('mcp.token-display.copy'));
+    describe('PIN state handling (#3518)', () => {
+        beforeEach(() => {
+            vi.mocked(invoke).mockReset();
+            vi.mocked(invoke).mockImplementation((async (cmd: string) =>
+                cmd === 'get_mcp_token' ? 'full-token-xyz' : undefined) as typeof invoke);
+            vi.mocked(requestPin).mockReset();
+            vi.mocked(requestPin).mockResolvedValue('1234');
+            useConfigMcpStore.setState({ enabled: true, bearer_token_redacted: 'tu_••••••••' });
+        });
 
-        await waitFor(() => expect(writeText).toHaveBeenCalledWith('tu_full_token'));
-        await waitFor(() => expect(screen.getByText('mcp.token-display.copied')).toBeInTheDocument());
-    });
+        it('asks for a PIN before revealing while the PIN state is unknown', async () => {
+            useWalletStore.setState({ is_pin_locked: undefined });
+            render(<TokenDisplay />);
 
-    it('shows manual-copy guidance instead of a raw error when the copy fails', async () => {
-        writeText.mockRejectedValue(new Error('X11 server connection timed out because it was unreachable'));
-        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-        useConfigMcpStore.setState({ enabled: true, bearer_token_redacted: 'tu_••••••••' });
-        render(<TokenDisplay />);
-        fireEvent.click(screen.getByText('mcp.token-display.copy'));
+            fireEvent.click(screen.getByTestId('mcp-token-reveal'));
 
-        await waitFor(() => expect(useToastStore.getState().toasts.length).toBe(1));
-        const toast = useToastStore.getState().toasts[0];
-        expect(toast.title).toBe('Failed to copy to clipboard');
-        expect(toast.text).toContain('copy it manually');
-        expect(screen.getByText('mcp.token-display.copy')).toBeInTheDocument();
-        consoleError.mockRestore();
+            await waitFor(() => expect(screen.getByText('full-token-xyz')).toBeInTheDocument());
+            expect(requestPin).toHaveBeenCalledOnce();
+            expect(invoke).toHaveBeenCalledWith('get_mcp_token', { pin: '1234' });
+        });
+
+        it('reveals without a PIN prompt when the wallet is known to have no PIN', async () => {
+            useWalletStore.setState({ is_pin_locked: false });
+            render(<TokenDisplay />);
+
+            fireEvent.click(screen.getByTestId('mcp-token-reveal'));
+
+            await waitFor(() => expect(screen.getByText('full-token-xyz')).toBeInTheDocument());
+            expect(requestPin).not.toHaveBeenCalled();
+            expect(invoke).toHaveBeenCalledWith('get_mcp_token', { pin: null });
+        });
     });
 });

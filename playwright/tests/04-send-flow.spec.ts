@@ -144,6 +144,16 @@ test.describe('Send Transaction Flow', () => {
     // the only test that sends, so the prefix is unambiguous.
     const TX_PREFIX = 'pw-send-';
     const txRow = page.getByText(new RegExp(TX_PREFIX)).first();
+    // The wallet is usually still scanning the blocks ensureBalance mined, and
+    // each one adds a coinbase row above the send row, pushing it below the
+    // virtualized fold where locators can't see it. Filter the history to
+    // Transactions so the send row stays on top (which also exercises the
+    // filter itself).
+    await page.locator(sel.wallet.historyFilter).click({ timeout: 10_000 });
+    await page
+      .getByText(/^transactions$/i)
+      .first()
+      .click({ timeout: 5_000 });
     await txRow.waitFor({ state: 'visible', timeout: 30_000 });
 
     // --- Transaction details open from the row (hover-revealed button) ---
@@ -192,16 +202,8 @@ test.describe('Send Transaction Flow', () => {
     const balanceNow = await getWalletBalance(page);
     await mineUntilBalanceExceeds(page, Math.floor(balanceNow) + 1, 180_000);
 
-    // The confirmation mining adds a pile of coinbase rows above the send
-    // row, pushing it below the virtualized fold where locators can't see
-    // it. Filter the history to Transactions so the send row is on top
-    // (which also exercises the filter itself).
-    const filterTrigger = page.locator('[data-testid="tx-history-filter"]');
-    await filterTrigger.click({ timeout: 10_000 });
-    await page
-      .getByText(/^transactions$/i)
-      .first()
-      .click({ timeout: 5_000 });
+    // Still filtered to Transactions, so the confirmation mining's coinbase
+    // rows can't bury the send row.
     await txRow.waitFor({ state: 'visible', timeout: 60_000 });
   });
 
