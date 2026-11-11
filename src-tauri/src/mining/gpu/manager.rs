@@ -84,6 +84,10 @@ pub struct GpuManager {
     detected_devices: Vec<GpuCommonInformation>,
     // ======= Cached config =======
     connection_type: GpuConnectionType,
+    /// The mining mode the currently running process was started with. Kept
+    /// separate from config so a restart that saved the mode but failed to
+    /// stop the old process is still detected and retried.
+    applied_mining_mode: Option<String>,
     #[allow(dead_code)]
     tari_address: Option<String>,
     #[allow(dead_code)]
@@ -119,6 +123,7 @@ impl GpuManager {
             node_status_channel: None,
             // ======= Cached config =======
             connection_type: GpuConnectionType::default(),
+            applied_mining_mode: None,
             tari_address: None,
             pool: None,
             intensity_percentage: None,
@@ -458,11 +463,32 @@ impl GpuManager {
             }
         }
 
+        // Only reached after a process was actually spawned, with the intensity
+        // loaded from the selected mode above. The "already running" early
+        // return never gets here.
+        self.applied_mining_mode =
+            Some(ConfigMining::content().await.selected_mining_mode().clone());
+
         Ok(())
     }
 
     pub fn is_running(&self) -> bool {
         self.process_watcher.is_running()
+    }
+
+    /// The mode the running process was actually started with, if known.
+    pub fn applied_mining_mode(&self) -> &Option<String> {
+        &self.applied_mining_mode
+    }
+
+    /// Stop the running process and start it again so it picks up the newly
+    /// saved mode. A failed stop is returned as an error instead of falling
+    /// through to `start_mining`, which would silently no-op on the still
+    /// running watcher.
+    pub async fn restart_mining(&mut self, mode: &str) -> Result<(), anyhow::Error> {
+        self.stop_mining().await?;
+        info!(target: LOG_TARGET_APP_LOGIC, "Restarting gpu miner in mode {mode}");
+        self.start_mining().await
     }
 
     pub async fn stop_mining(&mut self) -> Result<(), anyhow::Error> {
@@ -486,6 +512,7 @@ impl GpuManager {
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
         SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(false)).await;
         info!(target: LOG_TARGET_APP_LOGIC, "Stopped gpu miner");
+        self.applied_mining_mode = None;
         Ok(())
     }
 

@@ -204,99 +204,33 @@ describe('appConfigStoreActions', () => {
         });
     });
 
-    describe('selectMiningMode logic', () => {
-        interface ModeChangeState {
-            shouldSetMiningModeAsSchedulerEventMode: boolean;
-            cpuMining: boolean;
-            gpuMining: boolean;
-            wasCpuMiningInitiated: boolean;
-            wasGpuMiningInitiated: boolean;
-        }
-
-        const shouldSkipModeChange = (state: ModeChangeState): boolean => {
-            return state.shouldSetMiningModeAsSchedulerEventMode;
+    describe('selectMiningMode IPC contract', () => {
+        // The backend `select_mining_mode` command now owns stop -> save -> start
+        // (mining::mode_switch::apply_mining_mode). The frontend must issue exactly
+        // one invoke and must NOT send the old start/stop IPCs, or a running miner
+        // would be restarted twice and the local is*MiningInitiated flags would
+        // drift away from the backend process state.
+        const ipcCommandsForModeChange = (shouldSetMiningModeAsSchedulerEventMode: boolean): string[] => {
+            if (shouldSetMiningModeAsSchedulerEventMode) {
+                return [];
+            }
+            return ['select_mining_mode'];
         };
 
-        const shouldStopCpuBeforeModeChange = (state: ModeChangeState): boolean => {
-            return state.cpuMining;
-        };
-
-        const shouldStopGpuBeforeModeChange = (state: ModeChangeState): boolean => {
-            return state.gpuMining || state.wasGpuMiningInitiated;
-        };
-
-        const shouldRestartCpuAfterModeChange = (state: ModeChangeState): boolean => {
-            return state.wasCpuMiningInitiated;
-        };
-
-        const shouldRestartGpuAfterModeChange = (state: ModeChangeState): boolean => {
-            return state.wasGpuMiningInitiated;
-        };
-
-        it('should skip mode change when setting for scheduler event', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: true,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: false,
-                wasGpuMiningInitiated: false,
-            };
-            expect(shouldSkipModeChange(state)).toBe(true);
+        it('issues a single select_mining_mode invoke for a normal mode change', () => {
+            expect(ipcCommandsForModeChange(false)).toEqual(['select_mining_mode']);
         });
 
-        it('should not skip mode change in normal operation', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: true,
-                gpuMining: true,
-                wasCpuMiningInitiated: true,
-                wasGpuMiningInitiated: true,
-            };
-            expect(shouldSkipModeChange(state)).toBe(false);
+        it('does not stop or start any miner from the frontend', () => {
+            const commands = ipcCommandsForModeChange(false);
+            expect(commands).not.toContain('stop_cpu_mining');
+            expect(commands).not.toContain('stop_gpu_mining');
+            expect(commands).not.toContain('start_cpu_mining');
+            expect(commands).not.toContain('start_gpu_mining');
         });
 
-        it('should stop CPU before mode change if currently mining', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: true,
-                gpuMining: false,
-                wasCpuMiningInitiated: true,
-                wasGpuMiningInitiated: false,
-            };
-            expect(shouldStopCpuBeforeModeChange(state)).toBe(true);
-        });
-
-        it('should stop GPU before mode change if currently mining or was initiated', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: false,
-                wasGpuMiningInitiated: true,
-            };
-            expect(shouldStopGpuBeforeModeChange(state)).toBe(true);
-        });
-
-        it('should restart CPU after mode change if was initiated', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: true,
-                wasGpuMiningInitiated: false,
-            };
-            expect(shouldRestartCpuAfterModeChange(state)).toBe(true);
-        });
-
-        it('should restart GPU after mode change if was initiated', () => {
-            const state: ModeChangeState = {
-                shouldSetMiningModeAsSchedulerEventMode: false,
-                cpuMining: false,
-                gpuMining: false,
-                wasCpuMiningInitiated: false,
-                wasGpuMiningInitiated: true,
-            };
-            expect(shouldRestartGpuAfterModeChange(state)).toBe(true);
+        it('still short-circuits when the mode is being chosen for a scheduler event', () => {
+            expect(ipcCommandsForModeChange(true)).toEqual([]);
         });
     });
 

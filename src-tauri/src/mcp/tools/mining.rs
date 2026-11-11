@@ -20,13 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, MiningModeType};
+use crate::configs::config_mining::ConfigMining;
 use crate::configs::trait_config::ConfigImpl;
-use crate::events_emitter::EventsEmitter;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
-use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
+use crate::mining::mode_switch::{ModeSwitchSource, apply_mining_mode};
 use serde_json::json;
 
 pub async fn get_mining_status() -> Result<String, String> {
@@ -130,67 +129,13 @@ pub async fn stop_mining(cpu: Option<bool>, gpu: Option<bool>) -> Result<String,
     serde_json::to_string(&results).map_err(|e| e.to_string())
 }
 
-fn resolve_canonical_mining_mode(
-    requested: &str,
-    modes: &std::collections::HashMap<String, crate::configs::config_mining::MiningMode>,
-) -> Result<String, String> {
-    let trimmed = requested.trim();
-    if trimmed.is_empty() {
-        return Err("Mining mode cannot be empty".to_string());
-    }
-    if let Some((canonical_key, _)) = modes.iter().find(|(k, _)| k.eq_ignore_ascii_case(trimmed)) {
-        Ok(canonical_key.clone())
-    } else {
-        let mut valid: Vec<&str> = modes.keys().map(String::as_str).collect();
-        valid.sort_unstable();
-        Err(format!(
-            "Invalid mining mode '{requested}'. Valid modes are: {}",
-            valid.join(", ")
-        ))
-    }
-}
-
 pub async fn set_mining_mode(mode: String) -> Result<String, String> {
-    let mode = {
-        let current_config = ConfigMining::content().await;
-        resolve_canonical_mining_mode(&mode, current_config.mining_modes())?
-    };
-
-    let cpu_was_running = CpuManager::read().await.is_running();
-    let gpu_was_running = GpuManager::read().await.is_running();
-
-    // Stop running miners before changing mode
-    if cpu_was_running {
-        let _unused = CpuManager::write().await.stop_mining().await;
-    }
-    if gpu_was_running {
-        let _unused = GpuManager::write().await.stop_mining().await;
-    }
-
-    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
+    // Same shared helper as the scheduler and the in-app mode selector. It
+    // canonicalises the mode, saves it, and restarts only miners that were
+    // already running, without duplicating the stop/start sequence here.
+    let mode = apply_mining_mode(&mode, ModeSwitchSource::ManualSelection)
         .await
         .map_err(|e| format!("Failed to set mining mode: {e}"))?;
-
-    if mode != "Eco" {
-        ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false)
-            .await
-            .map_err(|e| format!("Failed to update eco alert: {e}"))?;
-    }
-
-    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
-        mode.clone(),
-    )))
-    .await;
-
-    EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
-
-    // Restart miners that were previously running
-    if cpu_was_running {
-        let _unused = CpuManager::write().await.start_mining().await;
-    }
-    if gpu_was_running {
-        let _unused = GpuManager::write().await.start_mining().await;
-    }
 
     let config = ConfigMining::content().await;
     let modes = config.mining_modes();
@@ -241,31 +186,33 @@ pub async fn get_gpu_devices() -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::resolve_canonical_mining_mode;
     use crate::configs::config_mining::ConfigMiningContent;
 
+    /// `set_mining_mode` now delegates to `mining::mode_switch::apply_mining_mode`,
+    /// which resolves MCP-style raw mode strings through this method before
+    /// writing config. A raw `"ludicrous"` must become the exact `"Ludicrous"`
+    /// key, otherwise `get_selected_*_usage_percentage` falls back to 0.
     #[test]
-    fn canonicalizes_valid_modes_and_rejects_unknown_modes() {
-        let default_cfg = ConfigMiningContent::default();
-        let modes = default_cfg.mining_modes();
+    fn mcp_mode_strings_are_canonicalized_before_reaching_config() {
+        let config = ConfigMiningContent::default();
 
         assert_eq!(
-            resolve_canonical_mining_mode("eco", modes).expect("eco"),
-            "Eco"
+            config.canonicalize_mining_mode("eco").as_deref(),
+            Some("Eco")
         );
         assert_eq!(
-            resolve_canonical_mining_mode(" TURBO ", modes).expect("turbo"),
-            "Turbo"
+            config.canonicalize_mining_mode(" TURBO ").as_deref(),
+            Some("Turbo")
         );
         assert_eq!(
-            resolve_canonical_mining_mode("ludicrous", modes).expect("ludicrous"),
-            "Ludicrous"
+            config.canonicalize_mining_mode("ludicrous").as_deref(),
+            Some("Ludicrous")
         );
         assert_eq!(
-            resolve_canonical_mining_mode("Custom", modes).expect("custom"),
-            "Custom"
+            config.canonicalize_mining_mode("Custom").as_deref(),
+            Some("Custom")
         );
-        assert!(resolve_canonical_mining_mode("", modes).is_err());
-        assert!(resolve_canonical_mining_mode("invalid_mode", modes).is_err());
+        assert!(config.canonicalize_mining_mode("").is_none());
+        assert!(config.canonicalize_mining_mode("invalid_mode").is_none());
     }
 }

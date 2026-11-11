@@ -252,33 +252,13 @@ export const selectMiningMode = async (mode: string) => {
 
     useMiningStore.setState((c) => ({ ...c, isChangingMode: true }));
 
-    const cpu_mining_status = useMiningMetricsStore.getState().cpu_mining_status;
-    const gpu_mining_status = useMiningMetricsStore.getState().gpu_mining_status;
-    const wasCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
-    const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
-
-    if (cpu_mining_status.is_mining) {
-        console.info('Stopping CPU mining...');
-        await stopCpuMining();
-    }
-
-    if (gpu_mining_status.is_mining || wasGpuMiningInitiated) {
-        console.info('Stopping GPU mining...');
-        await stopGpuMining();
-    }
-
-    invoke('select_mining_mode', { mode })
+    // The backend `select_mining_mode` command owns the whole stop -> save mode
+    // -> start sequence now (see mining::mode_switch::apply_mining_mode). Doing
+    // it here as well restarted every running miner twice and left the local
+    // is*MiningInitiated flags out of sync with the backend process state.
+    return invoke('select_mining_mode', { mode })
         .then(() => {
             useConfigMiningStore.setState((c) => ({ ...c, selected_mining_mode: mode }));
-            if (wasCpuMiningInitiated) {
-                console.info('Restarting CPU mining...');
-                startCpuMining();
-            }
-
-            if (wasGpuMiningInitiated) {
-                console.info('Restarting GPU mining...');
-                startGpuMining();
-            }
         })
         .catch((e) => {
             console.error('Could not select mining mode', e);

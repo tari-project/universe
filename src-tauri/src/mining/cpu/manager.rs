@@ -71,6 +71,10 @@ pub struct CpuManager {
     node_status_channel: Option<Receiver<BaseNodeStatus>>, // Optional, only if connected to a node
     // ======= Cached config =======
     connection_type: CpuConnectionType,
+    /// The mining mode the currently running process was started with. This is
+    /// deliberately not read from config: a restart that saved the new mode but
+    /// failed to stop the old process must still be retried.
+    applied_mining_mode: Option<String>,
     #[allow(dead_code)]
     tari_address: Option<String>,
     #[allow(dead_code)]
@@ -103,6 +107,7 @@ impl CpuManager {
             node_status_channel: None,
             // ======= Cached config =======
             connection_type: CpuConnectionType::default(),
+            applied_mining_mode: None,
             tari_address: None,
             pool: None,
             intensity_percentage: None,
@@ -140,6 +145,8 @@ impl CpuManager {
         info!(target: LOG_TARGET_APP_LOGIC, "Starting cpu miner");
         match self.start_mining_inner().await {
             Ok(_) => {
+                // start_mining_inner records the mode the process was built
+                // from; it does not do so on the "already running" early return.
                 info!(target: LOG_TARGET_APP_LOGIC, "Started cpu miner");
                 EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Started).await;
                 SystemTrayManager::send_event(SystemTrayEvents::CpuMiningActivity(true)).await;
@@ -268,6 +275,13 @@ impl CpuManager {
                 )
                 .await?;
 
+            // Only reached after a process was actually spawned. The arguments
+            // above were built from the selected mode, so this is the mode the
+            // running process really uses. Keep it separate from config so a
+            // half-failed restart is still detected and retried.
+            self.applied_mining_mode =
+                Some(ConfigMining::content().await.selected_mining_mode().clone());
+
             if *ConfigPools::content().await.cpu_pool_enabled() {
                 CpuPoolManager::start_stats_watcher().await;
             }
@@ -280,6 +294,21 @@ impl CpuManager {
 
     pub fn is_running(&self) -> bool {
         self.process_watcher.is_running()
+    }
+
+    /// The mode the running process was actually started with, if known.
+    pub fn applied_mining_mode(&self) -> &Option<String> {
+        &self.applied_mining_mode
+    }
+
+    /// Stop the running process and start it again so it picks up the newly
+    /// saved mode. A failed stop is returned as an error: calling
+    /// `start_mining` afterwards would hit the "already running" early return
+    /// and silently leave the miner on the old mode.
+    pub async fn restart_mining(&mut self, mode: &str) -> Result<(), anyhow::Error> {
+        self.stop_mining().await?;
+        info!(target: LOG_TARGET_APP_LOGIC, "Restarting cpu miner in mode {mode}");
+        self.start_mining().await
     }
 
     async fn determine_number_of_cores_to_use(cpu_usage_percentage: u32) -> u32 {
@@ -330,6 +359,7 @@ impl CpuManager {
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Stopped).await;
         SystemTrayManager::send_event(SystemTrayEvents::CpuMiningActivity(false)).await;
         info!(target: LOG_TARGET_APP_LOGIC, "Stopped cpu miner");
+        self.applied_mining_mode = None;
         Ok(())
     }
 

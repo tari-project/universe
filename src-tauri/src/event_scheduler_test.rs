@@ -488,3 +488,229 @@ fn between_payload_invalid_minute_returns_error() {
         result
     );
 }
+
+// =============================================================================
+// Scheduled `Mine` window mode-switch tests (issue #3494)
+//
+// These drive a small state machine that mirrors CpuManager/GpuManager: the
+// manager tracks `running` and `applied_mining_mode` (the mode its process was
+// actually started with), and the shared helper produces a MinerModeAction.
+// Applying an action mutates the manager exactly as the real methods do:
+// Start/Restart spawn a process that reads the saved mode, Restart stops first,
+// and a failed stop leaves the old process running without a start.
+// =============================================================================
+
+use crate::mining::mode_switch::{MinerModeAction, ModeSwitchSource, miner_mode_action};
+
+#[derive(Debug, Clone)]
+struct FakeMiner {
+    enabled: bool,
+    running: bool,
+    applied_mode: Option<String>,
+    /// When true, stop_mining() fails (e.g. the watcher task panicked). The
+    /// helper must not call start_mining() in that case: it would hit the
+    /// "already running" early return and silently lose the restart.
+    stop_fails: bool,
+    starts: usize,
+    stops: usize,
+}
+
+impl FakeMiner {
+    fn running(enabled: bool, mode: &str) -> Self {
+        Self {
+            enabled,
+            running: true,
+            applied_mode: Some(mode.to_string()),
+            stop_fails: false,
+            starts: 0,
+            stops: 0,
+        }
+    }
+
+    fn stopped(enabled: bool) -> Self {
+        Self {
+            enabled,
+            running: false,
+            applied_mode: None,
+            stop_fails: false,
+            starts: 0,
+            stops: 0,
+        }
+    }
+
+    fn decide(&self, target: &str, source: ModeSwitchSource) -> MinerModeAction {
+        miner_mode_action(
+            self.enabled,
+            self.running,
+            self.applied_mode.as_deref(),
+            target,
+            source,
+        )
+    }
+
+    /// Applies the action the way `apply_cpu`/`apply_gpu` would. Returns false
+    /// if a restart was aborted by a failed stop.
+    fn apply(&mut self, action: MinerModeAction, target: &str) -> bool {
+        match action {
+            MinerModeAction::Skip => true,
+            MinerModeAction::Start => {
+                self.starts += 1;
+                self.running = true;
+                self.applied_mode = Some(target.to_string());
+                true
+            }
+            MinerModeAction::Restart => {
+                if self.stop_fails {
+                    // restart_mining() returns Err here; no start is attempted.
+                    return false;
+                }
+                self.stops += 1;
+                self.starts += 1;
+                self.running = true;
+                self.applied_mode = Some(target.to_string());
+                true
+            }
+        }
+    }
+
+    /// handle_exit_callback stops mining unconditionally when the window ends.
+    fn stop_for_window_end(&mut self) {
+        self.stops += 1;
+        self.running = false;
+        self.applied_mode = None;
+    }
+}
+
+#[test]
+fn scheduled_window_restarts_running_miners_with_the_new_mode() {
+    let mut cpu = FakeMiner::running(true, "Eco");
+    let mut gpu = FakeMiner::running(true, "Eco");
+
+    for miner in [&mut cpu, &mut gpu] {
+        let action = miner.decide("Ludicrous", ModeSwitchSource::ScheduledWindow);
+        assert_eq!(action, MinerModeAction::Restart);
+        assert!(miner.apply(action, "Ludicrous"));
+    }
+
+    // xmrig/lolMiner now run with the Ludicrous thread/intensity settings.
+    assert_eq!(cpu.applied_mode.as_deref(), Some("Ludicrous"));
+    assert_eq!(gpu.applied_mode.as_deref(), Some("Ludicrous"));
+    assert_eq!((cpu.stops, cpu.starts), (1, 1));
+    assert_eq!((gpu.stops, gpu.starts), (1, 1));
+}
+
+#[test]
+fn same_mode_window_does_not_restart_running_miners() {
+    let mut cpu = FakeMiner::running(true, "Eco");
+    let mut gpu = FakeMiner::running(true, "Eco");
+
+    for miner in [&mut cpu, &mut gpu] {
+        let action = miner.decide("Eco", ModeSwitchSource::ScheduledWindow);
+        assert_eq!(action, MinerModeAction::Skip);
+        assert!(miner.apply(action, "Eco"));
+    }
+
+    assert_eq!((cpu.stops, cpu.starts), (0, 0));
+    assert_eq!((gpu.stops, gpu.starts), (0, 0));
+}
+
+#[test]
+fn window_starting_from_stopped_state_starts_enabled_miners() {
+    // Even when the scheduled mode equals the current config mode, starting a
+    // window from a stopped state must still begin mining.
+    let mut cpu = FakeMiner::stopped(true);
+    let mut gpu = FakeMiner::stopped(true);
+
+    for miner in [&mut cpu, &mut gpu] {
+        let action = miner.decide("Eco", ModeSwitchSource::ScheduledWindow);
+        assert_eq!(action, MinerModeAction::Start);
+        assert!(miner.apply(action, "Eco"));
+    }
+
+    assert!(cpu.running && gpu.running);
+    assert_eq!((cpu.stops, cpu.starts), (0, 1));
+    assert_eq!((gpu.stops, gpu.starts), (0, 1));
+}
+
+#[test]
+fn disabled_miners_are_never_started_or_stopped() {
+    let mut disabled_running = FakeMiner::running(false, "Eco");
+    let mut disabled_stopped = FakeMiner::stopped(false);
+
+    assert_eq!(
+        disabled_running.decide("Ludicrous", ModeSwitchSource::ScheduledWindow),
+        MinerModeAction::Skip
+    );
+    assert_eq!(
+        disabled_stopped.decide("Ludicrous", ModeSwitchSource::ScheduledWindow),
+        MinerModeAction::Skip
+    );
+    assert!(disabled_running.apply(MinerModeAction::Skip, "Ludicrous"));
+    assert!(disabled_stopped.apply(MinerModeAction::Skip, "Ludicrous"));
+
+    assert_eq!((disabled_running.stops, disabled_running.starts), (0, 0));
+    assert_eq!((disabled_stopped.stops, disabled_stopped.starts), (0, 0));
+    assert!(!disabled_stopped.running);
+}
+
+#[test]
+fn a_failed_stop_never_falls_through_to_a_silent_start() {
+    let mut miner = FakeMiner::running(true, "Eco");
+    miner.stop_fails = true;
+
+    let action = miner.decide("Ludicrous", ModeSwitchSource::ScheduledWindow);
+    assert_eq!(action, MinerModeAction::Restart);
+    assert!(!miner.apply(action, "Ludicrous"));
+
+    // The old process is still running with the old mode and no start was
+    // issued, so the error can surface to the caller and be retried.
+    assert!(miner.running);
+    assert_eq!(miner.applied_mode.as_deref(), Some("Eco"));
+    assert_eq!(miner.starts, 0);
+}
+
+#[test]
+fn a_half_failed_previous_restart_is_recovered_by_the_next_window() {
+    // Config says Ludicrous but the process never restarted: applied_mode is
+    // still Eco. A config-based comparison would Skip forever here.
+    let mut miner = FakeMiner::running(true, "Eco");
+
+    let action = miner.decide("Ludicrous", ModeSwitchSource::ScheduledWindow);
+    assert_eq!(action, MinerModeAction::Restart);
+    assert!(miner.apply(action, "Ludicrous"));
+    assert_eq!(miner.applied_mode.as_deref(), Some("Ludicrous"));
+}
+
+#[test]
+fn window_end_stops_mining_after_the_mode_switch() {
+    let mut cpu = FakeMiner::running(true, "Eco");
+
+    let action = cpu.decide("Ludicrous", ModeSwitchSource::ScheduledWindow);
+    assert!(cpu.apply(action, "Ludicrous"));
+    assert!(cpu.running);
+
+    // handle_exit_callback is unchanged and still stops both miners.
+    cpu.stop_for_window_end();
+    assert!(!cpu.running);
+    assert_eq!(cpu.applied_mode, None);
+    assert_eq!(cpu.stops, 2); // one restart stop + window-end stop
+}
+
+#[test]
+fn manual_mode_change_leaves_stopped_miners_stopped() {
+    let mut cpu = FakeMiner::stopped(true);
+    let action = cpu.decide("Ludicrous", ModeSwitchSource::ManualSelection);
+    assert_eq!(action, MinerModeAction::Skip);
+    assert!(cpu.apply(action, "Ludicrous"));
+    assert!(!cpu.running);
+    assert_eq!(cpu.starts, 0);
+}
+
+#[test]
+fn reselecting_custom_reapplies_edited_power_levels() {
+    let mut cpu = FakeMiner::running(true, "Custom");
+    let action = cpu.decide("Custom", ModeSwitchSource::ManualSelection);
+    assert_eq!(action, MinerModeAction::Restart);
+    assert!(cpu.apply(action, "Custom"));
+    assert_eq!(cpu.starts, 1);
+}

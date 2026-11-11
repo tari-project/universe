@@ -474,6 +474,24 @@ impl ConfigMiningContent {
         })
     }
 
+    /// Resolves a user-supplied mode name to the exact key in `mining_modes`.
+    ///
+    /// Mode keys are looked up with exact string matching by
+    /// `get_selected_cpu_usage_percentage` / `get_selected_gpu_usage_percentage`, so
+    /// persisting a differently-cased or padded value would silently select `0%`
+    /// usage while the UI shows the requested mode. Scheduled events and MCP
+    /// requests carry raw strings, so normalise them before writing config.
+    pub fn canonicalize_mining_mode(&self, requested: &str) -> Option<String> {
+        let trimmed = requested.trim();
+        if trimmed.is_empty() {
+            return None;
+        }
+        self.mining_modes
+            .keys()
+            .find(|key| key.eq_ignore_ascii_case(trimmed))
+            .cloned()
+    }
+
     pub fn get_selected_cpu_usage_percentage(&self) -> u32 {
         match self.mining_modes.get(&self.selected_mining_mode) {
             Some(mode) => mode.cpu_usage_percentage,
