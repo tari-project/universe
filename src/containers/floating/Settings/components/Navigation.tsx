@@ -6,6 +6,7 @@ import { ButtonContainer, Container, LinkContainer, SectionButton, TermsBtn } fr
 
 import { open } from '@tauri-apps/plugin-shell';
 import { useHasL2Access } from '@app/hooks/wallet/useHasL2Access.ts';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
@@ -13,6 +14,7 @@ interface SettingsNavigationProps {
 export default function SettingsNavigation({ activeSection, onChangeActiveSection }: SettingsNavigationProps) {
     const { t } = useTranslation('settings', { useSuspense: false });
     const l2Supported = useHasL2Access();
+    const userDetails = useAirdropStore((s) => s.userDetails);
 
     function handleClick(section: SettingsType) {
         onChangeActiveSection(section);
@@ -21,7 +23,9 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
     return (
         <Container>
             <ButtonContainer>
-                {SETTINGS_TYPES.filter((type) => type !== 'l2' || l2Supported).map((type: SettingsType) => {
+                {SETTINGS_TYPES.filter(
+                    (type) => (type !== 'l2' || l2Supported) && (type !== 'airdrop' || Boolean(userDetails))
+                ).map((type: SettingsType) => {
                     const isActiveSection = activeSection === type;
                     const name = t(`tabs.${type}`);
                     return (
