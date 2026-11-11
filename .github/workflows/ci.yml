@@ -163,11 +163,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      # Pinned release binary rather than apt, so the job doesn't fail whenever the runner
+      # can't reach the Ubuntu mirrors. Unpacked outside the checkout, which rg scans.
       - name: Install ripgrep
+        working-directory: ${{ runner.temp }}
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends --assume-yes ripgrep
-          rg --version || exit 1
+          archive=ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz
+          curl -sSfLO "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/${archive}"
+          echo "1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599  ${archive}" | sha256sum -c -
+          tar xzf "${archive}"
+          sudo install -m 755 ripgrep-15.1.0-x86_64-unknown-linux-musl/rg /usr/local/bin/rg
+          rg --version
       - name: Run the license check
         run: ./scripts/file_license_check.sh
 
