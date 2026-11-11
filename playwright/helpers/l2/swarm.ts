@@ -184,6 +184,40 @@ export async function mine(blocks: number): Promise<void> {
     await rpc(swarmUrl, 'mine', { num_blocks: blocks }, 180_000);
 }
 
+async function indexerGet(route: string) {
+    const response = await fetch(`${swarmState().indexer}${route}`, {
+        redirect: 'error',
+        signal: AbortSignal.timeout(5000),
+    });
+    return response.ok ? response.json() : undefined;
+}
+
+/** The epoch the indexer, and so the claim's epoch check, has reached. */
+export async function indexerEpoch(): Promise<number> {
+    const stats = await indexerGet('/epoch-manager/stats');
+    if (!Number.isSafeInteger(stats?.current_epoch)) throw new Error('Indexer has no current epoch');
+    return stats.current_epoch;
+}
+
+/**
+ * Waits until the indexer serves the checkpoint that hands over to the current epoch.
+ * Mining jumps the L1 several epochs at once, the L2 closes them one pacemaker round at a
+ * time and the indexer picks the checkpoints up on its own sync interval, so this can take
+ * a minute. Until then the wallet can't verify reads proven in the new epoch.
+ */
+export async function checkpointsCaughtUp(timeout = 180_000): Promise<void> {
+    await until(
+        'Indexer checkpoint for the current epoch',
+        async () => {
+            const stats = await indexerGet('/epoch-manager/stats');
+            const latest = await indexerGet('/epoch-checkpoints/latest');
+            if (!stats || !latest) return;
+            return latest.checkpoint.epoch >= stats.current_epoch - 1 ? true : undefined;
+        },
+        timeout
+    );
+}
+
 export async function stopSwarm(): Promise<void> {
     const pid = Number(process.env.TEST_L2_SWARM_PID);
     if (!Number.isSafeInteger(pid) || pid <= 0) return;
