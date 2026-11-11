@@ -108,6 +108,7 @@ impl TorManager {
                 drop(process_watcher);
                 let mut write_lock = self.watcher.write().await;
                 let _exit_code = write_lock.stop().await?;
+                write_lock.status_monitor = None;
 
                 return Err(e);
             }
@@ -128,9 +129,11 @@ impl TorManager {
                 _ = tokio::time::sleep_until(deadline) => {
                     let err_msg = format!("Waiting for Tor to be ready timed out after {STARTUP_TIMEOUT}");
                     log::error!(target: LOG_TARGET_STATUSES, "{err_msg}");
-                    if let Err(e) = self.watcher.write().await.stop().await {
+                    let mut write_lock = self.watcher.write().await;
+                    if let Err(e) = write_lock.stop().await {
                         log::warn!(target: LOG_TARGET_STATUSES, "Failed to stop Tor after the startup timeout: {e}");
                     }
+                    write_lock.status_monitor = None;
                     return Err(anyhow!(err_msg))
                 }
                 _ = tor_status_watch_rx.changed() => {
@@ -141,8 +144,9 @@ impl TorManager {
                     }
                 }
                 _ = shutdown_signal.wait() => {
-                    log::warn!(target: LOG_TARGET_STATUSES, "Shutdown signal received, stopping wait_ready for Tor");
-                    break;
+                    let err_msg = "Tor startup interrupted by shutdown signal";
+                    log::warn!(target: LOG_TARGET_STATUSES, "{err_msg}");
+                    return Err(anyhow!(err_msg));
                 }
             };
         }
@@ -165,6 +169,9 @@ impl TorManager {
 
     pub async fn get_control_port(&self) -> Result<Option<u16>, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
+        if !process_watcher.is_running() {
+            return Ok(None);
+        }
         Ok(process_watcher
             .status_monitor
             .as_ref()
@@ -172,9 +179,11 @@ impl TorManager {
     }
 
     pub async fn get_control_cookie_path(&self) -> Option<PathBuf> {
-        self.watcher
-            .read()
-            .await
+        let process_watcher = self.watcher.read().await;
+        if !process_watcher.is_running() {
+            return None;
+        }
+        process_watcher
             .status_monitor
             .as_ref()
             .map(|m| m.cookie_path())
@@ -206,6 +215,7 @@ impl TorManager {
     pub async fn stop(&self) -> Result<i32, anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
+        process_watcher.status_monitor = None;
         Ok(exit_code)
     }
 
@@ -219,5 +229,64 @@ impl TorManager {
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn control_port_and_cookie_are_none_when_tor_watcher_is_not_running() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let (tx, _rx) = watch::channel(TorStatus::default());
+        let mut stats = ProcessStatsCollectorBuilder::new();
+        let manager = TorManager::new(tx, &mut stats);
+
+        {
+            let mut watcher = manager.watcher.write().await;
+            let (_instance, monitor) = watcher
+                .adapter
+                .spawn_inner(
+                    temp.path().to_path_buf(),
+                    temp.path().to_path_buf(),
+                    temp.path().to_path_buf(),
+                    temp.path().join("tor"),
+                    false,
+                )
+                .expect("spawn_inner");
+            watcher.status_monitor = Some(monitor);
+        }
+
+        assert!(!manager.is_running().await);
+        assert_eq!(manager.get_control_port().await.expect("port"), None);
+        assert_eq!(manager.get_control_cookie_path().await, None);
+    }
+
+    #[tokio::test]
+    async fn stop_clears_stale_status_monitor() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let (tx, _rx) = watch::channel(TorStatus::default());
+        let mut stats = ProcessStatsCollectorBuilder::new();
+        let manager = TorManager::new(tx, &mut stats);
+
+        {
+            let mut watcher = manager.watcher.write().await;
+            let (_instance, monitor) = watcher
+                .adapter
+                .spawn_inner(
+                    temp.path().to_path_buf(),
+                    temp.path().to_path_buf(),
+                    temp.path().to_path_buf(),
+                    temp.path().join("tor"),
+                    false,
+                )
+                .expect("spawn_inner");
+            watcher.status_monitor = Some(monitor);
+        }
+
+        let exit_code = manager.stop().await.expect("stop");
+        assert_eq!(exit_code, 0);
+        assert!(manager.watcher.read().await.status_monitor.is_none());
     }
 }

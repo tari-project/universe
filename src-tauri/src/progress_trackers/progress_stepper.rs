@@ -205,7 +205,12 @@ impl ProgressStepper {
                     self.emit_completion_update(&step).await;
                     Ok(())
                 }
-                Err(e) => self.handle_step_error(step_tracker, e).await,
+                Err(e) => {
+                    let progress_delta =
+                        self.accumulator.read().await.total_progress - progress_before_action;
+                    self.handle_step_error(step_tracker, e, progress_delta)
+                        .await
+                }
             }
         } else {
             Ok(()) // Step not found, possibly already completed
@@ -259,7 +264,7 @@ impl ProgressStepper {
             let step_tracker = self.steps.remove(index);
             if let Some(err) = error {
                 warn!(target: LOG_TARGET_APP_LOGIC, "Failed to complete step: {err}");
-                self.handle_step_error(step_tracker, err).await?;
+                self.handle_step_error(step_tracker, err, 0.0).await?;
             } else {
                 self.emit_completion_update(&step).await;
             }
@@ -346,6 +351,7 @@ impl ProgressStepper {
         &mut self,
         step_tracker: StepTracker,
         error: anyhow::Error,
+        progress_delta: f64,
     ) -> Result<(), anyhow::Error> {
         warn!(target: LOG_TARGET_APP_LOGIC, "Failed to complete step: {error}");
 
@@ -360,8 +366,17 @@ impl ProgressStepper {
                 .ok();
             Err(anyhow::anyhow!(error_message))
         } else {
-            self.setup_warnings
-                .insert(step_tracker.get_step().clone(), error.to_string());
+            let step = step_tracker.get_step().clone();
+            self.setup_warnings.insert(step.clone(), error.to_string());
+            let remaining_progress =
+                (f64::from(step.get_progress_value()) - progress_delta).max(0.0);
+            if remaining_progress > 0.0 {
+                self.accumulator
+                    .write()
+                    .await
+                    .add_incremental_progress(remaining_progress);
+            }
+            self.emit_completion_update(&step).await;
             Ok(())
         }
     }
@@ -398,6 +413,14 @@ impl ProgressStepperBuilder {
             tracker: None,
         });
         self
+    }
+
+    #[cfg(test)]
+    pub(crate) fn step_is_required(&self, step: &SetupStep) -> Option<bool> {
+        self.steps
+            .iter()
+            .find(|tracker| tracker.get_step() == step)
+            .map(StepTracker::is_required)
     }
 
     pub fn build(

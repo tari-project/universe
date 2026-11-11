@@ -57,6 +57,11 @@ export interface NodeTypeUpdatePayload {
     node_connection_address?: string;
 }
 
+export interface TorFallbackPayload {
+    active: boolean;
+    reason?: string | null;
+}
+
 export type BackgroundNodeSyncUpdatePayload =
     | {
           step: 'Startup';

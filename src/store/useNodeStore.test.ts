@@ -4,13 +4,16 @@ import {
     setNodeStoreState,
     updateNodeType,
     setTorEntryGuards,
+    handleTorFallback,
     setBackgroundNodeState,
 } from './useNodeStore';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads.ts';
 import { BaseNodeStatus } from '@app/types/app-status.ts';
 
 describe('useNodeStore', () => {
     beforeEach(() => {
+        useToastStore.setState({ toasts: [] });
         useNodeStore.setState({
             node_type: undefined,
             node_identity: {
@@ -19,6 +22,8 @@ describe('useNodeStore', () => {
             },
             node_connection_address: '',
             tor_entry_guards: [],
+            tor_fallback_active: false,
+            tor_fallback_reason: null,
             isNodeConnected: false,
             base_node_status: undefined,
             backgroundNodeSyncLastUpdate: undefined,
@@ -237,6 +242,38 @@ describe('useNodeStore', () => {
             expect(state.node_type).toBe('Local');
             expect(state.isNodeConnected).toBe(true);
             expect(state.node_connection_address).toBe('127.0.0.1:18142');
+        });
+    });
+
+    describe('handleTorFallback', () => {
+        it('records fallback state and emits warning toast on activation', () => {
+            handleTorFallback({ active: true, reason: 'Waiting for Tor to be ready timed out after 180' });
+
+            expect(useNodeStore.getState().tor_fallback_active).toBe(true);
+            expect(useNodeStore.getState().tor_fallback_reason).toBe('Waiting for Tor to be ready timed out after 180');
+            expect(useToastStore.getState().toasts).toHaveLength(1);
+            expect(useToastStore.getState().toasts[0]).toMatchObject({
+                id: 'tor-fallback',
+                type: 'warning',
+                text: 'Waiting for Tor to be ready timed out after 180',
+            });
+        });
+
+        it('does not emit duplicate toasts when identical fallback state is replayed', () => {
+            handleTorFallback({ active: true, reason: 'bootstrap failed' });
+            handleTorFallback({ active: true, reason: 'bootstrap failed' });
+
+            expect(useToastStore.getState().toasts).toHaveLength(1);
+        });
+
+        it('clears fallback state and removes warning toast when deactivated', () => {
+            handleTorFallback({ active: true, reason: 'bootstrap failed' });
+            expect(useToastStore.getState().toasts).toHaveLength(1);
+
+            handleTorFallback({ active: false, reason: null });
+            expect(useNodeStore.getState().tor_fallback_active).toBe(false);
+            expect(useNodeStore.getState().tor_fallback_reason).toBeNull();
+            expect(useToastStore.getState().toasts).toHaveLength(0);
         });
     });
 });
