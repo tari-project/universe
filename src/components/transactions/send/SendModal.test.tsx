@@ -60,6 +60,18 @@ describe('SendModal', () => {
         expect(screen.queryByText('send.review-title')).not.toBeInTheDocument();
     });
 
+    it('sends on submit while the PIN state is unknown, leaving the gate to the backend', async () => {
+        useWalletStore.setState({ is_pin_locked: undefined });
+        render(<SendModal section="send" setSection={vi.fn()} />);
+
+        const submit = await screen.findByTestId('send-review-button');
+        expect(submit).toHaveTextContent('send.cta-send');
+        fireEvent.click(submit);
+
+        await waitFor(() => expect(sendCalls()).toHaveLength(1));
+        expect(screen.queryByText('send.review-title')).not.toBeInTheDocument();
+    });
+
     it('reviews before sending when there is a PIN', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         render(<SendModal section="send" setSection={vi.fn()} />);

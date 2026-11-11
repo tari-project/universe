@@ -28,6 +28,34 @@ use crate::events_emitter::EventsEmitter;
 use crate::mcp::audit::AuditLog;
 use crate::mcp::server::McpServerManager;
 
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum McpSettingsError {
+    PortInUse { port: u16 },
+    StartFailed { port: u16 },
+    Configuration { message: String },
+}
+
+impl McpSettingsError {
+    /// Classifies a failed bind of the MCP listener on `port`.
+    pub fn bind(error: &std::io::Error, port: u16) -> Self {
+        if error.kind() == std::io::ErrorKind::AddrInUse {
+            Self::PortInUse { port }
+        } else {
+            Self::StartFailed { port }
+        }
+    }
+
+    fn start(error: anyhow::Error, port: u16) -> Self {
+        if let Some(io) = error.downcast_ref::<std::io::Error>() {
+            Self::bind(io, port)
+        } else {
+            log::error!(target: crate::LOG_TARGET_APP_LOGIC, "MCP server failed to start on port {port}: {error:#}");
+            Self::StartFailed { port }
+        }
+    }
+}
+
 #[tauri::command]
 pub async fn get_mcp_config() -> Result<serde_json::Value, String> {
     let content = ConfigMcp::content().await;
@@ -48,22 +76,28 @@ pub async fn get_mcp_token(pin: Option<String>) -> Result<Option<String>, String
 }
 
 #[tauri::command]
-pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
+pub async fn set_mcp_enabled(enabled: bool) -> Result<(), McpSettingsError> {
     {
         let mut config = ConfigMcp::current().write().await;
         let mut updated = config._get_content().clone();
         apply_mcp_enable_state(&mut updated, enabled);
-        ConfigMcp::_save_config(updated.clone()).map_err(|e| e.to_string())?;
+        ConfigMcp::_save_config(updated.clone()).map_err(|e| McpSettingsError::Configuration {
+            message: e.to_string(),
+        })?;
         *config._get_content_mut() = updated;
     }
 
+    // Configuration is saved even if binding fails. Keep the UI in sync so the
+    // configured port remains editable without toggling the server off and on.
+    let content = ConfigMcp::content().await;
+    EventsEmitter::emit_mcp_config_loaded(&content).await;
     if enabled {
-        McpServerManager::start().await.map_err(|e| e.to_string())?;
+        McpServerManager::start()
+            .await
+            .map_err(|e| McpSettingsError::start(e, *content.port()))?;
     } else {
         McpServerManager::stop().await;
     }
-
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
     Ok(())
 }
@@ -100,18 +134,25 @@ pub async fn revoke_mcp_token() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn set_mcp_port(port: u16) -> Result<(), String> {
+pub async fn set_mcp_port(port: u16) -> Result<(), McpSettingsError> {
+    if port < 1024 {
+        return Err(McpSettingsError::Configuration {
+            message: "Port must be between 1024 and 65535".to_string(),
+        });
+    }
     ConfigMcp::update_field(ConfigMcpContent::set_port, port)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| McpSettingsError::Configuration {
+            message: e.to_string(),
+        })?;
     // Restart if currently running so the new port takes effect
     let content = ConfigMcp::content().await;
+    EventsEmitter::emit_mcp_config_loaded(&content).await;
     if *content.enabled() {
         McpServerManager::restart()
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| McpSettingsError::start(e, port))?;
     }
-    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 
@@ -207,6 +248,27 @@ fn apply_mcp_token_revocation(content: &mut ConfigMcpContent) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bind_error_keeps_its_kind_through_anyhow_context() {
+        let error = anyhow::Error::new(std::io::Error::from(std::io::ErrorKind::AddrInUse))
+            .context("MCP server failed to bind");
+        let error = super::McpSettingsError::start(error, 4444);
+        assert_eq!(
+            serde_json::to_value(error).unwrap(),
+            serde_json::json!({"kind": "port_in_use", "port": 4444})
+        );
+    }
+
+    #[test]
+    fn other_startup_errors_are_not_reported_as_port_conflicts() {
+        let error = anyhow::Error::new(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
+        let error = super::McpSettingsError::start(error, 4444);
+        assert_eq!(
+            serde_json::to_value(error).unwrap(),
+            serde_json::json!({"kind": "start_failed", "port": 4444})
+        );
+    }
 
     #[test]
     fn revoking_token_disables_transactions_and_reenabling_without_pin_keeps_them_off() {

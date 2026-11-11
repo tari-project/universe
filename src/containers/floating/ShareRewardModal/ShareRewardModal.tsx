@@ -1,4 +1,4 @@
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import GreenModal from '@app/components/GreenModal/GreenModal';
 import { AnimatePresence } from 'motion/react';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
@@ -56,11 +56,11 @@ const ShareRewardModal = memo(function ShareRewardModal() {
 
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
+    const { copyToClipboard } = useCopyToClipboard();
+
     const handleCopy = useCallback(() => {
-        writeText(shareUrl).then(() => {
-            setCopied(true);
-        });
-    }, [shareUrl]);
+        copyToClipboard(shareUrl, () => setCopied(true));
+    }, [shareUrl, copyToClipboard]);
 
     return (
         <GreenModal onClose={handleClose} padding={30} showModal={showModal}>

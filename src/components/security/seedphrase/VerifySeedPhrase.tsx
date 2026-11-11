@@ -67,7 +67,9 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
             setModal(null);
         });
         const isPinLocked = useWalletStore.getState().is_pin_locked;
-        if (!isPinLocked) {
+        // Only a wallet known to have no PIN gets one created here. While the state is
+        // unknown, calling create_pin can fail with "A PIN is already set" (#3518).
+        if (isPinLocked === false) {
             await invoke('create_pin');
         }
     };

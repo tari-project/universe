@@ -53,6 +53,10 @@ pub(crate) struct ProcessWatcherStats {
     pub max_health_check_duration: Duration,
     pub total_health_check_duration: Duration,
     pub last_failure_reason: String,
+    /// The process has reported `Healthy` since it was last (re)started. The
+    /// startup grace period only covers a process that has not come up yet;
+    /// one that came up and then wedged is restarted without waiting it out.
+    pub healthy_since_start: bool,
 }
 
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
@@ -162,16 +166,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         self.watcher_task = Some(task_tracker.clone().spawn(async move {
             child.start(task_tracker.clone()).await?;
             let mut uptime = Instant::now();
-            let mut stats = ProcessWatcherStats {
-                current_uptime: Duration::from_secs(0),
-                total_health_checks: 0,
-                num_warnings: 0,
-                num_failures: 0,
-                num_restarts: 0,
-                max_health_check_duration: Duration::from_secs(0),
-                total_health_check_duration: Duration::from_secs(0),
-                last_failure_reason: String::new(),
-            };
+            let mut stats = ProcessWatcherStats::default();
             // sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET_APP_LOGIC, "Starting process watcher for {name}");
             let mut watch_timer = tokio::time::interval(poll_time);
@@ -301,6 +296,7 @@ pub(crate) async fn do_health_check<
             HealthStatus::Healthy => {
                 *warning_count = 0;
                 is_healthy = true;
+                stats.healthy_since_start = true;
             }
             HealthStatus::Initializing => {
                 // An initializing process (e.g. xmrig building the RandomX
@@ -394,7 +390,7 @@ async fn handle_unhealthy_restart<
     stats: &mut ProcessWatcherStats,
 ) -> Result<Option<i32>, anyhow::Error> {
     stats.num_failures += 1;
-    if uptime.elapsed() < expected_startup_time && !ping_failed {
+    if uptime.elapsed() < expected_startup_time && !ping_failed && !stats.healthy_since_start {
         warn!(target: LOG_TARGET_STATUSES, "{name} is not healthy. Waiting for startup time to elapse");
     } else {
         let mut child_exit_code = 1;
@@ -419,6 +415,7 @@ async fn handle_unhealthy_restart<
         sleep(Duration::from_secs(1)).await;
         warn!(target: LOG_TARGET_STATUSES, "Restarting {name} after health check failure");
         *uptime = Instant::now();
+        stats.healthy_since_start = false;
         stats.num_restarts += 1;
         // Adapters reach back into their manager from here, and a manager lock is usually already
         // held by whoever triggered the shutdown (stopping or switching miners). Race the call

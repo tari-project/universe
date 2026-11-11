@@ -33,7 +33,9 @@ export interface WalletStoreState {
         progress: number;
         is_initial_scan_complete: boolean;
     };
-    is_pin_locked: boolean;
+    // Undefined until the backend emits the PIN state during wallet setup: before that
+    // the app cannot tell "no PIN set" apart from "not loaded yet" (#3518).
+    is_pin_locked: boolean | undefined;
     is_seed_backed_up: boolean;
 }
 
@@ -59,7 +61,7 @@ export const initialState: WalletStoreState = {
         progress: 0,
         is_initial_scan_complete: false,
     },
-    is_pin_locked: false,
+    is_pin_locked: undefined,
     is_seed_backed_up: false,
 };
 

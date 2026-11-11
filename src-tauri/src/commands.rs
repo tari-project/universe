@@ -117,7 +117,8 @@ pub struct ApplicationsVersions {
     xmrig: ApplicationsInformation,
     minotari_node: ApplicationsInformation,
     mm_proxy: ApplicationsInformation,
-    xtrgpuminer: ApplicationsInformation,
+    lolminer: ApplicationsInformation,
+    tariminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
 }
 
@@ -355,7 +356,10 @@ pub async fn get_applications_versions(
     let mm_proxy_version = binary_resolver
         .get_binary_version(Binaries::MergeMiningProxy)
         .await;
-    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::LolMiner).await;
+    let lolminer_version = binary_resolver.get_binary_version(Binaries::LolMiner).await;
+    let tariminer_version = binary_resolver
+        .get_binary_version(Binaries::TariMiner)
+        .await;
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
         .await;
@@ -385,8 +389,12 @@ pub async fn get_applications_versions(
             version: mm_proxy_version,
             port: Some(*mmp_port),
         },
-        xtrgpuminer: ApplicationsInformation {
-            version: xtrgpuminer_version,
+        lolminer: ApplicationsInformation {
+            version: lolminer_version,
+            port: Some(0),
+        },
+        tariminer: ApplicationsInformation {
+            version: tariminer_version,
             port: Some(0),
         },
         bridge: ApplicationsInformation {
@@ -730,6 +738,32 @@ pub fn open_log_dir(app: tauri::AppHandle) {
     if let Err(e) = open::that(log_dir) {
         error!(target: LOG_TARGET_APP_LOGIC, "Could not open log dir: {e:?}");
     }
+}
+
+/// Whether an environment variable is set to a non-empty value. Launchers
+/// sometimes export a variable as empty (`DISPLAY=`), which names no display
+/// server and must count as absent.
+fn env_var_is_set(name: &str) -> bool {
+    std::env::var_os(name).is_some_and(|value| !value.is_empty())
+}
+
+/// True when the app runs inside a Flatpak sandbox on Wayland with no X11
+/// display. The native clipboard plugin (arboard) has no path there: the
+/// compositor withholds the privileged data-control protocol from Flatpak
+/// clients, so arboard falls back to an X11 server that does not exist and
+/// hangs on its connection timeout. The webview Clipboard API is the only
+/// way to reach the clipboard in that sandbox.
+fn webview_only_clipboard(flatpak_id: bool, wayland_display: bool, display: bool) -> bool {
+    flatpak_id && wayland_display && !display
+}
+
+#[tauri::command]
+pub fn clipboard_needs_webview() -> bool {
+    webview_only_clipboard(
+        env_var_is_set("FLATPAK_ID"),
+        env_var_is_set("WAYLAND_DISPLAY"),
+        env_var_is_set("DISPLAY"),
+    )
 }
 
 async fn reset_app_configs(
@@ -2954,6 +2988,23 @@ mod tests {
     #[test]
     fn unparseable_input_is_rejected() {
         assert!(canonicalise_remote_base_node_address("not a valid url at all").is_err());
+    }
+
+    #[test]
+    fn clipboard_needs_webview_in_flatpak_wayland_without_x11() {
+        assert!(super::webview_only_clipboard(true, true, false));
+    }
+
+    #[test]
+    fn clipboard_needs_webview_false_when_x11_is_available() {
+        assert!(!super::webview_only_clipboard(true, true, true));
+    }
+
+    #[test]
+    fn clipboard_needs_webview_false_outside_flatpak_wayland() {
+        assert!(!super::webview_only_clipboard(false, true, false));
+        assert!(!super::webview_only_clipboard(true, false, false));
+        assert!(!super::webview_only_clipboard(false, false, false));
     }
 }
 

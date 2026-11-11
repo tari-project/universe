@@ -84,6 +84,12 @@ pub struct GpuManager {
     detected_devices: Vec<GpuCommonInformation>,
     // ======= Cached config =======
     connection_type: GpuConnectionType,
+    /// The mode the running process was started with. It differs from the
+    /// config's `selected_mining_mode` while a new mode is being applied, and
+    /// is what the scheduler uses to decide whether a restart is actually
+    /// needed: the config only claims a mode, this records what the process
+    /// really runs. `None` while no process is tracked.
+    applied_mining_mode: Option<String>,
     #[allow(dead_code)]
     tari_address: Option<String>,
     #[allow(dead_code)]
@@ -119,6 +125,7 @@ impl GpuManager {
             node_status_channel: None,
             // ======= Cached config =======
             connection_type: GpuConnectionType::default(),
+            applied_mining_mode: None,
             tari_address: None,
             pool: None,
             intensity_percentage: None,
@@ -319,7 +326,15 @@ impl GpuManager {
         info!(target: LOG_TARGET_APP_LOGIC, "Adapter miner type: {}", self.process_watcher.adapter.name());
 
         match self.start_mining_inner().await {
-            Ok(_) => {
+            Ok(started_mode) => {
+                if let Some(mode) = started_mode {
+                    // Record what this process actually runs with: the mode
+                    // read together with the usage percentage at spawn time.
+                    // The scheduler compares against this, not the config, so
+                    // a restart that failed halfway cannot leave the miner
+                    // stuck on an old mode the config already claims is gone.
+                    self.applied_mining_mode = Some(mode);
+                }
                 info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner: {}", self.selected_miner);
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Started).await;
                 SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(true)).await;
@@ -343,7 +358,24 @@ impl GpuManager {
         }
     }
 
-    async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
+    /// Restarts the miner so it picks up the currently configured mining mode.
+    ///
+    /// The miner reads its mode settings (intensity) only in
+    /// `start_mining_inner`, and `start_mining` returns early when the miner
+    /// is already running, so a mode change has no effect on a running miner
+    /// until it is stopped and started again. A stopped miner is simply
+    /// started, which already uses the configured mode.
+    pub async fn restart_mining(&mut self) -> Result<(), anyhow::Error> {
+        if self.is_running() {
+            self.stop_mining().await?;
+        }
+        self.start_mining().await
+    }
+
+    /// Returns the mining mode a new process was started with. `None` means
+    /// the miner was already running (and therefore still uses its previous
+    /// mode).
+    async fn start_mining_inner(&mut self) -> Result<Option<String>, anyhow::Error> {
         let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
 
         if !gpu_mining_enabled {
@@ -352,7 +384,7 @@ impl GpuManager {
 
         if self.process_watcher.is_running() {
             info!(target: LOG_TARGET_APP_LOGIC, "GPU miner is already running");
-            return Ok(());
+            return Ok(None);
         }
 
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Initiated).await;
@@ -381,9 +413,9 @@ impl GpuManager {
                     .await;
 
                 let tari_address = InternalWallet::tari_address().await?;
-                let gpu_usage_percentage = ConfigMining::content()
-                    .await
-                    .get_selected_gpu_usage_percentage();
+                let mining_config = ConfigMining::content().await;
+                let gpu_usage_percentage = mining_config.get_selected_gpu_usage_percentage();
+                let started_mode = mining_config.selected_mining_mode().clone();
 
                 if *ConfigPools::content().await.gpu_pool_enabled() {
                     self.handle_pool_connection_load().await?;
@@ -452,17 +484,21 @@ impl GpuManager {
                 self.status_thread_shutdown = Shutdown::new();
                 self.initialize_status_updates().await;
                 info!(target: LOG_TARGET_APP_LOGIC, "Initialized gpu miner status updates");
-            }
-            _ => {
-                return Err(anyhow::anyhow!("App handle is not set"));
-            }
-        }
 
-        Ok(())
+                Ok(Some(started_mode))
+            }
+            _ => Err(anyhow::anyhow!("App handle is not set")),
+        }
     }
 
     pub fn is_running(&self) -> bool {
         self.process_watcher.is_running()
+    }
+
+    /// The mining mode the running process was started with, if the process
+    /// is tracked by this manager.
+    pub fn applied_mining_mode(&self) -> Option<&str> {
+        self.applied_mining_mode.as_deref()
     }
 
     pub async fn stop_mining(&mut self) -> Result<(), anyhow::Error> {
@@ -475,6 +511,7 @@ impl GpuManager {
                     ));
             self.process_watcher.status_monitor = None;
             self.process_watcher.stop().await?;
+            self.applied_mining_mode = None;
             self.status_thread_shutdown.trigger();
         }
 
