@@ -188,19 +188,31 @@ pub fn scheduled_mine_action(
 /// Scheduled events carry raw strings, and the CPU/GPU usage percentages
 /// are looked up by exact key: persisting a value that only differs in
 /// case or surrounding whitespace would silently select 0% usage while
-/// the UI shows the requested mode. Returns `None` when no key matches,
-/// so the caller can keep the mode already in effect instead of writing
-/// a key nothing can use.
+/// the UI shows the requested mode. An exact key wins; otherwise a
+/// case-insensitive match is used only when it is unique. Returns `None`
+/// when no key matches, or when several keys match case-insensitively
+/// (e.g. both `Eco` and `eco`), so the caller can keep the mode already in
+/// effect instead of writing a key nothing can use or an arbitrary one of
+/// the colliding keys.
 pub fn canonical_mining_mode<'a>(
-    mut keys: impl Iterator<Item = &'a str>,
+    keys: impl Iterator<Item = &'a str>,
     requested: &str,
 ) -> Option<String> {
     let trimmed = requested.trim();
     if trimmed.is_empty() {
         return None;
     }
-    keys.find(|key| key.eq_ignore_ascii_case(trimmed))
-        .map(str::to_string)
+    let keys: Vec<&str> = keys.collect();
+    if keys.contains(&trimmed) {
+        return Some(trimmed.to_string());
+    }
+    let mut matches = keys
+        .into_iter()
+        .filter(|key| key.eq_ignore_ascii_case(trimmed));
+    match (matches.next(), matches.next()) {
+        (Some(key), None) => Some(key.to_string()),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -350,6 +362,22 @@ mod scheduled_mine_action_tests {
         assert_eq!(
             scheduled_mine_action(true, false, Some("Eco"), "Eco"),
             ScheduledMineAction::Start
+        );
+    }
+
+    #[test]
+    fn test_scheduled_mine_action_failed_or_unchanged_save_still_restarts() {
+        // The `Mine` handler passes the canonical scheduled mode whether or
+        // not saving it succeeded (`update_field` already set it in memory)
+        // and whether or not the config already held it. A miner still
+        // running Eco must restart for a Ludicrous window either way;
+        // deciding from the old config mode instead would turn this into a
+        // no-op `Start`.
+        let applied = Some("Eco");
+        let scheduled = "Ludicrous";
+        assert_eq!(
+            scheduled_mine_action(true, true, applied, scheduled),
+            ScheduledMineAction::Restart
         );
     }
 
@@ -554,6 +582,20 @@ mod canonical_mining_mode_tests {
             canonical_mining_mode(keys().into_iter(), "Custom").as_deref(),
             Some("Custom")
         );
+    }
+
+    #[test]
+    fn test_canonical_mining_mode_prefers_exact_and_rejects_ambiguous() {
+        let colliding = ["Eco", "eco", "Turbo"];
+        assert_eq!(
+            canonical_mining_mode(colliding.into_iter(), "Eco").as_deref(),
+            Some("Eco")
+        );
+        assert_eq!(
+            canonical_mining_mode(colliding.into_iter(), "eco").as_deref(),
+            Some("eco")
+        );
+        assert_eq!(canonical_mining_mode(colliding.into_iter(), "ECO"), None);
     }
 
     #[test]

@@ -1096,15 +1096,13 @@ impl EventScheduler {
                     }
                 }
                 SchedulerEventType::Mine { mining_mode } => {
-                    // Read the current mode before overwriting it: it is
-                    // the fallback if saving the scheduled mode fails.
                     // Whether a running miner needs a restart is decided
                     // from the mode its process was started with (the
                     // manager's `applied_mining_mode`), not from the
                     // config: the config only claims a mode, and after a
                     // restart failed halfway it may already claim the new
                     // mode while the process still runs the old one.
-                    let current_mode = ConfigMining::content().await.selected_mining_mode().clone();
+                    //
                     // Resolve the scheduled mode against the keys the usage
                     // percentages are looked up by: a scheduled event
                     // carries a raw string, and persisting one that only
@@ -1113,35 +1111,36 @@ impl EventScheduler {
                     // mode. A string that matches no key keeps the mode
                     // already in effect instead of writing a key nothing
                     // can use.
-                    let mut effective_mode = match canonical_mining_mode(
-                        ConfigMining::content()
-                            .await
-                            .mining_modes()
-                            .keys()
-                            .map(String::as_str),
+                    let config = ConfigMining::content().await;
+                    let effective_mode = match canonical_mining_mode(
+                        config.mining_modes().keys().map(String::as_str),
                         &mining_mode,
                     ) {
-                        Some(canonical) => canonical,
+                        Some(canonical) => {
+                            // Always save, even if the config already seems to
+                            // hold this mode: a manual change may have landed
+                            // since, and an earlier write may have failed.
+                            // Decide from the scheduled mode whether or not the
+                            // save succeeds: `update_field` sets the in-memory
+                            // config before persisting it, so the config (and
+                            // the UI) holds the scheduled mode even when
+                            // writing it to disk failed.
+                            if let Err(e) = ConfigMining::update_field(
+                                ConfigMiningContent::set_selected_mining_mode,
+                                canonical.clone(),
+                            )
+                            .await
+                            {
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to save mining mode during Mine event {:?}: {}", event_id, e);
+                            }
+                            canonical
+                        }
                         None => {
+                            let current_mode = config.selected_mining_mode().clone();
                             error!(target: LOG_TARGET_APP_LOGIC, "Scheduled mining mode {:?} during Mine event {:?} is not a known mining mode; keeping {}", mining_mode, event_id, current_mode);
-                            current_mode.clone()
+                            current_mode
                         }
                     };
-                    // If saving the scheduled mode fails, the config keeps the
-                    // current mode, so decide against the current mode: miners
-                    // then start (or keep running) with the mode actually in
-                    // effect instead of restarting for a mode never applied.
-                    if effective_mode != current_mode {
-                        if let Err(e) = ConfigMining::update_field(
-                            ConfigMiningContent::set_selected_mining_mode,
-                            effective_mode.clone(),
-                        )
-                        .await
-                        {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
-                            effective_mode.clone_from(&current_mode);
-                        }
-                    }
                     // TODO: Replace with emiting specific value only
                     let config = ConfigMining::content().await;
                     EventsEmitter::emit_mining_config_loaded(&config).await;
@@ -1173,6 +1172,8 @@ impl EventScheduler {
                             });
                         }
                     }
+                    // Release the GPU lock before taking the CPU one.
+                    drop(gpu_manager);
                     let mut cpu_manager = CpuManager::write().await;
                     match scheduled_mine_action(
                         *config.cpu_mining_enabled(),
