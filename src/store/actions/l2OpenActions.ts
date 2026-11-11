@@ -12,34 +12,10 @@ let opening = false;
 let pinWait: Promise<boolean | undefined> | null = null;
 let cancelPinWait: (() => void) | null = null;
 
-/**
- * Asks the backend for the PIN state and caches the answer in the wallet
- * store. The store normally learns the state from the setup event; asking
- * directly covers a click that lands before that event (or after it was
- * missed), so the flow below never has to guess. Resolves undefined when
- * the query itself failed, leaving the state unknown.
- */
-export const refreshPinLockedState = async (): Promise<boolean | undefined> => {
-    try {
-        const value = await invoke<boolean>('is_pin_locked');
-        if (typeof value !== 'boolean') {
-            return undefined;
-        }
-        useWalletStore.setState({ is_pin_locked: value });
-        return value;
-    } catch (e) {
-        console.warn('Could not query the PIN state:', e);
-        return undefined;
-    }
-};
-
 // Waits for the backend to report the PIN state during wallet setup. Resolves
 // undefined when the wait is cancelled (the panel was closed while loading).
 // Deliberately no timeout: a timeout that guessed "no PIN" would reopen the
 // #3518 bug on a slow wallet load, so the click waits for the real state.
-// The wait also asks the backend once (refreshPinLockedState): if the setup
-// event was already sent and missed, the answer settles the wait through
-// the store instead of leaving the click pending until the next event.
 const waitForPinState = (): Promise<boolean | undefined> => {
     const current = useWalletStore.getState().is_pin_locked;
     if (current !== undefined) {
@@ -68,9 +44,6 @@ const waitForPinState = (): Promise<boolean | undefined> => {
         const latest = useWalletStore.getState().is_pin_locked;
         if (latest !== undefined) {
             settle(latest);
-        }
-        if (!settled) {
-            void refreshPinLockedState();
         }
     });
     return pinWait;

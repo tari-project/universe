@@ -35,7 +35,6 @@ describe('L2Button', () => {
         fireEvent.click(button);
         expect(openL2).toHaveBeenCalledOnce();
 
-        expect(button).toBeDisabled();
         expect(button).toHaveAttribute('aria-busy', 'true');
         expect(button).toHaveAttribute('title', 'l2.loading');
 
@@ -43,8 +42,21 @@ describe('L2Button', () => {
             resolveOpen();
         });
 
-        expect(button).toBeEnabled();
         expect(button).toHaveAttribute('aria-busy', 'false');
+    });
+
+    it('cancels the wait when clicked again while spinning', async () => {
+        vi.mocked(openL2).mockImplementation(() => new Promise<void>(() => undefined));
+        render(<L2Button />);
+        const button = screen.getByTestId('sidebar-l2-button');
+
+        fireEvent.click(button);
+        expect(button).toHaveAttribute('aria-busy', 'true');
+        expect(button).toBeEnabled();
+
+        fireEvent.click(button);
+        expect(cancelOpenL2Wait).toHaveBeenCalledOnce();
+        expect(openL2).toHaveBeenCalledOnce();
     });
 
     it.each([true, false])('opens L2 straight away once the PIN state is known (%s)', (isPinLocked) => {

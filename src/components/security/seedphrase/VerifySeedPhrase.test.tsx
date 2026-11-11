@@ -39,29 +39,6 @@ describe('VerifySeedPhrase PIN creation (#3518)', () => {
         expect(invoke).not.toHaveBeenCalledWith('create_pin');
     });
 
-    it('creates a PIN when the state is unknown but the backend reports none', async () => {
-        useWalletStore.setState({ is_pin_locked: undefined });
-        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
-            if (cmd === 'is_pin_locked') return false;
-            return undefined;
-        }) as typeof invoke);
-        await completeAndSubmit();
-        await waitFor(() => expect(invoke).toHaveBeenCalledWith('create_pin'));
-        expect(useWalletStore.getState().is_pin_locked).toBe(false);
-    });
-
-    it('does not create a PIN when the state is unknown but the backend reports one is set', async () => {
-        useWalletStore.setState({ is_pin_locked: undefined });
-        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
-            if (cmd === 'is_pin_locked') return true;
-            return undefined;
-        }) as typeof invoke);
-        await completeAndSubmit();
-        await waitFor(() => expect(invoke).toHaveBeenCalledWith('is_pin_locked'));
-        expect(invoke).not.toHaveBeenCalledWith('create_pin');
-        expect(useWalletStore.getState().is_pin_locked).toBe(true);
-    });
-
     it('does not create a PIN when one is already set', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         await completeAndSubmit();

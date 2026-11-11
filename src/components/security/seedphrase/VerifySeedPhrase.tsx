@@ -15,7 +15,6 @@ import { AnimatePresence } from 'motion/react';
 import PillCloseIcon from '@app/assets/icons/PillCloseIcon.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { invoke } from '@tauri-apps/api/core';
-import { refreshPinLockedState } from '@app/store/actions/l2OpenActions.ts';
 import { useSecurityStore, useWalletStore } from '@app/store';
 
 interface VerifySeedPhraseProps {
@@ -67,12 +66,7 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
         await invoke('set_seed_backed_up').then(() => {
             setModal(null);
         });
-        let isPinLocked = useWalletStore.getState().is_pin_locked;
-        if (isPinLocked === undefined) {
-            // The setup event has not landed yet; ask the backend instead of
-            // skipping the step and leaving PIN creation to a later prompt.
-            isPinLocked = await refreshPinLockedState();
-        }
+        const isPinLocked = useWalletStore.getState().is_pin_locked;
         // Only a wallet known to have no PIN gets one created here. While the state is
         // unknown, calling create_pin can fail with "A PIN is already set" (#3518).
         if (isPinLocked === false) {

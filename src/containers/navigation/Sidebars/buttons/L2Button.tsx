@@ -15,7 +15,8 @@ export default function L2Button() {
     // The PIN state is unknown until the backend emits it during wallet setup.
     // A click in this state is not dropped: openL2 waits for the real state and
     // the button spins until it arrives, instead of guessing "no PIN" (#3518).
-    // An open panel can still be closed in this state.
+    // Clicking again while it spins cancels the wait: if wallet setup fails the
+    // PIN state never arrives, so the wait must not be the only way out.
     const pinStateKnown = useWalletStore((s) => s.is_pin_locked !== undefined);
     const [waitingForPin, setWaitingForPin] = useState(false);
     const isWaiting = waitingForPin && !pinStateKnown && !l2Open;
@@ -25,9 +26,12 @@ export default function L2Button() {
             $isActive={l2Open}
             $isToggle={true}
             type="button"
-            disabled={isWaiting}
             aria-busy={isWaiting}
             onClick={() => {
+                if (isWaiting) {
+                    cancelOpenL2Wait();
+                    return;
+                }
                 if (showTapplet) {
                     // Leave the bridge the way the Mine button does, then open the L2 card.
                     setShowTapplet(false);
