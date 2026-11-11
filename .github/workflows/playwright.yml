@@ -228,7 +228,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: target/l2-swarm-cache
-          key: l2-swarm-${{ runner.os }}-${{ runner.arch }}-${{ steps.ootle.outputs.rev }}
+          key: l2-swarm-${{ runner.os }}-${{ runner.arch }}-${{ steps.ootle.outputs.rev }}-${{ hashFiles('playwright/helpers/l2/install.ts') }}
 
       - name: Install pinned L2 swarm and managed binaries
         run: node --experimental-strip-types playwright/helpers/l2/install.ts
@@ -238,7 +238,7 @@ jobs:
         uses: actions/cache/save@v6
         with:
           path: target/l2-swarm-cache
-          key: l2-swarm-${{ runner.os }}-${{ runner.arch }}-${{ steps.ootle.outputs.rev }}
+          key: l2-swarm-${{ runner.os }}-${{ runner.arch }}-${{ steps.ootle.outputs.rev }}-${{ hashFiles('playwright/helpers/l2/install.ts') }}
 
       # Typecheck the e2e sources before the expensive Tauri build so a type
       # error fails in seconds. `playwright test` transpiles via esbuild and

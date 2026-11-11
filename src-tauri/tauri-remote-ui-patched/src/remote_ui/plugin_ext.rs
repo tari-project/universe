@@ -111,25 +111,54 @@ impl RemoteUi {
     ///   of `.unwrap()` panicking the send task
     pub fn emit<P: Serialize + Clone>(&self, event: &str, payload: P) -> Result<(), Error> {
         let connections = self.rpc_server.connections.clone();
-        let json = json!({
+        let json = Self::event_json(event, payload);
+        tauri::async_runtime::spawn(send_to_all(connections, json));
+        Ok(())
+    }
+
+    /// Like [`Self::emit`], but returns once the message has been sent, so
+    /// calls awaited one after another reach every client in order. `emit`
+    /// spawns a task per message, and those tasks can take the socket out of
+    /// order.
+    pub async fn emit_ordered<P: Serialize + Clone>(&self, event: &str, payload: P) {
+        let json = Self::event_json(event, payload);
+        send_to_all(self.rpc_server.connections.clone(), json).await;
+    }
+
+    fn event_json<P: Serialize + Clone>(event: &str, payload: P) -> String {
+        json!({
             "event": event,
             "payload": payload
         })
-        .to_string();
-        tauri::async_runtime::spawn(async move {
-            let snapshot: Vec<(u64, crate::WsSink)> = connections
-                .lock()
-                .await
-                .iter()
-                .map(|(id, sink)| (*id, sink.clone()))
-                .collect();
-            for (conn_id, sink) in snapshot {
-                if let Err(err) = sink.lock().await.send(Message::text(json.clone())).await {
-                    log::warn!("WS send failed (conn_id={conn_id}), pruning connection. Err:{err}");
-                    connections.lock().await.remove(&conn_id);
-                }
-            }
-        });
-        Ok(())
+        .to_string()
     }
 }
+
+async fn send_to_all(connections: crate::WsConnections, json: String) {
+    let snapshot: Vec<(u64, crate::WsSink)> = connections
+        .lock()
+        .await
+        .iter()
+        .map(|(id, sink)| (*id, sink.clone()))
+        .collect();
+    for (conn_id, sink) in snapshot {
+        // A client that stops reading would otherwise hold up every ordered
+        // send behind it; drop it like a failed one.
+        let sent = tokio::time::timeout(SEND_TIMEOUT, async {
+            sink.lock().await.send(Message::text(json.clone())).await
+        })
+        .await;
+        let failure = match sent {
+            Ok(Ok(())) => continue,
+            Ok(Err(err)) => err.to_string(),
+            Err(_) => format!("timed out after {SEND_TIMEOUT:?}"),
+        };
+        log::warn!("WS send failed (conn_id={conn_id}), pruning connection. Err:{failure}");
+        connections.lock().await.remove(&conn_id);
+        // Close it too: a pruned client that resumes reading would otherwise sit
+        // connected without events instead of reconnecting for a fresh snapshot.
+        drop(tokio::time::timeout(SEND_TIMEOUT, async { sink.lock().await.close().await }).await);
+    }
+}
+
+const SEND_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
