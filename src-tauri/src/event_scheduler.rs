@@ -1096,11 +1096,14 @@ impl EventScheduler {
                     }
                 }
                 SchedulerEventType::Mine { mining_mode } => {
-                    // Read the current mode before overwriting it: a miner that
-                    // is already running keeps the settings of the mode it was
-                    // started with, because `start_mining` returns early for a
-                    // running miner. `scheduled_mine_action` decides per miner
-                    // whether the scheduled mode requires a restart.
+                    // Read the current mode before overwriting it: it is
+                    // the fallback if saving the scheduled mode fails.
+                    // Whether a running miner needs a restart is decided
+                    // from the mode its process was started with (the
+                    // manager's `applied_mining_mode`), not from the
+                    // config: the config only claims a mode, and after a
+                    // restart failed halfway it may already claim the new
+                    // mode while the process still runs the old one.
                     let current_mode = ConfigMining::content().await.selected_mining_mode().clone();
                     // If saving the scheduled mode fails, the config keeps the
                     // current mode, so decide against the current mode: miners
@@ -1119,29 +1122,29 @@ impl EventScheduler {
                     // TODO: Replace with emiting specific value only
                     let config = ConfigMining::content().await;
                     EventsEmitter::emit_mining_config_loaded(&config).await;
-                    if current_mode == effective_mode {
-                        // The scheduled mode is already active: a running
-                        // miner keeps its settings, so there is nothing to
-                        // restart. Say so explicitly instead of silently
-                        // doing nothing, so the no-op is visible in logs.
-                        info!(target: LOG_TARGET_APP_LOGIC, "Scheduled mining mode {:?} is already active; running miners will not be restarted during Mine event {:?}", effective_mode, event_id);
-                    }
                     let mut gpu_manager = GpuManager::write().await;
                     match scheduled_mine_action(
                         *config.gpu_mining_enabled(),
                         gpu_manager.is_running(),
-                        &current_mode,
+                        gpu_manager.applied_mining_mode(),
                         &effective_mode,
                     ) {
                         ScheduledMineAction::Skip => {}
                         ScheduledMineAction::Start => {
-                            info!(target: LOG_TARGET_APP_LOGIC, "Starting stopped GPU miner in scheduled mode {} during Mine event {:?}", effective_mode, event_id);
+                            if gpu_manager.is_running() {
+                                // Already runs the scheduled mode: say so
+                                // explicitly instead of silently doing
+                                // nothing, so the no-op is visible in logs.
+                                info!(target: LOG_TARGET_APP_LOGIC, "GPU miner already runs scheduled mode {}; no restart during Mine event {:?}", effective_mode, event_id);
+                            } else {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Starting stopped GPU miner in scheduled mode {} during Mine event {:?}", effective_mode, event_id);
+                            }
                             gpu_manager.start_mining().await.unwrap_or_else(|e| {
                                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
                             });
                         }
                         ScheduledMineAction::Restart => {
-                            info!(target: LOG_TARGET_APP_LOGIC, "Restarting GPU miner for mining mode change from {} to {} during Mine event {:?}", current_mode, effective_mode, event_id);
+                            info!(target: LOG_TARGET_APP_LOGIC, "Restarting GPU miner for mining mode change from {} to {} during Mine event {:?}", gpu_manager.applied_mining_mode().unwrap_or("unknown"), effective_mode, event_id);
                             gpu_manager.restart_mining().await.unwrap_or_else(|e| {
                                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart GPU mining during Mine event {:?}: {}", event_id, e);
                             });
@@ -1151,18 +1154,22 @@ impl EventScheduler {
                     match scheduled_mine_action(
                         *config.cpu_mining_enabled(),
                         cpu_manager.is_running(),
-                        &current_mode,
+                        cpu_manager.applied_mining_mode(),
                         &effective_mode,
                     ) {
                         ScheduledMineAction::Skip => {}
                         ScheduledMineAction::Start => {
-                            info!(target: LOG_TARGET_APP_LOGIC, "Starting stopped CPU miner in scheduled mode {} during Mine event {:?}", effective_mode, event_id);
+                            if cpu_manager.is_running() {
+                                info!(target: LOG_TARGET_APP_LOGIC, "CPU miner already runs scheduled mode {}; no restart during Mine event {:?}", effective_mode, event_id);
+                            } else {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Starting stopped CPU miner in scheduled mode {} during Mine event {:?}", effective_mode, event_id);
+                            }
                             cpu_manager.start_mining().await.unwrap_or_else(|e| {
                                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
                             });
                         }
                         ScheduledMineAction::Restart => {
-                            info!(target: LOG_TARGET_APP_LOGIC, "Restarting CPU miner for mining mode change from {} to {} during Mine event {:?}", current_mode, effective_mode, event_id);
+                            info!(target: LOG_TARGET_APP_LOGIC, "Restarting CPU miner for mining mode change from {} to {} during Mine event {:?}", cpu_manager.applied_mining_mode().unwrap_or("unknown"), effective_mode, event_id);
                             cpu_manager.restart_mining().await.unwrap_or_else(|e| {
                                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart CPU mining during Mine event {:?}: {}", event_id, e);
                             });

@@ -123,15 +123,24 @@ impl Default for CpuConnectionType {
 /// with the old mode until it is stopped and started again. A stopped
 /// miner needs no restart: the next `start_mining` picks the new mode up.
 ///
+/// `applied_mode` is the mode the running process was started with, as
+/// recorded by the manager — not the mode currently saved in config. The
+/// config only claims a mode; the two diverge exactly when a restart
+/// failed halfway (config already says the new mode, the process still
+/// runs the old one), and comparing against the config would then decide
+/// "same mode, no restart" forever. An unknown applied mode (`None` on a
+/// running miner) is treated as a mismatch: restarting once is safe,
+/// whereas keeping it could leave the miner on the wrong mode forever.
+///
 /// This is the single place that decides restarts on a mode change, shared
 /// by the CPU and GPU paths (e.g. the event scheduler's `Mine` handler) so
 /// the rule cannot drift between them.
 pub fn mode_change_requires_restart(
-    current_mode: &str,
+    applied_mode: Option<&str>,
     requested_mode: &str,
     is_running: bool,
 ) -> bool {
-    is_running && current_mode != requested_mode
+    is_running && applied_mode != Some(requested_mode)
 }
 
 /// What a scheduled `Mine` event should do with one miner.
@@ -152,20 +161,22 @@ pub enum ScheduledMineAction {
 /// This is the whole per-miner decision of the scheduler's `Mine` handler,
 /// kept pure so every combination is unit-testable: disabled miners are
 /// never touched, running miners restart only on a real mode change, and
-/// stopped miners simply start with the requested mode. The decision only
-/// depends on the mode in config at the moment the event fires, so a mode
-/// the user changed by hand while a window was active is taken into
-/// account exactly like any other current mode.
+/// stopped miners simply start with the requested mode. The decision
+/// compares the requested mode against the mode the running process was
+/// started with (`applied_mode`, recorded by the manager), not the mode
+/// saved in config: after a failed restart the config may already claim
+/// the new mode while the process still runs the old one, and only the
+/// applied mode lets the next window recover it.
 pub fn scheduled_mine_action(
     miner_enabled: bool,
     is_running: bool,
-    current_mode: &str,
+    applied_mode: Option<&str>,
     requested_mode: &str,
 ) -> ScheduledMineAction {
     if !miner_enabled {
         return ScheduledMineAction::Skip;
     }
-    if mode_change_requires_restart(current_mode, requested_mode, is_running) {
+    if mode_change_requires_restart(applied_mode, requested_mode, is_running) {
         ScheduledMineAction::Restart
     } else {
         ScheduledMineAction::Start
@@ -178,33 +189,46 @@ mod tests {
 
     #[test]
     fn test_mode_change_requires_restart_running_miner_with_different_mode() {
-        assert!(mode_change_requires_restart("Eco", "Ludicrous", true));
+        assert!(mode_change_requires_restart(Some("Eco"), "Ludicrous", true));
     }
 
     #[test]
     fn test_mode_change_requires_restart_same_mode_keeps_miner_running() {
         assert!(!mode_change_requires_restart(
-            "Ludicrous",
+            Some("Ludicrous"),
             "Ludicrous",
             true
         ));
     }
 
     #[test]
+    fn test_mode_change_requires_restart_running_miner_with_unknown_applied_mode() {
+        // A running miner whose start mode was never recorded (e.g. a
+        // restart failed before the record was written) is treated as a
+        // mismatch: restarting once is safe, keeping it could leave the
+        // miner on the wrong mode forever.
+        assert!(mode_change_requires_restart(None, "Ludicrous", true));
+    }
+
+    #[test]
     fn test_mode_change_requires_restart_mode_names_compared_exactly() {
         // Mode names are display names, so a case difference is a different
         // configuration, not a no-op: a running miner restarts onto it.
-        assert!(mode_change_requires_restart("eco", "Eco", true));
+        assert!(mode_change_requires_restart(Some("eco"), "Eco", true));
     }
 
     #[test]
     fn test_mode_change_requires_restart_stopped_miner_starts_with_new_mode() {
-        assert!(!mode_change_requires_restart("Eco", "Ludicrous", false));
+        assert!(!mode_change_requires_restart(
+            Some("Eco"),
+            "Ludicrous",
+            false
+        ));
     }
 
     #[test]
     fn test_mode_change_requires_restart_stopped_miner_same_mode() {
-        assert!(!mode_change_requires_restart("Eco", "Eco", false));
+        assert!(!mode_change_requires_restart(Some("Eco"), "Eco", false));
     }
 }
 
@@ -217,7 +241,7 @@ mod scheduled_mine_action_tests {
     #[test]
     fn test_scheduled_mine_action_disabled_running_different_mode_skips() {
         assert_eq!(
-            scheduled_mine_action(false, true, "Eco", "Ludicrous"),
+            scheduled_mine_action(false, true, Some("Eco"), "Ludicrous"),
             ScheduledMineAction::Skip
         );
     }
@@ -225,7 +249,7 @@ mod scheduled_mine_action_tests {
     #[test]
     fn test_scheduled_mine_action_disabled_running_same_mode_skips() {
         assert_eq!(
-            scheduled_mine_action(false, true, "Eco", "Eco"),
+            scheduled_mine_action(false, true, Some("Eco"), "Eco"),
             ScheduledMineAction::Skip
         );
     }
@@ -233,7 +257,7 @@ mod scheduled_mine_action_tests {
     #[test]
     fn test_scheduled_mine_action_disabled_stopped_different_mode_skips() {
         assert_eq!(
-            scheduled_mine_action(false, false, "Eco", "Ludicrous"),
+            scheduled_mine_action(false, false, Some("Eco"), "Ludicrous"),
             ScheduledMineAction::Skip
         );
     }
@@ -241,7 +265,7 @@ mod scheduled_mine_action_tests {
     #[test]
     fn test_scheduled_mine_action_disabled_stopped_same_mode_skips() {
         assert_eq!(
-            scheduled_mine_action(false, false, "Eco", "Eco"),
+            scheduled_mine_action(false, false, Some("Eco"), "Eco"),
             ScheduledMineAction::Skip
         );
     }
@@ -253,7 +277,7 @@ mod scheduled_mine_action_tests {
         // Window fires while mining: the running miner must restart with the
         // scheduled mode's settings (acceptance criterion 1).
         assert_eq!(
-            scheduled_mine_action(true, true, "Eco", "Ludicrous"),
+            scheduled_mine_action(true, true, Some("Eco"), "Ludicrous"),
             ScheduledMineAction::Restart
         );
     }
@@ -263,7 +287,7 @@ mod scheduled_mine_action_tests {
         // `Start` is a no-op for a running miner, so it is not interrupted
         // (acceptance criterion 2).
         assert_eq!(
-            scheduled_mine_action(true, true, "Ludicrous", "Ludicrous"),
+            scheduled_mine_action(true, true, Some("Ludicrous"), "Ludicrous"),
             ScheduledMineAction::Start
         );
     }
@@ -275,8 +299,19 @@ mod scheduled_mine_action_tests {
         // custom settings take effect, a window carries no new settings.
         // `Start` is a no-op for a running miner (acceptance criterion 2).
         assert_eq!(
-            scheduled_mine_action(true, true, "Custom", "Custom"),
+            scheduled_mine_action(true, true, Some("Custom"), "Custom"),
             ScheduledMineAction::Start
+        );
+    }
+
+    #[test]
+    fn test_scheduled_mine_action_enabled_running_unknown_applied_mode_restarts() {
+        // A running miner whose start mode was never recorded is treated
+        // as a mismatch: restarting once is safe, keeping it could leave
+        // the miner on the wrong mode forever.
+        assert_eq!(
+            scheduled_mine_action(true, true, None, "Ludicrous"),
+            ScheduledMineAction::Restart
         );
     }
 
@@ -285,7 +320,7 @@ mod scheduled_mine_action_tests {
         // Window fires from a stopped state: plain start, no stop first
         // (acceptance criterion 3).
         assert_eq!(
-            scheduled_mine_action(true, false, "Eco", "Ludicrous"),
+            scheduled_mine_action(true, false, Some("Eco"), "Ludicrous"),
             ScheduledMineAction::Start
         );
     }
@@ -293,7 +328,7 @@ mod scheduled_mine_action_tests {
     #[test]
     fn test_scheduled_mine_action_enabled_stopped_same_mode_starts() {
         assert_eq!(
-            scheduled_mine_action(true, false, "Eco", "Eco"),
+            scheduled_mine_action(true, false, Some("Eco"), "Eco"),
             ScheduledMineAction::Start
         );
     }
@@ -302,16 +337,20 @@ mod scheduled_mine_action_tests {
 
     /// Minimal simulation of one miner across scheduler events. It mirrors
     /// the `Mine` handler: on each event the action is decided from the
-    /// selected mode in config, applied, and the selected mode becomes the
-    /// requested one. A manual mode change is modelled the way the frontend
-    /// performs it: it sets the selected mode and restarts a running miner
-    /// onto it, so config and miner stay consistent.
+    /// mode the running process was started with (`applied_mode`, recorded
+    /// by the manager), applied, and the selected mode in config becomes
+    /// the requested one. A manual mode change is modelled the way the
+    /// frontend performs it: it sets the selected mode and restarts a
+    /// running miner onto it, so config and miner stay consistent. A
+    /// failed restart is modelled with `fail_next_restart`: the config
+    /// already claims the new mode, but the process keeps the old one.
     #[derive(Debug)]
     struct SimulatedMiner {
         enabled: bool,
         running: bool,
         selected_mode: String,
-        running_mode: String,
+        applied_mode: Option<String>,
+        fail_next_restart: bool,
     }
 
     impl SimulatedMiner {
@@ -319,33 +358,45 @@ mod scheduled_mine_action_tests {
             match scheduled_mine_action(
                 self.enabled,
                 self.running,
-                &self.selected_mode,
+                self.applied_mode.as_deref(),
                 requested_mode,
             ) {
                 ScheduledMineAction::Skip => {}
                 ScheduledMineAction::Start => {
                     if !self.running {
                         self.running = true;
-                        self.running_mode = requested_mode.to_string();
+                        self.applied_mode = Some(requested_mode.to_string());
                     }
                 }
                 ScheduledMineAction::Restart => {
-                    self.running = true;
-                    self.running_mode = requested_mode.to_string();
+                    if self.fail_next_restart {
+                        // The restart failed (e.g. stop error): the process
+                        // keeps running the old mode even though the config
+                        // now claims the requested one.
+                        self.fail_next_restart = false;
+                    } else {
+                        self.running = true;
+                        self.applied_mode = Some(requested_mode.to_string());
+                    }
                 }
             }
             self.selected_mode = requested_mode.to_string();
         }
 
+        fn fail_next_restart(&mut self) {
+            self.fail_next_restart = true;
+        }
+
         fn on_manual_mode_change(&mut self, mode: &str) {
             self.selected_mode = mode.to_string();
             if self.running {
-                self.running_mode = mode.to_string();
+                self.applied_mode = Some(mode.to_string());
             }
         }
 
         fn on_window_end(&mut self) {
             self.running = false;
+            self.applied_mode = None;
         }
     }
 
@@ -355,42 +406,80 @@ mod scheduled_mine_action_tests {
             enabled: true,
             running: false,
             selected_mode: "Eco".to_string(),
-            running_mode: String::new(),
+            applied_mode: None,
+            fail_next_restart: false,
         };
 
         // Window fires from a stopped state: plain start with its mode.
         miner.on_mine_event("Eco");
         assert!(miner.running);
-        assert_eq!(miner.running_mode, "Eco");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Eco"));
 
         // A Ludicrous window fires while mining in Eco: restart into the
         // scheduled mode (the bug scenario from the issue).
         miner.on_mine_event("Ludicrous");
-        assert_eq!(miner.running_mode, "Ludicrous");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Ludicrous"));
 
         // A second Ludicrous window fires while the first is still active:
-        // same mode as selected, the running miner is left alone.
+        // same mode as applied, the running miner is left alone.
         miner.on_mine_event("Ludicrous");
-        assert_eq!(miner.running_mode, "Ludicrous");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Ludicrous"));
 
         // Mid-window the user switches back to Eco by hand; the manual path
         // restarts the miner onto Eco and updates the selected mode.
         miner.on_manual_mode_change("Eco");
-        assert_eq!(miner.running_mode, "Eco");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Eco"));
 
-        // The next Ludicrous window compares against the *current* selected
-        // mode (Eco after the manual change), so it restarts again.
+        // The next Ludicrous window compares against the applied mode (Eco
+        // after the manual change), so it restarts again.
         miner.on_mine_event("Ludicrous");
-        assert_eq!(miner.running_mode, "Ludicrous");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Ludicrous"));
 
         // Window end stops mining, as the exit callback does today.
         miner.on_window_end();
         assert!(!miner.running);
+        assert_eq!(miner.applied_mode, None);
 
         // A later Eco window starts the stopped miner fresh with Eco.
         miner.on_mine_event("Eco");
         assert!(miner.running);
-        assert_eq!(miner.running_mode, "Eco");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Eco"));
+    }
+
+    #[test]
+    fn test_scheduled_mine_action_sequence_failed_restart_recovers_on_next_window() {
+        // The gap the applied mode closes: a restart that fails halfway
+        // leaves the config claiming the new mode while the process still
+        // runs the old one. A decision based on the config mode would
+        // then see "same mode" on every later window and never restart.
+        // Deciding from the applied mode recovers on the next window.
+        let mut miner = SimulatedMiner {
+            enabled: true,
+            running: false,
+            selected_mode: "Eco".to_string(),
+            applied_mode: None,
+            fail_next_restart: false,
+        };
+
+        miner.on_mine_event("Eco");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Eco"));
+
+        // Ludicrous window: the restart fails. Config now claims
+        // Ludicrous, the process still runs Eco.
+        miner.fail_next_restart();
+        miner.on_mine_event("Ludicrous");
+        assert_eq!(miner.selected_mode, "Ludicrous");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Eco"));
+
+        // The next Ludicrous window must still decide Restart: the
+        // applied mode differs from the requested one, even though the
+        // config already claims Ludicrous. This time it succeeds.
+        miner.on_mine_event("Ludicrous");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Ludicrous"));
+
+        // And a further Ludicrous window leaves the miner alone.
+        miner.on_mine_event("Ludicrous");
+        assert_eq!(miner.applied_mode.as_deref(), Some("Ludicrous"));
     }
 
     #[test]
@@ -399,7 +488,8 @@ mod scheduled_mine_action_tests {
             enabled: false,
             running: false,
             selected_mode: "Eco".to_string(),
-            running_mode: String::new(),
+            applied_mode: None,
+            fail_next_restart: false,
         };
 
         miner.on_mine_event("Ludicrous");
