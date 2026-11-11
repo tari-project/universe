@@ -9,6 +9,50 @@ import { handleL2WalletStateUpdate, PIN_CANCELLED_RE } from './l2WalletStoreActi
 import { setL2Open } from './uiStoreActions.ts';
 
 let opening = false;
+let pinWait: Promise<boolean | undefined> | null = null;
+let cancelPinWait: (() => void) | null = null;
+
+// Waits for the backend to report the PIN state during wallet setup. Resolves
+// undefined when the wait is cancelled (the panel was closed while loading).
+// Deliberately no timeout: a timeout that guessed "no PIN" would reopen the
+// #3518 bug on a slow wallet load, so the click waits for the real state.
+const waitForPinState = (): Promise<boolean | undefined> => {
+    const current = useWalletStore.getState().is_pin_locked;
+    if (current !== undefined) {
+        return Promise.resolve(current);
+    }
+    if (pinWait) {
+        return pinWait;
+    }
+    pinWait = new Promise<boolean | undefined>((resolve) => {
+        let settled = false;
+        const settle = (value: boolean | undefined) => {
+            if (settled) return;
+            settled = true;
+            pinWait = null;
+            cancelPinWait = null;
+            unsubscribe();
+            resolve(value);
+        };
+        const unsubscribe = useWalletStore.subscribe((state) => {
+            if (state.is_pin_locked !== undefined) {
+                settle(state.is_pin_locked);
+            }
+        });
+        cancelPinWait = () => settle(undefined);
+        // The state may have arrived between the first read and the subscribe.
+        const latest = useWalletStore.getState().is_pin_locked;
+        if (latest !== undefined) {
+            settle(latest);
+        }
+    });
+    return pinWait;
+};
+
+/** Cancels a pending wait for the PIN state (used when the L2 panel is closed). */
+export const cancelOpenL2Wait = () => {
+    cancelPinWait?.();
+};
 
 /** Runs a backend command that asks for the PIN and opens L2, then shows the panel. */
 const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable') => {
@@ -35,7 +79,16 @@ const openWith = async (command: 'unlock_l2_wallet' | 'l2_create_pin_and_enable'
  * once the wallet is open.
  */
 export const openL2 = async () => {
-    if (!useWalletStore.getState().is_pin_locked) {
+    if (opening || pinWait) return;
+    // While the wallet is still loading, wait for the real PIN state instead of
+    // guessing: opening the create-PIN dialog here is the #3518 bug (a wallet
+    // that already has a PIN would be asked to set one). A cancelled wait
+    // resolves undefined, so this is a no-op in that case.
+    const isPinLocked = await waitForPinState();
+    if (isPinLocked === undefined) {
+        return;
+    }
+    if (!isPinLocked) {
         useSecurityStore.setState({ modal: 'l2_pin_required' });
         return;
     }

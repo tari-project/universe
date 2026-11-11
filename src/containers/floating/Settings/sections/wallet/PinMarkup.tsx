@@ -27,7 +27,10 @@ export const PinMarkup = () => {
             });
     }, []);
 
-    return !isPinLocked ? (
+    // Shown only when the wallet is known to have no PIN. While the PIN state is
+    // unknown (undefined) nothing renders, instead of offering to create a PIN
+    // that may already exist (#3518).
+    return isPinLocked === false ? (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
                 <Typography variant="h6" style={{ textTransform: 'uppercase' }}>
