@@ -219,6 +219,8 @@ export interface ApplicationsVersions {
     xmrig: ApplicationsInformation;
     minotari_node: ApplicationsInformation;
     mm_proxy: ApplicationsInformation;
+    lolminer: ApplicationsInformation;
+    tariminer: ApplicationsInformation;
     bridge: ApplicationsInformation;
 }
 

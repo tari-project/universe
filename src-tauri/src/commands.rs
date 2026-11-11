@@ -117,7 +117,8 @@ pub struct ApplicationsVersions {
     xmrig: ApplicationsInformation,
     minotari_node: ApplicationsInformation,
     mm_proxy: ApplicationsInformation,
-    xtrgpuminer: ApplicationsInformation,
+    lolminer: ApplicationsInformation,
+    tariminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
 }
 
@@ -355,7 +356,10 @@ pub async fn get_applications_versions(
     let mm_proxy_version = binary_resolver
         .get_binary_version(Binaries::MergeMiningProxy)
         .await;
-    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::LolMiner).await;
+    let lolminer_version = binary_resolver.get_binary_version(Binaries::LolMiner).await;
+    let tariminer_version = binary_resolver
+        .get_binary_version(Binaries::TariMiner)
+        .await;
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
         .await;
@@ -385,8 +389,12 @@ pub async fn get_applications_versions(
             version: mm_proxy_version,
             port: Some(*mmp_port),
         },
-        xtrgpuminer: ApplicationsInformation {
-            version: xtrgpuminer_version,
+        lolminer: ApplicationsInformation {
+            version: lolminer_version,
+            port: Some(0),
+        },
+        tariminer: ApplicationsInformation {
+            version: tariminer_version,
             port: Some(0),
         },
         bridge: ApplicationsInformation {
