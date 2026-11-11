@@ -188,13 +188,18 @@ describe('AdvancedSettings', () => {
             const input = commitValue('4444');
             const error = await screen.findByTestId('mcp-port-error');
             expect(error).toHaveTextContent('mcp.advanced.port-in-use');
+            expect(error).toHaveAttribute('id', 'mcp-port-error');
             expect(input).toHaveAttribute('aria-invalid', 'true');
+            // The input must point at the error text so a screen reader
+            // announces what is wrong, not just that something is wrong.
+            expect(input).toHaveAttribute('aria-describedby', 'mcp-port-error');
             // Commit again without editing: the bind now succeeds, so the
             // input must report valid again through the success path.
             fireEvent.keyDown(input, { key: 'Enter' });
             await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(2));
             expect(screen.queryByTestId('mcp-port-error')).toBeNull();
             expect(input).toHaveAttribute('aria-invalid', 'false');
+            expect(input).not.toHaveAttribute('aria-describedby');
         });
 
         it('clears a previous error when a later port is accepted', async () => {

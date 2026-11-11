@@ -142,6 +142,7 @@ export default function AdvancedSettings() {
                         max={65535}
                         data-testid="mcp-port-input"
                         aria-invalid={Boolean(portError)}
+                        aria-describedby={portError ? 'mcp-port-error' : undefined}
                         $hasError={Boolean(portError)}
                         value={portValue}
                         onChange={(e) => {
@@ -158,7 +159,7 @@ export default function AdvancedSettings() {
             {portError ? (
                 <SettingsGroup>
                     <SettingsGroupContent>
-                        <PortError role="alert" data-testid="mcp-port-error">
+                        <PortError id="mcp-port-error" role="alert" data-testid="mcp-port-error">
                             {portError}
                         </PortError>
                     </SettingsGroupContent>

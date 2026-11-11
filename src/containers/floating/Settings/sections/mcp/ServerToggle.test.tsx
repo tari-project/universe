@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { act, render, screen, fireEvent } from '@app/test/test-utils';
+import { act, render, screen, fireEvent, waitFor } from '@app/test/test-utils';
 import { invoke } from '@tauri-apps/api/core';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
@@ -94,6 +94,22 @@ describe('ServerToggle', () => {
         // the store must not pretend otherwise
         expect(useConfigMcpStore.getState().enabled).toBe(false);
         expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+
+    it('clears a previous bind failure on the next attempt', async () => {
+        mockInvoke.mockReset();
+        mockInvoke.mockRejectedValueOnce(
+            'MCP server failed to bind to configured port 19222: Address already in use (os error 98). ' +
+                'Refusing to fall back to a random port for security reasons'
+        );
+        useConfigMcpStore.setState({ enabled: false, port: 19222 });
+        render(<ServerToggle />);
+        const toggle = screen.getByRole('checkbox');
+        fireEvent.click(toggle);
+        await screen.findByTestId('mcp-server-error');
+        mockInvoke.mockResolvedValueOnce(undefined);
+        fireEvent.click(toggle);
+        await waitFor(() => expect(screen.queryByTestId('mcp-server-error')).toBeNull());
     });
 
     it('clears the error when the server is disabled again', async () => {
