@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 
 const writeText = vi.fn();
 const readText = vi.fn();
@@ -11,6 +12,13 @@ vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
     clear: (...args: unknown[]) => clear(...args),
 }));
 
+const needsWebviewOnlyClipboard = vi.fn();
+
+vi.mock('@app/utils/clipboard', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@app/utils/clipboard')>()),
+    needsWebviewOnlyClipboard: () => needsWebviewOnlyClipboard(),
+}));
+
 import { useCopyToClipboard } from './useCopyToClipboard';
 
 describe('useCopyToClipboard', () => {
@@ -19,6 +27,8 @@ describe('useCopyToClipboard', () => {
         writeText.mockReset().mockResolvedValue(undefined);
         readText.mockReset();
         clear.mockReset().mockResolvedValue(undefined);
+        needsWebviewOnlyClipboard.mockReset().mockResolvedValue(false);
+        useToastStore.setState({ toasts: [] });
     });
 
     afterEach(() => {
@@ -99,6 +109,105 @@ describe('useCopyToClipboard', () => {
         await act(async () => vi.advanceTimersByTimeAsync(60_000));
         expect(clear).toHaveBeenCalledTimes(1);
         consoleError.mockRestore();
+    });
+
+    it('tells the user to copy manually when every clipboard path fails', async () => {
+        writeText.mockRejectedValue(new Error('X11 server connection timed out'));
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const { result } = renderHook(() => useCopyToClipboard());
+
+        await act(async () => {
+            result.current.copyToClipboard('seed words');
+        });
+
+        expect(result.current.isCopied).toBe(false);
+        const toasts = useToastStore.getState().toasts;
+        expect(toasts).toHaveLength(1);
+        expect(toasts[0].title).toBe('common:clipboard.copy-failed-title');
+        expect(toasts[0].text).toBe('common:clipboard.copy-failed-text');
+        consoleError.mockRestore();
+    });
+
+    it('copies through the webview when the plugin write fails', async () => {
+        // Flatpak/Wayland: the native plugin has no X11 display, so it rejects;
+        // the webview Clipboard API is the path that reaches the clipboard there.
+        const webWriteText = vi.fn().mockResolvedValue(undefined);
+        const originalClipboard = navigator.clipboard;
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText: webWriteText },
+        });
+        writeText.mockRejectedValue(new Error('No X11 display'));
+        try {
+            const { result } = renderHook(() => useCopyToClipboard());
+
+            await act(async () => {
+                result.current.copyToClipboard('tari address');
+            });
+
+            expect(result.current.isCopied).toBe(true);
+            expect(webWriteText).toHaveBeenCalledWith('tari address');
+            expect(writeText).not.toHaveBeenCalled();
+            expect(useToastStore.getState().toasts).toHaveLength(0);
+        } finally {
+            Object.defineProperty(navigator, 'clipboard', {
+                configurable: true,
+                value: originalClipboard,
+            });
+        }
+    });
+
+    it('warns when the scheduled wipe of a secret fails', async () => {
+        const seed = 'word '.repeat(24).trim();
+        readText.mockResolvedValue(seed);
+        clear.mockRejectedValue(new Error('X11 server connection timed out'));
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const { result } = renderHook(() => useCopyToClipboard());
+
+        await act(async () => {
+            result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 });
+        });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000);
+        });
+
+        const toasts = useToastStore.getState().toasts;
+        expect(toasts).toHaveLength(1);
+        expect(toasts[0].title).toBe('common:clipboard.clear-failed-title');
+        expect(toasts[0].type).toBe('warning');
+        consoleError.mockRestore();
+    });
+
+    it('in the Flatpak/Wayland sandbox, tells the user to clear the clipboard and schedules no wipe', async () => {
+        needsWebviewOnlyClipboard.mockResolvedValue(true);
+        const seed = 'word '.repeat(24).trim();
+        readText.mockResolvedValue(seed);
+        const { result } = renderHook(() => useCopyToClipboard());
+
+        await act(async () => {
+            result.current.copyToClipboard(seed, undefined, { clearAfterMs: 60_000 });
+        });
+
+        expect(writeText).toHaveBeenCalledWith(seed);
+        const toasts = useToastStore.getState().toasts;
+        expect(toasts).toHaveLength(1);
+        expect(toasts[0].title).toBe('common:clipboard.not-auto-cleared-title');
+        expect(toasts[0].text).toBe('common:clipboard.not-auto-cleared-text');
+
+        await act(async () => vi.advanceTimersByTimeAsync(120_000));
+        expect(readText).not.toHaveBeenCalled();
+        expect(clear).not.toHaveBeenCalled();
+    });
+
+    it('in the sandbox, a copy without clearAfterMs shows no notice', async () => {
+        needsWebviewOnlyClipboard.mockResolvedValue(true);
+        const { result } = renderHook(() => useCopyToClipboard());
+
+        await act(async () => {
+            result.current.copyToClipboard('tari address');
+        });
+
+        expect(useToastStore.getState().toasts).toHaveLength(0);
     });
 
     it('still clears on schedule after the component unmounts', async () => {

@@ -18,6 +18,7 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
 import { SwapStatus } from '@app/hooks/swap/lib/types';
 import { truncateMiddle } from '@app/utils';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { CopyIcon } from '../../icons/copyIcon';
 import { AnimatePresence } from 'motion/react';
 
@@ -60,11 +61,14 @@ export const ProcessingTransaction = ({
     const explorerUrl = mainnetExplorerUrl;
     const [copied, setCopied] = useState(false);
 
+    const { copyToClipboard } = useCopyToClipboard();
+
     const handleCopyAddress = useCallback(() => {
-        navigator.clipboard.writeText(CONTRACT_ADDRESS);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    }, []);
+        copyToClipboard(CONTRACT_ADDRESS, () => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        });
+    }, [copyToClipboard]);
 
     const statusItems: StatusListEntry[] = useMemo(() => {
         const items: StatusListEntry[] = [];
