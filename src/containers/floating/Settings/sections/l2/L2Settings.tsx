@@ -150,7 +150,19 @@ export const L2Settings = () => {
     }
 
     let status;
-    if (!hasPin) {
+    // While the PIN state is unknown (undefined) show a loading line instead
+    // of a "PIN required" panel whose Set PIN button would call create_pin
+    // on a wallet that may already have one (#3518). No button, no invoke:
+    // the panel only tells the user the PIN state is still being checked.
+    if (hasPin === undefined) {
+        status = (
+            <SettingsGroup data-testid="l2-settings-pin-loading">
+                <SettingsGroupContent>
+                    <Typography>{t('l2.pin-loading')}</Typography>
+                </SettingsGroupContent>
+            </SettingsGroup>
+        );
+    } else if (hasPin === false) {
         status = (
             <SettingsGroup data-testid="l2-settings-pin-required">
                 <SettingsGroupContent>

@@ -109,8 +109,14 @@ pub async fn send_xtr(
 /// A transport error is not a failure: the SDK keeps the transaction `New` and resubmits
 /// it on its next poll, so it stays tracked and `lock` keeps its inputs until the wallet
 /// releases them on finalize, the same as for a transaction the network took. Only an
-/// explicit rejection, or a transaction the wallet never stored, fails and drops `lock`,
-/// which frees the inputs.
+/// explicit rejection, or a transaction the transaction service answered that it did not
+/// store, fails and drops `lock`, which frees the inputs.
+///
+/// When the transaction service doesn't answer in time, the request may still be queued
+/// and the wallet may store the transaction after it was read as absent, so the id is
+/// returned as pending and `lock` stays. If the wallet stores the transaction, the lock is
+/// linked to it and released on finalize. If it never does, the SDK clears the unlinked
+/// lock once it times out, and a late store then fails to link it.
 pub(super) async fn submit(
     sdk: &OotleSdk,
     transactions: &TransactionServiceHandle,
@@ -122,14 +128,14 @@ pub(super) async fn submit(
     let dir = MinotariWalletManager::burn_proofs_dir()?;
     let id = transaction.calculate_id();
     claim::track(&dir, id, claim_file);
-    let submitted = with_indexer_timeout(transactions.submit_transaction_with_opts(
-        transaction,
-        Some(context),
-        lock.as_ref().map(|l| l.id()),
-    ))
-    .await
-    .map_err(|e| e.to_string())
-    .and_then(|sent| sent.map(drop).map_err(|e| e.to_string()));
+    let submitted = Submitted::from(
+        with_indexer_timeout(transactions.submit_transaction_with_opts(
+            transaction,
+            Some(context),
+            lock.as_ref().map(|l| l.id()),
+        ))
+        .await,
+    );
     let stored = sdk
         .transaction_api()
         .get(id)
@@ -140,8 +146,15 @@ pub(super) async fn submit(
         claim::untrack(&dir, id);
         return Err(e);
     }
-    if let Err(e) = submitted {
-        warn!(target: LOG_TARGET, "Submitting {id} failed, the wallet will resubmit it: {e}");
+    match submitted {
+        Submitted::Answered(Ok(())) => {}
+        Submitted::Answered(Err(e)) => {
+            warn!(target: LOG_TARGET, "Submitting {id} failed, the wallet will resubmit it: {e}")
+        }
+        Submitted::TimedOut(e) => warn!(
+            target: LOG_TARGET,
+            "Submitting {id} did not finish ({e}), so it is reported pending and its inputs stay locked"
+        ),
     }
     if let Some(lock) = lock {
         lock.keep_locked();
@@ -149,19 +162,43 @@ pub(super) async fn submit(
     Ok(id)
 }
 
+/// What the transaction service made of a submission.
+enum Submitted {
+    /// The service answered. Its error means the wallet did not store the transaction: the
+    /// service links the lock in the write that stores it, and reports no error after that.
+    /// A dropped request is also an answer, as nothing is left to store it.
+    Answered(Result<(), String>),
+    /// The service did not answer in time. The request may still be queued, so the wallet
+    /// may yet store the transaction.
+    TimedOut(String),
+}
+
+impl<T, E: std::fmt::Display> From<Result<Result<T, E>, anyhow::Error>> for Submitted {
+    fn from(result: Result<Result<T, E>, anyhow::Error>) -> Self {
+        match result {
+            Ok(answer) => Self::Answered(answer.map(drop).map_err(|e| e.to_string())),
+            Err(timeout) => Self::TimedOut(timeout.to_string()),
+        }
+    }
+}
+
 /// Why a submission failed for good, from what the transaction service returned and what
 /// the wallet stored for the transaction, or `None` while it may still go through. The
 /// SDK returns the id even when the network rejects the submission outright and only
-/// records the rejection on the stored transaction. When the wallet can't be read the
-/// outcome is unknown, so the transaction is treated as submitted.
+/// records the rejection on the stored transaction. When the wallet can't be read, or the
+/// service didn't answer in time, the outcome is unknown, so the transaction is treated as
+/// submitted.
 fn failure(
-    submitted: &Result<(), String>,
+    submitted: &Submitted,
     stored: Result<Option<(TransactionStatus, Option<String>)>, String>,
 ) -> Option<anyhow::Error> {
     match (submitted, stored) {
         (_, Ok(Some((status, reason)))) => rejection(status, reason.as_deref()),
-        (Err(e), Ok(None)) => Some(anyhow!("The L2 transaction was not submitted: {e}")),
-        (Ok(()), Ok(None)) => None,
+        (Submitted::Answered(Err(e)), Ok(None)) => {
+            Some(anyhow!("The L2 transaction was not submitted: {e}"))
+        }
+        (Submitted::Answered(Ok(())), Ok(None)) => None,
+        (Submitted::TimedOut(_), Ok(None)) => None,
         (_, Err(e)) => {
             warn!(target: LOG_TARGET, "Could not read back a submitted L2 transaction: {e}");
             None
@@ -270,13 +307,14 @@ mod tests {
     #[test]
     fn only_a_rejection_or_an_unstored_transaction_fails_a_submission() {
         let stored = |status| Ok(Some((status, Some("input spent".to_string()))));
-        let transport = Err("connection reset".to_string());
+        let accepted = Submitted::Answered(Ok(()));
+        let transport = Submitted::Answered(Err("connection reset".to_string()));
         // The SDK kept it New after a transport error and will resubmit it.
         assert!(failure(&transport, stored(TransactionStatus::New)).is_none());
-        assert!(failure(&Ok(()), stored(TransactionStatus::Pending)).is_none());
-        let rejected = failure(&Ok(()), stored(TransactionStatus::InvalidTransaction)).unwrap();
+        assert!(failure(&accepted, stored(TransactionStatus::Pending)).is_none());
+        let rejected = failure(&accepted, stored(TransactionStatus::InvalidTransaction)).unwrap();
         assert!(rejected.to_string().contains("input spent"));
-        // Never stored, so nothing will resubmit it.
+        // The service answered that it did not store it, so nothing will resubmit it.
         let unsent = failure(&transport, Ok(None)).unwrap();
         assert!(unsent.to_string().contains("connection reset"));
         // Can't tell, so it keeps its inputs locked.
@@ -284,15 +322,32 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn a_stalled_submit_times_out_as_a_transport_error() {
-        let stalled = std::future::pending::<Result<(), String>>();
-        let submitted = with_timeout(Duration::from_millis(10), stalled)
-            .await
-            .map_err(|e| e.to_string())
-            .and_then(|sent| sent);
-        assert!(submitted.as_ref().unwrap_err().contains("didn't answer"));
-        // Stored New, so it stays pending and keeps its lock like any transport error.
+    async fn a_stalled_submit_read_back_as_absent_stays_pending() {
+        // The service has the request queued but hasn't stored it when the caller gives up
+        // and reads the wallet, so the read finds nothing. The service may store it right
+        // after, linking the lock to it, so the lock must not be released.
+        let stalled = std::future::pending::<Result<TransactionId, String>>();
+        let submitted = Submitted::from(with_timeout(Duration::from_millis(10), stalled).await);
+        let Submitted::TimedOut(e) = &submitted else {
+            panic!("a stalled submit times out");
+        };
+        assert!(e.contains("didn't answer"));
+        assert!(failure(&submitted, Ok(None)).is_none());
         assert!(failure(&submitted, Ok(Some((TransactionStatus::New, None)))).is_none());
+        assert!(failure(&submitted, Err("store busy".to_string())).is_none());
+        // The store finished after the read and the network rejected it.
+        let stored = Ok(Some((
+            TransactionStatus::Rejected,
+            Some("input spent".to_string()),
+        )));
+        assert!(failure(&submitted, stored).is_some());
+    }
+
+    #[tokio::test]
+    async fn an_answered_submit_is_not_a_timeout() {
+        let answered = async { Err::<TransactionId, _>("service shut down".to_string()) };
+        let submitted = Submitted::from(with_timeout(Duration::from_secs(10), answered).await);
+        assert!(matches!(&submitted, Submitted::Answered(Err(e)) if e == "service shut down"));
         assert!(failure(&submitted, Ok(None)).is_some());
     }
 

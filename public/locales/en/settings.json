@@ -85,7 +85,8 @@
     "advanced": {
       "control-tier": "Control Tier",
       "port": "Server Port",
-      "read-tier": "Read Tier"
+      "read-tier": "Read Tier",
+      "invalid-port": "Port must be a whole number between 1024 and 65535."
     },
     "agent-config": {
       "copied": "Copied!",
@@ -105,7 +106,10 @@
       "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
       "status-running": "Running on port {{port}}",
       "status-stopped": "Stopped",
-      "title": "MCP Server"
+      "title": "MCP Server",
+      "status-stopped-port": "Stopped (configured port {{port}})",
+      "status-port-in-use": "Stopped: port {{port}} is in use",
+      "status-start-failed": "Stopped: could not start on port {{port}}"
     },
     "token-display": {
       "copied": "Copied!",
@@ -127,6 +131,11 @@
     "transactions": {
       "description": "Allow MCP clients to send transactions (requires PIN)",
       "title": "Transactions"
+    },
+    "errors": {
+      "port-in-use": "Port {{port}} is already in use. Choose another port.",
+      "start-failed": "The MCP server could not start on port {{port}}. Check the logs and choose another port.",
+      "configuration": "The MCP settings could not be updated. Check the logs and try again."
     }
   },
   "mine-on-app-start": {
@@ -265,6 +274,7 @@
   "l2": {
     "status": "Layer 2",
     "pin-required": "You must set a PIN to use Layer 2",
+    "pin-loading": "Checking whether a PIN is set…",
     "set-pin": "Set a PIN",
     "enable-description": "Layer 2 uses a wallet made from your existing seed words. You'll be asked for your PIN.",
     "enable": "Enable Layer 2",

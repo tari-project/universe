@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
     useMcpStore,
     setMcpServerStatus,
+    setMcpServerError,
     addMcpAuditEntry,
     setMcpPendingTransaction,
     McpAuditEntry,
@@ -13,6 +14,7 @@ describe('useMcpStore', () => {
         useMcpStore.setState({
             serverRunning: false,
             serverPort: null,
+            serverError: null,
             auditEntries: [],
             pendingTransaction: null,
         });
@@ -148,5 +150,19 @@ describe('useMcpStore', () => {
             setMcpPendingTransaction(newTransaction);
             expect(useMcpStore.getState().pendingTransaction?.request_id).toBe('mcp_tx_456');
         });
+    });
+    it('clears a start error when the server stops or recovers', () => {
+        setMcpServerError({ kind: 'port_in_use', port: 4444 });
+        setMcpServerStatus(false, null);
+        expect(useMcpStore.getState().serverError).toBeNull();
+        setMcpServerError({ kind: 'port_in_use', port: 4444 });
+        setMcpServerStatus(true, 4445);
+        expect(useMcpStore.getState().serverError).toBeNull();
+    });
+
+    it('records a start error carried by a status event', () => {
+        setMcpServerStatus(false, null, { kind: 'port_in_use', port: 4444 });
+        expect(useMcpStore.getState().serverError).toEqual({ kind: 'port_in_use', port: 4444 });
+        expect(useMcpStore.getState().serverRunning).toBe(false);
     });
 });

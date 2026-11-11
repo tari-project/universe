@@ -11,10 +11,14 @@ export const NEW_PIN = '246135';
 /**
  * Type a 6-digit PIN into the currently visible PIN input. The inputs
  * auto-advance focus; filling each digit input directly is deterministic.
+ * The backend raises the prompt only after its own work: an L2 claim makes up
+ * to three indexer calls of up to 30s each (claimed check, epoch, fee dry run)
+ * before asking, which on a busy runner took over a minute. It waits five
+ * minutes for the answer, so the test can wait for the question.
  */
 export async function enterPinDigits(page: Page, pin: string) {
   const inputs = page.locator(`${sel.pin.input} input`);
-  await inputs.first().waitFor({ state: 'visible', timeout: 10_000 });
+  await inputs.first().waitFor({ state: 'visible', timeout: 180_000 });
   for (let i = 0; i < pin.length; i++) {
     await inputs.nth(i).fill(pin[i]);
   }

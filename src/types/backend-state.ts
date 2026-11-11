@@ -33,6 +33,7 @@ import { ConfigMcp, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDevice
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 import { AppModuleState } from '@app/store/types/setup.ts';
 import { ConfigCore } from '@app/types/config/core.ts';
+import type { McpServerError } from '@app/store/useMcpStore.ts';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
@@ -274,7 +275,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'McpServerStatusUpdate';
-          payload: { running: boolean; port?: number };
+          payload: { running: boolean; port?: number; error?: McpServerError | null };
       }
     | {
           event_type: 'McpTransactionConfirmation';

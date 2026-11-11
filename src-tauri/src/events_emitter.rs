@@ -377,11 +377,19 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_mcp_server_status_update(running: bool, port: Option<u16>) {
+    pub async fn emit_mcp_server_status_update(
+        running: bool,
+        port: Option<u16>,
+        error: Option<crate::mcp::commands::McpSettingsError>,
+    ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::McpServerStatusUpdate,
-            payload: crate::events::McpServerStatusPayload { running, port },
+            payload: crate::events::McpServerStatusPayload {
+                running,
+                port,
+                error,
+            },
         };
         if let Err(e) = Self::get_app_handle()
             .await

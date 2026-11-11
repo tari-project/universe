@@ -1,0 +1,87 @@
+---
+# Saves the L2 swarm binaries the Playwright L2 job needs from main. A cache
+# saved on a PR branch is only visible to that PR, so without this every PR's
+# first run compiled the swarm from source, a 12 minute all-core build that
+# shared runner hosts with the main Playwright suite and starved it.
+name: Warm L2 swarm cache
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - src-tauri/Cargo.toml
+      - playwright/helpers/l2/**
+      - .github/workflows/l2-swarm-cache.yml
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  warm:
+    name: Warm L2 swarm cache
+    runs-on: [self-hosted, ubuntu-high-cpu]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fix cache ownership (self-hosted runner)
+        # Same as the Playwright jobs: some pods come up with a root-owned
+        # ~/.npm and an empty root-owned tool cache, and setup-node then
+        # fails with EACCES.
+        run: |
+          if [ -d "$HOME/.npm" ]; then
+            sudo chown -R "$(id -u):$(id -g)" "$HOME/.npm"
+          fi
+          sudo mkdir -p "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}"
+          sudo chown -R "$(id -u):$(id -g)" "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      - name: Read pinned Ootle revision
+        id: ootle
+        run: echo "rev=$(node --experimental-strip-types playwright/helpers/l2/install.ts --print-rev)" >> "$GITHUB_OUTPUT"
+
+      - name: Check for cached L2 swarm binaries
+        id: l2-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: target/l2-swarm-cache
+          key: l2-swarm-${{ runner.os }}-${{ runner.arch }}-${{ steps.ootle.outputs.rev }}-${{ hashFiles('playwright/helpers/l2/install.ts') }}
+          lookup-only: true
+
+      - name: Install system dependencies (linux)
+        if: steps.l2-cache.outputs.cache-hit != 'true'
+        run: |
+          # Same packages as the Playwright L2 job (see playwright.yml).
+          sudo rm -f /etc/apt/sources.list.d/hashicorp*
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libprotobuf-dev \
+            protobuf-compiler \
+            unzip \
+            opencl-headers \
+            ocl-icd-opencl-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.l2-cache.outputs.cache-hit != 'true'
+
+      - name: Install pinned L2 swarm and managed binaries
+        if: steps.l2-cache.outputs.cache-hit != 'true'
+        run: node --experimental-strip-types playwright/helpers/l2/install.ts
+
+      - name: Save L2 swarm binaries
+        if: steps.l2-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: target/l2-swarm-cache
+          key: l2-swarm-${{ runner.os }}-${{ runner.arch }}-${{ steps.ootle.outputs.rev }}-${{ hashFiles('playwright/helpers/l2/install.ts') }}

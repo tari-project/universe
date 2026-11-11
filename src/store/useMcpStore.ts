@@ -36,9 +36,12 @@ export interface McpPendingTransaction {
 
 export type McpTxStatus = 'reviewing' | 'processing' | 'completed';
 
+export type McpServerError = { kind: 'port_in_use' | 'start_failed'; port: number } | { kind: 'configuration' };
+
 interface McpStoreState {
     serverRunning: boolean;
     serverPort: number | null;
+    serverError: McpServerError | null;
     auditEntries: McpAuditEntry[];
     pendingTransaction: McpPendingTransaction | null;
     mcpTxStatus: McpTxStatus;
@@ -47,6 +50,7 @@ interface McpStoreState {
 const initialState: McpStoreState = {
     serverRunning: false,
     serverPort: null,
+    serverError: null,
     auditEntries: [],
     pendingTransaction: null,
     mcpTxStatus: 'reviewing',
@@ -56,8 +60,25 @@ export const useMcpStore = create<McpStoreState>()(() => ({
     ...initialState,
 }));
 
-export const setMcpServerStatus = (running: boolean, port: number | null) => {
-    useMcpStore.setState({ serverRunning: running, serverPort: port });
+// Every status update replaces the error: a stop (e.g. token revoke) clears it, a failed bind sets it.
+export const setMcpServerStatus = (running: boolean, port: number | null, error: McpServerError | null = null) => {
+    useMcpStore.setState({ serverRunning: running, serverPort: port, serverError: error });
+};
+
+export const setMcpServerError = (error: unknown) => {
+    if (error === null) {
+        useMcpStore.setState({ serverError: null });
+    } else if (
+        typeof error === 'object' &&
+        'kind' in error &&
+        (error.kind === 'port_in_use' || error.kind === 'start_failed') &&
+        'port' in error &&
+        typeof error.port === 'number'
+    ) {
+        useMcpStore.setState({ serverError: { kind: error.kind, port: error.port } });
+    } else {
+        useMcpStore.setState({ serverError: { kind: 'configuration' } });
+    }
 };
 
 export const addMcpAuditEntry = (entry: McpAuditEntry) => {
