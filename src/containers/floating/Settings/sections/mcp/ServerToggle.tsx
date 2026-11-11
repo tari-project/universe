@@ -36,18 +36,18 @@ export default function ServerToggle() {
         }
     };
 
+    // The full message sits next to the port field (AdvancedSettings); here only a short reason.
     const statusText =
         serverRunning && serverPort
             ? t('mcp.server-toggle.status-running', { port: serverPort })
-            : t('mcp.server-toggle.status-stopped-port', { port: configuredPort });
+            : serverError?.kind === 'port_in_use'
+              ? t('mcp.server-toggle.status-port-in-use', { port: serverError.port })
+              : serverError?.kind === 'start_failed'
+                ? t('mcp.server-toggle.status-start-failed', { port: serverError.port })
+                : t('mcp.server-toggle.status-stopped-port', { port: configuredPort });
 
-    const errorText = serverError
-        ? serverError.kind === 'port_in_use'
-            ? t('mcp.errors.port-in-use', { port: serverError.port })
-            : serverError.kind === 'start_failed'
-              ? t('mcp.errors.start-failed', { port: serverError.port })
-              : t('mcp.errors.configuration')
-        : null;
+    // Configuration errors come from this toggle; port and bind errors are shown next to the port field.
+    const errorText = serverError?.kind === 'configuration' ? t('mcp.errors.configuration') : null;
 
     return (
         <SettingsGroupWrapper>

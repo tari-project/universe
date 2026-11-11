@@ -88,7 +88,7 @@ describe('AdvancedSettings', () => {
         fireEvent.keyDown(input, { key: 'Enter' });
         expect(await screen.findByRole('alert')).toHaveTextContent('mcp.errors.port-in-use');
         expect(input).toHaveValue('4444');
-        expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-stopped-port');
+        expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-port-in-use');
         expect(useMcpStore.getState().serverError).toEqual({ kind: 'port_in_use', port: 4444 });
         expect(screen.getByTestId('mcp-server-toggle')).toBeChecked();
         await waitFor(() => expect(input).not.toBeDisabled());
@@ -130,5 +130,67 @@ describe('AdvancedSettings', () => {
         expect(invoke).toHaveBeenCalledTimes(1);
         finish();
         await waitFor(() => expect(input).not.toBeDisabled());
+    });
+
+    it('retries the same port after a failed bind', async () => {
+        useConfigMcpStore.setState({ enabled: true, port: 4444 });
+        setMcpServerStatus(false, null, { kind: 'port_in_use', port: 4444 });
+        vi.mocked(invoke).mockImplementationOnce(async () => setMcpServerStatus(true, 4444));
+        render(<AdvancedSettings />);
+        fireEvent.keyDown(screen.getByTestId('mcp-port-input'), { key: 'Enter' });
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('set_mcp_port', { port: 4444 }));
+        await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    });
+
+    it('does not restart a running server for an unchanged port, even with a toggle error stored', () => {
+        useConfigMcpStore.setState({ enabled: true, port: 4444 });
+        setMcpServerStatus(true, 4444);
+        useMcpStore.setState({ serverError: { kind: 'configuration' } });
+        render(<AdvancedSettings />);
+        fireEvent.keyDown(screen.getByTestId('mcp-port-input'), { key: 'Enter' });
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it('shows a launch-time bind failure once, next to the port field, with a short status at the toggle', () => {
+        useConfigMcpStore.setState({ enabled: true, port: 4444 });
+        // What the McpServerStatusUpdate event from auto-start leaves in the store.
+        setMcpServerStatus(false, null, { kind: 'port_in_use', port: 4444 });
+        render(
+            <>
+                <ServerToggle />
+                <AdvancedSettings />
+            </>
+        );
+        const alert = screen.getByRole('alert');
+        expect(alert).toHaveTextContent('mcp.errors.port-in-use');
+        expect(screen.getByTestId('mcp-port-input')).toHaveAttribute('aria-describedby', alert.id);
+        expect(screen.getByTestId('mcp-server-status')).toHaveTextContent('mcp.server-toggle.status-port-in-use');
+    });
+
+    it('keeps a port save failure at the port field and a toggle configuration error at the toggle', async () => {
+        useConfigMcpStore.setState({ enabled: true, port: 4444 });
+        setMcpServerStatus(true, 4444);
+        vi.mocked(invoke).mockRejectedValueOnce({ kind: 'configuration', message: 'disk error' });
+        render(
+            <>
+                <ServerToggle />
+                <AdvancedSettings />
+            </>
+        );
+        const input = screen.getByTestId('mcp-port-input');
+        fireEvent.change(input, { target: { value: '4445' } });
+        fireEvent.blur(input);
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent('mcp.errors.configuration');
+        expect(input).toHaveAttribute('aria-describedby', alert.id);
+        expect(useMcpStore.getState().serverError).toBeNull();
+
+        await waitFor(() => expect(input).not.toBeDisabled());
+        fireEvent.change(input, { target: { value: '4444' } });
+        vi.mocked(invoke).mockRejectedValueOnce({ kind: 'configuration', message: 'disk error' });
+        fireEvent.click(screen.getByTestId('mcp-server-toggle'));
+        await waitFor(() => expect(useMcpStore.getState().serverError).toEqual({ kind: 'configuration' }));
+        expect(screen.getByRole('alert')).toHaveTextContent('mcp.errors.configuration');
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
     });
 });

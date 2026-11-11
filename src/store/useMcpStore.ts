@@ -60,8 +60,9 @@ export const useMcpStore = create<McpStoreState>()(() => ({
     ...initialState,
 }));
 
-export const setMcpServerStatus = (running: boolean, port: number | null) => {
-    useMcpStore.setState({ serverRunning: running, serverPort: port, ...(running && { serverError: null }) });
+// Every status update replaces the error: a stop (e.g. token revoke) clears it, a failed bind sets it.
+export const setMcpServerStatus = (running: boolean, port: number | null, error: McpServerError | null = null) => {
+    useMcpStore.setState({ serverRunning: running, serverPort: port, serverError: error });
 };
 
 export const setMcpServerError = (error: unknown) => {

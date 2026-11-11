@@ -37,6 +37,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent, compute_token_expiry};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
+use crate::mcp::commands::McpSettingsError;
 use crate::mcp::tools::TariMcpHandler;
 use crate::node::node_adapter::BaseNodeStatus;
 
@@ -123,14 +124,24 @@ impl McpServerManager {
         };
 
         let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
-        let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
-            error!(target: LOG_TARGET_APP_LOGIC, "MCP server failed to bind to configured port {configured_port}: {e}");
-            anyhow::Error::new(e).context(format!(
-                "MCP server failed to bind to configured port {configured_port}. \
-                 Refusing to fall back to a random port for security reasons — \
-                 another process on the configured port could intercept bearer tokens."
-            ))
-        })?;
+        let listener = match tokio::net::TcpListener::bind(addr).await {
+            Ok(listener) => listener,
+            Err(e) => {
+                error!(target: LOG_TARGET_APP_LOGIC, "MCP server failed to bind to configured port {configured_port}: {e}");
+                // Emitted here so every caller (UI commands and auto-start at launch) surfaces the failure.
+                EventsEmitter::emit_mcp_server_status_update(
+                    false,
+                    None,
+                    Some(McpSettingsError::bind(&e, configured_port)),
+                )
+                .await;
+                return Err(anyhow::Error::new(e).context(format!(
+                    "MCP server failed to bind to configured port {configured_port}. \
+                     Refusing to fall back to a random port for security reasons — \
+                     another process on the configured port could intercept bearer tokens."
+                )));
+            }
+        };
         info!(target: LOG_TARGET_APP_LOGIC, "MCP server bound to configured port {configured_port}");
 
         let bound_port = listener.local_addr()?.port();
@@ -185,7 +196,7 @@ impl McpServerManager {
             manager.bound_port = Some(bound_port);
         }
 
-        EventsEmitter::emit_mcp_server_status_update(true, Some(bound_port)).await;
+        EventsEmitter::emit_mcp_server_status_update(true, Some(bound_port), None).await;
 
         Ok(bound_port)
     }
@@ -235,7 +246,7 @@ impl McpServerManager {
             }
         }
 
-        EventsEmitter::emit_mcp_server_status_update(false, None).await;
+        EventsEmitter::emit_mcp_server_status_update(false, None, None).await;
     }
 
     pub async fn restart() -> Result<u16, anyhow::Error> {

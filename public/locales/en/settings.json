@@ -107,7 +107,9 @@
       "status-running": "Running on port {{port}}",
       "status-stopped": "Stopped",
       "title": "MCP Server",
-      "status-stopped-port": "Stopped (configured port {{port}})"
+      "status-stopped-port": "Stopped (configured port {{port}})",
+      "status-port-in-use": "Stopped: port {{port}} is in use",
+      "status-start-failed": "Stopped: could not start on port {{port}}"
     },
     "token-display": {
       "copied": "Copied!",

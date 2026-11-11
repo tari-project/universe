@@ -28,7 +28,7 @@ use crate::events_emitter::EventsEmitter;
 use crate::mcp::audit::AuditLog;
 use crate::mcp::server::McpServerManager;
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum McpSettingsError {
     PortInUse { port: u16 },
@@ -37,12 +37,18 @@ pub enum McpSettingsError {
 }
 
 impl McpSettingsError {
-    fn start(error: anyhow::Error, port: u16) -> Self {
-        if error
-            .downcast_ref::<std::io::Error>()
-            .is_some_and(|e| e.kind() == std::io::ErrorKind::AddrInUse)
-        {
+    /// Classifies a failed bind of the MCP listener on `port`.
+    pub fn bind(error: &std::io::Error, port: u16) -> Self {
+        if error.kind() == std::io::ErrorKind::AddrInUse {
             Self::PortInUse { port }
+        } else {
+            Self::StartFailed { port }
+        }
+    }
+
+    fn start(error: anyhow::Error, port: u16) -> Self {
+        if let Some(io) = error.downcast_ref::<std::io::Error>() {
+            Self::bind(io, port)
         } else {
             log::error!(target: crate::LOG_TARGET_APP_LOGIC, "MCP server failed to start on port {port}: {error:#}");
             Self::StartFailed { port }

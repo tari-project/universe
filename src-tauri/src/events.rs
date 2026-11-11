@@ -223,6 +223,8 @@ pub struct TariAddressUpdatePayload {
 pub struct McpServerStatusPayload {
     pub running: bool,
     pub port: Option<u16>,
+    /// Why the last start attempt failed, if it did.
+    pub error: Option<crate::mcp::commands::McpSettingsError>,
 }
 
 #[derive(Debug, Serialize, Clone)]

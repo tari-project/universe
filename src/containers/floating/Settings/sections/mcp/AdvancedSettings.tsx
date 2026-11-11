@@ -10,7 +10,7 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
-import { setMcpServerError } from '@app/store/useMcpStore';
+import { setMcpServerError, useMcpStore } from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 import styled from 'styled-components';
 
@@ -32,8 +32,18 @@ export default function AdvancedSettings() {
     const readTier = useConfigMcpStore((s) => s.read_tier_enabled);
     const controlTier = useConfigMcpStore((s) => s.control_tier_enabled);
     const storePort = useConfigMcpStore((s) => s.port);
+    const serverRunning = useMcpStore((s) => s.serverRunning);
+    const serverError = useMcpStore((s) => s.serverError);
+    // Bind errors belong next to the port; configuration errors from the toggle stay at the toggle.
+    const serverErrorText =
+        !serverError || serverError.kind === 'configuration'
+            ? null
+            : t(serverError.kind === 'port_in_use' ? 'mcp.errors.port-in-use' : 'mcp.errors.start-failed', {
+                  port: serverError.port,
+              });
     const [portValue, setPortValue] = useState(String(storePort));
     const [invalidPort, setInvalidPort] = useState(false);
+    const [saveFailed, setSaveFailed] = useState(false);
     const [saving, setSaving] = useState(false);
     const committing = useRef(false);
     const portErrorId = useId();
@@ -50,7 +60,10 @@ export default function AdvancedSettings() {
             return;
         }
         setInvalidPort(false);
-        if (num === storePort) return;
+        setSaveFailed(false);
+        // A stopped server may retry the same port (e.g. the process holding it has exited);
+        // a running one must not be restarted just because the field lost focus.
+        if (num === storePort && serverRunning) return;
         committing.current = true;
         setSaving(true);
         setMcpServerError(null);
@@ -58,14 +71,22 @@ export default function AdvancedSettings() {
             await invoke('set_mcp_port', { port: num });
         } catch (e) {
             console.error('Failed to set MCP port:', e);
-            setMcpServerError(e);
+            const kind = (e as { kind?: unknown } | null)?.kind;
+            if (kind === 'port_in_use' || kind === 'start_failed') setMcpServerError(e);
+            else setSaveFailed(true);
         } finally {
             committing.current = false;
             setSaving(false);
         }
-    }, [portValue, storePort]);
+    }, [portValue, storePort, serverRunning]);
 
     if (!enabled) return null;
+
+    const portErrorText = invalidPort
+        ? t('mcp.advanced.invalid-port')
+        : saveFailed
+          ? t('mcp.errors.configuration')
+          : serverErrorText;
 
     const handleTierToggle = async (tier: string, checked: boolean) => {
         try {
@@ -87,9 +108,9 @@ export default function AdvancedSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('mcp.advanced.port')}</Typography>
                     </SettingsGroupTitle>
-                    {invalidPort && (
+                    {portErrorText && (
                         <Typography variant="p" role="alert" id={portErrorId}>
-                            {t('mcp.advanced.invalid-port')}
+                            {portErrorText}
                         </Typography>
                     )}
                 </SettingsGroupContent>
@@ -98,14 +119,15 @@ export default function AdvancedSettings() {
                         type="text"
                         inputMode="numeric"
                         aria-label={t('mcp.advanced.port')}
-                        aria-invalid={invalidPort}
-                        aria-describedby={invalidPort ? portErrorId : undefined}
+                        aria-invalid={!!portErrorText}
+                        aria-describedby={portErrorText ? portErrorId : undefined}
                         disabled={saving}
                         data-testid="mcp-port-input"
                         value={portValue}
                         onChange={(e) => {
                             setPortValue(e.target.value);
                             setInvalidPort(false);
+                            setSaveFailed(false);
                         }}
                         onBlur={commitPort}
                         onKeyDown={(e) => {
