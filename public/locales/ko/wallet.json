@@ -340,6 +340,42 @@
       "failed": "청구 실패",
       "approve": "청구 승인",
       "approve-subtitle": "이 소각을 레이어 2 지갑으로 청구하려면 PIN을 입력하세요. 직접 시작하지 않았다면 이 창을 닫으세요."
+    },
+    "convert": {
+      "own-address": "내 L2 주소",
+      "error-over-balance": "이 잔액보다 많습니다"
+    },
+    "shield": {
+      "button": "비공개 전환",
+      "hint": "공개 TARI를 비공개 잔액으로 옮깁니다",
+      "title": "TARI 비공개 전환",
+      "review-title": "비공개 전환 검토",
+      "available": "공개 잔액",
+      "fee-note": "TARI를 공개 잔액에서 비공개 잔액으로 옮깁니다. 네트워크 수수료도 공개 잔액에서 차감됩니다.",
+      "cta-confirm": "TARI 비공개 전환",
+      "processing-title": "TARI를 비공개로 전환하는 중입니다",
+      "error-message": "레이어 2 비공개 전환 오류: ",
+      "approve": "비공개 전환 승인",
+      "approve-subtitle": "이 TARI를 공개 잔액에서 비공개 잔액으로 옮기려면 PIN을 입력하세요. 직접 시작하지 않았다면 이 창을 닫으세요.",
+      "review-label": "비공개로 전환할 금액",
+      "confirmed": "비공개 전환 확인됨",
+      "rejected": "비공개 전환 거부됨"
+    },
+    "unshield": {
+      "button": "공개 전환",
+      "hint": "비공개 TARI를 공개 잔액으로 옮깁니다",
+      "title": "TARI 공개 전환",
+      "review-title": "공개 전환 검토",
+      "available": "비공개 잔액",
+      "fee-note": "TARI를 비공개 잔액에서 공개 잔액으로 옮깁니다. 네트워크 수수료도 비공개 잔액에서 차감됩니다.",
+      "cta-confirm": "TARI 공개 전환",
+      "processing-title": "TARI를 공개로 전환하는 중입니다",
+      "error-message": "레이어 2 공개 전환 오류: ",
+      "approve": "공개 전환 승인",
+      "approve-subtitle": "이 TARI를 비공개 잔액에서 공개 잔액으로 옮기려면 PIN을 입력하세요. 직접 시작하지 않았다면 이 창을 닫으세요.",
+      "review-label": "공개로 전환할 금액",
+      "confirmed": "공개 전환 확인됨",
+      "rejected": "공개 전환 거부됨"
     }
   },
   "abandon": {

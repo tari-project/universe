@@ -8,7 +8,7 @@ import type { SpendKind } from '@app/types/events-payloads.ts';
 
 interface Props {
     amountMicroMinotari: number;
-    /** Recipient address for a send, L2 claim public key for a burn, Ootle address for an L2 send, burn commitment for an L2 claim. */
+    /** Recipient address for a send, L2 claim public key for a burn, Ootle address for an L2 send, burn commitment for an L2 claim, the account's own Ootle address for an L2 shield or unshield. */
     destination: string;
     paymentId?: string | null;
     /** The destination address replaced the typed message with its own payment id. */
@@ -46,16 +46,19 @@ export function TransactionContextSummary({
               : abandon.is_burn
                 ? t('abandon.burn-note')
                 : t('abandon.note');
-    const isL2 = kind === 'l2_send' || kind === 'l2_claim';
+    const isConversion = kind === 'l2_shield' || kind === 'l2_unshield';
+    const isL2 = kind === 'l2_send' || kind === 'l2_claim' || isConversion;
     const destinationLabel = isBurn
         ? t('burn.claim-public-key')
         : isAbandon
           ? t('send.transaction-id')
           : kind === 'l2_claim'
             ? t('l2.claim.commitment')
-            : isL2
-              ? t('l2.send.address')
-              : t('send.destination-address');
+            : isConversion
+              ? t('l2.convert.own-address')
+              : isL2
+                ? t('l2.send.address')
+                : t('send.destination-address');
 
     const entries: StatusListEntry[] = [
         {
@@ -87,7 +90,11 @@ export function TransactionContextSummary({
                           ? t('abandon.review-label')
                           : kind === 'l2_claim'
                             ? t('l2.claim.review-label')
-                            : t('send.review-label')}
+                            : kind === 'l2_shield'
+                              ? t('l2.shield.review-label')
+                              : kind === 'l2_unshield'
+                                ? t('l2.unshield.review-label')
+                                : t('send.review-label')}
                 </WhiteBoxLabel>
                 <WhiteBoxValue>
                     <TariPurpleLogo />

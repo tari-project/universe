@@ -344,6 +344,42 @@
       "failed": "Talep başarısız oldu",
       "approve": "Talebi onayla",
       "approve-subtitle": "Bu yakmayı Katman 2 cüzdanınıza talep etmek için PIN'inizi girin. Bunu siz başlatmadıysanız bu pencereyi kapatın."
+    },
+    "convert": {
+      "own-address": "L2 adresiniz",
+      "error-over-balance": "Bu, bu bakiyede olandan fazla"
+    },
+    "shield": {
+      "button": "Gizle",
+      "hint": "Açık TARI'yi gizli bakiyenize taşıyın",
+      "title": "TARI Gizle",
+      "review-title": "Gizlemeyi incele",
+      "available": "Açık bakiye",
+      "fee-note": "TARI'yi açık bakiyenizden gizli bakiyenize taşır. Ağ ücreti de açık bakiyenizden düşülür.",
+      "cta-confirm": "TARI Gizle",
+      "processing-title": "TARI'niz gizleniyor",
+      "error-message": "Katman 2'de gizleme hatası: ",
+      "approve": "Gizlemeyi onayla",
+      "approve-subtitle": "Bu TARI'yi açık bakiyenizden gizli bakiyenize taşımak için PIN'inizi girin. Bunu siz başlatmadıysanız bu pencereyi kapatın.",
+      "review-label": "Gizlediğiniz tutar",
+      "confirmed": "Gizleme onaylandı",
+      "rejected": "Gizleme reddedildi"
+    },
+    "unshield": {
+      "button": "Aç",
+      "hint": "Gizli TARI'yi açık bakiyenize taşıyın",
+      "title": "TARI Aç",
+      "review-title": "Açmayı incele",
+      "available": "Gizli bakiye",
+      "fee-note": "TARI'yi gizli bakiyenizden açık bakiyenize taşır. Ağ ücreti de gizli bakiyenizden düşülür.",
+      "cta-confirm": "TARI Aç",
+      "processing-title": "TARI'niz açılıyor",
+      "error-message": "Katman 2'de açma hatası: ",
+      "approve": "Açmayı onayla",
+      "approve-subtitle": "Bu TARI'yi gizli bakiyenizden açık bakiyenize taşımak için PIN'inizi girin. Bunu siz başlatmadıysanız bu pencereyi kapatın.",
+      "review-label": "Açtığınız tutar",
+      "confirmed": "Açma onaylandı",
+      "rejected": "Açma reddedildi"
     }
   },
   "abandon": {

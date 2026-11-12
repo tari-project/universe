@@ -53,7 +53,7 @@ use tari_ootle_wallet_sdk::{
     cipher_seed::CipherSeedRestore,
     crypto::memo::Memo,
     local_key_store::LocalKeyStore,
-    models::{BalanceChangeSource, EpochBirthday, WalletEvent},
+    models::{AccountWithAddress, BalanceChangeSource, EpochBirthday, WalletEvent},
 };
 use tari_ootle_wallet_sdk_services::{
     Shutdown, ShutdownSignal,
@@ -108,6 +108,7 @@ mod state;
 
 pub use claim::{BurnProof, L2Burn, L2ClaimResult};
 pub use network_stats::L2NetworkStats;
+pub use send::Conversion;
 pub use state::L2WalletState;
 use state::SeedSource;
 
@@ -428,13 +429,7 @@ impl OotleWalletManager {
     ) -> Result<String, TransactionError> {
         let sdk = started_sdk().await?;
         let transactions = transaction_service().await?;
-        let account = ComponentAddress::from_str(account)
-            .map_err(wallet_error)
-            .and_then(|component| {
-                sdk.accounts_api()
-                    .get_account_by_address(&component)
-                    .map_err(wallet_error)
-            })?;
+        let account = wallet_account(&sdk, account)?;
 
         let approve_fee = async |fee| approve_l2_fee(app_handle, pin_context, fee).await;
         let id = send::send_xtr(
@@ -451,6 +446,65 @@ impl OotleWalletManager {
         info!(target: LOG_TARGET, "L2 send submitted: {id}");
         emit_state(&sdk).await;
         Ok(id.to_string())
+    }
+
+    /// The Ootle address of the wallet's own account `account` (a component address), for
+    /// the PIN prompt of a conversion. Fails for an account this wallet doesn't hold.
+    pub async fn account_address(account: &str) -> Result<String, TransactionError> {
+        let sdk = started_sdk().await?;
+        Ok(wallet_account(&sdk, account)?.address().to_string())
+    }
+
+    /// Shields or unshields `amount` micro XTR of `account`'s own funds once the user enters
+    /// their PIN, and returns the L2 transaction id. The caller has already passed the send
+    /// gate.
+    pub async fn convert_xtr(
+        app_handle: &AppHandle,
+        account: &str,
+        conversion: Conversion,
+        amount: u64,
+        pin_context: PinPromptContext,
+    ) -> Result<String, TransactionError> {
+        let sdk = started_sdk().await?;
+        let transactions = transaction_service().await?;
+        let account = wallet_account(&sdk, account)?;
+
+        let approve_fee = async |fee| approve_l2_fee(app_handle, pin_context, fee).await;
+        let id = send::convert_xtr(
+            &sdk,
+            &transactions,
+            account,
+            conversion,
+            amount,
+            approve_fee,
+        )
+        .await
+        .map_err(|e| {
+            TransactionError::WalletError(format!("L2 {} failed: {e}", conversion.as_str()))
+        })?;
+        info!(target: LOG_TARGET, "L2 {} submitted: {id}", conversion.as_str());
+        emit_state(&sdk).await;
+        Ok(id.to_string())
+    }
+
+    /// The most of `account`'s funds a `conversion` can move once it pays its own fee, in
+    /// micro XTR. The caller holds the send gate permit, so no spend builds alongside the
+    /// dry run.
+    pub async fn max_conversion(
+        account: &str,
+        conversion: Conversion,
+    ) -> Result<u64, TransactionError> {
+        let sdk = started_sdk().await?;
+        let transactions = transaction_service().await?;
+        let account = wallet_account(&sdk, account)?;
+        send::max_conversion(&sdk, &transactions, account, conversion)
+            .await
+            .map_err(|e| {
+                TransactionError::WalletError(format!(
+                    "Couldn't work out the most you can {}: {e}",
+                    conversion.as_str()
+                ))
+            })
     }
 
     /// Points the open wallet at `indexer`. Every indexer call builds its client from the
@@ -1048,6 +1102,14 @@ async fn approve_l2_fee(
 
 fn wallet_error(e: impl std::fmt::Display) -> TransactionError {
     TransactionError::WalletError(e.to_string())
+}
+
+/// The wallet's own account at `account` (a component address).
+fn wallet_account(sdk: &OotleSdk, account: &str) -> Result<AccountWithAddress, TransactionError> {
+    let component = ComponentAddress::from_str(account).map_err(wallet_error)?;
+    sdk.accounts_api()
+        .get_account_by_address(&component)
+        .map_err(wallet_error)
 }
 
 fn ootle_network(network: Network) -> OotleNetwork {

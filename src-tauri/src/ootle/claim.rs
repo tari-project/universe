@@ -34,7 +34,7 @@ use std::{
 
 use anyhow::{anyhow, bail};
 use log::warn;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tari_crypto::{
     keys::PublicKey as _,
     ristretto::{RistrettoPublicKey, RistrettoSecretKey},
@@ -74,7 +74,7 @@ use tari_template_lib::{
 
 use super::{
     LOG_TARGET, OotleSdk,
-    send::{MAX_L2_FEE, VALIDITY_EPOCHS, check_fee, submit, with_indexer_timeout},
+    send::{Conversion, MAX_L2_FEE, VALIDITY_EPOCHS, check_fee, submit, with_indexer_timeout},
 };
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 
@@ -112,12 +112,12 @@ pub struct L2Burn {
     pub timestamp: u64,
 }
 
-/// How a submitted claim or send ended on L2.
+/// How a submitted claim, send or conversion ended on L2.
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct L2ClaimResult {
-    /// "claim" or "send".
+    /// "claim", "send", "shield" or "unshield".
     pub kind: &'static str,
-    /// Hex, the claimed burn's commitment. `None` for a send.
+    /// Hex, the claimed burn's commitment. `None` for anything but a claim.
     pub commitment: Option<String>,
     pub accepted: bool,
     /// Why the claim was rejected, when the L2 said.
@@ -127,21 +127,46 @@ pub struct L2ClaimResult {
 }
 
 impl L2ClaimResult {
-    /// The result for a claim of the proof `file` ({claim key}-{commitment}.json), or for
-    /// a send when there's no file.
-    fn new(file: Option<&str>, accepted: bool, reason: Option<String>, not_yet: bool) -> Self {
-        let commitment = file.map(|file| {
-            file.strip_suffix(".json")
-                .and_then(|name| name.rsplit_once('-'))
-                .map_or(file, |(_, commitment)| commitment)
-                .to_string()
-        });
+    fn new(pending: &Pending, accepted: bool, reason: Option<String>, not_yet: bool) -> Self {
+        let commitment = match pending {
+            Pending::Claim(file) => Some(
+                file.strip_suffix(".json")
+                    .and_then(|name| name.rsplit_once('-'))
+                    .map_or(file.as_str(), |(_, commitment)| commitment)
+                    .to_string(),
+            ),
+            Pending::Conversion { .. } | Pending::Send => None,
+        };
         Self {
-            kind: if file.is_some() { "claim" } else { "send" },
-            not_yet_claimable: file.is_some() && not_yet,
+            kind: pending.kind(),
+            not_yet_claimable: matches!(pending, Pending::Claim(_)) && not_yet,
             commitment,
             accepted,
             reason,
+        }
+    }
+}
+
+/// What a submitted transaction is waiting to report, as saved in [`PENDING_CLAIMS_FILE`].
+/// A claim saves as its proof file name and a send as `null`, as they did before
+/// conversions were tracked, so a file an older version wrote still loads.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Pending {
+    /// A claim of the burn proof in this file ({claim key}-{commitment}.json).
+    Claim(String),
+    /// A shield or unshield of the account's own funds.
+    Conversion { conversion: Conversion },
+    /// A send to another address.
+    Send,
+}
+
+impl Pending {
+    fn kind(&self) -> &'static str {
+        match self {
+            Pending::Claim(_) => "claim",
+            Pending::Conversion { conversion } => conversion.as_str(),
+            Pending::Send => "send",
         }
     }
 }
@@ -265,7 +290,7 @@ pub fn find_claimable(dir: &Path, commitment: &str) -> Result<(String, BurnProof
 fn ensure_no_pending_claim(dir: &Path, file: &str) -> Result<(), anyhow::Error> {
     if load_claims(dir)
         .values()
-        .any(|f| f.as_deref() == Some(file))
+        .any(|pending| matches!(pending, Pending::Claim(f) if f == file))
     {
         bail!("This burn already has a claim waiting for the network.");
     }
@@ -344,11 +369,10 @@ fn proof_path(dir: &Path, proof_file: &str) -> Result<std::path::PathBuf, anyhow
     Ok(dir.join(name))
 }
 
-/// Submitted claims and sends, transaction id to the claim's proof file or `None` for
-/// a send.
-type Tracked = HashMap<TransactionId, Option<String>>;
+/// Submitted claims, sends and conversions, by transaction id.
+type Tracked = HashMap<TransactionId, Pending>;
 
-/// The submitted claims and sends saved in `dir`.
+/// The submitted claims, sends and conversions saved in `dir`.
 fn load_claims(dir: &Path) -> Tracked {
     let read = match std::fs::read(dir.join(PENDING_CLAIMS_FILE)) {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return HashMap::new(),
@@ -393,10 +417,10 @@ fn update_tracked<R>(dir: &Path, change: impl FnOnce(&mut Tracked) -> R) -> R {
     result
 }
 
-/// Remembers a transaction about to be submitted, a claim of `claim_file` or a send when
-/// that's `None`, so its outcome is reported whenever it settles.
-pub fn track(dir: &Path, id: TransactionId, claim_file: Option<String>) {
-    update_tracked(dir, |tracked| tracked.insert(id, claim_file));
+/// Remembers a transaction about to be submitted, so its outcome is reported whenever it
+/// settles.
+pub fn track(dir: &Path, id: TransactionId, pending: Pending) {
+    update_tracked(dir, |tracked| tracked.insert(id, pending));
 }
 
 /// Forgets a transaction that was never submitted.
@@ -416,24 +440,26 @@ fn mark_claimed(dir: &Path, file: &str) {
 /// proof file moves into the claimed directory, a rejected claim's stays claimable.
 fn settle(
     dir: &Path,
-    file: Option<String>,
+    pending: Pending,
     accepted: bool,
     reason: Option<String>,
     not_yet: bool,
 ) -> L2ClaimResult {
-    match (&file, accepted) {
-        (Some(file), true) => mark_claimed(dir, file),
-        (Some(_), false) => {
+    match (&pending, accepted) {
+        (Pending::Claim(file), true) => mark_claimed(dir, file),
+        (Pending::Claim(_), false) => {
             warn!(target: LOG_TARGET, "An L2 claim was rejected, its burn stays claimable: {reason:?}")
         }
-        (None, true) => {}
-        (None, false) => warn!(target: LOG_TARGET, "An L2 send was rejected: {reason:?}"),
+        (_, true) => {}
+        (_, false) => {
+            warn!(target: LOG_TARGET, "An L2 {} was rejected: {reason:?}", pending.kind())
+        }
     }
-    L2ClaimResult::new(file.as_deref(), accepted, reason, not_yet)
+    L2ClaimResult::new(&pending, accepted, reason, not_yet)
 }
 
-/// Settles tracked claims and sends that finished while nothing was listening (Universe
-/// was closed or events were missed) and returns how they ended. `status` looks a
+/// Settles tracked claims, sends and conversions that finished while nothing was listening
+/// (Universe was closed or events were missed) and returns how they ended. `status` looks a
 /// transaction up in the wallet, `None` when the wallet doesn't have it. Accepted and
 /// rejected ones settle, unknown ones are dropped (their burn is claimable again),
 /// pending ones stay.
@@ -443,18 +469,18 @@ pub fn reconcile_claims(
 ) -> Vec<L2ClaimResult> {
     update_tracked(dir, |tracked| {
         let mut ended = Vec::new();
-        tracked.retain(|id, file| match status(*id) {
+        tracked.retain(|id, pending| match status(*id) {
             Ok(Some(TransactionStatus::New | TransactionStatus::Pending)) => true,
             Ok(Some(status)) => {
-                ended.push((file.take(), status == TransactionStatus::Accepted));
+                ended.push((pending.clone(), status == TransactionStatus::Accepted));
                 false
             }
             Ok(None) => {
-                if file
-                    .as_deref()
-                    .is_some_and(|f| !dir.join(f).exists() && dir.join(CLAIMED_DIR).join(f).is_file())
+                if let Pending::Claim(f) = pending
+                    && !dir.join(&*f).exists()
+                    && dir.join(CLAIMED_DIR).join(&*f).is_file()
                 {
-                    ended.push((file.take(), true));
+                    ended.push((pending.clone(), true));
                 } else {
                     warn!(target: LOG_TARGET, "The wallet has no record of {id}, no longer tracking it");
                 }
@@ -467,12 +493,12 @@ pub fn reconcile_claims(
         });
         ended
             .into_iter()
-            .map(|(file, accepted)| settle(dir, file, accepted, None, false))
+            .map(|(pending, accepted)| settle(dir, pending, accepted, None, false))
             .collect()
     })
 }
 
-/// How a tracked claim or send ended, once it finalizes or turns out invalid. `None` for
+/// How a tracked transaction ended, once it finalizes or turns out invalid. `None` for
 /// any other event or a transaction that isn't tracked.
 pub fn track_claim(dir: &Path, event: &WalletEvent) -> Option<L2ClaimResult> {
     let (id, reject, invalid) = match event {
@@ -494,8 +520,8 @@ pub fn track_claim(dir: &Path, event: &WalletEvent) -> Option<L2ClaimResult> {
         None => None,
     };
     let not_yet = reject.is_some_and(is_burn_not_yet_claimable);
-    let file = update_tracked(dir, |tracked| tracked.remove(&id))?;
-    Some(settle(dir, file, reason.is_none(), reason, not_yet))
+    let pending = update_tracked(dir, |tracked| tracked.remove(&id))?;
+    Some(settle(dir, pending, reason.is_none(), reason, not_yet))
 }
 
 /// The wallet SDK verifies this read against a trusted validator committee.
@@ -594,7 +620,7 @@ pub async fn claim_burn(
         transaction,
         context,
         None,
-        Some(file_name),
+        Pending::Claim(file_name),
     )
     .await
 }
@@ -871,7 +897,7 @@ mod tests {
 
         let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
         let result = |accepted, not_yet| {
-            let r = L2ClaimResult::new(Some(&file), accepted, None, not_yet);
+            let r = L2ClaimResult::new(&Pending::Claim(file.clone()), accepted, None, not_yet);
             (
                 r.kind,
                 r.commitment.unwrap_or_default(),
@@ -889,7 +915,7 @@ mod tests {
             ("claim", commitment.clone(), false, true)
         );
         assert!(
-            !L2ClaimResult::new(None, false, None, true).not_yet_claimable,
+            !L2ClaimResult::new(&Pending::Send, false, None, true).not_yet_claimable,
             "a send is never a burn claim"
         );
     }
@@ -1022,7 +1048,7 @@ mod tests {
         let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
         write(dir, &file, PROOF);
         let id = TransactionId::from([1; 32]);
-        track(dir, id, Some(file));
+        track(dir, id, Pending::Claim(file));
 
         let Err(err) = find_claimable(dir, COMMITMENT) else {
             panic!("a burn with a claim pending must not be claimable");
@@ -1082,18 +1108,18 @@ mod tests {
         }
         assert!(load_claims(dir).is_empty());
         for n in 1..=5 {
-            track(dir, id(n), Some(file(n)));
+            track(dir, id(n), Pending::Claim(file(n)));
         }
         // Sends 16 and 17, accepted and rejected.
-        track(dir, id(16), None);
-        track(dir, id(17), None);
-        track(dir, id(9), None);
+        track(dir, id(16), Pending::Send);
+        track(dir, id(17), Pending::Send);
+        track(dir, id(9), Pending::Send);
         untrack(dir, id(9));
 
         let claims = load_claims(dir);
         assert_eq!(claims.len(), 7);
-        assert_eq!(claims.get(&id(3)), Some(&Some(file(3))));
-        assert_eq!(claims.get(&id(16)), Some(&None));
+        assert_eq!(claims.get(&id(3)), Some(&Pending::Claim(file(3))));
+        assert_eq!(claims.get(&id(16)), Some(&Pending::Send));
         let settled = reconcile_claims(dir, |tx| match tx.as_bytes()[0] {
             1 | 16 => Ok(Some(TransactionStatus::Accepted)),
             2 | 17 => Ok(Some(TransactionStatus::Rejected)),
@@ -1154,16 +1180,19 @@ mod tests {
             None::<u64>
         };
         let id = |n: u8| TransactionId::from([n; 32]);
-        track(dir, id(1), Some("a.json".to_string()));
+        track(dir, id(1), Pending::Claim("a.json".to_string()));
         let first = inode();
-        track(dir, id(2), None);
+        track(dir, id(2), Pending::Send);
 
         assert_eq!(files(), [PENDING_CLAIMS_FILE]);
         // Each save is a fresh file renamed into place, never an in-place rewrite.
         assert_ne!(first, inode());
         let claims = load_claims(dir);
-        assert_eq!(claims.get(&id(1)), Some(&Some("a.json".to_string())));
-        assert_eq!(claims.get(&id(2)), Some(&None));
+        assert_eq!(
+            claims.get(&id(1)),
+            Some(&Pending::Claim("a.json".to_string()))
+        );
+        assert_eq!(claims.get(&id(2)), Some(&Pending::Send));
     }
 
     #[test]
@@ -1172,7 +1201,7 @@ mod tests {
         // A wallet that never burned has no proof dir yet.
         let dir = dir.path().join("burn_proofs");
         let id = TransactionId::from([7; 32]);
-        track(&dir, id, None);
+        track(&dir, id, Pending::Send);
         let invalid = WalletEvent::TransactionInvalid(
             tari_ootle_wallet_sdk::models::TransactionInvalidEvent {
                 transaction_id: id,
@@ -1186,6 +1215,86 @@ mod tests {
         assert_eq!((result.kind, result.accepted), ("send", false));
         assert!(result.reason.is_some());
         assert!(track_claim(&dir, &invalid).is_none(), "reported once");
+    }
+
+    #[test]
+    fn pending_claims_saved_before_conversions_still_load() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let id = |n: u8| TransactionId::from([n; 32]);
+        // The file as the previous version wrote it: a claim's proof file, or null for a send.
+        let old: HashMap<TransactionId, Option<String>> =
+            HashMap::from([(id(1), Some("a.json".to_string())), (id(2), None)]);
+        write(
+            dir,
+            PENDING_CLAIMS_FILE,
+            &serde_json::to_string(&old).expect("old format"),
+        );
+
+        let claims = load_claims(dir);
+        assert_eq!(claims.len(), 2);
+        assert_eq!(
+            claims.get(&id(1)),
+            Some(&Pending::Claim("a.json".to_string()))
+        );
+        assert_eq!(claims.get(&id(2)), Some(&Pending::Send));
+    }
+
+    #[test]
+    fn conversions_are_saved_and_report_as_what_they_are() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let id = |n: u8| TransactionId::from([n; 32]);
+        let shield = Pending::Conversion {
+            conversion: Conversion::Shield,
+        };
+        let unshield = Pending::Conversion {
+            conversion: Conversion::Unshield,
+        };
+        assert_eq!(
+            serde_json::to_value(&shield).expect("serializes"),
+            serde_json::json!({ "conversion": "shield" })
+        );
+        track(dir, id(1), shield.clone());
+        track(dir, id(2), unshield.clone());
+        track(dir, id(3), Pending::Send);
+        let claims = load_claims(dir);
+        assert_eq!(claims.get(&id(1)), Some(&shield));
+        assert_eq!(claims.get(&id(2)), Some(&unshield));
+        assert_eq!(claims.get(&id(3)), Some(&Pending::Send));
+
+        let invalid = WalletEvent::TransactionInvalid(
+            tari_ootle_wallet_sdk::models::TransactionInvalidEvent {
+                transaction_id: id(1),
+                status: TransactionStatus::InvalidTransaction,
+                finalize: None,
+                final_fee: None,
+            },
+        );
+        let rejected = track_claim(dir, &invalid).expect("tracked shield");
+        assert_eq!((rejected.kind, rejected.accepted), ("shield", false));
+        assert!(rejected.commitment.is_none());
+        assert!(!rejected.not_yet_claimable);
+
+        let settled = reconcile_claims(dir, |_| Ok(Some(TransactionStatus::Accepted)));
+        let mut kinds: Vec<_> = settled.iter().map(|r| (r.kind, r.accepted)).collect();
+        kinds.sort();
+        assert_eq!(kinds, [("send", true), ("unshield", true)]);
+        assert!(load_claims(dir).is_empty());
+    }
+
+    #[test]
+    fn a_pending_conversion_never_blocks_a_claim() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
+        write(dir, &file, PROOF);
+        let conversion = Pending::Conversion {
+            conversion: Conversion::Unshield,
+        };
+        track(dir, TransactionId::from([1; 32]), conversion);
+        track(dir, TransactionId::from([2; 32]), Pending::Send);
+        assert!(find_claimable(dir, COMMITMENT).is_ok());
     }
 
     #[test]
@@ -1264,7 +1373,7 @@ mod tests {
             message: format!("At instruction #0: Duplicate substate tombstone_{COMMITMENT}"),
         };
         let id = TransactionId::from([9; 32]);
-        track(dir, id, Some(file.clone()));
+        track(dir, id, Pending::Claim(file.clone()));
         let finalized = WalletEvent::TransactionFinalized(
             tari_ootle_wallet_sdk::models::TransactionFinalizedEvent {
                 transaction_id: id,

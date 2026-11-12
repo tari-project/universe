@@ -344,6 +344,42 @@
       "failed": "Beanspruchen fehlgeschlagen",
       "approve": "Anspruch genehmigen",
       "approve-subtitle": "Gib deine PIN ein, um diesen Burn in deine Layer-2-Wallet zu beanspruchen. Wenn du dies nicht gestartet hast, schließe diesen Dialog."
+    },
+    "convert": {
+      "own-address": "Deine L2-Adresse",
+      "error-over-balance": "Das ist mehr, als dieses Guthaben enthält"
+    },
+    "shield": {
+      "button": "Abschirmen",
+      "hint": "Offene TARI in dein vertrauliches Guthaben verschieben",
+      "title": "TARI abschirmen",
+      "review-title": "Abschirmung überprüfen",
+      "available": "Offenes Guthaben",
+      "fee-note": "Verschiebt TARI von deinem offenen in dein vertrauliches Guthaben. Die Netzwerkgebühr kommt ebenfalls aus deinem offenen Guthaben.",
+      "cta-confirm": "TARI abschirmen",
+      "processing-title": "Deine TARI werden abgeschirmt",
+      "error-message": "Fehler beim Abschirmen auf Layer 2: ",
+      "approve": "Abschirmung genehmigen",
+      "approve-subtitle": "Gib deine PIN ein, um diese TARI von deinem offenen in dein vertrauliches Guthaben zu verschieben. Wenn du dies nicht gestartet hast, schließe diesen Dialog.",
+      "review-label": "Du schirmst ab",
+      "confirmed": "Abschirmung bestätigt",
+      "rejected": "Abschirmung abgelehnt"
+    },
+    "unshield": {
+      "button": "Offenlegen",
+      "hint": "Vertrauliche TARI in dein offenes Guthaben verschieben",
+      "title": "TARI offenlegen",
+      "review-title": "Offenlegung überprüfen",
+      "available": "Vertrauliches Guthaben",
+      "fee-note": "Verschiebt TARI von deinem vertraulichen in dein offenes Guthaben. Die Netzwerkgebühr kommt ebenfalls aus deinem vertraulichen Guthaben.",
+      "cta-confirm": "TARI offenlegen",
+      "processing-title": "Deine TARI werden offengelegt",
+      "error-message": "Fehler beim Offenlegen auf Layer 2: ",
+      "approve": "Offenlegung genehmigen",
+      "approve-subtitle": "Gib deine PIN ein, um diese TARI von deinem vertraulichen in dein offenes Guthaben zu verschieben. Wenn du dies nicht gestartet hast, schließe diesen Dialog.",
+      "review-label": "Du legst offen",
+      "confirmed": "Offenlegung bestätigt",
+      "rejected": "Offenlegung abgelehnt"
     }
   },
   "abandon": {

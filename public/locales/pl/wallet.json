@@ -352,6 +352,42 @@
       "failed": "Odbiór nie powiódł się",
       "approve": "Zatwierdź odbiór",
       "approve-subtitle": "Wprowadź PIN, aby odebrać to spalenie do portfela Layer 2. Jeśli tego nie rozpocząłeś, zamknij to okno."
+    },
+    "convert": {
+      "own-address": "Twój adres L2",
+      "error-over-balance": "To więcej, niż wynosi to saldo"
+    },
+    "shield": {
+      "button": "Utajnij",
+      "hint": "Przenieś jawne TARI do salda poufnego",
+      "title": "Utajnij TARI",
+      "review-title": "Przejrzyj utajnienie",
+      "available": "Saldo jawne",
+      "fee-note": "Przenosi TARI z salda jawnego do salda poufnego. Opłata sieciowa również jest pobierana z salda jawnego.",
+      "cta-confirm": "Utajnij TARI",
+      "processing-title": "Twoje TARI są utajniane",
+      "error-message": "Błąd podczas utajniania w Layer 2: ",
+      "approve": "Zatwierdź utajnienie",
+      "approve-subtitle": "Wprowadź PIN, aby przenieść te TARI z salda jawnego do salda poufnego. Jeśli tego nie rozpocząłeś, zamknij to okno.",
+      "review-label": "Utajniasz",
+      "confirmed": "Utajnienie potwierdzone",
+      "rejected": "Utajnienie odrzucone"
+    },
+    "unshield": {
+      "button": "Ujawnij",
+      "hint": "Przenieś poufne TARI do salda jawnego",
+      "title": "Ujawnij TARI",
+      "review-title": "Przejrzyj ujawnienie",
+      "available": "Saldo poufne",
+      "fee-note": "Przenosi TARI z salda poufnego do salda jawnego. Opłata sieciowa również jest pobierana z salda poufnego.",
+      "cta-confirm": "Ujawnij TARI",
+      "processing-title": "Twoje TARI są ujawniane",
+      "error-message": "Błąd podczas ujawniania w Layer 2: ",
+      "approve": "Zatwierdź ujawnienie",
+      "approve-subtitle": "Wprowadź PIN, aby przenieść te TARI z salda poufnego do salda jawnego. Jeśli tego nie rozpocząłeś, zamknij to okno.",
+      "review-label": "Ujawniasz",
+      "confirmed": "Ujawnienie potwierdzone",
+      "rejected": "Ujawnienie odrzucone"
     }
   },
   "abandon": {

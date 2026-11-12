@@ -340,6 +340,42 @@
       "failed": "Nhận thất bại",
       "approve": "Phê duyệt nhận",
       "approve-subtitle": "Nhập mã PIN để nhận giao dịch đốt này vào ví Layer 2 của bạn. Nếu bạn không thực hiện việc này, hãy đóng hộp thoại."
+    },
+    "convert": {
+      "own-address": "Địa chỉ L2 của bạn",
+      "error-over-balance": "Số này vượt quá số dư này"
+    },
+    "shield": {
+      "button": "Bảo mật",
+      "hint": "Chuyển TARI công khai sang số dư bảo mật của bạn",
+      "title": "Bảo mật TARI",
+      "review-title": "Xem lại giao dịch bảo mật",
+      "available": "Số dư công khai",
+      "fee-note": "Chuyển TARI từ số dư công khai sang số dư bảo mật của bạn. Phí mạng cũng được trừ từ số dư công khai.",
+      "cta-confirm": "Bảo mật TARI",
+      "processing-title": "Đang bảo mật TARI của bạn",
+      "error-message": "Lỗi khi bảo mật trên Layer 2: ",
+      "approve": "Phê duyệt bảo mật",
+      "approve-subtitle": "Nhập mã PIN để chuyển số TARI này từ số dư công khai sang số dư bảo mật của bạn. Nếu bạn không thực hiện việc này, hãy đóng hộp thoại.",
+      "review-label": "Bạn đang bảo mật",
+      "confirmed": "Giao dịch bảo mật đã được xác nhận",
+      "rejected": "Giao dịch bảo mật bị từ chối"
+    },
+    "unshield": {
+      "button": "Công khai",
+      "hint": "Chuyển TARI bảo mật sang số dư công khai của bạn",
+      "title": "Công khai TARI",
+      "review-title": "Xem lại giao dịch công khai",
+      "available": "Số dư bảo mật",
+      "fee-note": "Chuyển TARI từ số dư bảo mật sang số dư công khai của bạn. Phí mạng cũng được trừ từ số dư bảo mật.",
+      "cta-confirm": "Công khai TARI",
+      "processing-title": "Đang công khai TARI của bạn",
+      "error-message": "Lỗi khi công khai trên Layer 2: ",
+      "approve": "Phê duyệt công khai",
+      "approve-subtitle": "Nhập mã PIN để chuyển số TARI này từ số dư bảo mật sang số dư công khai của bạn. Nếu bạn không thực hiện việc này, hãy đóng hộp thoại.",
+      "review-label": "Bạn đang công khai",
+      "confirmed": "Giao dịch công khai đã được xác nhận",
+      "rejected": "Giao dịch công khai bị từ chối"
     }
   },
   "abandon": {

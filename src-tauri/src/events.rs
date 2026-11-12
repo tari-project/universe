@@ -230,10 +230,12 @@ pub struct McpServerStatusPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct McpTransactionConfirmationPayload {
     pub request_id: String,
-    /// `"send"`, `"burn"`, `"l2_send"` or `"l2_claim"`; decides how `destination` is labelled in the dialog.
+    /// `"send"`, `"burn"`, `"l2_send"`, `"l2_claim"`, `"l2_shield"`, `"l2_unshield"` or
+    /// `"abandon"`; decides how `destination` is labelled in the dialog.
     pub kind: String,
     /// The recipient address for a send, the L2 claim public key (hex) for a burn, the
-    /// Ootle address for an L2 send, the burn commitment (hex) for an L2 claim.
+    /// Ootle address for an L2 send, the burn commitment (hex) for an L2 claim, the
+    /// account's own Ootle address for an L2 shield or unshield.
     pub destination: String,
     pub amount_micro_minotari: u64,
     pub amount_display: String,
@@ -311,6 +313,23 @@ pub enum PinPromptContext {
         commitment: String,
         fee_micro_minotari: Option<u64>,
     },
+    /// Moving XTR (micro units) of `account`'s own funds from its revealed balance to its
+    /// confidential one. `address` is the account's Ootle address. The fee comes out of the
+    /// revealed balance and is set once the dry run has priced the transaction.
+    L2Shield {
+        amount_micro_minotari: u64,
+        account: String,
+        address: String,
+        fee_micro_minotari: Option<u64>,
+    },
+    /// [`Self::L2Shield`] the other way: confidential to revealed, the fee coming out of the
+    /// confidential balance.
+    L2Unshield {
+        amount_micro_minotari: u64,
+        account: String,
+        address: String,
+        fee_micro_minotari: Option<u64>,
+    },
     /// Abandoning stalled send or burn `tx_id`, which hands its inputs back.
     Abandon {
         amount_micro_minotari: u64,
@@ -322,7 +341,8 @@ pub enum PinPromptContext {
 }
 
 impl PinPromptContext {
-    /// Sets the fee a send or L2 claim will pay. Other contexts are left as they are.
+    /// Sets the fee a send, L2 claim or L2 conversion will pay. Other contexts are left as
+    /// they are.
     pub fn with_fee(mut self, fee: u64) -> Self {
         if let Self::Send {
             fee_micro_minotari, ..
@@ -331,6 +351,12 @@ impl PinPromptContext {
             fee_micro_minotari, ..
         }
         | Self::L2Claim {
+            fee_micro_minotari, ..
+        }
+        | Self::L2Shield {
+            fee_micro_minotari, ..
+        }
+        | Self::L2Unshield {
             fee_micro_minotari, ..
         } = &mut self
         {

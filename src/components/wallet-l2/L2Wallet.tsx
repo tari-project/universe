@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { IoCheckmarkOutline } from 'react-icons/io5';
+import styled from 'styled-components';
 import { QRCode } from 'react-qrcode-logo';
 import { CopySVG } from '@app/assets/icons/copy';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
@@ -41,11 +42,38 @@ import {
 } from '@app/components/transactions/receive/Address.style.ts';
 import { FilterSelect } from '@app/components/transactions/history/FilterSelect.tsx';
 import L2Activity from './L2Activity.tsx';
+import L2ConvertModal from './L2ConvertModal.tsx';
 import L2SendModal from './L2SendModal.tsx';
 
 const FILTER_TYPES = ['all-activity', 'transactions', 'l2.filter.waiting-claims'] as const;
 
 const EMPTY_BALANCE = { revealed: 0, confidential: 0 };
+
+const ConvertActions = styled.div`
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+`;
+
+const ConvertButton = styled.button`
+    padding: 3px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.18);
+    }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+`;
 
 /** With no `account` it is the pre-launch wallet: zero balance, no activity, Send and Receive off,
  * and Burn claiming to the key the default account will get. */
@@ -103,6 +131,8 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
                         <BalanceWrapper
                             data-testid="l2-balance"
                             data-balance={hideBalance ? undefined : account?.balance.total}
+                            data-revealed={hideBalance ? undefined : account?.balance.revealed}
+                            data-confidential={hideBalance ? undefined : account?.balance.confidential}
                         >
                             <BalanceTextWrapper>
                                 {hideBalance ? <Hidden>{`*******`}</Hidden> : xtr(revealed + confidential)}
@@ -117,6 +147,29 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
                                 </Typography>
                             </BottomWrapper>
                         </BalanceWrapper>
+                        {account && (
+                            // The PIN prompt is the gate, so without a PIN the backend refuses both.
+                            <ConvertActions title={pinLocked === false ? t('burn.pin-required') : undefined}>
+                                <ConvertButton
+                                    type="button"
+                                    onClick={() => setSection('shield')}
+                                    disabled={!hasPin || revealed === 0}
+                                    title={t('l2.shield.hint')}
+                                    data-testid="l2-shield-button"
+                                >
+                                    {t('l2.shield.button')}
+                                </ConvertButton>
+                                <ConvertButton
+                                    type="button"
+                                    onClick={() => setSection('unshield')}
+                                    disabled={!hasPin || confidential === 0}
+                                    title={t('l2.unshield.hint')}
+                                    data-testid="l2-unshield-button"
+                                >
+                                    {t('l2.unshield.button')}
+                                </ConvertButton>
+                            </ConvertActions>
+                        )}
                     </BottomContent>
                 </Content>
             </DetailsCard>
@@ -166,6 +219,16 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
             {/* Mounted only while open, like BurnModal, so a send that finishes after the X can't leave a stale Submitted screen. */}
             {section === 'send' && account && (
                 <L2SendModal show account={account.component_address} onClose={() => setSection('history')} />
+            )}
+
+            {(section === 'shield' || section === 'unshield') && account && (
+                <L2ConvertModal
+                    conversion={section}
+                    account={account.component_address}
+                    address={account.address}
+                    available={section === 'shield' ? revealed : confidential}
+                    onClose={() => setSection('history')}
+                />
             )}
 
             {section === 'burn' && claimPublicKey && (

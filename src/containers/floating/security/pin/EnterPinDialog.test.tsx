@@ -97,6 +97,33 @@ describe('EnterPinDialog', () => {
     });
 
     it.each([
+        ['l2_shield', 'shield'],
+        ['l2_unshield', 'unshield'],
+    ] as const)('shows what a %s moves, to which address and for what fee', (kind, key) => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 1,
+            pinContext: {
+                kind,
+                amount_micro_minotari: 1_500_000,
+                account: 'component_abc',
+                address: 'otl_esm_1own',
+                fee_micro_minotari: 2_500,
+            },
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText(`l2.${key}.approve`)).toBeInTheDocument();
+        expect(screen.getByText(`l2.${key}.review-label`)).toBeInTheDocument();
+        expect(screen.getByText(`l2.${key}.approve-subtitle`)).toBeInTheDocument();
+        expect(screen.getByText('l2.convert.own-address')).toBeInTheDocument();
+        expect(screen.getByText('otl_esm_1own')).toBeInTheDocument();
+        expect(screen.getByText('1.500000')).toBeInTheDocument();
+        expect(screen.getByText('0.002500 TARI')).toBeInTheDocument();
+        const strings = en.l2[key] as Record<string, string>;
+        for (const name of ['approve', 'approve-subtitle', 'review-label']) expect(strings[name]).toBeTruthy();
+    });
+
+    it.each([
         ['l2_send', 10_049_990_000, '10,049.990000'],
         ['l2_send', 1, '0.000001'],
         ['send', 10_049_990_000, '10.04K'],

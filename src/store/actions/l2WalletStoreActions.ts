@@ -36,10 +36,18 @@ const changeL2Seed = async (command: string, args?: Record<string, unknown>) => 
 export const importL2SeedWords = (seedWords: string[]) => changeL2Seed('l2_import_seed_words', { seedWords });
 export const resetL2ToL1Seed = () => changeL2Seed('l2_use_l1_seed');
 
+/** Toast titles for a send or conversion that settled, accepted first. */
+const SETTLED_TITLES: Record<Exclude<L2ClaimResult['kind'], 'claim'>, [string, string]> = {
+    send: ['l2.send.confirmed', 'l2.send.rejected'],
+    shield: ['l2.shield.confirmed', 'l2.shield.rejected'],
+    unshield: ['l2.unshield.confirmed', 'l2.unshield.rejected'],
+};
+
 export const handleL2ClaimResult = (result: L2ClaimResult) => {
-    if (result.kind === 'send') {
+    if (result.kind !== 'claim') {
+        const [confirmed, rejected] = SETTLED_TITLES[result.kind];
         addToast({
-            title: t(result.accepted ? 'l2.send.confirmed' : 'l2.send.rejected', { ns: 'wallet' }),
+            title: t(result.accepted ? confirmed : rejected, { ns: 'wallet' }),
             text: result.reason ?? undefined,
             type: result.accepted ? 'success' : 'error',
         });

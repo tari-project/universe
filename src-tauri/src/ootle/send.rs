@@ -22,11 +22,13 @@
 
 //! Sending XTR from an L2 account, the way tari_walletd's stealth transfer handler and
 //! its web UI do it: dry run until the fee settles, then build at that fee and submit.
+//! Shielding and unshielding are the same transfer, paid to the account's own address.
 
 use std::time::Duration;
 
 use anyhow::{anyhow, bail};
 use log::warn;
+use serde::{Deserialize, Serialize};
 use tari_crypto::tari_utilities::ByteArray;
 use tari_ootle_common_types::{Epoch, optional::Optional};
 use tari_ootle_transaction::{Transaction, TransactionId};
@@ -47,7 +49,10 @@ use tari_template_lib::{
     types::{Amount, constants::STEALTH_TARI_RESOURCE_ADDRESS},
 };
 
-use super::{LOG_TARGET, OotleSdk, claim};
+use super::{
+    LOG_TARGET, OotleSdk,
+    claim::{self, Pending},
+};
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 
 /// Same as tari_walletd: about an hour at the 20 minute epoch target.
@@ -76,35 +81,186 @@ pub async fn send_xtr(
     memo: Option<Memo>,
     approve_fee: impl AsyncFnOnce(u64) -> Result<(), anyhow::Error>,
 ) -> Result<TransactionId, anyhow::Error> {
-    let epoch = with_indexer_timeout(sdk.get_network_interface().get_current_epoch()).await??;
-    let mut params = StealthTransferParams {
-        fee_params: TransferFeeParams::new(UtxoInputSelection::PreferRevealed),
-        input_selection: UtxoInputSelection::PreferRevealed,
-        outputs: vec![TransferOutput {
-            address: destination,
-            revealed_amount: Amount::zero(),
-            blinded_amount: amount,
-            memo,
+    let output = TransferOutput {
+        address: destination,
+        revealed_amount: Amount::zero(),
+        blinded_amount: amount,
+        memo,
+        pay_to: PayTo::StealthPublicKey,
+    };
+    let params = transfer_params(sdk, UtxoInputSelection::PreferRevealed, output).await?;
+    let params = settle_fee(sdk, transactions, &account, params, |_| Ok(())).await?;
+    sign_and_submit(
+        sdk,
+        transactions,
+        account,
+        params,
+        Pending::Send,
+        approve_fee,
+    )
+    .await
+}
+
+/// Which way a conversion moves an account's own XTR.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Conversion {
+    /// Revealed (the account vault) to confidential (a stealth UTXO).
+    Shield,
+    /// Confidential (stealth UTXOs) to revealed (the account vault).
+    Unshield,
+}
+
+impl Conversion {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Conversion::Shield => "shield",
+            Conversion::Unshield => "unshield",
+        }
+    }
+
+    /// Spends only the side being converted, fee included, so the other side is never
+    /// touched. A preference would quietly top up a short balance from the other side, and
+    /// converting confidential to confidential (or revealed to revealed) only burns a fee.
+    fn input_selection(self) -> UtxoInputSelection {
+        match self {
+            Conversion::Shield => UtxoInputSelection::RevealedOnly,
+            Conversion::Unshield => UtxoInputSelection::ConfidentialOnly,
+        }
+    }
+
+    /// The output paying `amount` to `address` (the account's own) on the other side. A
+    /// revealed output is deposited into the account the address names.
+    fn output(self, address: OotleAddress, amount: u64) -> TransferOutput {
+        let (revealed_amount, blinded_amount) = match self {
+            Conversion::Shield => (Amount::zero(), amount),
+            Conversion::Unshield => (Amount::from(amount), 0),
+        };
+        TransferOutput {
+            address,
+            revealed_amount,
+            blinded_amount,
+            memo: None,
             pay_to: PayTo::StealthPublicKey,
-        }],
+        }
+    }
+
+    /// What the account can spend on the side being converted: unlocked vault funds for a
+    /// shield, unspent stealth UTXOs for an unshield.
+    fn available(self, sdk: &OotleSdk, account: &AccountWithAddress) -> Result<u64, anyhow::Error> {
+        let component = account.component_address();
+        let available = match self {
+            Conversion::Shield => sdk
+                .accounts_api()
+                .get_vault_by_resource(component, &STEALTH_TARI_RESOURCE_ADDRESS)
+                .optional()?
+                .map(|vault| vault.available_revealed_balance())
+                .unwrap_or_default(),
+            Conversion::Unshield => sdk
+                .stealth_outputs_api()
+                .get_unspent_balance_for_account_resource(
+                    component,
+                    &STEALTH_TARI_RESOURCE_ADDRESS,
+                )?,
+        };
+        available
+            .to_u64_checked()
+            .ok_or_else(|| anyhow!("The {} balance is too large to convert", self.as_str()))
+    }
+}
+
+/// Moves `amount` micro XTR of `account`'s own funds between its revealed and confidential
+/// balances. The fee comes out of the side being converted, so a shield of X takes X + fee
+/// from the revealed balance and adds X to the confidential one, and an unshield the
+/// opposite. Fails before anything is submitted, like [`send_xtr`], if that side can't
+/// cover the amount and fee or the fee is over [`MAX_L2_FEE`].
+pub async fn convert_xtr(
+    sdk: &OotleSdk,
+    transactions: &TransactionServiceHandle,
+    account: AccountWithAddress,
+    conversion: Conversion,
+    amount: u64,
+    approve_fee: impl AsyncFnOnce(u64) -> Result<(), anyhow::Error>,
+) -> Result<TransactionId, anyhow::Error> {
+    let output = conversion.output(account.address().clone(), amount);
+    let params = transfer_params(sdk, conversion.input_selection(), output).await?;
+    let params = settle_fee(sdk, transactions, &account, params, |_| Ok(())).await?;
+    let pending = Pending::Conversion { conversion };
+    sign_and_submit(sdk, transactions, account, params, pending, approve_fee).await
+}
+
+/// The most `account` can convert in one transaction once the fee is paid: everything on
+/// that side less the fee, which is settled with a dry run of exactly that conversion.
+/// Nothing is submitted and each dry run releases the inputs it locked; the caller holds
+/// the send gate permit so no real spend is selecting inputs at the same time.
+pub async fn max_conversion(
+    sdk: &OotleSdk,
+    transactions: &TransactionServiceHandle,
+    account: AccountWithAddress,
+    conversion: Conversion,
+) -> Result<u64, anyhow::Error> {
+    let available = conversion.available(sdk, &account)?;
+    let address = account.address().clone();
+    let output = conversion.output(address.clone(), available);
+    let params = transfer_params(sdk, conversion.input_selection(), output).await?;
+    // Each round pays the fee out of the same balance, so the amount shrinks as it rises.
+    let params = settle_fee(sdk, transactions, &account, params, |params| {
+        let amount = sweep_amount(available, params.max_fee)?;
+        params.outputs = vec![conversion.output(address.clone(), amount)];
+        Ok(())
+    })
+    .await?;
+    sweep_amount(available, params.max_fee)
+}
+
+/// `available` less `fee`, refused when nothing would be left to convert.
+fn sweep_amount(available: u64, fee: u64) -> Result<u64, anyhow::Error> {
+    match available.checked_sub(fee) {
+        Some(amount) if amount > 0 => Ok(amount),
+        _ => bail!("The balance of {available} micro TARI doesn't cover the {fee} micro TARI fee"),
+    }
+}
+
+/// A dry run of one XTR output paid from `input_selection`, at a placeholder fee of 1 for
+/// [`settle_fee`] to raise.
+async fn transfer_params(
+    sdk: &OotleSdk,
+    input_selection: UtxoInputSelection,
+    output: TransferOutput,
+) -> Result<StealthTransferParams, anyhow::Error> {
+    let epoch = with_indexer_timeout(sdk.get_network_interface().get_current_epoch()).await??;
+    Ok(StealthTransferParams {
+        fee_params: TransferFeeParams::new(input_selection),
+        input_selection,
+        outputs: vec![output],
         badge_usage: BadgeUsage::None,
         resource_address: STEALTH_TARI_RESOURCE_ADDRESS,
         max_fee: 1,
         max_epoch: Epoch(epoch.as_u64().saturating_add(VALIDITY_EPOCHS)),
         is_dry_run: true,
-    };
-    params.max_fee = estimate_fee(sdk, transactions, &account, params.clone()).await?;
+    })
+}
+
+/// Has the user approve the settled fee, then builds the transfer for real and submits it,
+/// tracked as `pending`.
+async fn sign_and_submit(
+    sdk: &OotleSdk,
+    transactions: &TransactionServiceHandle,
+    account: AccountWithAddress,
+    mut params: StealthTransferParams,
+    pending: Pending,
+    approve_fee: impl AsyncFnOnce(u64) -> Result<(), anyhow::Error>,
+) -> Result<TransactionId, anyhow::Error> {
     approve_fee(params.max_fee).await?;
     params.is_dry_run = false;
 
     let context = TransactionContext::with_accounts([*account.component_address()]);
     let (lock, transaction) = build(sdk, account, params).await?;
-    submit(sdk, transactions, transaction, context, Some(lock), None).await
+    submit(sdk, transactions, transaction, context, Some(lock), pending).await
 }
 
-/// Submits `transaction` and returns its id unless it definitely failed. It's tracked
-/// before it goes out (`claim_file` for a claim, `None` for a send) so its outcome is
-/// reported whenever it settles.
+/// Submits `transaction` and returns its id unless it definitely failed. It's tracked as
+/// `pending` before it goes out, so its outcome is reported whenever it settles.
 ///
 /// A transport error is not a failure: the SDK keeps the transaction `New` and resubmits
 /// it on its next poll, so it stays tracked and `lock` keeps its inputs until the wallet
@@ -123,11 +279,11 @@ pub(super) async fn submit(
     transaction: Transaction,
     context: TransactionContext,
     lock: Option<WalletLockDropGuard<'_, SqliteWalletStore>>,
-    claim_file: Option<String>,
+    pending: Pending,
 ) -> Result<TransactionId, anyhow::Error> {
     let dir = MinotariWalletManager::burn_proofs_dir()?;
     let id = transaction.calculate_id();
-    claim::track(&dir, id, claim_file);
+    claim::track(&dir, id, pending);
     let submitted = Submitted::from(
         with_indexer_timeout(transactions.submit_transaction_with_opts(
             transaction,
@@ -220,15 +376,19 @@ fn rejection(status: TransactionStatus, reason: Option<&str>) -> Option<anyhow::
 }
 
 /// Dry runs the transfer, raising the fee to what the run reports until a build at a
-/// fee covers what it's charged. Input selection targets amount + fee, so the fee
-/// changes the shape of the transaction being priced.
-async fn estimate_fee(
+/// fee covers what it's charged, and returns the params at that fee. Input selection
+/// targets amount + fee, so the fee changes the shape of the transaction being priced.
+/// `fit` runs before every dry run, so the outputs can follow the fee (a sweep pays it out
+/// of the amount).
+async fn settle_fee(
     sdk: &OotleSdk,
     transactions: &TransactionServiceHandle,
     account: &AccountWithAddress,
     mut params: StealthTransferParams,
-) -> Result<u64, anyhow::Error> {
+    fit: impl Fn(&mut StealthTransferParams) -> Result<(), anyhow::Error>,
+) -> Result<StealthTransferParams, anyhow::Error> {
     for _ in 0..MAX_FEE_ROUNDS {
+        fit(&mut params)?;
         let (lock, transaction) = build(sdk, account.clone(), params.clone()).await?;
         lock.release();
         let result = with_indexer_timeout(transactions.submit_dry_run_transaction(transaction))
@@ -239,7 +399,7 @@ async fn estimate_fee(
             if let Some(reason) = finalize.any_reject() {
                 bail!("The L2 transaction would be rejected: {reason}");
             }
-            return Ok(params.max_fee);
+            return Ok(params);
         }
         params.max_fee = check_fee(finalize.required_fees(), MAX_L2_FEE)?;
     }
@@ -358,6 +518,65 @@ mod tests {
         assert!(rejection(TransactionStatus::Rejected, None).is_some());
         assert!(rejection(TransactionStatus::Pending, None).is_none());
         assert!(rejection(TransactionStatus::Accepted, None).is_none());
+    }
+
+    fn own_address() -> OotleAddress {
+        let key = RistrettoPublicKeyBytes::try_from([1u8; 32].as_slice()).expect("key bytes");
+        OotleAddress::new(tari_ootle_wallet_sdk::Network::Esmeralda, key, key)
+    }
+
+    #[test]
+    fn a_shield_spends_only_revealed_funds_into_a_blinded_output() {
+        assert!(matches!(
+            Conversion::Shield.input_selection(),
+            UtxoInputSelection::RevealedOnly
+        ));
+        let output = Conversion::Shield.output(own_address(), 1_500_000);
+        assert_eq!(output.blinded_amount, 1_500_000);
+        assert!(output.revealed_amount.is_zero());
+        assert_eq!(output.address, own_address());
+        assert!(output.memo.is_none());
+        assert!(matches!(output.pay_to, PayTo::StealthPublicKey));
+        assert!(output.validate_pay_to().is_ok());
+    }
+
+    #[test]
+    fn an_unshield_spends_only_confidential_funds_into_a_revealed_output() {
+        assert!(matches!(
+            Conversion::Unshield.input_selection(),
+            UtxoInputSelection::ConfidentialOnly
+        ));
+        let output = Conversion::Unshield.output(own_address(), 1_500_000);
+        assert_eq!(output.blinded_amount, 0);
+        assert_eq!(output.revealed_amount, Amount::from(1_500_000u64));
+        assert_eq!(output.address, own_address());
+        assert!(output.memo.is_none());
+        // A revealed-only output must stay a plain key-path one, or the SDK refuses it.
+        assert!(output.validate_pay_to().is_ok());
+    }
+
+    #[test]
+    fn conversions_take_the_names_the_frontend_sends() {
+        let parse = |name: &str| serde_json::from_value::<Conversion>(serde_json::json!(name));
+        assert_eq!(parse("shield").unwrap(), Conversion::Shield);
+        assert_eq!(parse("unshield").unwrap(), Conversion::Unshield);
+        assert!(parse("Shield").is_err());
+        assert!(parse("send").is_err());
+        for conversion in [Conversion::Shield, Conversion::Unshield] {
+            assert_eq!(parse(conversion.as_str()).unwrap(), conversion);
+        }
+    }
+
+    #[test]
+    fn a_sweep_pays_the_fee_out_of_the_balance() {
+        assert_eq!(sweep_amount(1_000_000, 2_500).unwrap(), 997_500);
+        assert_eq!(sweep_amount(2_501, 2_500).unwrap(), 1);
+        let err = sweep_amount(2_500, 2_500).unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "The balance of 2500 micro TARI doesn't cover the 2500 micro TARI fee"
+        );
+        assert!(sweep_amount(0, 1).is_err());
     }
 
     #[test]
