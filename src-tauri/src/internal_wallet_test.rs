@@ -895,7 +895,9 @@ fn critical_problem(error: anyhow::Error) -> super::events::CriticalProblemPaylo
 }
 
 /// The refusal before a new wallet is created, and the guard in `add_monero_wallet`, name the
-/// Monero keys that stopped them, not a backup the user never had.
+/// Monero keys that stopped them, not a backup the user never had - and the exact config path
+/// that was checked, so a user inspecting a different (for example virtualized) folder can
+/// tell they are not looking at the folder the app checked.
 #[test]
 fn test_monero_keys_found_problem_detail_names_the_monero_keys() {
     use super::internal_wallet::monero_keys_found_problem;
@@ -906,9 +908,20 @@ fn test_monero_keys_found_problem_detail_names_the_monero_keys() {
         payload.description.as_deref(),
         Some("common:wallet-config-missing")
     );
-    assert_eq!(
-        payload.error_message.as_deref(),
-        Some("Monero keys from a previous install were found, config_wallet.json is missing")
+    let detail = payload.error_message.expect("a detail line");
+    assert!(
+        detail.starts_with(
+            "Monero keys from a previous install were found, config_wallet.json is missing (checked: "
+        ),
+        "detail names the Monero keys and the checked path: {detail}"
+    );
+    assert!(
+        detail.contains("app_configs"),
+        "detail shows the resolved config path: {detail}"
+    );
+    assert!(
+        detail.ends_with("config_wallet.json)"),
+        "detail ends with the config file: {detail}"
     );
 }
 
@@ -918,9 +931,8 @@ fn test_previous_wallet_problem_no_moved_aside_file_names_the_unreadable_backup(
     use super::internal_wallet::previous_wallet_problem;
 
     let dir = tempfile::tempdir().expect("temp dir");
-    let payload = critical_problem(previous_wallet_problem(
-        &dir.path().join("config_wallet.json.backup"),
-    ));
+    let config_backup = dir.path().join("config_wallet.json.backup");
+    let payload = critical_problem(previous_wallet_problem(&config_backup));
 
     assert_eq!(
         payload.description.as_deref(),
@@ -928,7 +940,13 @@ fn test_previous_wallet_problem_no_moved_aside_file_names_the_unreadable_backup(
     );
     assert_eq!(
         payload.error_message.as_deref(),
-        Some("config_wallet.json is missing, config_wallet.json.backup is unreadable")
+        Some(
+            format!(
+                "config_wallet.json is missing, config_wallet.json.backup is unreadable (checked: {})",
+                config_backup.display()
+            )
+            .as_str()
+        )
     );
 }
 
