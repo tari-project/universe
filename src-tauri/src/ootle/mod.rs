@@ -57,12 +57,12 @@ use tari_ootle_wallet_sdk::{
 };
 use tari_ootle_wallet_sdk_services::{
     Shutdown, ShutdownSignal,
-    account_monitor::AccountMonitor,
+    account_monitor::{AccountMonitor, AccountMonitorHandle},
     account_recovery::AccountRecoveryService,
     indexer_rest_api::IndexerRestApiNetworkInterface,
     notify::Notify,
     transaction_service::{TransactionService, TransactionServiceHandle},
-    utxo_scanner::{StealthUtxoScannerWorker, UtxoRecovery},
+    utxo_scanner::{StealthUtxoScannerWorker, UtxoRecovery, UtxoScannerHandle},
 };
 use tari_ootle_wallet_storage_sqlite::SqliteWalletStore;
 use tari_shutdown::ShutdownSignal as PhaseSignal;
@@ -114,6 +114,8 @@ use state::SeedSource;
 const LOG_TARGET: &str = "tari::universe::ootle";
 /// Same as tari_walletd: stop looking for more recovered accounts after this many misses.
 const RECOVERY_ABANDON_COUNT: usize = 10;
+/// How often the account monitor and stealth UTXO scanner poll the indexer for incoming funds.
+const ACCOUNT_POLL_INTERVAL: std::time::Duration = std::time::Duration::from_secs(30);
 /// How long an L2 seed swap waits for the restarted wallet phase to find the new store.
 const SWAP_OPEN_WAIT: std::time::Duration = std::time::Duration::from_secs(120);
 /// Holds the id of the L1 wallet the store in the same directory belongs to, or
@@ -137,6 +139,8 @@ static INSTANCE: LazyLock<OotleWalletManager> = LazyLock::new(|| OotleWalletMana
     sdk: Mutex::new(None),
     notify: Notify::new(100),
     transactions: Mutex::new(None),
+    monitor: Mutex::new(None),
+    utxo_scanner: Mutex::new(None),
     store_dir: Mutex::new(None),
     seed_imported: AtomicBool::new(false),
     locked: AtomicBool::new(false),
@@ -149,6 +153,8 @@ pub struct OotleWalletManager {
     notify: Notify<WalletEvent>,
     /// Set once the services run, which is when L2 is enabled.
     transactions: Mutex<Option<TransactionServiceHandle>>,
+    monitor: Mutex<Option<AccountMonitorHandle>>,
+    utxo_scanner: Mutex<Option<UtxoScannerHandle>>,
     /// Where the open store lives, set on every open.
     store_dir: Mutex<Option<PathBuf>>,
     /// Whether the open store holds imported seed words rather than the L1 seed.
@@ -179,6 +185,8 @@ impl OotleWalletManager {
     ) {
         INSTANCE.sdk.lock().await.take();
         INSTANCE.transactions.lock().await.take();
+        INSTANCE.monitor.lock().await.take();
+        INSTANCE.utxo_scanner.lock().await.take();
     }
 
     /// Finds the L2 store and notes whether L2 was enabled in it, which leaves it locked
@@ -206,6 +214,8 @@ impl OotleWalletManager {
         // directory might be deleted below.
         INSTANCE.sdk.lock().await.take();
         INSTANCE.transactions.lock().await.take();
+        INSTANCE.monitor.lock().await.take();
+        INSTANCE.utxo_scanner.lock().await.take();
         recover_store_swap(&store_dir)?;
         let reset = match InternalWallet::tari_wallet_details().await {
             Some(details) => claim_store_for(&store_dir, details.id.as_str())?,
@@ -398,6 +408,22 @@ impl OotleWalletManager {
             return Err(not_started());
         }
         Ok(closed_state())
+    }
+
+    /// Immediately scans the indexer for every L2 account's vault balances and stealth UTXOs,
+    /// then emits and returns the refreshed [`L2WalletState`].
+    pub async fn refresh_balance() -> Result<L2WalletState, TransactionError> {
+        check_l2_allowed(
+            Network::get_current_or_user_setting_or_default(),
+            PinManager::pin_locked().await,
+        )?;
+        let sdk = started_sdk().await?;
+        let monitor = account_monitor().await?;
+        let scanner = utxo_scanner().await?;
+        refresh_accounts(&sdk, &monitor, &scanner).await?;
+        let next = state::build_state(&sdk).map_err(wallet_error)?;
+        EventsEmitter::emit_l2_wallet_state(next.clone()).await;
+        Ok(next)
     }
 
     /// The public key the default account gets (account key index 0), derived locally so a
@@ -954,6 +980,55 @@ async fn transaction_service() -> Result<TransactionServiceHandle, TransactionEr
         .ok_or_else(|| TransactionError::Disabled("Layer 2 is not enabled".to_string()))
 }
 
+async fn account_monitor() -> Result<AccountMonitorHandle, TransactionError> {
+    INSTANCE
+        .monitor
+        .lock()
+        .await
+        .clone()
+        .ok_or_else(|| TransactionError::Disabled("Layer 2 is not enabled".to_string()))
+}
+
+async fn utxo_scanner() -> Result<UtxoScannerHandle, TransactionError> {
+    INSTANCE
+        .utxo_scanner
+        .lock()
+        .await
+        .clone()
+        .ok_or_else(|| TransactionError::Disabled("Layer 2 is not enabled".to_string()))
+}
+
+async fn refresh_accounts(
+    sdk: &OotleSdk,
+    monitor: &AccountMonitorHandle,
+    scanner: &UtxoScannerHandle,
+) -> Result<(), TransactionError> {
+    let accounts_api = sdk.accounts_api();
+    let total = accounts_api.count().map_err(wallet_error)?;
+    let count = usize::try_from(total).map_err(wallet_error)?;
+    let accounts = accounts_api.get_many(0, count).map_err(wallet_error)?;
+    for account in accounts {
+        let component = *account.component_address();
+        monitor
+            .refresh_account(component)
+            .await
+            .map_err(wallet_error)?;
+        let resources: std::collections::HashSet<_> = accounts_api
+            .get_associated_stealth_resources(&component)
+            .map_err(wallet_error)?
+            .into_iter()
+            .chain(std::iter::once(STEALTH_TARI_RESOURCE_ADDRESS))
+            .collect();
+        for resource in resources {
+            scanner
+                .scan(component, resource)
+                .await
+                .map_err(wallet_error)?;
+        }
+    }
+    Ok(())
+}
+
 async fn started_sdk() -> Result<OotleSdk, TransactionError> {
     if INSTANCE.locked.load(Ordering::Relaxed) {
         return Err(TransactionError::Disabled(
@@ -1135,6 +1210,7 @@ async fn start_services(
 
     let (scanner, scanner_handle) =
         StealthUtxoScannerWorker::new(sdk.clone(), notify.clone()).spawn();
+    *INSTANCE.utxo_scanner.lock().await = Some(scanner_handle.clone());
     let scanner_abort = scanner.abort_handle();
     let mut abort_signal = signal.clone();
     tracker.spawn(async move {
@@ -1149,6 +1225,10 @@ async fn start_services(
         scanner_handle.clone(),
         signal.clone(),
     );
+    let monitor = monitor
+        .with_periodic_scan_interval(ACCOUNT_POLL_INTERVAL)
+        .with_utxo_scan_interval(ACCOUNT_POLL_INTERVAL);
+    *INSTANCE.monitor.lock().await = Some(monitor_handle.clone());
     spawn_service(&tracker, &signal, "account monitor", monitor.run());
     spawn_service(&tracker, &signal, "transaction service", transactions.run());
 
@@ -1314,10 +1394,23 @@ mod tests {
         let shutdown = Shutdown::new();
         let (service, handle) =
             TransactionService::new(INSTANCE.notify.clone(), sdk.clone(), shutdown.to_signal());
+        let (scanner_task, scanner_handle) =
+            StealthUtxoScannerWorker::new(sdk.clone(), INSTANCE.notify.clone()).spawn();
+        scanner_task.abort();
+        drop(scanner_task.await);
+        let (monitor, monitor_handle) = AccountMonitor::new(
+            INSTANCE.notify.clone(),
+            sdk.clone(),
+            scanner_handle.clone(),
+            shutdown.to_signal(),
+        );
         // The wallet phase has stopped its services before reset closes the database.
+        drop(monitor);
         drop(service);
         *INSTANCE.sdk.lock().await = Some(sdk);
         *INSTANCE.transactions.lock().await = Some(handle);
+        *INSTANCE.monitor.lock().await = Some(monitor_handle);
+        *INSTANCE.utxo_scanner.lock().await = Some(scanner_handle);
 
         #[cfg(target_os = "linux")]
         let has_open_store_file = || {
@@ -1334,6 +1427,8 @@ mod tests {
 
         assert!(INSTANCE.sdk.lock().await.is_none());
         assert!(INSTANCE.transactions.lock().await.is_none());
+        assert!(INSTANCE.monitor.lock().await.is_none());
+        assert!(INSTANCE.utxo_scanner.lock().await.is_none());
         assert!(INSTANCE.lifecycle.try_lock().is_err());
         #[cfg(target_os = "linux")]
         assert!(!has_open_store_file());
@@ -1958,5 +2053,46 @@ mod tests {
                 Err(TransactionError::InvalidAddress(_))
             ));
         }
+    }
+
+    #[tokio::test]
+    async fn refresh_accounts_checks_every_account_and_reports_stopped_services() {
+        assert!(ACCOUNT_POLL_INTERVAL <= std::time::Duration::from_secs(60));
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+
+        let shutdown = Shutdown::new();
+        let (scanner_task, scanner_handle) =
+            StealthUtxoScannerWorker::new(sdk.clone(), INSTANCE.notify.clone()).spawn();
+        scanner_task.abort();
+        drop(scanner_task.await);
+        let (monitor, monitor_handle) = AccountMonitor::new(
+            INSTANCE.notify.clone(),
+            sdk.clone(),
+            scanner_handle.clone(),
+            shutdown.to_signal(),
+        );
+        drop(monitor);
+
+        // No accounts yet: refresh succeeds without hitting stopped services.
+        assert!(
+            refresh_accounts(&sdk, &monitor_handle, &scanner_handle)
+                .await
+                .is_ok()
+        );
+
+        // With an account present, refresh asks the monitor and surfaces service shutdown.
+        let key = sdk.key_manager_api().next_account_address().expect("key");
+        sdk.accounts_api()
+            .create_account(Some("default"), true, key)
+            .expect("account");
+        assert!(matches!(
+            refresh_accounts(&sdk, &monitor_handle, &scanner_handle).await,
+            Err(TransactionError::WalletError(_))
+        ));
     }
 }

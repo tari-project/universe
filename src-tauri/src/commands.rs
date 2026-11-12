@@ -1974,6 +1974,16 @@ pub async fn l2_get_state() -> Result<L2WalletState, String> {
     OotleWalletManager::state().await.map_err(|e| e.to_string())
 }
 
+/// Immediately scans the indexer for L2 vault and stealth UTXO updates and emits the
+/// refreshed [`L2WalletState`].
+#[tauri::command]
+pub async fn l2_refresh_balance() -> Result<L2WalletState, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_refresh_balance] called");
+    OotleWalletManager::refresh_balance()
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Hex public key of L2 account key index 0, the default claim key for a burn before the
 /// default account exists. Derived locally from the started wallet.
 #[tauri::command]

@@ -533,6 +533,7 @@ fn main() {
             commands::l2_create_pin_and_enable,
             commands::set_ootle_indexer_url,
             commands::l2_get_state,
+            commands::l2_refresh_balance,
             commands::l2_default_claim_public_key,
             commands::l2_get_seed_words,
             commands::l2_import_seed_words,
