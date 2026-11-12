@@ -60,4 +60,61 @@ describe('L2SendModal', () => {
         expect(await screen.findByTestId('form-root-error')).toHaveTextContent('send.error-denied');
         expect(screen.getByTestId('l2-send-review-button')).toBeInTheDocument();
     });
+
+    it('defaults to private visibility and sends visibility="private"', async () => {
+        vi.mocked(invoke).mockImplementation((async (cmd: string, args?: { address?: string }) => {
+            if (cmd === 'l2_validate_address' && args?.address !== GOOD) throw 'Invalid L2 address';
+            if (cmd === 'l2_send') return 'tx_private_1';
+        }) as typeof invoke);
+
+        await fill(GOOD, '2.5');
+        expect(screen.getByTestId('l2-send-visibility-private')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByTestId('l2-send-visibility-public')).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.queryByTestId('l2-send-public-note')).not.toBeInTheDocument();
+
+        await waitFor(() => expect(screen.getByTestId('l2-send-review-button')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('l2-send-review-button'));
+
+        const confirmButton = await screen.findByTestId('l2-send-confirm-button');
+        expect(screen.getByText('l2.send.visibility')).toBeInTheDocument();
+        expect(screen.getByText('l2.send.visibility-private')).toBeInTheDocument();
+
+        fireEvent.click(confirmButton);
+        await waitFor(() =>
+            expect(invoke).toHaveBeenCalledWith('l2_send', {
+                account: 'component_test',
+                destination: GOOD,
+                amount: '2.5',
+                visibility: 'private',
+            })
+        );
+    });
+
+    it('shows the public note and sends visibility="public" when switched to Public', async () => {
+        vi.mocked(invoke).mockImplementation((async (cmd: string, args?: { address?: string }) => {
+            if (cmd === 'l2_validate_address' && args?.address !== GOOD) throw 'Invalid L2 address';
+            if (cmd === 'l2_send') return 'tx_public_1';
+        }) as typeof invoke);
+
+        await fill(GOOD, '3');
+        fireEvent.click(screen.getByTestId('l2-send-visibility-public'));
+        expect(screen.getByTestId('l2-send-visibility-public')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByTestId('l2-send-public-note')).toHaveTextContent('l2.send.public-note');
+
+        await waitFor(() => expect(screen.getByTestId('l2-send-review-button')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('l2-send-review-button'));
+
+        const confirmButton = await screen.findByTestId('l2-send-confirm-button');
+        expect(screen.getByText('l2.send.visibility-public')).toBeInTheDocument();
+
+        fireEvent.click(confirmButton);
+        await waitFor(() =>
+            expect(invoke).toHaveBeenCalledWith('l2_send', {
+                account: 'component_test',
+                destination: GOOD,
+                amount: '3',
+                visibility: 'public',
+            })
+        );
+    });
 });

@@ -54,7 +54,7 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
-use crate::ootle::{L2Burn, L2WalletState, OotleWalletManager};
+use crate::ootle::{L2Burn, L2TransferVisibility, L2WalletState, OotleWalletManager};
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -1896,6 +1896,7 @@ pub async fn l2_send(
     account: String,
     destination: String,
     amount: String,
+    visibility: Option<L2TransferVisibility>,
 ) -> Result<String, String> {
     info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called");
     gated_l2_send(GatedL2SendRequest {
@@ -1906,6 +1907,7 @@ pub async fn l2_send(
         destination,
         account,
         pay_ref: None,
+        visibility: visibility.unwrap_or_default(),
     })
     .await
     .map_err(|e| e.to_string())
@@ -1920,6 +1922,7 @@ pub async fn l2_send_from_tapplet(
     destination: String,
     amount: String,
     pay_ref: String,
+    visibility: Option<L2TransferVisibility>,
 ) -> Result<String, String> {
     gated_l2_send(GatedL2SendRequest {
         origin: SendOrigin::Tapplet,
@@ -1929,6 +1932,7 @@ pub async fn l2_send_from_tapplet(
         destination,
         account,
         pay_ref: Some(pay_ref),
+        visibility: visibility.unwrap_or_default(),
     })
     .await
     .map_err(|e| e.to_string())

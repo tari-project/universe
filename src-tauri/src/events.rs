@@ -24,6 +24,7 @@ use crate::{
     internal_wallet::TariAddressType,
     mining::gpu::miners::GpuCommonInformation,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
+    ootle::L2TransferVisibility,
     setup::{listeners::AppModule, setup_manager::SetupPhase},
 };
 
@@ -253,6 +254,7 @@ pub struct McpTransactionConfirmationPayload {
     pub is_burn: bool,
 
     pub fee_micro_minotari: Option<u64>,
+    pub l2_visibility: Option<L2TransferVisibility>,
 }
 
 /// Optional context attached to the `EnterPin` event so the PIN dialog can tell the
@@ -302,6 +304,7 @@ pub enum PinPromptContext {
         account: String,
         pay_ref: Option<String>,
         origin: String,
+        visibility: L2TransferVisibility,
         fee_micro_minotari: Option<u64>,
     },
     /// Claiming an L1 burn of `amount_micro_minotari` on L2, `commitment` (hex) being the

@@ -129,6 +129,7 @@ export default function McpTransactionDialog() {
                                 kind={pending.kind}
                                 amountMicroMinotari={pending.amount_micro_minotari}
                                 destination={pending.destination}
+                                visibility={pending.l2_visibility}
                                 paymentId={pending.payment_id}
                                 paymentIdOverridden={pending.payment_id_overridden}
                                 feeMicroMinotari={pending.fee_micro_minotari}

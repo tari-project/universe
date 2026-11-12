@@ -201,6 +201,26 @@ describe('EnterPinDialog', () => {
         expect(screen.getByText('aa'.repeat(16))).toBeInTheDocument();
         expect(screen.getByTestId('payment-id-overridden')).toHaveTextContent('send.payment-id-overridden');
     });
+
+    it('shows visibility in the L2 send PIN prompt summary', () => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 12,
+            pinContext: {
+                kind: 'l2_send',
+                amount_micro_minotari: 5_000_000,
+                destination: 'otl_esm_dest',
+                account: 'component_abc',
+                pay_ref: null,
+                origin: 'app',
+                visibility: 'public',
+                fee_micro_minotari: 400,
+            },
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText('l2.send.visibility')).toBeInTheDocument();
+        expect(screen.getByText('l2.send.visibility-public')).toBeInTheDocument();
+    });
 });
 
 describe('ForgotPinDialog', () => {

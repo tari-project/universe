@@ -27,6 +27,7 @@ use std::time::Duration;
 
 use anyhow::{anyhow, bail};
 use log::warn;
+use serde::{Deserialize, Serialize};
 use tari_crypto::tari_utilities::ByteArray;
 use tari_ootle_common_types::{Epoch, optional::Optional};
 use tari_ootle_transaction::{Transaction, TransactionId};
@@ -62,8 +63,43 @@ pub(super) const MAX_L2_FEE: u64 = 100_000;
 /// stalled indexer can't wedge every L1 and L2 spend behind it.
 const INDEXER_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Sends `amount` micro XTR from `account` to `destination` as a blinded stealth output
-/// carrying `memo`.
+/// Whether an L2 transfer creates a confidential stealth UTXO or sends revealed vault funds.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum L2TransferVisibility {
+    #[default]
+    Private,
+    Public,
+}
+
+/// Builds the transfer output for `visibility`. Public sends move `amount` as
+/// `revealed_amount` (`blinded_amount = 0`); because no stealth output is created on chain
+/// when `blinded_amount` is zero, `memo` is omitted on public transfers.
+pub(super) fn transfer_output(
+    destination: OotleAddress,
+    amount: u64,
+    visibility: L2TransferVisibility,
+    memo: Option<Memo>,
+) -> TransferOutput {
+    match visibility {
+        L2TransferVisibility::Private => TransferOutput {
+            address: destination,
+            revealed_amount: Amount::zero(),
+            blinded_amount: amount,
+            memo,
+            pay_to: PayTo::StealthPublicKey,
+        },
+        L2TransferVisibility::Public => TransferOutput {
+            address: destination,
+            revealed_amount: Amount::from(amount),
+            blinded_amount: 0,
+            memo: None,
+            pay_to: PayTo::StealthPublicKey,
+        },
+    }
+}
+
+/// Sends `output` from `account`.
 /// Fails before anything is submitted if the account can't cover the amount and fee, or
 /// the fee is over [`MAX_L2_FEE`]. `approve_fee` gets the settled fee before anything is
 /// signed for real, and stops the send by returning an error.
@@ -71,22 +107,14 @@ pub async fn send_xtr(
     sdk: &OotleSdk,
     transactions: &TransactionServiceHandle,
     account: AccountWithAddress,
-    destination: OotleAddress,
-    amount: u64,
-    memo: Option<Memo>,
+    output: TransferOutput,
     approve_fee: impl AsyncFnOnce(u64) -> Result<(), anyhow::Error>,
 ) -> Result<TransactionId, anyhow::Error> {
     let epoch = with_indexer_timeout(sdk.get_network_interface().get_current_epoch()).await??;
     let mut params = StealthTransferParams {
         fee_params: TransferFeeParams::new(UtxoInputSelection::PreferRevealed),
         input_selection: UtxoInputSelection::PreferRevealed,
-        outputs: vec![TransferOutput {
-            address: destination,
-            revealed_amount: Amount::zero(),
-            blinded_amount: amount,
-            memo,
-            pay_to: PayTo::StealthPublicKey,
-        }],
+        outputs: vec![output],
         badge_usage: BadgeUsage::None,
         resource_address: STEALTH_TARI_RESOURCE_ADDRESS,
         max_fee: 1,
@@ -368,5 +396,68 @@ mod tests {
             err.to_string(),
             "The network asked for a fee of 100001 micro TARI, over the 100000 limit"
         );
+    }
+
+    #[test]
+    fn visibility_deserializes_lowercase_and_defaults_to_private() {
+        assert_eq!(
+            L2TransferVisibility::default(),
+            L2TransferVisibility::Private
+        );
+        let private: L2TransferVisibility = serde_json::from_str("\"private\"").unwrap();
+        let public: L2TransferVisibility = serde_json::from_str("\"public\"").unwrap();
+        assert_eq!(private, L2TransferVisibility::Private);
+        assert_eq!(public, L2TransferVisibility::Public);
+        assert_eq!(serde_json::to_string(&public).unwrap(), "\"public\"");
+        assert!(serde_json::from_str::<L2TransferVisibility>("\"stealth\"").is_err());
+    }
+
+    #[test]
+    fn transfer_output_sets_blinded_or_revealed_amount_by_visibility() {
+        use tari_crypto::{
+            keys::PublicKey,
+            ristretto::{RistrettoPublicKey, RistrettoSecretKey},
+        };
+
+        let pk = RistrettoPublicKey::from_secret_key(&RistrettoSecretKey::from(1u64));
+        let key = RistrettoPublicKeyBytes::try_from(pk.as_bytes()).unwrap();
+        let address = OotleAddress::new(tari_ootle_wallet_sdk::Network::Esmeralda, key, key);
+        let memo = Memo::new_destination_tag_and_message(b"tag", "").unwrap();
+
+        let private = transfer_output(
+            address.clone(),
+            2_500_000,
+            L2TransferVisibility::Private,
+            Some(memo.clone()),
+        );
+        assert_eq!(private.revealed_amount, Amount::zero());
+        assert_eq!(private.blinded_amount, 2_500_000);
+        assert_eq!(private.memo, Some(memo));
+
+        let public = transfer_output(
+            address,
+            2_500_000,
+            L2TransferVisibility::Public,
+            Some(Memo::new_destination_tag_and_message(b"ignored", "").unwrap()),
+        );
+        assert_eq!(public.revealed_amount, Amount::from(2_500_000u64));
+        assert_eq!(public.blinded_amount, 0);
+        assert!(public.memo.is_none());
+
+        for output in [private, public] {
+            let params = StealthTransferParams {
+                fee_params: TransferFeeParams::new(UtxoInputSelection::PreferRevealed),
+                input_selection: UtxoInputSelection::PreferRevealed,
+                outputs: vec![output],
+                badge_usage: BadgeUsage::None,
+                resource_address: STEALTH_TARI_RESOURCE_ADDRESS,
+                max_fee: 1_000,
+                max_epoch: Epoch(10),
+                is_dry_run: true,
+            };
+            params
+                .validate(tari_ootle_wallet_sdk::Network::Esmeralda)
+                .expect("valid transfer params");
+        }
     }
 }

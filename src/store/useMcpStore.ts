@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { addToast } from '@app/components/ToastStack/useToastStore';
-import type { SpendKind, TransactionOrigin } from '@app/types/events-payloads.ts';
+import type { L2TransferVisibility, SpendKind, TransactionOrigin } from '@app/types/events-payloads.ts';
 
 export interface McpAuditEntry {
     timestamp: string;
@@ -32,6 +32,7 @@ export interface McpPendingTransaction {
     is_burn?: boolean;
 
     fee_micro_minotari?: number | null;
+    l2_visibility?: L2TransferVisibility | null;
 }
 
 export type McpTxStatus = 'reviewing' | 'processing' | 'completed';

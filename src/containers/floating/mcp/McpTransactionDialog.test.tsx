@@ -242,4 +242,21 @@ describe('McpTransactionDialog', () => {
             expect(screen.getByText('settings:mcp.transaction-dialog.remaining')).toBeInTheDocument();
         });
     });
+
+    it('shows visibility for an L2 send confirmation dialog', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_l2_pub',
+            origin: 'app',
+            kind: 'l2_send',
+            destination: 'otl_esm_dest',
+            amount_micro_minotari: 4_000_000,
+            amount_display: '4 TARI',
+            l2_visibility: 'public',
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('l2.send.visibility')).toBeInTheDocument();
+            expect(screen.getByText('l2.send.visibility-public')).toBeInTheDocument();
+        });
+    });
 });
