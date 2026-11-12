@@ -348,6 +348,42 @@
       "failed": "Falha na reivindicação",
       "approve": "Aprovar reivindicação",
       "approve-subtitle": "Digite seu PIN para reivindicar esta queima na sua carteira da Camada 2. Se não foi você quem iniciou isso, feche esta janela."
+    },
+    "convert": {
+      "own-address": "Seu endereço L2",
+      "error-over-balance": "Isso é mais do que este saldo tem"
+    },
+    "shield": {
+      "button": "Proteger",
+      "hint": "Mover TARI revelado para o seu saldo confidencial",
+      "title": "Proteger TARI",
+      "review-title": "Revisar proteção",
+      "available": "Saldo revelado",
+      "fee-note": "Move TARI do seu saldo revelado para o seu saldo confidencial. A taxa de rede também sai do seu saldo revelado.",
+      "cta-confirm": "Proteger TARI",
+      "processing-title": "Protegendo seu TARI",
+      "error-message": "Erro ao proteger na Camada 2: ",
+      "approve": "Aprovar proteção",
+      "approve-subtitle": "Digite seu PIN para mover este TARI do seu saldo revelado para o seu saldo confidencial. Se não foi você quem iniciou isso, feche esta janela.",
+      "review-label": "Você está protegendo",
+      "confirmed": "Proteção confirmada",
+      "rejected": "Proteção rejeitada"
+    },
+    "unshield": {
+      "button": "Revelar",
+      "hint": "Mover TARI confidencial para o seu saldo revelado",
+      "title": "Revelar TARI",
+      "review-title": "Revisar revelação",
+      "available": "Saldo confidencial",
+      "fee-note": "Move TARI do seu saldo confidencial para o seu saldo revelado. A taxa de rede também sai do seu saldo confidencial.",
+      "cta-confirm": "Revelar TARI",
+      "processing-title": "Revelando seu TARI",
+      "error-message": "Erro ao revelar na Camada 2: ",
+      "approve": "Aprovar revelação",
+      "approve-subtitle": "Digite seu PIN para mover este TARI do seu saldo confidencial para o seu saldo revelado. Se não foi você quem iniciou isso, feche esta janela.",
+      "review-label": "Você está revelando",
+      "confirmed": "Revelação confirmada",
+      "rejected": "Revelação rejeitada"
     }
   },
   "abandon": {

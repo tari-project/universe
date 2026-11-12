@@ -340,6 +340,42 @@
       "failed": "請求に失敗しました",
       "approve": "請求を承認",
       "approve-subtitle": "PINを入力して、このバーンをレイヤー2ウォレットに請求してください。心当たりがない場合は、このダイアログを閉じてください。"
+    },
+    "convert": {
+      "own-address": "あなたのL2アドレス",
+      "error-over-balance": "この残高を超えています"
+    },
+    "shield": {
+      "button": "秘匿化",
+      "hint": "公開TARIを秘匿残高へ移動",
+      "title": "TARIを秘匿化",
+      "review-title": "秘匿化を確認",
+      "available": "公開残高",
+      "fee-note": "TARIを公開残高から秘匿残高へ移動します。ネットワーク手数料も公開残高から差し引かれます。",
+      "cta-confirm": "TARIを秘匿化",
+      "processing-title": "TARIを秘匿化しています",
+      "error-message": "レイヤー2での秘匿化中にエラーが発生しました：",
+      "approve": "秘匿化を承認",
+      "approve-subtitle": "PINを入力して、このTARIを公開残高から秘匿残高へ移動してください。心当たりがない場合は、このダイアログを閉じてください。",
+      "review-label": "秘匿化する金額",
+      "confirmed": "秘匿化が確認されました",
+      "rejected": "秘匿化が拒否されました"
+    },
+    "unshield": {
+      "button": "公開化",
+      "hint": "秘匿TARIを公開残高へ移動",
+      "title": "TARIを公開化",
+      "review-title": "公開化を確認",
+      "available": "秘匿残高",
+      "fee-note": "TARIを秘匿残高から公開残高へ移動します。ネットワーク手数料も秘匿残高から差し引かれます。",
+      "cta-confirm": "TARIを公開化",
+      "processing-title": "TARIを公開化しています",
+      "error-message": "レイヤー2での公開化中にエラーが発生しました：",
+      "approve": "公開化を承認",
+      "approve-subtitle": "PINを入力して、このTARIを秘匿残高から公開残高へ移動してください。心当たりがない場合は、このダイアログを閉じてください。",
+      "review-label": "公開化する金額",
+      "confirmed": "公開化が確認されました",
+      "rejected": "公開化が拒否されました"
     }
   },
   "abandon": {

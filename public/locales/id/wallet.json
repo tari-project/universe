@@ -340,6 +340,42 @@
       "failed": "Klaim gagal",
       "approve": "Setujui klaim",
       "approve-subtitle": "Masukkan PIN Anda untuk mengklaim pembakaran ini ke dompet Layer 2 Anda. Jika Anda tidak memulai ini, tutup dialog ini."
+    },
+    "convert": {
+      "own-address": "Alamat L2 Anda",
+      "error-over-balance": "Jumlah ini melebihi saldo tersebut"
+    },
+    "shield": {
+      "button": "Lindungi",
+      "hint": "Pindahkan TARI terbuka ke saldo rahasia Anda",
+      "title": "Lindungi TARI",
+      "review-title": "Tinjau perlindungan",
+      "available": "Saldo terbuka",
+      "fee-note": "Memindahkan TARI dari saldo terbuka ke saldo rahasia Anda. Biaya jaringan juga diambil dari saldo terbuka Anda.",
+      "cta-confirm": "Lindungi TARI",
+      "processing-title": "TARI Anda sedang dilindungi",
+      "error-message": "Kesalahan saat melindungi di Layer 2: ",
+      "approve": "Setujui perlindungan",
+      "approve-subtitle": "Masukkan PIN Anda untuk memindahkan TARI ini dari saldo terbuka ke saldo rahasia Anda. Jika Anda tidak memulai ini, tutup dialog ini.",
+      "review-label": "Anda melindungi",
+      "confirmed": "Perlindungan dikonfirmasi",
+      "rejected": "Perlindungan ditolak"
+    },
+    "unshield": {
+      "button": "Buka",
+      "hint": "Pindahkan TARI rahasia ke saldo terbuka Anda",
+      "title": "Buka TARI",
+      "review-title": "Tinjau pembukaan",
+      "available": "Saldo rahasia",
+      "fee-note": "Memindahkan TARI dari saldo rahasia ke saldo terbuka Anda. Biaya jaringan juga diambil dari saldo rahasia Anda.",
+      "cta-confirm": "Buka TARI",
+      "processing-title": "TARI Anda sedang dibuka",
+      "error-message": "Kesalahan saat membuka di Layer 2: ",
+      "approve": "Setujui pembukaan",
+      "approve-subtitle": "Masukkan PIN Anda untuk memindahkan TARI ini dari saldo rahasia ke saldo terbuka Anda. Jika Anda tidak memulai ini, tutup dialog ini.",
+      "review-label": "Anda membuka",
+      "confirmed": "Pembukaan dikonfirmasi",
+      "rejected": "Pembukaan ditolak"
     }
   },
   "abandon": {

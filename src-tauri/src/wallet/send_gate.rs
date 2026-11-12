@@ -24,16 +24,18 @@
 //!
 //! Every caller that can move funds (the `send_one_sided_to_stealth_address` Tauri
 //! command used by the in-app send flow and by the tapplet bridge, the MCP
-//! `send_transaction` tool, the `burn_to_l2` command, the `l2_send` command and the
-//! `l2_claim_burn` command) goes through the same gates: [`gated_send`], [`gated_burn`],
-//! [`gated_l2_send`] and [`gated_l2_claim`] share [`pass_gates`]. Two user-facing gates exist:
+//! `send_transaction` tool, the `burn_to_l2` command, the `l2_send` command, the
+//! `l2_claim_burn` command and the `l2_shield` / `l2_unshield` commands) goes through the
+//! same gates: [`gated_send`], [`gated_burn`], [`gated_l2_send`], [`gated_l2_claim`] and
+//! [`gated_l2_convert`] share [`pass_gates`]. Two user-facing gates exist:
 //!
 //! * **PIN** — when a PIN is configured it is requested (and validated, with lockout on
 //!   repeated failures) by [`crate::internal_wallet::InternalWallet::get_signing_wallet`],
 //!   which [`crate::wallet::minotari_wallet::MinotariWalletManager::send_one_sided_transaction`]
 //!   and [`crate::wallet::minotari_wallet::MinotariWalletManager::burn_to_l2`] call
 //!   before they create (and so lock the inputs of) the transaction, and
-//!   [`crate::ootle::OotleWalletManager::send_xtr`] and
+//!   [`crate::ootle::OotleWalletManager::send_xtr`],
+//!   [`crate::ootle::OotleWalletManager::convert_xtr`] and
 //!   [`crate::ootle::OotleWalletManager::claim_burn`] ask for it before they build the L2
 //!   transaction. That is the real
 //!   gate: a script running in the webview does not know the PIN. The prompt carries a
@@ -64,7 +66,7 @@ use crate::events::McpTransactionConfirmationPayload;
 use crate::events::PinPromptContext;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
-use crate::ootle::OotleWalletManager;
+use crate::ootle::{Conversion, OotleWalletManager};
 use crate::pin::{PinCancelled, PinManager};
 use crate::wallet::minotari_wallet::transaction::parse_destination_address;
 use crate::wallet::minotari_wallet::{
@@ -258,6 +260,17 @@ pub struct GatedL2SendRequest {
     pub pay_ref: Option<String>,
 }
 
+/// A shield or unshield of one of the wallet's own L2 accounts. Only the in-app UI can ask
+/// for one, so the origin is always [`SendOrigin::App`].
+pub struct GatedL2ConvertRequest {
+    pub app_handle: tauri::AppHandle,
+    pub request_id: String,
+    pub conversion: Conversion,
+    pub amount: String,
+    /// Component address of the L2 account whose funds move.
+    pub account: String,
+}
+
 /// What is being spent, in the terms the user has to approve it in.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpendKind {
@@ -276,6 +289,13 @@ pub enum SpendKind {
     L2Claim {
         commitment: String,
     },
+    /// Moving the account's own funds between its revealed and confidential balances.
+    L2Convert {
+        conversion: Conversion,
+        account: String,
+        /// The account's own Ootle address, shown where a send shows the recipient.
+        address: String,
+    },
     /// Giving up stalled send or burn `tx_id`, which hands its inputs back.
     Abandon {
         tx_id: String,
@@ -292,6 +312,14 @@ impl SpendKind {
             SpendKind::Burn { .. } => "burn",
             SpendKind::L2Send { .. } => "l2_send",
             SpendKind::L2Claim { .. } => "l2_claim",
+            SpendKind::L2Convert {
+                conversion: Conversion::Shield,
+                ..
+            } => "l2_shield",
+            SpendKind::L2Convert {
+                conversion: Conversion::Unshield,
+                ..
+            } => "l2_unshield",
             SpendKind::Abandon { .. } => "abandon",
         }
     }
@@ -299,12 +327,14 @@ impl SpendKind {
     /// The counterparty shown to the user: the address for a send, the L2 claim key
     /// for a burn. A burn has no recipient, and the claim key is the only thing that
     /// can ever get the funds back, so that is what the user must be asked to check. A
-    /// claim shows the commitment of the burn being claimed.
+    /// claim shows the commitment of the burn being claimed, a conversion the account's own
+    /// address.
     pub fn counterparty(&self) -> &str {
         match self {
             SpendKind::Send { destination } | SpendKind::L2Send { destination, .. } => destination,
             SpendKind::Burn { claim_public_key } => claim_public_key,
             SpendKind::L2Claim { commitment } => commitment,
+            SpendKind::L2Convert { address, .. } => address,
             SpendKind::Abandon { tx_id, .. } => tx_id,
         }
     }
@@ -347,6 +377,26 @@ impl SpendKind {
                 commitment: commitment.clone(),
                 fee_micro_minotari: None,
             },
+            SpendKind::L2Convert {
+                conversion: Conversion::Shield,
+                account,
+                address,
+            } => PinPromptContext::L2Shield {
+                amount_micro_minotari,
+                account: account.clone(),
+                address: address.clone(),
+                fee_micro_minotari: None,
+            },
+            SpendKind::L2Convert {
+                conversion: Conversion::Unshield,
+                account,
+                address,
+            } => PinPromptContext::L2Unshield {
+                amount_micro_minotari,
+                account: account.clone(),
+                address: address.clone(),
+                fee_micro_minotari: None,
+            },
             SpendKind::Abandon {
                 tx_id,
                 accept_unreconcilable,
@@ -363,7 +413,9 @@ impl SpendKind {
     /// The currency the amount is in: TARI on L2, XTM on L1.
     fn currency(&self) -> &'static str {
         match self {
-            SpendKind::L2Send { .. } | SpendKind::L2Claim { .. } => "TARI",
+            SpendKind::L2Send { .. } | SpendKind::L2Claim { .. } | SpendKind::L2Convert { .. } => {
+                "TARI"
+            }
             SpendKind::Send { .. } | SpendKind::Burn { .. } | SpendKind::Abandon { .. } => "XTM",
         }
     }
@@ -843,6 +895,74 @@ pub async fn gated_l2_claim(
     OotleWalletManager::claim_burn(&app_handle, file_name, proof, pass.pin_context).await
 }
 
+/// Shield or unshield an account's own XTR behind the same gates as [`gated_l2_send`].
+/// Refused without a PIN or on unsupported networks, and the amount and account are checked
+/// before any dialog or permit. Returns the L2 transaction id.
+pub async fn gated_l2_convert(request: GatedL2ConvertRequest) -> Result<String, TransactionError> {
+    let GatedL2ConvertRequest {
+        app_handle,
+        request_id,
+        conversion,
+        amount,
+        account,
+    } = request;
+
+    check_l2_allowed(
+        Network::get_current_or_user_setting_or_default(),
+        PinManager::pin_locked().await,
+    )?;
+    let amount_u64 = parse_amount(&amount)?;
+    let address = OotleWalletManager::account_address(&account).await?;
+    let kind = SpendKind::L2Convert {
+        conversion,
+        account,
+        address,
+    };
+    let pass = pass_gates(
+        SendOrigin::App,
+        request_id,
+        &amount,
+        amount_u64,
+        &kind,
+        &None,
+    )
+    .await?;
+
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "send gate: executing L2 {}",
+        conversion.as_str()
+    );
+    let SpendKind::L2Convert { account, .. } = kind else {
+        unreachable!("gated_l2_convert builds an L2Convert kind")
+    };
+    OotleWalletManager::convert_xtr(
+        &app_handle,
+        &account,
+        conversion,
+        amount_u64,
+        pass.pin_context,
+    )
+    .await
+}
+
+/// The most of `account`'s funds a `conversion` can move after its fee, in micro XTR, for
+/// the Max button. Nothing is signed or submitted, but the fee dry run locks inputs while it
+/// builds, so it takes the gate permit and fails at once instead of queueing behind a spend
+/// the user has open.
+pub async fn max_l2_conversion(
+    account: String,
+    conversion: Conversion,
+) -> Result<u64, TransactionError> {
+    check_l2_allowed(
+        Network::get_current_or_user_setting_or_default(),
+        PinManager::pin_locked().await,
+    )?;
+    let _permit =
+        try_exclusive_permit().map_err(|e| TransactionError::WalletError(e.to_string()))?;
+    OotleWalletManager::max_conversion(&account, conversion).await
+}
+
 /// Run the consent gates for one spend: serialise on the gate permit, then show the
 /// approve/deny dialog when the origin requires it. On success the returned
 /// [`GatePass`] carries the permit and the PIN context to sign under.
@@ -1298,6 +1418,63 @@ mod tests {
             PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment, fee_micro_minotari: Some(7) }
                 if commitment == "dae29ac8"
         ));
+    }
+
+    fn l2_convert(conversion: Conversion) -> SpendKind {
+        SpendKind::L2Convert {
+            conversion,
+            account: "component_abc".to_string(),
+            address: "otl_esm_own".to_string(),
+        }
+    }
+
+    #[test]
+    fn l2_shield_asks_about_the_own_address_in_tari() {
+        let shield = l2_convert(Conversion::Shield);
+        assert_eq!(shield.as_str(), "l2_shield");
+        assert_eq!(shield.counterparty(), "otl_esm_own");
+        assert_eq!(shield.currency(), "TARI");
+        assert!(matches!(
+            shield.pin_context(SendOrigin::App, 5, None, false).with_fee(9),
+            PinPromptContext::L2Shield { amount_micro_minotari: 5, ref account, ref address, fee_micro_minotari: Some(9) }
+                if account == "component_abc" && address == "otl_esm_own"
+        ));
+    }
+
+    #[test]
+    fn l2_unshield_asks_about_the_own_address_in_tari() {
+        let unshield = l2_convert(Conversion::Unshield);
+        assert_eq!(unshield.as_str(), "l2_unshield");
+        assert_eq!(unshield.counterparty(), "otl_esm_own");
+        assert_eq!(unshield.currency(), "TARI");
+        assert!(matches!(
+            unshield.pin_context(SendOrigin::App, 6, None, false).with_fee(10),
+            PinPromptContext::L2Unshield { amount_micro_minotari: 6, ref account, ref address, fee_micro_minotari: Some(10) }
+                if account == "component_abc" && address == "otl_esm_own"
+        ));
+    }
+
+    #[test]
+    fn l2_conversion_pin_prompts_serialize_as_the_frontend_reads_them() {
+        let shield = l2_convert(Conversion::Shield)
+            .pin_context(SendOrigin::App, 1_500_000, None, false)
+            .with_fee(2_000);
+        assert_eq!(
+            serde_json::to_value(shield).expect("serializes"),
+            serde_json::json!({
+                "kind": "l2_shield",
+                "amount_micro_minotari": 1_500_000,
+                "account": "component_abc",
+                "address": "otl_esm_own",
+                "fee_micro_minotari": 2_000,
+            })
+        );
+        let unshield =
+            l2_convert(Conversion::Unshield).pin_context(SendOrigin::App, 1, None, false);
+        assert_eq!(
+            serde_json::to_value(unshield).expect("serializes")["kind"],
+            "l2_unshield"
+        );
     }
 
     #[test]

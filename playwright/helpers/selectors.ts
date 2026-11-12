@@ -14,6 +14,11 @@ export const sel = {
     send: '[data-testid="l2-send-button"]',
     sendReview: '[data-testid="l2-send-review-button"]',
     sendConfirm: '[data-testid="l2-send-confirm-button"]',
+    shield: '[data-testid="l2-shield-button"]',
+    unshield: '[data-testid="l2-unshield-button"]',
+    convertReview: '[data-testid="l2-convert-review-button"]',
+    convertConfirm: '[data-testid="l2-convert-confirm-button"]',
+    convertDone: '[data-testid="l2-convert-done-button"]',
   },
   settings: {
     open: '[data-testid="settings-open"]',

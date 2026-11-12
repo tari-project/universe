@@ -340,6 +340,42 @@
       "failed": "领取失败",
       "approve": "批准领取",
       "approve-subtitle": "输入您的 PIN，将此销毁领取到您的二层网络钱包。如果不是您发起的，请关闭此对话框。"
+    },
+    "convert": {
+      "own-address": "您的 L2 地址",
+      "error-over-balance": "超出了该余额"
+    },
+    "shield": {
+      "button": "转为机密",
+      "hint": "将公开 TARI 转入您的机密余额",
+      "title": "将 TARI 转为机密",
+      "review-title": "检查转为机密",
+      "available": "公开余额",
+      "fee-note": "将 TARI 从您的公开余额转入机密余额。网络手续费也从公开余额中扣除。",
+      "cta-confirm": "将 TARI 转为机密",
+      "processing-title": "正在将您的 TARI 转为机密",
+      "error-message": "在二层网络上转为机密时出错：",
+      "approve": "批准转为机密",
+      "approve-subtitle": "输入您的 PIN，将这些 TARI 从公开余额转入机密余额。如果不是您发起的，请关闭此对话框。",
+      "review-label": "您将转为机密",
+      "confirmed": "转为机密已确认",
+      "rejected": "转为机密被拒绝"
+    },
+    "unshield": {
+      "button": "转为公开",
+      "hint": "将机密 TARI 转入您的公开余额",
+      "title": "将 TARI 转为公开",
+      "review-title": "检查转为公开",
+      "available": "机密余额",
+      "fee-note": "将 TARI 从您的机密余额转入公开余额。网络手续费也从机密余额中扣除。",
+      "cta-confirm": "将 TARI 转为公开",
+      "processing-title": "正在将您的 TARI 转为公开",
+      "error-message": "在二层网络上转为公开时出错：",
+      "approve": "批准转为公开",
+      "approve-subtitle": "输入您的 PIN，将这些 TARI 从机密余额转入公开余额。如果不是您发起的，请关闭此对话框。",
+      "review-label": "您将转为公开",
+      "confirmed": "转为公开已确认",
+      "rejected": "转为公开被拒绝"
     }
   },
   "abandon": {

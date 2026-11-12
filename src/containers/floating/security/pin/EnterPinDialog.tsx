@@ -35,6 +35,7 @@ export default function EnterPinDialog() {
     const fromTapplet = (sendContext ?? l2SendContext)?.origin === 'tapplet';
 
     const l2ClaimContext = pinContext?.kind === 'l2_claim' ? pinContext : null;
+    const l2ConvertContext = pinContext?.kind === 'l2_shield' || pinContext?.kind === 'l2_unshield' ? pinContext : null;
     const abandonContext = pinContext?.kind === 'abandon' ? pinContext : null;
     const reasonKey = pinContext ? REASON_KEYS[pinContext.kind] : undefined;
 
@@ -77,11 +78,15 @@ export default function EnterPinDialog() {
                                     ? t('abandon.approve')
                                     : l2ClaimContext
                                       ? t('l2.claim.approve')
-                                      : fromTapplet
-                                        ? t('security.pin.approve-tapplet-send')
-                                        : sendContext || l2SendContext
-                                          ? t('security.pin.approve-send')
-                                          : t('security.pin.enter')}
+                                      : l2ConvertContext?.kind === 'l2_shield'
+                                        ? t('l2.shield.approve')
+                                        : l2ConvertContext?.kind === 'l2_unshield'
+                                          ? t('l2.unshield.approve')
+                                          : fromTapplet
+                                            ? t('security.pin.approve-tapplet-send')
+                                            : sendContext || l2SendContext
+                                              ? t('security.pin.approve-send')
+                                              : t('security.pin.enter')}
                         </Heading>{' '}
                         <CloseButton onClick={handleClose} />
                     </Header>
@@ -126,6 +131,19 @@ export default function EnterPinDialog() {
                             destination={l2ClaimContext.commitment}
                             feeMicroMinotari={l2ClaimContext.fee_micro_minotari}
                             subtitle={t('l2.claim.approve-subtitle')}
+                        />
+                    )}
+                    {l2ConvertContext && (
+                        <TransactionContextSummary
+                            kind={l2ConvertContext.kind}
+                            amountMicroMinotari={l2ConvertContext.amount_micro_minotari}
+                            destination={l2ConvertContext.address}
+                            feeMicroMinotari={l2ConvertContext.fee_micro_minotari}
+                            subtitle={t(
+                                l2ConvertContext.kind === 'l2_shield'
+                                    ? 'l2.shield.approve-subtitle'
+                                    : 'l2.unshield.approve-subtitle'
+                            )}
                         />
                     )}
                     {abandonContext && (

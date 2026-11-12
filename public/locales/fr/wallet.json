@@ -348,6 +348,42 @@
       "failed": "Échec de la réclamation",
       "approve": "Approuver la réclamation",
       "approve-subtitle": "Saisissez votre code PIN pour réclamer ce brûlage dans votre portefeuille de Couche 2. Si vous n'êtes pas à l'origine de cette action, fermez cette fenêtre."
+    },
+    "convert": {
+      "own-address": "Votre adresse L2",
+      "error-over-balance": "Ce montant dépasse ce solde"
+    },
+    "shield": {
+      "button": "Protéger",
+      "hint": "Déplacer des TARI révélés vers votre solde confidentiel",
+      "title": "Protéger des TARI",
+      "review-title": "Vérifier la protection",
+      "available": "Solde révélé",
+      "fee-note": "Déplace des TARI de votre solde révélé vers votre solde confidentiel. Les frais de réseau sont aussi prélevés sur votre solde révélé.",
+      "cta-confirm": "Protéger les TARI",
+      "processing-title": "Protection de vos TARI en cours",
+      "error-message": "Erreur lors de la protection sur la Couche 2 : ",
+      "approve": "Approuver la protection",
+      "approve-subtitle": "Saisissez votre code PIN pour déplacer ces TARI de votre solde révélé vers votre solde confidentiel. Si vous n'êtes pas à l'origine de cette action, fermez cette fenêtre.",
+      "review-label": "Vous protégez",
+      "confirmed": "Protection confirmée",
+      "rejected": "Protection rejetée"
+    },
+    "unshield": {
+      "button": "Révéler",
+      "hint": "Déplacer des TARI confidentiels vers votre solde révélé",
+      "title": "Révéler des TARI",
+      "review-title": "Vérifier la révélation",
+      "available": "Solde confidentiel",
+      "fee-note": "Déplace des TARI de votre solde confidentiel vers votre solde révélé. Les frais de réseau sont aussi prélevés sur votre solde confidentiel.",
+      "cta-confirm": "Révéler les TARI",
+      "processing-title": "Révélation de vos TARI en cours",
+      "error-message": "Erreur lors de la révélation sur la Couche 2 : ",
+      "approve": "Approuver la révélation",
+      "approve-subtitle": "Saisissez votre code PIN pour déplacer ces TARI de votre solde confidentiel vers votre solde révélé. Si vous n'êtes pas à l'origine de cette action, fermez cette fenêtre.",
+      "review-label": "Vous révélez",
+      "confirmed": "Révélation confirmée",
+      "rejected": "Révélation rejetée"
     }
   },
   "abandon": {

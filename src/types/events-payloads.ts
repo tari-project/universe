@@ -192,6 +192,22 @@ export interface L2SendPinPromptContext {
     fee_micro_minotari: number | null;
 }
 
+/** Which way a conversion moves an L2 account's own TARI: revealed to confidential, or back. */
+export type L2Conversion = 'shield' | 'unshield';
+
+/**
+ * Moving TARI (micro units) of `account`'s own funds between its revealed and confidential
+ * balances. `address` is the account's own Ootle address. The fee comes out of the side being
+ * converted.
+ */
+export interface L2ConvertPinPromptContext {
+    kind: 'l2_shield' | 'l2_unshield';
+    amount_micro_minotari: number;
+    account: string;
+    address: string;
+    fee_micro_minotari: number | null;
+}
+
 /** Claiming an L1 burn of `amount_micro_minotari` on L2. `commitment` (hex) identifies the burn. */
 export interface L2ClaimPinPromptContext {
     kind: 'l2_claim';
@@ -216,6 +232,7 @@ export type PinPromptContext =
     | BurnPinPromptContext
     | L2SendPinPromptContext
     | L2ClaimPinPromptContext
+    | L2ConvertPinPromptContext
     | RestoreWalletDetailsPinPromptContext
     | SeedNeedsPinPromptContext
     | SecurityUpgradePinPromptContext
@@ -227,7 +244,7 @@ export interface PinPromptPayload {
     context?: PinPromptContext | null;
 }
 
-export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim' | 'abandon';
+export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim' | 'l2_shield' | 'l2_unshield' | 'abandon';
 
 /** XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs. */
 export interface L2Balance {
@@ -281,10 +298,10 @@ export interface L2Burn {
     timestamp: number;
 }
 
-/** How a submitted claim of the burn with `commitment` (hex), or a send, ended on L2. */
+/** How a submitted claim of the burn with `commitment` (hex), a send or a conversion ended on L2. */
 export interface L2ClaimResult {
-    kind: 'claim' | 'send';
-    /** Null for a send. */
+    kind: 'claim' | 'send' | L2Conversion;
+    /** Null for anything but a claim. */
     commitment: string | null;
     accepted: boolean;
     reason: string | null;

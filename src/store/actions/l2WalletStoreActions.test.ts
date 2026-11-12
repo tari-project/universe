@@ -94,4 +94,11 @@ describe('handleL2ClaimResult', () => {
         handleL2ClaimResult({ ...result, kind: 'send', commitment: null, reason: 'Input already spent' });
         expect(lastToast()).toMatchObject({ type: 'error', title: 'l2.send.rejected', text: 'Input already spent' });
     });
+
+    it.each(['shield', 'unshield'] as const)('toasts how a %s ended, not as a send', (kind) => {
+        handleL2ClaimResult({ ...result, kind, commitment: null, accepted: true, reason: null });
+        expect(lastToast()).toMatchObject({ type: 'success', title: `l2.${kind}.confirmed` });
+        handleL2ClaimResult({ ...result, kind, commitment: null, reason: 'Input already spent' });
+        expect(lastToast()).toMatchObject({ type: 'error', title: `l2.${kind}.rejected`, text: 'Input already spent' });
+    });
 });

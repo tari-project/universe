@@ -365,6 +365,42 @@
       "failed": "Claim failed",
       "approve": "Approve claim",
       "approve-subtitle": "Enter your PIN to claim this burn into your Layer 2 wallet. If you did not start this, close this dialog."
+    },
+    "convert": {
+      "own-address": "Your L2 address",
+      "error-over-balance": "That's more than this balance holds"
+    },
+    "shield": {
+      "button": "Shield",
+      "hint": "Move revealed TARI to your confidential balance",
+      "title": "Shield TARI",
+      "review-title": "Review shield",
+      "available": "Revealed balance",
+      "fee-note": "Moves TARI from your revealed balance to your confidential balance. The network fee also comes out of your revealed balance.",
+      "cta-confirm": "Shield TARI",
+      "processing-title": "Shielding your TARI",
+      "error-message": "Error shielding on Layer 2: ",
+      "approve": "Approve shield",
+      "approve-subtitle": "Enter your PIN to move this TARI from your revealed balance to your confidential balance. If you did not start this, close this dialog.",
+      "review-label": "You are shielding",
+      "confirmed": "Shield confirmed",
+      "rejected": "Shield rejected"
+    },
+    "unshield": {
+      "button": "Unshield",
+      "hint": "Move confidential TARI to your revealed balance",
+      "title": "Unshield TARI",
+      "review-title": "Review unshield",
+      "available": "Confidential balance",
+      "fee-note": "Moves TARI from your confidential balance to your revealed balance. The network fee also comes out of your confidential balance.",
+      "cta-confirm": "Unshield TARI",
+      "processing-title": "Unshielding your TARI",
+      "error-message": "Error unshielding on Layer 2: ",
+      "approve": "Approve unshield",
+      "approve-subtitle": "Enter your PIN to move this TARI from your confidential balance to your revealed balance. If you did not start this, close this dialog.",
+      "review-label": "You are unshielding",
+      "confirmed": "Unshield confirmed",
+      "rejected": "Unshield rejected"
     }
   },
   "abandon": {

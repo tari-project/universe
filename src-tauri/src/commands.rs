@@ -54,7 +54,7 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
-use crate::ootle::{L2Burn, L2WalletState, OotleWalletManager};
+use crate::ootle::{Conversion, L2Burn, L2WalletState, OotleWalletManager};
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -70,9 +70,9 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::minotari_wallet::{BurnReceipt, SendReceipt, StalledTransaction};
 use crate::wallet::send_gate::{
-    EffectivePaymentId, GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin,
-    gated_abandon, gated_burn, gated_l2_claim, gated_l2_send, gated_send,
-    resolve_effective_payment_id,
+    EffectivePaymentId, GatedBurnRequest, GatedL2ConvertRequest, GatedL2SendRequest,
+    GatedSendRequest, SendOrigin, gated_abandon, gated_burn, gated_l2_claim, gated_l2_convert,
+    gated_l2_send, gated_send, max_l2_conversion, resolve_effective_payment_id,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -1932,6 +1932,56 @@ pub async fn l2_send_from_tapplet(
     })
     .await
     .map_err(|e| e.to_string())
+}
+
+/// Move XTR from an L2 account's revealed balance to its confidential one. Refused without
+/// a PIN; with one, the PIN prompt is the gate. Returns the L2 transaction id.
+#[tauri::command]
+pub async fn l2_shield(
+    app_handle: tauri::AppHandle,
+    account: String,
+    amount: String,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_shield] called");
+    l2_convert(app_handle, account, amount, Conversion::Shield).await
+}
+
+/// Move XTR from an L2 account's confidential balance to its revealed one. Refused without
+/// a PIN; with one, the PIN prompt is the gate. Returns the L2 transaction id.
+#[tauri::command]
+pub async fn l2_unshield(
+    app_handle: tauri::AppHandle,
+    account: String,
+    amount: String,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_unshield] called");
+    l2_convert(app_handle, account, amount, Conversion::Unshield).await
+}
+
+async fn l2_convert(
+    app_handle: tauri::AppHandle,
+    account: String,
+    amount: String,
+    conversion: Conversion,
+) -> Result<String, String> {
+    gated_l2_convert(GatedL2ConvertRequest {
+        app_handle,
+        request_id: SendOrigin::App.new_request_id(),
+        conversion,
+        amount,
+        account,
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// The most an L2 account can shield or unshield once the fee is paid, in micro XTR, for
+/// the Max button. Signs nothing.
+#[tauri::command]
+pub async fn l2_max_conversion(account: String, conversion: Conversion) -> Result<u64, String> {
+    max_l2_conversion(account, conversion)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Checks an L2 address before the send form lets the user review it.

@@ -344,6 +344,42 @@
       "failed": "Eis het misluk",
       "approve": "Keur eis goed",
       "approve-subtitle": "Voer jou PIN in om hierdie verbranding in jou Laag 2-beursie te eis. As jy dit nie begin het nie, sluit hierdie dialoog."
+    },
+    "convert": {
+      "own-address": "Jou L2-adres",
+      "error-over-balance": "Dit is meer as wat hierdie balans hou"
+    },
+    "shield": {
+      "button": "Beskerm",
+      "hint": "Skuif onthulde TARI na jou vertroulike balans",
+      "title": "Beskerm TARI",
+      "review-title": "Hersien beskerming",
+      "available": "Onthulde balans",
+      "fee-note": "Skuif TARI van jou onthulde balans na jou vertroulike balans. Die netwerkfooi kom ook uit jou onthulde balans.",
+      "cta-confirm": "Beskerm TARI",
+      "processing-title": "Jou TARI word beskerm",
+      "error-message": "Fout met beskerming op Laag 2: ",
+      "approve": "Keur beskerming goed",
+      "approve-subtitle": "Voer jou PIN in om hierdie TARI van jou onthulde balans na jou vertroulike balans te skuif. As jy dit nie begin het nie, sluit hierdie dialoog.",
+      "review-label": "Jy beskerm",
+      "confirmed": "Beskerming bevestig",
+      "rejected": "Beskerming verwerp"
+    },
+    "unshield": {
+      "button": "Onthul",
+      "hint": "Skuif vertroulike TARI na jou onthulde balans",
+      "title": "Onthul TARI",
+      "review-title": "Hersien onthulling",
+      "available": "Vertroulike balans",
+      "fee-note": "Skuif TARI van jou vertroulike balans na jou onthulde balans. Die netwerkfooi kom ook uit jou vertroulike balans.",
+      "cta-confirm": "Onthul TARI",
+      "processing-title": "Jou TARI word onthul",
+      "error-message": "Fout met onthulling op Laag 2: ",
+      "approve": "Keur onthulling goed",
+      "approve-subtitle": "Voer jou PIN in om hierdie TARI van jou vertroulike balans na jou onthulde balans te skuif. As jy dit nie begin het nie, sluit hierdie dialoog.",
+      "review-label": "Jy onthul",
+      "confirmed": "Onthulling bevestig",
+      "rejected": "Onthulling verwerp"
     }
   },
   "abandon": {
