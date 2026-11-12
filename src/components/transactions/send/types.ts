@@ -1,3 +1,5 @@
+import type { L2TransferVisibility } from '@app/types/events-payloads.ts';
+
 export interface SendInputs {
     message?: string;
     address: string;
@@ -6,6 +8,8 @@ export interface SendInputs {
     claimPublicKey?: string;
     /** L2 send only: Ootle address to send to. */
     l2Address?: string;
+    /** L2 send only: whether the output is confidential ('private') or revealed ('public'). */
+    visibility?: L2TransferVisibility;
 }
 export type InputName = keyof SendInputs;
 

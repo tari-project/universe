@@ -108,6 +108,7 @@ mod state;
 
 pub use claim::{BurnProof, L2Burn, L2ClaimResult};
 pub use network_stats::L2NetworkStats;
+pub use send::L2TransferVisibility;
 pub use state::L2WalletState;
 use state::SeedSource;
 
@@ -416,13 +417,14 @@ impl OotleWalletManager {
     }
 
     /// Sends `amount` micro XTR from `account` (a component address) to `destination`,
-    /// with `memo` on the output, once the user enters their PIN, and returns the L2 transaction id. The caller has
-    /// already passed the send gate.
+    /// with `visibility` and `memo` on the output, once the user enters their PIN, and
+    /// returns the L2 transaction id. The caller has already passed the send gate.
     pub async fn send_xtr(
         app_handle: &AppHandle,
         account: &str,
         destination: OotleAddress,
         amount: u64,
+        visibility: L2TransferVisibility,
         memo: Option<Memo>,
         pin_context: PinPromptContext,
     ) -> Result<String, TransactionError> {
@@ -436,18 +438,11 @@ impl OotleWalletManager {
                     .map_err(wallet_error)
             })?;
 
+        let output = send::transfer_output(destination, amount, visibility, memo);
         let approve_fee = async |fee| approve_l2_fee(app_handle, pin_context, fee).await;
-        let id = send::send_xtr(
-            &sdk,
-            &transactions,
-            account,
-            destination,
-            amount,
-            memo,
-            approve_fee,
-        )
-        .await
-        .map_err(|e| TransactionError::WalletError(format!("L2 send failed: {e}")))?;
+        let id = send::send_xtr(&sdk, &transactions, account, output, approve_fee)
+            .await
+            .map_err(|e| TransactionError::WalletError(format!("L2 send failed: {e}")))?;
         info!(target: LOG_TARGET, "L2 send submitted: {id}");
         emit_state(&sdk).await;
         Ok(id.to_string())

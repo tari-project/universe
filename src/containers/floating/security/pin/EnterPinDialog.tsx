@@ -114,6 +114,7 @@ export default function EnterPinDialog() {
                             kind="l2_send"
                             amountMicroMinotari={l2SendContext.amount_micro_minotari}
                             destination={l2SendContext.destination}
+                            visibility={l2SendContext.visibility}
                             paymentId={l2SendContext.pay_ref}
                             feeMicroMinotari={l2SendContext.fee_micro_minotari}
                             subtitle={t('security.pin.approve-send-subtitle')}

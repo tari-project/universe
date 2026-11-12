@@ -64,7 +64,7 @@ use crate::events::McpTransactionConfirmationPayload;
 use crate::events::PinPromptContext;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
-use crate::ootle::OotleWalletManager;
+use crate::ootle::{L2TransferVisibility, OotleWalletManager};
 use crate::pin::{PinCancelled, PinManager};
 use crate::wallet::minotari_wallet::transaction::parse_destination_address;
 use crate::wallet::minotari_wallet::{
@@ -256,6 +256,8 @@ pub struct GatedL2SendRequest {
     pub account: String,
     /// Pay reference for the recipient, UTF-8, at most 64 bytes.
     pub pay_ref: Option<String>,
+    /// Whether the transfer output is private (stealth) or public (revealed).
+    pub visibility: L2TransferVisibility,
 }
 
 /// What is being spent, in the terms the user has to approve it in.
@@ -272,6 +274,7 @@ pub enum SpendKind {
         account: String,
         /// The pay reference the output carries, as text.
         pay_ref: Option<String>,
+        visibility: L2TransferVisibility,
     },
     L2Claim {
         commitment: String,
@@ -334,12 +337,14 @@ impl SpendKind {
                 destination,
                 account,
                 pay_ref,
+                visibility,
             } => PinPromptContext::L2Send {
                 amount_micro_minotari,
                 destination: destination.clone(),
                 account: account.clone(),
                 pay_ref: pay_ref.clone(),
                 origin: origin.as_str().to_string(),
+                visibility: *visibility,
                 fee_micro_minotari: None,
             },
             SpendKind::L2Claim { commitment } => PinPromptContext::L2Claim {
@@ -711,6 +716,7 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         destination,
         account,
         pay_ref,
+        visibility,
     } = request;
 
     check_l2_allowed(
@@ -722,12 +728,17 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         check_tapplet_pay_ref(pay_ref.as_deref())?;
     }
     let address = OotleWalletManager::parse_address(&destination)?;
-    let (pay_ref, memo) = l2_send_memo(pay_ref.as_deref(), &address)?.unzip();
+    let resolved_memo = l2_send_memo(pay_ref.as_deref(), &address)?;
+    let (pay_ref, memo) = match visibility {
+        L2TransferVisibility::Private => resolved_memo.unzip(),
+        L2TransferVisibility::Public => (None, None),
+    };
     // The parsed form, so the PIN prompt never shows padding the parser trimmed away.
     let kind = SpendKind::L2Send {
         destination: address.to_string(),
         account,
         pay_ref,
+        visibility,
     };
     let pass = pass_gates(origin, request_id, &amount, amount_u64, &kind, &None).await?;
 
@@ -744,6 +755,7 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         &account,
         address,
         amount_u64,
+        visibility,
         memo,
         pass.pin_context,
     )
@@ -964,6 +976,10 @@ async fn pass_gates(
             is_burn: matches!(kind, SpendKind::Abandon { is_burn: true, .. }),
 
             fee_micro_minotari,
+            l2_visibility: match kind {
+                SpendKind::L2Send { visibility, .. } => Some(*visibility),
+                _ => None,
+            },
         })
         .await;
 
@@ -1253,6 +1269,7 @@ mod tests {
             destination: "otl_esm_addr".to_string(),
             account: "component_abc".to_string(),
             pay_ref: None,
+            visibility: L2TransferVisibility::Private,
         };
         assert_eq!(send.as_str(), "l2_send");
         assert_eq!(send.counterparty(), "otl_esm_addr");
@@ -1266,7 +1283,7 @@ mod tests {
         );
         assert!(matches!(
             send.pin_context(SendOrigin::App, 3, None, false),
-            PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account, pay_ref: None, ref origin, fee_micro_minotari: None }
+            PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account, pay_ref: None, ref origin, visibility: L2TransferVisibility::Private, fee_micro_minotari: None }
                 if destination == "otl_esm_addr" && account == "component_abc" && origin == "app"
         ));
     }
@@ -1277,11 +1294,30 @@ mod tests {
             destination: "otl_esm_addr".to_string(),
             account: "component_abc".to_string(),
             pay_ref: Some("bridge-ref".to_string()),
+            visibility: L2TransferVisibility::Private,
         };
         assert!(matches!(
             send.pin_context(SendOrigin::Tapplet, 3, None, false),
-            PinPromptContext::L2Send { pay_ref: Some(ref pay_ref), ref origin, .. }
+            PinPromptContext::L2Send { pay_ref: Some(ref pay_ref), ref origin, visibility: L2TransferVisibility::Private, .. }
                 if pay_ref == "bridge-ref" && origin == "tapplet"
+        ));
+    }
+
+    #[test]
+    fn l2_send_pin_prompt_carries_public_visibility() {
+        let send = SpendKind::L2Send {
+            destination: "otl_esm_addr".to_string(),
+            account: "component_abc".to_string(),
+            pay_ref: None,
+            visibility: L2TransferVisibility::Public,
+        };
+        assert!(matches!(
+            send.pin_context(SendOrigin::App, 5, None, false),
+            PinPromptContext::L2Send {
+                amount_micro_minotari: 5,
+                visibility: L2TransferVisibility::Public,
+                ..
+            }
         ));
     }
 

@@ -1,3 +1,5 @@
+import type { L2TransferVisibility } from '../events-payloads';
+
 export type SupportedChain = 'MAINNET' | 'STAGENET' | 'NEXTNET' | '';
 
 export interface WindowSize {
@@ -48,6 +50,7 @@ export interface SendOotleStealthRequest {
     address: string;
     /** UUID v4 the bridge matches the deposit by. */
     payRef: string;
+    visibility?: L2TransferVisibility;
 }
 
 export interface WaitOotleTransactionRequest {

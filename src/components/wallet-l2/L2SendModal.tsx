@@ -2,9 +2,11 @@ import { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
+import styled from 'styled-components';
 
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { FormField } from '@app/components/transactions/send/FormField.tsx';
 import type { InputName, SendInputs } from '@app/components/transactions/send/types.ts';
@@ -31,7 +33,45 @@ interface L2SendModalProps {
     onClose: () => void;
 }
 
-const defaultValues: SendInputs = { address: '', amount: undefined, l2Address: '' };
+const VisibilitySection = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+`;
+
+const VisibilityHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+`;
+
+const VisibilityToggle = styled.div`
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 10px;
+    background: ${({ theme }) => (theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)')};
+    gap: 4px;
+`;
+
+const VisibilityOption = styled.button<{ $active: boolean }>`
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+    background: ${({ $active, theme }) =>
+        $active ? (theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.18)' : '#FFFFFF') : 'transparent'};
+    color: inherit;
+    opacity: ${({ $active }) => ($active ? 1 : 0.65)};
+`;
+
+const defaultValues: SendInputs = { address: '', amount: undefined, l2Address: '', visibility: 'private' };
 
 function L2SendForm() {
     const { t } = useTranslation('wallet');
@@ -39,6 +79,7 @@ function L2SendForm() {
     const { isSubmitting, errors } = formState;
     const address = useWatch({ control, name: 'l2Address' }) ?? '';
     const amount = useWatch({ control, name: 'amount' });
+    const visibility = useWatch({ control, name: 'visibility' }) ?? 'private';
     const debouncedAddress = useDebouncedValue(address, 350);
     const [isAddressValid, setIsAddressValid] = useState(false);
     const isAmountValid = Number(amount) > 0;
@@ -91,6 +132,42 @@ function L2SendForm() {
                     icon={<TariOutlineSVG />}
                     errorText={errors.amount?.message}
                 />
+                <VisibilitySection>
+                    <VisibilityHeader>
+                        <Typography variant="p" style={{ fontSize: 12, opacity: 0.7 }}>
+                            {t('l2.send.visibility')}
+                        </Typography>
+                        <VisibilityToggle role="group" aria-label={t('l2.send.visibility')}>
+                            <VisibilityOption
+                                type="button"
+                                $active={visibility === 'private'}
+                                aria-pressed={visibility === 'private'}
+                                onClick={() => setValue('visibility', 'private')}
+                                data-testid="l2-send-visibility-private"
+                            >
+                                {t('l2.send.visibility-private')}
+                            </VisibilityOption>
+                            <VisibilityOption
+                                type="button"
+                                $active={visibility === 'public'}
+                                aria-pressed={visibility === 'public'}
+                                onClick={() => setValue('visibility', 'public')}
+                                data-testid="l2-send-visibility-public"
+                            >
+                                {t('l2.send.visibility-public')}
+                            </VisibilityOption>
+                        </VisibilityToggle>
+                    </VisibilityHeader>
+                    {visibility === 'public' && (
+                        <Typography
+                            variant="p"
+                            style={{ fontSize: 12, opacity: 0.65 }}
+                            data-testid="l2-send-public-note"
+                        >
+                            {t('l2.send.public-note')}
+                        </Typography>
+                    )}
+                </VisibilitySection>
             </FormFieldsWrapper>
             <BottomWrapper>
                 <Button
@@ -134,6 +211,7 @@ export default function L2SendModal({ show, account, onClose }: L2SendModalProps
                     account,
                     destination: data.l2Address,
                     amount: `${data.amount}`,
+                    visibility: data.visibility ?? 'private',
                 });
                 setTxId(id);
                 setStatus('completed');
@@ -153,6 +231,7 @@ export default function L2SendModal({ show, account, onClose }: L2SendModalProps
     );
 
     const values = methods.getValues();
+    const resolvedVisibility = values.visibility ?? 'private';
     const amountMicro = Math.round(Number(values.amount || 0) * 1_000_000);
 
     const statusEntries: StatusListEntry[] = [
@@ -162,6 +241,7 @@ export default function L2SendModal({ show, account, onClose }: L2SendModalProps
             status,
         },
         { label: t('l2.send.address'), value: values.l2Address },
+        { label: t('l2.send.visibility'), value: t(`l2.send.visibility-${resolvedVisibility}`) },
         { label: t('send.transaction-id'), value: txId },
     ];
 
@@ -186,6 +266,7 @@ export default function L2SendModal({ show, account, onClose }: L2SendModalProps
                                     kind="l2_send"
                                     amountMicroMinotari={amountMicro}
                                     destination={values.l2Address ?? ''}
+                                    visibility={resolvedVisibility}
                                 />
                                 <Button
                                     type="submit"

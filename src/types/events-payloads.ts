@@ -180,6 +180,8 @@ export interface BurnPinPromptContext {
     payment_id?: string | null;
 }
 
+export type L2TransferVisibility = 'private' | 'public';
+
 /** Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`. */
 export interface L2SendPinPromptContext {
     kind: 'l2_send';
@@ -189,6 +191,7 @@ export interface L2SendPinPromptContext {
     pay_ref: string | null;
     /** Who asked for the send: the in-app UI or the bridge tapplet. */
     origin: 'app' | 'tapplet';
+    visibility?: L2TransferVisibility;
     fee_micro_minotari: number | null;
 }
 

@@ -4,7 +4,7 @@ import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusList, StatusListEntry } from '../components/StatusList/StatusList';
 import TariPurpleLogo from './SendReview/icons/TariPurpleLogo';
 import { Amount, Currency, OverrideNotice, WhiteBox, WhiteBoxLabel, WhiteBoxValue, Wrapper } from './SendReview/styles';
-import type { SpendKind } from '@app/types/events-payloads.ts';
+import type { L2TransferVisibility, SpendKind } from '@app/types/events-payloads.ts';
 
 interface Props {
     amountMicroMinotari: number;
@@ -16,6 +16,8 @@ interface Props {
     feeMicroMinotari?: number | null;
     subtitle?: string;
     kind?: SpendKind;
+    /** For an L2 send: whether the transfer is private (stealth) or public (revealed). */
+    visibility?: L2TransferVisibility | null;
     /** For an abandon: picks the warning shown in place of `subtitle`. */
     abandon?: { accept_unreconcilable?: boolean; is_burn?: boolean };
 }
@@ -33,6 +35,7 @@ export function TransactionContextSummary({
     feeMicroMinotari,
     subtitle,
     kind = 'send',
+    visibility,
     abandon,
 }: Props) {
     const { t } = useTranslation('wallet');
@@ -61,6 +64,10 @@ export function TransactionContextSummary({
         {
             label: destinationLabel,
             value: destination,
+        },
+        {
+            label: t('l2.send.visibility'),
+            value: kind === 'l2_send' && visibility ? t(`l2.send.visibility-${visibility}`) : null,
         },
         {
             label: t('send.transaction-description'),

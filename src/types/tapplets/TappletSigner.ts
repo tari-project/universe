@@ -121,7 +121,8 @@ function isSendOotleStealthRequest(value: unknown): value is SendOotleStealthReq
         MICRO_AMOUNT_RE.test(req.amount) &&
         isNonEmptyString(req.address) &&
         typeof req.payRef === 'string' &&
-        PAY_REF_RE.test(req.payRef)
+        PAY_REF_RE.test(req.payRef) &&
+        (req.visibility === undefined || req.visibility === 'private' || req.visibility === 'public')
     );
 }
 
@@ -385,6 +386,7 @@ export class TappletSigner {
                     destination: req.address,
                     amount: microToXtr(req.amount),
                     payRef: req.payRef,
+                    ...(req.visibility !== undefined ? { visibility: req.visibility } : {}),
                 });
                 this.ootleSentIds.add(transactionId);
                 outcome = 'sent';

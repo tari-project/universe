@@ -284,6 +284,29 @@ describe('TappletSigner.runOne', () => {
                 });
             });
 
+            it('forwards visibility when requested and rejects invalid visibility values', async () => {
+                mockCommands({ l2_get_state: l2State(), l2_send_from_tapplet: 'tx_pub' });
+
+                const result = await signer.runOne('sendOotleStealth', [
+                    { amount: '2000000', address: ADDRESS, payRef: PAY_REF, visibility: 'public' },
+                ]);
+
+                expect(result).toEqual({ transactionId: 'tx_pub' });
+                expect(invoke).toHaveBeenCalledWith('l2_send_from_tapplet', {
+                    account: 'component_abc',
+                    destination: ADDRESS,
+                    amount: '2.000000',
+                    payRef: PAY_REF,
+                    visibility: 'public',
+                });
+
+                await expect(
+                    signer.runOne('sendOotleStealth', [
+                        { amount: '2000000', address: ADDRESS, payRef: PAY_REF, visibility: 'stealth' },
+                    ])
+                ).rejects.toThrow('Invalid arguments for tapplet signer method: sendOotleStealth');
+            });
+
             it.each([
                 [[]],
                 [[{ amount: '0', address: ADDRESS, payRef: PAY_REF }]],
