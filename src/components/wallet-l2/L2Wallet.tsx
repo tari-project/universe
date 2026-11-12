@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
-import { IoCheckmarkOutline } from 'react-icons/io5';
+import { IoCheckmarkOutline, IoRefreshOutline } from 'react-icons/io5';
+import styled, { css, keyframes } from 'styled-components';
 import { QRCode } from 'react-qrcode-logo';
 import { CopySVG } from '@app/assets/icons/copy';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { handleL2WalletStateUpdate } from '@app/store/actions/l2WalletStoreActions.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
-import type { L2Account } from '@app/types/events-payloads.ts';
+import type { L2Account, L2WalletState } from '@app/types/events-payloads.ts';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
@@ -22,6 +24,7 @@ import { Actions, Name, Wrapper as DetailsRow } from '@app/components/wallet/com
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
 import {
     BalanceTextWrapper,
+    BalanceWrapper as BalanceRow,
     BottomWrapper,
     Hidden,
     SuffixWrapper,
@@ -47,12 +50,38 @@ const FILTER_TYPES = ['all-activity', 'transactions', 'l2.filter.waiting-claims'
 
 const EMPTY_BALANCE = { revealed: 0, confidential: 0 };
 
+const REFRESH_DEBOUNCE_MS = 1_000;
+
+const spin = keyframes`
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+`;
+
+const RefreshButton = styled(ActionButton)<{ $spinning: boolean }>`
+    flex-shrink: 0;
+    ${({ $spinning }) =>
+        $spinning &&
+        css`
+            svg {
+                animation: ${spin} 0.9s linear infinite;
+            }
+        `}
+`;
+
 /** With no `account` it is the pre-launch wallet: zero balance, no activity, Send and Receive off,
  * and Burn claiming to the key the default account will get. */
 export default function L2Wallet({ account }: { account?: L2Account }) {
     const { t } = useTranslation('wallet');
     const [section, setSection] = useState('history');
     const [filter, setFilter] = useState<string>('all-activity');
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const inFlightRef = useRef(false);
+    const lastManualRefreshAtRef = useRef(0);
+    const mountedRef = useRef(true);
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     // A burn spends L1 funds, so it waits on the L1 wallet like the L1 send does.
@@ -61,6 +90,43 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
     const hasPin = pinLocked === true;
     const [defaultClaimKey, setDefaultClaimKey] = useState<string>();
     const claimPublicKey = account ? account.public_key : defaultClaimKey;
+    const componentAddress = account?.component_address;
+
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
+
+    const refreshBalance = useCallback(async ({ manual = false }: { manual?: boolean } = {}) => {
+        if (inFlightRef.current) return;
+        if (manual) {
+            const now = Date.now();
+            if (now - lastManualRefreshAtRef.current < REFRESH_DEBOUNCE_MS) return;
+            lastManualRefreshAtRef.current = now;
+        }
+        inFlightRef.current = true;
+        setIsRefreshing(true);
+        try {
+            const next = await invoke<L2WalletState>('l2_refresh_balance');
+            if (next && typeof next === 'object' && Array.isArray(next.accounts)) {
+                handleL2WalletStateUpdate(next);
+            }
+        } catch (e) {
+            console.warn('Could not refresh L2 balance:', e);
+        } finally {
+            inFlightRef.current = false;
+            if (mountedRef.current) {
+                setIsRefreshing(false);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!componentAddress) return;
+        void refreshBalance();
+    }, [componentAddress, refreshBalance]);
 
     useEffect(() => {
         if (account) return;
@@ -104,10 +170,26 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
                             data-testid="l2-balance"
                             data-balance={hideBalance ? undefined : account?.balance.total}
                         >
-                            <BalanceTextWrapper>
-                                {hideBalance ? <Hidden>{`*******`}</Hidden> : xtr(revealed + confidential)}
-                                <SuffixWrapper>{` TARI`}</SuffixWrapper>
-                            </BalanceTextWrapper>
+                            <BalanceRow>
+                                <BalanceTextWrapper>
+                                    {hideBalance ? <Hidden>{`*******`}</Hidden> : xtr(revealed + confidential)}
+                                    <SuffixWrapper>{` TARI`}</SuffixWrapper>
+                                </BalanceTextWrapper>
+                                {account && (
+                                    <RefreshButton
+                                        type="button"
+                                        onClick={() => void refreshBalance({ manual: true })}
+                                        disabled={isRefreshing}
+                                        aria-busy={isRefreshing}
+                                        aria-label={t('l2.refresh-balance')}
+                                        title={t('l2.refresh-balance')}
+                                        $spinning={isRefreshing}
+                                        data-testid="l2-refresh-balance"
+                                    >
+                                        <IoRefreshOutline />
+                                    </RefreshButton>
+                                )}
+                            </BalanceRow>
                             <BottomWrapper>
                                 <Typography>
                                     {t('l2.balance-split', {
