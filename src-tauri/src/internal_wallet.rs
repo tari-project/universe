@@ -1737,10 +1737,17 @@ async fn monero_credential_exists() -> bool {
 /// install, so a new wallet is not created without the user's say-so.
 pub(crate) fn monero_keys_found_problem() -> anyhow::Error {
     START_FRESH_OFFERED.store(true, Ordering::SeqCst);
-    wallet_settings_problem(
-        "wallet-config-missing",
-        "Monero keys from a previous install were found, config_wallet.json is missing",
-    )
+    let config_path = ConfigWallet::_get_config_path();
+    let config_backup = config_path.with_extension("json.backup");
+    // The checked path is part of the message: on Windows a sandboxed tool can see a
+    // virtualized %APPDATA%, so "the file is right there" may describe a different folder
+    // than the one this path names. Paths only - never config contents.
+    let detail = format!(
+        "Monero keys from a previous install were found, config_wallet.json is missing (checked: {})",
+        config_path.display()
+    );
+    log::error!(target: LOG_TARGET_APP_LOGIC, "{detail}; backup checked: {}", config_backup.display());
+    wallet_settings_problem("wallet-config-missing", &detail)
 }
 
 /// The keyring no longer returns this wallet's keys. Same carrier as the settings failures,
@@ -1803,10 +1810,14 @@ pub(crate) fn previous_wallet_problem(config_backup: &Path) -> anyhow::Error {
                 .display()
                 .to_string(),
         ),
-        None => wallet_settings_problem(
-            "wallet-config-missing",
-            "config_wallet.json is missing, config_wallet.json.backup is unreadable",
-        ),
+        None => {
+            let detail = format!(
+                "config_wallet.json is missing, config_wallet.json.backup is unreadable (checked: {})",
+                config_backup.display()
+            );
+            log::error!(target: LOG_TARGET_APP_LOGIC, "{detail}");
+            wallet_settings_problem("wallet-config-missing", &detail)
+        }
     }
 }
 
