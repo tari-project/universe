@@ -46,7 +46,7 @@ use super::{
 use anyhow::Error;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
-use sysinfo::{CpuRefreshKind, RefreshKind, System};
+use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tokio::sync::RwLock;
 
 static INSTANCE: LazyLock<HardwareStatusMonitor> = LazyLock::new(HardwareStatusMonitor::new);
@@ -248,6 +248,25 @@ impl HardwareStatusMonitor {
         Ok(())
     }
 
+    pub fn detect_cpu_vendor(vendor_id: &str, brand: &str) -> HardwareVendor {
+        let combined = format!("{vendor_id} {brand}");
+        let lower = combined.to_lowercase();
+        if lower.contains("amd") || lower.contains("authenticamd") {
+            HardwareVendor::Amd
+        } else if lower.contains("intel") || lower.contains("genuineintel") {
+            HardwareVendor::Intel
+        } else if lower.contains("apple") {
+            HardwareVendor::Apple
+        } else {
+            #[cfg(target_os = "macos")]
+            if std::env::consts::ARCH == "aarch64" {
+                return HardwareVendor::Apple;
+            }
+            warn!(target: LOG_TARGET_APP_LOGIC, "Unknown CPU vendor: {combined}");
+            HardwareVendor::Unknown
+        }
+    }
+
     async fn select_reader_for_cpu_device(
         &self,
         vendor: HardwareVendor,
@@ -257,7 +276,7 @@ impl HardwareStatusMonitor {
             HardwareVendor::Intel => Box::new(IntelCpuParametersReader::new()),
             HardwareVendor::Apple => Box::new(AppleCpuParametersReader::new()),
             _ => {
-                warn!("Unsupported GPU vendor: {vendor:?}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Unsupported CPU vendor: {vendor:?}");
                 Box::new(DefaultCpuParametersReader)
             }
         }
@@ -268,35 +287,61 @@ impl HardwareStatusMonitor {
             System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
 
         let mut cpu_devices = vec![];
+        let mut seen_names = std::collections::HashSet::new();
 
         for cpu_device in system.cpus() {
             debug!(target: LOG_TARGET_APP_LOGIC, "CPU brand: {:?}", cpu_device.brand());
             debug!(target: LOG_TARGET_APP_LOGIC, "CPU vendor: {:?}", cpu_device.vendor_id());
             debug!(target: LOG_TARGET_APP_LOGIC, "CPU model: {:?}", cpu_device.name());
 
-            let vendor = HardwareVendor::Intel;
+            let name = cpu_device.brand().trim();
+            let name = if name.is_empty() {
+                cpu_device.name().to_string()
+            } else {
+                name.to_string()
+            };
+
+            if !seen_names.insert(name.clone()) {
+                continue;
+            }
+
+            let vendor = Self::detect_cpu_vendor(cpu_device.vendor_id(), cpu_device.brand());
             let device_reader = self.select_reader_for_cpu_device(vendor.clone()).await;
             let platform_device = CpuDeviceProperties {
                 private_properties: PrivateCpuDeviceProperties {
                     device_reader: device_reader.clone(),
                 },
                 public_properties: PublicDeviceCpuProperties {
-                    vendor: vendor.clone(),
-                    name: cpu_device.brand().to_string(),
+                    vendor,
+                    name,
                     status: DeviceStatus {
                         is_available: true,
-                        is_reader_implemented: device_reader.clone().get_is_reader_implemented(),
+                        is_reader_implemented: device_reader.get_is_reader_implemented(),
                     },
                     parameters: None,
-                    // parameters: if device_reader.clone().get_is_reader_implemented() {
-                    //     device_reader.clone().get_device_parameters(None).await.ok()
-                    // } else {
-                    //     None
-                    // },
                 },
             };
 
             cpu_devices.push(platform_device);
+        }
+
+        if cpu_devices.is_empty() {
+            let vendor = Self::detect_cpu_vendor("", "");
+            let device_reader = self.select_reader_for_cpu_device(vendor.clone()).await;
+            cpu_devices.push(CpuDeviceProperties {
+                private_properties: PrivateCpuDeviceProperties {
+                    device_reader: device_reader.clone(),
+                },
+                public_properties: PublicDeviceCpuProperties {
+                    vendor,
+                    name: "CPU".to_string(),
+                    status: DeviceStatus {
+                        is_available: true,
+                        is_reader_implemented: device_reader.get_is_reader_implemented(),
+                    },
+                    parameters: None,
+                },
+            });
         }
 
         *self.cpu_devices.write().await = cpu_devices;
@@ -376,7 +421,9 @@ impl HardwareStatusMonitor {
         &self,
         devices: &[GpuCommonInformation],
     ) -> Result<(), Error> {
-        let system = System::new_all();
+        let system = System::new_with_specifics(
+            RefreshKind::new().with_memory(MemoryRefreshKind::everything()),
+        );
         // sysinfo reports memory in bytes.
         let total_memory_mb = system.total_memory() / 1024 / 1024;
         let has_enough_system_memory = total_memory_mb >= Self::RECOMMENDED_SYSTEM_MEMORY_MB;
@@ -437,5 +484,233 @@ impl HardwareStatusMonitor {
 
     pub fn current() -> &'static HardwareStatusMonitor {
         &INSTANCE
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_detect_cpu_vendor_amd() {
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor(
+                "AuthenticAMD",
+                "AMD Ryzen 9 5950X 16-Core Processor"
+            ),
+            HardwareVendor::Amd
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("", "AMD Ryzen 7 7800X3D"),
+            HardwareVendor::Amd
+        );
+    }
+
+    #[test]
+    fn test_detect_cpu_vendor_intel() {
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor(
+                "GenuineIntel",
+                "12th Gen Intel(R) Core(TM) i7-12700K"
+            ),
+            HardwareVendor::Intel
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("", "Intel Core i9-13900K"),
+            HardwareVendor::Intel
+        );
+    }
+
+    #[test]
+    fn test_detect_cpu_vendor_apple() {
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("Apple", "Apple M2 Pro"),
+            HardwareVendor::Apple
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("", "Apple M1 Max"),
+            HardwareVendor::Apple
+        );
+    }
+
+    #[test]
+    fn test_detect_cpu_vendor_unknown() {
+        #[cfg(not(target_os = "macos"))]
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("GenericVendor", "GenericProcessor 1234"),
+            HardwareVendor::Unknown
+        );
+    }
+
+    #[test]
+    fn test_detect_cpu_vendor_empty_and_whitespace() {
+        #[cfg(not(target_os = "macos"))]
+        {
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("", ""),
+                HardwareVendor::Unknown
+            );
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("   ", "   "),
+                HardwareVendor::Unknown
+            );
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("\t", "\n"),
+                HardwareVendor::Unknown
+            );
+        }
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("", ""),
+                HardwareVendor::Apple
+            );
+        }
+    }
+
+    #[test]
+    fn test_detect_cpu_vendor_case_insensitivity() {
+        // AMD variations
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("authenticamd", "amd ryzen 5 5600x"),
+            HardwareVendor::Amd
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("AUTHENTICAMD", "AMD RYZEN 5 5600X"),
+            HardwareVendor::Amd
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("AuThEnTiCaMd", "aMd RyZeN 5 5600x"),
+            HardwareVendor::Amd
+        );
+
+        // Intel variations
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("genuineintel", "intel(r) core(tm) i5-10400"),
+            HardwareVendor::Intel
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("GENUINEINTEL", "INTEL(R) CORE(TM) I5-10400"),
+            HardwareVendor::Intel
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("GeNuInEiNtEl", "InTeL(R) cOrE(tM) i5-10400"),
+            HardwareVendor::Intel
+        );
+
+        // Apple variations
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("apple", "apple m3 pro"),
+            HardwareVendor::Apple
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("APPLE", "APPLE M3 PRO"),
+            HardwareVendor::Apple
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor("ApPlE", "aPpLe M3 pRo"),
+            HardwareVendor::Apple
+        );
+    }
+
+    #[test]
+    fn test_detect_cpu_vendor_exotic_brands() {
+        #[cfg(not(target_os = "macos"))]
+        {
+            // VIA / Centaur
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("CentaurHauls", "VIA Nano L2200"),
+                HardwareVendor::Unknown
+            );
+            // Cyrix
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("CyrixInstead", "Cyrix 6x86MX"),
+                HardwareVendor::Unknown
+            );
+            // Qualcomm Snapdragon ARM
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor(
+                    "Qualcomm",
+                    "Snapdragon X Elite X1E-80-100"
+                ),
+                HardwareVendor::Unknown
+            );
+            // Ampere Altra ARM server
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("Ampere", "Ampere Altra Max Q128-28"),
+                HardwareVendor::Unknown
+            );
+            // Loongson MIPS/LoongArch
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("Loongson", "Loongson-3A6000"),
+                HardwareVendor::Unknown
+            );
+            // Zhaoxin x86
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("Shanghai", "Zhaoxin KaiXian KX-U6780A"),
+                HardwareVendor::Unknown
+            );
+            // RISC-V SiFive
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("SiFive", "SiFive Freedom U740"),
+                HardwareVendor::Unknown
+            );
+            // Hygon x86 (Dhyana) without amd in brand
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor(
+                    "HygonGenuine",
+                    "Hygon C86 7185 32-core Processor"
+                ),
+                HardwareVendor::Unknown
+            );
+        }
+    }
+
+    #[test]
+    fn test_detect_cpu_vendor_unicode_and_extremes() {
+        #[cfg(not(target_os = "macos"))]
+        {
+            // Non-ASCII Unicode characters
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("Fujitsu", "A64FX-μArch"),
+                HardwareVendor::Unknown
+            );
+            // Emojis and special chars
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor("!@#$%^&*()", "🔥 SuperChip ⚡"),
+                HardwareVendor::Unknown
+            );
+            // Long strings
+            let long_str = "x".repeat(10_000);
+            assert_eq!(
+                HardwareStatusMonitor::detect_cpu_vendor(&long_str, &long_str),
+                HardwareVendor::Unknown
+            );
+        }
+
+        // Long string containing vendor name
+        let prefix = "a".repeat(500);
+        let suffix = "b".repeat(500);
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor(
+                &prefix,
+                &format!("{prefix} amd ryzen {suffix}")
+            ),
+            HardwareVendor::Amd
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor(
+                &prefix,
+                &format!("{prefix} intel core {suffix}")
+            ),
+            HardwareVendor::Intel
+        );
+        assert_eq!(
+            HardwareStatusMonitor::detect_cpu_vendor(
+                &prefix,
+                &format!("{prefix} apple m3 {suffix}")
+            ),
+            HardwareVendor::Apple
+        );
     }
 }

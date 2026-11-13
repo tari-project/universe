@@ -39,6 +39,88 @@ const LOG_TARGET: &str = "tari::universe::battery_status";
 
 static INSTANCE: LazyLock<BatteryStatus> = LazyLock::new(BatteryStatus::new);
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum BatteryTransition {
+    None,
+    SwitchedToCharging,
+    SwitchedToDischarging,
+    NoBatteries,
+}
+
+/// Pure state-transition evaluator for battery charging/discharging changes.
+/// Enables unit testing transition rules without physical battery hardware.
+pub fn evaluate_battery_transition(
+    count: usize,
+    all_charging: bool,
+    all_discharging: bool,
+    last_state: battery::State,
+) -> (battery::State, BatteryTransition) {
+    if count == 0 {
+        return (last_state, BatteryTransition::NoBatteries);
+    }
+
+    let was_charging = last_state == battery::State::Charging;
+    let was_discharging = last_state == battery::State::Discharging;
+
+    let should_switch_to_charge = all_charging || (was_discharging && !all_discharging);
+    let should_switch_to_discharge = !was_discharging && all_discharging;
+
+    if should_switch_to_charge && !was_charging {
+        (
+            battery::State::Charging,
+            BatteryTransition::SwitchedToCharging,
+        )
+    } else if should_switch_to_discharge {
+        (
+            battery::State::Discharging,
+            BatteryTransition::SwitchedToDischarging,
+        )
+    } else {
+        (last_state, BatteryTransition::None)
+    }
+}
+
+/// Scans all batteries in a single pass and computes the next state transition.
+fn scan_battery_state(
+    manager: &battery::Manager,
+    last_state: battery::State,
+) -> Result<(battery::State, BatteryTransition), ()> {
+    let batteries = match manager.batteries() {
+        Ok(b) => b,
+        Err(e) => {
+            error!(target: LOG_TARGET, "Failed to query batteries: {e}");
+            return Err(());
+        }
+    };
+
+    let mut count = 0;
+    let mut all_charging = true;
+    let mut all_discharging = true;
+
+    for battery in batteries.flatten() {
+        count += 1;
+        match battery.state() {
+            battery::State::Charging | battery::State::Full => {
+                all_discharging = false;
+            }
+            battery::State::Discharging => {
+                all_charging = false;
+            }
+            _ => {
+                all_charging = false;
+                all_discharging = false;
+            }
+        }
+    }
+
+    Ok(evaluate_battery_transition(
+        count,
+        all_charging,
+        all_discharging,
+        last_state,
+    ))
+}
+
 pub struct BatteryStatus {
     battery_listener_thread: Mutex<Option<JoinHandle<()>>>,
     should_resume_mining_once_charging: AtomicBool,
@@ -136,78 +218,161 @@ impl BatteryStatus {
         }
 
         let mut thread_lock = INSTANCE.battery_listener_thread.lock().await;
+        if thread_lock.is_some() {
+            info!(target: LOG_TARGET, "Battery listener thread is already running.");
+            return;
+        }
+
+        // Probe once via spawn_blocking whether any battery hardware is present
+        let probe_result = tokio::task::spawn_blocking(|| {
+            let manager = match battery::Manager::new() {
+                Ok(m) => m,
+                Err(e) => {
+                    info!(target: LOG_TARGET, "Battery manager init failed or not supported on this platform: {e}");
+                    return None;
+                }
+            };
+
+            match manager.batteries() {
+                Ok(batteries) => {
+                    let count = batteries.flatten().count();
+                    if count == 0 {
+                        info!(target: LOG_TARGET, "No batteries found on the system (count == 0).");
+                        None
+                    } else {
+                        info!(target: LOG_TARGET, "Battery hardware detected: found {count} battery device(s).");
+                        Some(manager)
+                    }
+                }
+                Err(e) => {
+                    info!(target: LOG_TARGET, "Failed to enumerate batteries: {e}");
+                    None
+                }
+            }
+        })
+        .await;
+
+        let battery_manager = match probe_result {
+            Ok(Some(manager)) => Arc::new(manager),
+            _ => {
+                info!(target: LOG_TARGET, "No batteries present; marking PauseOnBatteryModeState::NotSupported and skipping background listener.");
+                let _unused = ConfigMining::update_field(
+                    ConfigMiningContent::set_pause_on_battery_mode,
+                    PauseOnBatteryModeState::NotSupported,
+                )
+                .await;
+                EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
+                return;
+            }
+        };
+
         let common_task_tracker = TasksTrackers::current().common.get_task_tracker().await;
         let mut common_shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
-        if thread_lock.is_none() {
-            let last_battery_state = Arc::new(Mutex::new(battery::State::Unknown));
-            let handle = common_task_tracker.spawn(async move {
-                loop {
-                    // Used spawn_blocking to handle non-Send battery operations
-                    let last_battery_state_clone = Arc::clone(&last_battery_state);
-                    let _unused = tokio::task::spawn_blocking(move || {
-                       let battery_manager = match battery::Manager::new() {
-                           Err(e) => {error!(target: LOG_TARGET, "Error initializing Battery Manager : {}", e); return;},
-                           Ok(manager) => manager
-                       };
+        let handle = common_task_tracker.spawn(async move {
+            let mut last_state = battery::State::Unknown;
+            loop {
+                let mgr = Arc::clone(&battery_manager);
+                let scan_result =
+                    tokio::task::spawn_blocking(move || scan_battery_state(&mgr, last_state)).await;
 
-                       if battery_manager.batteries().is_ok_and(|batteries| batteries.count() == 0) {
-                            tokio::spawn(Self::no_batteries_found_handler());
-                            return;
-                       };
-                        // If all batteries are charging the execute charging handler
-                        // If all batteries are discharging then execute discharging handler
-                        let mut all_charging = true;
-                        let mut all_discharging = true;
-
-                        if let Ok(batteries) = battery_manager.batteries() {
-                            for battery in batteries.flatten() {
-                                match battery.state() {
-                                    battery::State::Charging | battery::State::Full => {
-                                        all_discharging = false;
-                                    },
-                                    battery::State::Discharging => {
-                                        all_charging = false;
-                                    },
-                                    _ => {
-                                        all_charging = false;
-                                        all_discharging = false;
-                                    }
-                                }
+                match scan_result {
+                    Ok(Ok((new_state, transition))) => {
+                        last_state = new_state;
+                        match transition {
+                            BatteryTransition::SwitchedToCharging => {
+                                Self::switched_to_charging_handler().await;
                             }
-
-                            let mut state = last_battery_state_clone.blocking_lock();
-
-                            let was_charging =  *state == battery::State::Charging;
-                            let was_discharging =  *state == battery::State::Discharging;
-
-                            let should_switch_to_charge = all_charging || (was_discharging && !all_discharging);
-                            let should_switch_to_discharge = !was_discharging && all_discharging;
-
-
-                            if should_switch_to_charge && !was_charging  {
-                                tokio::spawn(Self::switched_to_charging_handler());
-                                *state = battery::State::Charging;
-                            };
-                            if should_switch_to_discharge {
-                                tokio::spawn(Self::switched_to_discharging_handler());
-                                *state = battery::State::Discharging;
-                            };
-                        }
-                    }).await;
-                    tokio::select! {
-                        _ = tokio::time::sleep(tokio::time::Duration::from_secs(3)) => {},
-                        _ = &mut common_shutdown_signal => {
-                            log::info!(target: LOG_TARGET, "Battery listener received shutdown signal.");
-                            break;
+                            BatteryTransition::SwitchedToDischarging => {
+                                Self::switched_to_discharging_handler().await;
+                            }
+                            BatteryTransition::NoBatteries => {
+                                Self::no_batteries_found_handler().await;
+                                break;
+                            }
+                            BatteryTransition::None => {}
                         }
                     }
+                    Ok(Err(())) => {
+                        // Error is already logged inside scan_battery_state
+                    }
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Battery scan blocking task error: {e}");
+                    }
                 }
-            });
-            *thread_lock = Some(handle);
-            log::info!(target: LOG_TARGET, "Battery listener thread started.");
-        } else {
-            log::info!(target: LOG_TARGET, "Battery listener thread is already running.");
-        }
+
+                tokio::select! {
+                    _ = tokio::time::sleep(tokio::time::Duration::from_secs(15)) => {},
+                    _ = &mut common_shutdown_signal => {
+                        info!(target: LOG_TARGET, "Battery listener received shutdown signal.");
+                        break;
+                    }
+                }
+            }
+        });
+
+        *thread_lock = Some(handle);
+        info!(target: LOG_TARGET, "Battery listener thread started with 15s interval.");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_no_batteries_triggers_not_supported_transition() {
+        let (state, transition) =
+            evaluate_battery_transition(0, true, true, battery::State::Unknown);
+        assert_eq!(transition, BatteryTransition::NoBatteries);
+        assert_eq!(state, battery::State::Unknown);
+    }
+
+    #[test]
+    fn test_initial_charging_transition() {
+        let (state, transition) =
+            evaluate_battery_transition(1, true, false, battery::State::Unknown);
+        assert_eq!(transition, BatteryTransition::SwitchedToCharging);
+        assert_eq!(state, battery::State::Charging);
+    }
+
+    #[test]
+    fn test_initial_discharging_transition() {
+        let (state, transition) =
+            evaluate_battery_transition(1, false, true, battery::State::Unknown);
+        assert_eq!(transition, BatteryTransition::SwitchedToDischarging);
+        assert_eq!(state, battery::State::Discharging);
+    }
+
+    #[test]
+    fn test_transition_from_charging_to_discharging() {
+        let (state, transition) =
+            evaluate_battery_transition(1, false, true, battery::State::Charging);
+        assert_eq!(transition, BatteryTransition::SwitchedToDischarging);
+        assert_eq!(state, battery::State::Discharging);
+    }
+
+    #[test]
+    fn test_transition_from_discharging_to_charging() {
+        let (state, transition) =
+            evaluate_battery_transition(1, true, false, battery::State::Discharging);
+        assert_eq!(transition, BatteryTransition::SwitchedToCharging);
+        assert_eq!(state, battery::State::Charging);
+    }
+
+    #[test]
+    fn test_steady_state_charging_no_transition() {
+        let (state, transition) =
+            evaluate_battery_transition(1, true, false, battery::State::Charging);
+        assert_eq!(transition, BatteryTransition::None);
+        assert_eq!(state, battery::State::Charging);
+    }
+
+    #[test]
+    fn test_steady_state_discharging_no_transition() {
+        let (state, transition) =
+            evaluate_battery_transition(1, false, true, battery::State::Discharging);
+        assert_eq!(transition, BatteryTransition::None);
+        assert_eq!(state, battery::State::Discharging);
     }
 }

@@ -28,6 +28,28 @@ use super::hardware_status_monitor::DeviceParameters;
 use anyhow::Error;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
+use sysinfo::{Components, CpuRefreshKind, RefreshKind, System};
+
+pub struct CpuReaderState {
+    pub system: System,
+    pub components: Components,
+}
+
+impl CpuReaderState {
+    pub fn new() -> Self {
+        let mut system =
+            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
+        system.refresh_cpu_usage();
+        let components = Components::new_with_refreshed_list();
+        Self { system, components }
+    }
+}
+
+impl Default for CpuReaderState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[async_trait]
 pub trait CpuParametersReader: Send + DynClone + Sync + 'static {
