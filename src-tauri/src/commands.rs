@@ -288,6 +288,105 @@ pub async fn exit_application(
     Ok(())
 }
 
+pub fn unescape_html_entities(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '&' {
+            let mut entity = String::new();
+            let mut found_semi = false;
+            while let Some(&next_c) = chars.peek() {
+                if next_c == ';' {
+                    chars.next();
+                    found_semi = true;
+                    break;
+                } else if next_c.is_alphanumeric() || next_c == '#' {
+                    entity.push(next_c);
+                    chars.next();
+                    if entity.len() > 10 {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+            if found_semi {
+                if let Some(dec) = entity.strip_prefix('#') {
+                    if let Some(hex) = dec.strip_prefix('x').or_else(|| dec.strip_prefix('X')) {
+                        if let Ok(code) = u32::from_str_radix(hex, 16) {
+                            if let Some(ch) = char::from_u32(code) {
+                                out.push(ch);
+                                continue;
+                            }
+                        }
+                    } else if let Ok(code) = dec.parse::<u32>() {
+                        if let Some(ch) = char::from_u32(code) {
+                            out.push(ch);
+                            continue;
+                        }
+                    }
+                } else {
+                    match entity.as_str() {
+                        "amp" => {
+                            out.push('&');
+                            continue;
+                        }
+                        "quot" => {
+                            out.push('"');
+                            continue;
+                        }
+                        "apos" => {
+                            out.push('\'');
+                            continue;
+                        }
+                        "lt" => {
+                            out.push('<');
+                            continue;
+                        }
+                        "gt" => {
+                            out.push('>');
+                            continue;
+                        }
+                        _ => {}
+                    }
+                }
+                out.push('&');
+                out.push_str(&entity);
+                out.push(';');
+            } else {
+                out.push('&');
+                out.push_str(&entity);
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+pub fn parse_tor_bridge_lines(res_html: &str) -> Vec<String> {
+    let re = match Regex::new(r"(?i)obfs4\s+.*?(?:<br\s*/?>|$)") {
+        Ok(r) => r,
+        Err(_) => return Vec::new(),
+    };
+    re.find_iter(res_html)
+        .filter_map(|m| {
+            let raw = m.as_str();
+            let trimmed = if let Some(idx) = raw.find('<') {
+                &raw[..idx]
+            } else {
+                raw
+            };
+            let cleaned = unescape_html_entities(trimmed.trim());
+            if cleaned.starts_with("obfs4 ") && cleaned.contains("cert=") {
+                Some(cleaned)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 #[tauri::command]
 pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
     let timer = Instant::now();
@@ -298,11 +397,7 @@ pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r"obfs4.*?<br/>").map_err(|e| e.to_string())?;
-    let bridges: Vec<String> = re
-        .find_iter(&res_html)
-        .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
-        .collect();
+    let bridges = parse_tor_bridge_lines(&res_html);
     info!(target: LOG_TARGET_APP_LOGIC, "Fetched default bridges: {bridges:?}");
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
@@ -2441,7 +2536,7 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
 
 /*
  ********** TAPPLETS SECTION **********
-*/
+ */
 
 #[tauri::command]
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
@@ -2830,6 +2925,27 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
 #[cfg(test)]
 mod tests {
     use super::canonicalise_remote_base_node_address;
+
+    #[test]
+    fn test_unescape_html_entities_bridges() {
+        let raw = "obfs4 185.177.207.13:22662 928C1E428736 cert=p9L6&#43;25s8bnfk&#43;&#43;iat-mode=2 <br/>";
+        let parsed = super::parse_tor_bridge_lines(raw);
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(
+            parsed[0],
+            "obfs4 185.177.207.13:22662 928C1E428736 cert=p9L6+25s8bnfk++iat-mode=2"
+        );
+        assert!(!parsed[0].contains("&#43;"));
+        assert!(!parsed[0].contains("<br"));
+    }
+
+    #[test]
+    fn test_unescape_html_hex_and_named_entities() {
+        assert_eq!(
+            super::unescape_html_entities("foo&#x2B;bar&amp;baz&#43;test&quot;"),
+            "foo+bar&baz+test\""
+        );
+    }
 
     fn reset_fixture() -> tempfile::TempDir {
         let dir = tempfile::tempdir().expect("reset directory");
