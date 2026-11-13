@@ -1,3 +1,4 @@
+import { open } from '@tauri-apps/plugin-shell';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import OpenSettingsButton from '@app/containers/floating/Settings/components/OpenSettingsButton.tsx';
 import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/AirdropSidebarItems.tsx';
@@ -17,7 +18,12 @@ export default function SidebarMini() {
     return (
         <MiniWrapper>
             <GridTop>
-                <LogoWrapper>
+                <LogoWrapper
+                    role="link"
+                    aria-label="Visit tari.com"
+                    title="Visit tari.com"
+                    onClick={() => open('https://www.tari.com')}
+                >
                     <TariOutlineSVG />
                 </LogoWrapper>
             </GridTop>
