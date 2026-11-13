@@ -28,8 +28,8 @@ describe('useExchangeStore', () => {
             expect(universalExchangeMinerOption.slug).toBe('universal');
         });
 
-        it('has name as Tari Universe', () => {
-            expect(universalExchangeMinerOption.name).toBe('Tari Universe');
+        it('has name as Minotari Wallet', () => {
+            expect(universalExchangeMinerOption.name).toBe('Minotari Wallet');
         });
 
         it('has is_hidden as false', () => {
