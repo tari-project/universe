@@ -43,7 +43,11 @@ export default function SidebarWalletDetails({
 
     const baseMarkup = (
         <>
-            <AnimatedBG $col1={xcData?.primary_colour || `#0B0A0D`} $col2={xcData?.secondary_colour || `#6F8309`} />
+            <AnimatedBG
+                $col1={xcData?.primary_colour || `#0B0A0D`}
+                $col2={xcData?.secondary_colour || `#6F8309`}
+                $isSpinning={isSyncing}
+            />
             <Content>
                 <WalletDetails />
                 <BottomContent>

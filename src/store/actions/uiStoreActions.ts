@@ -50,6 +50,13 @@ export async function loadAnimation() {
     }
 }
 export async function removeAnimation() {
+    const canvas =
+        document.getElementById(TOWER_CANVAS_ID) ||
+        document.querySelector('canvas:not([id])') ||
+        document.querySelector('canvas');
+    if (canvas) {
+        canvas.id = TOWER_CANVAS_ID;
+    }
     await removeTowerAnimation({ canvasId: TOWER_CANVAS_ID }).then((removed) => {
         if (removed) {
             // Force garbage collection to clean up WebGL context

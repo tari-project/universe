@@ -81,7 +81,7 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
     return (
         <WalletWrapper style={{ minHeight: 0 }} data-testid="l2-wallet">
             <DetailsCard $isScrolled={false}>
-                <AnimatedBG $col1="#2b1d5a" $col2="#4c2c8f" />
+                <AnimatedBG $col1="#2b1d5a" $col2="#4c2c8f" $isSpinning={false} />
                 <Content>
                     <DetailsRow>
                         <Name>

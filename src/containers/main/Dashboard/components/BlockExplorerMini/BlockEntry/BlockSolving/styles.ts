@@ -21,7 +21,7 @@ export const BoxWrapper = styled(m.div)<{ $isSolved?: boolean }>`
 
     border: 1px solid rgba(255, 144, 18, 0.3);
     background: rgba(255, 204, 75, 0.3);
-    backdrop-filter: blur(23px);
+    backdrop-filter: blur(8px);
 
     padding: 8px;
     width: 316px;

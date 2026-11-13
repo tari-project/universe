@@ -7,7 +7,7 @@ export const ModalWrapper = styled(m.div)`
     position: relative;
     border-radius: 35px;
     background: ${({ theme }) => (theme.mode === 'light' ? `rgba(255, 255, 255, 0.8)` : `rgba(30, 30, 30, 0.52)`)};
-    backdrop-filter: blur(80px);
+    backdrop-filter: blur(12px);
     display: flex;
     flex-direction: column;
     padding: 45px;
