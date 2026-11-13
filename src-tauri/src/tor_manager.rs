@@ -180,6 +180,10 @@ impl TorManager {
             .map(|m| m.cookie_path())
     }
 
+    pub fn subscribe_status(&self) -> watch::Receiver<TorStatus> {
+        self.status_watch_rx.clone()
+    }
+
     pub async fn get_entry_guards(&self) -> Result<Vec<String>, anyhow::Error> {
         self.watcher.read().await.adapter.get_entry_guards().await
     }

@@ -337,6 +337,43 @@ impl SetupPhaseImpl for NodeSetupPhase {
             if let Ok(tor_guards) = tor_guards {
                 EventsEmitter::emit_tor_entry_guards(tor_guards).await;
             }
+
+            let mut tor_status_rx = state.tor_manager.subscribe_status();
+            let tor_manager_clone = state.tor_manager.clone();
+            let mut tor_shutdown_signal = shutdown_signal.clone();
+            TasksTrackers::current()
+                .node_phase
+                .get_task_tracker()
+                .await
+                .spawn(async move {
+                    let mut prev_bootstrapped = false;
+                    loop {
+                        tokio::select! {
+                            res = tor_status_rx.changed() => {
+                                if res.is_err() {
+                                    break;
+                                }
+                                let status = *tor_status_rx.borrow();
+                                if status.is_bootstrapped && !prev_bootstrapped {
+                                    if let Ok(guards) = tor_manager_clone.get_entry_guards().await {
+                                        EventsEmitter::emit_tor_entry_guards(guards).await;
+                                    }
+                                }
+                                prev_bootstrapped = status.is_bootstrapped;
+                            }
+                            _ = tokio::time::sleep(tokio::time::Duration::from_secs(60)) => {
+                                if tor_status_rx.borrow().is_bootstrapped {
+                                    if let Ok(guards) = tor_manager_clone.get_entry_guards().await {
+                                        EventsEmitter::emit_tor_entry_guards(guards).await;
+                                    }
+                                }
+                            }
+                            _ = tor_shutdown_signal.wait() => {
+                                break;
+                            }
+                        }
+                    }
+                });
         }
 
         let mut shutdown_signal_clone = shutdown_signal.clone();
