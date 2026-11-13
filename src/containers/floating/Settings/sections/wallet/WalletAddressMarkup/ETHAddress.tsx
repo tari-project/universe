@@ -1,4 +1,4 @@
-import { isAddress } from 'ethers';
+import { isAddress } from '@app/utils/address.ts';
 
 import { useWalletStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';

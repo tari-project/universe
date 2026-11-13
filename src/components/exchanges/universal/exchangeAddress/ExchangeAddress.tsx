@@ -9,7 +9,7 @@ import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import { IoClose } from 'react-icons/io5';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { WalletAddressNetwork } from '@app/types/transactions';
-import { isAddress } from 'ethers';
+import { isAddress } from '@app/utils/address.ts';
 interface ExchangeAddressProps {
     handleIsAddressValid: (isValid: boolean) => void;
     handleAddressChanged: (address: string) => void;
