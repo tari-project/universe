@@ -115,6 +115,14 @@ pub struct NodeManager {
     remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     local_node_db_cleared: Arc<AtomicBool>,
     orphan_chain_detected: Arc<AtomicBool>,
+    local_start_config: Arc<RwLock<Option<LocalNodeStartConfig>>>,
+}
+
+#[derive(Clone)]
+struct LocalNodeStartConfig {
+    base_path: PathBuf,
+    config_path: PathBuf,
+    log_path: PathBuf,
 }
 
 impl NodeManager {
@@ -156,6 +164,7 @@ impl NodeManager {
             remote_node_watch_rx,
             local_node_db_cleared: Arc::new(AtomicBool::new(false)),
             orphan_chain_detected: Arc::new(AtomicBool::new(false)),
+            local_start_config: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -174,6 +183,11 @@ impl NodeManager {
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
         if self.is_local().await {
+            *self.local_start_config.write().await = Some(LocalNodeStartConfig {
+                base_path: base_path.clone(),
+                config_path: config_path.clone(),
+                log_path: log_path.clone(),
+            });
             self.configure_adapter(
                 self.local_node_watcher.clone(),
                 self.is_local_current().await,
@@ -228,6 +242,40 @@ impl NodeManager {
             self.switch_to_local_when_synced(shutdown_signal).await?;
         }
 
+        Ok(())
+    }
+
+    pub async fn restart_local_node(&self) -> Result<(), NodeManagerError> {
+        if !self.is_local_current().await {
+            return Ok(());
+        }
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        if shutdown_signal.is_triggered() {
+            return Ok(());
+        }
+        let config = self.local_start_config.read().await.clone();
+        let Some(config) = config else { return Ok(()) };
+        let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+        let mut watcher = self.local_node_watcher.write().await;
+        if let Some(watcher) = watcher.as_mut() {
+            watcher
+                .stop()
+                .await
+                .map_err(NodeManagerError::UnknownError)?;
+            if !shutdown_signal.is_triggered() {
+                watcher
+                    .start(
+                        config.base_path,
+                        config.config_path,
+                        config.log_path,
+                        crate::binaries::Binaries::MinotariNode,
+                        shutdown_signal.clone(),
+                        task_tracker,
+                    )
+                    .await
+                    .map_err(NodeManagerError::UnknownError)?;
+            }
+        }
         Ok(())
     }
 
