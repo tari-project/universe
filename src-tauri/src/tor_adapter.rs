@@ -60,6 +60,50 @@ pub(crate) struct TorAdapter {
     status_broadcast: watch::Sender<TorStatus>,
 }
 
+#[cfg(windows)]
+pub fn format_client_transport_plugin_exec_path(path: &Path) -> String {
+    use std::os::windows::ffi::OsStrExt;
+    use std::os::windows::ffi::OsStringExt;
+    use windows_sys::Win32::Storage::FileSystem::GetShortPathNameW;
+
+    // First attempt to get the 8.3 short path name which eliminates spaces on Windows (e.g. C:\Users\JOHNSM~1\...)
+    let wide: Vec<u16> = path
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let len = unsafe { GetShortPathNameW(wide.as_ptr(), std::ptr::null_mut(), 0) };
+    if len > 0 {
+        let mut buf = vec![0u16; len as usize];
+        let written = unsafe { GetShortPathNameW(wide.as_ptr(), buf.as_mut_ptr(), len) };
+        if written > 0 && written < len {
+            if let Ok(short) = std::ffi::OsString::from_wide(&buf[..written as usize]).into_string()
+            {
+                if !short.contains(' ') {
+                    return short;
+                }
+            }
+        }
+    }
+    // If short path is not available or still has spaces, enclose in double quotes for Tor's options parser
+    let path_str = path.to_string_lossy();
+    if path_str.contains(' ') && !path_str.starts_with('"') {
+        format!("\"{}\"", path_str)
+    } else {
+        path_str.into_owned()
+    }
+}
+
+#[cfg(not(windows))]
+pub fn format_client_transport_plugin_exec_path(path: &Path) -> String {
+    let path_str = path.to_string_lossy();
+    if path_str.contains(' ') && !path_str.starts_with('"') {
+        format!("\"{}\"", path_str)
+    } else {
+        path_str.into_owned()
+    }
+}
+
 fn prepare_tor_working_dir(data_dir: &Path, is_first_start: bool) -> Result<PathBuf, Error> {
     let working_dir: PathBuf = data_dir.join("tor-data");
     if is_first_start {
@@ -274,13 +318,9 @@ impl ProcessAdapter for TorAdapter {
 
         if self.config.use_bridges {
             // Used by tor bridges
-            // TODO: This does not work when path has space on windows.
-            // Consider running lyrebird binary manually
             args.push("--ClientTransportPlugin".to_string());
-            args.push(format!(
-                "obfs4 exec {} managed",
-                convert_to_string(lyrebird_path)?
-            ));
+            let exec_path = format_client_transport_plugin_exec_path(&lyrebird_path);
+            args.push(format!("obfs4 exec {} managed", exec_path));
             for bridge in &self.config.bridges {
                 args.push("--Bridge".to_string());
                 args.push(bridge.clone());
@@ -547,5 +587,17 @@ mod tests {
             });
             assert!(result.is_err(), "must reject {reply:?}");
         }
+    }
+
+    #[test]
+    fn test_format_client_transport_plugin_exec_path_quotes_spaces() {
+        let path_with_space = PathBuf::from("/path/with a space/lyrebird");
+        let formatted = format_client_transport_plugin_exec_path(&path_with_space);
+        assert!(formatted.starts_with('"') && formatted.ends_with('"'));
+        assert_eq!(formatted, "\"/path/with a space/lyrebird\"");
+
+        let path_without_space = PathBuf::from("/path/without/space/lyrebird");
+        let formatted = format_client_transport_plugin_exec_path(&path_without_space);
+        assert_eq!(formatted, "/path/without/space/lyrebird");
     }
 }
