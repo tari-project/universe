@@ -266,13 +266,27 @@ async fn auth_middleware(
         .get("Authorization")
         .and_then(|v: &axum::http::HeaderValue| v.to_str().ok());
 
-    match auth_header {
-        Some(header) if header.starts_with("Bearer ") => {
-            let provided = &header[7..];
+    let provided = auth_header.and_then(|header| {
+        let trimmed = header.trim_start();
+        let (scheme, rest) = trimmed.split_at_checked(6)?;
+        if scheme.eq_ignore_ascii_case("bearer") && rest.starts_with(' ') {
+            Some(rest.trim())
+        } else {
+            None
+        }
+    });
+
+    match provided {
+        Some(provided) if !provided.is_empty() => {
             // Constant-time comparison via hashing to avoid timing side-channels
             let provided_hash = Sha256::digest(provided.as_bytes());
             let expected_hash = Sha256::digest(expected_token.as_bytes());
-            if provided_hash == expected_hash {
+            if ring::constant_time::verify_slices_are_equal(
+                provided_hash.as_slice(),
+                expected_hash.as_slice(),
+            )
+            .is_ok()
+            {
                 let config = ConfigMcp::content().await;
                 if config.is_token_expired() {
                     return Err(axum::http::StatusCode::UNAUTHORIZED);
