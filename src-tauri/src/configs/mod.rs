@@ -36,3 +36,5 @@ pub mod pools;
 pub mod trait_config;
 #[cfg(test)]
 mod trait_config_telemetry_test;
+#[cfg(test)]
+mod trait_config_test;

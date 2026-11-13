@@ -30,6 +30,7 @@ use tokio::sync::RwLock;
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<RwLock<TestConfig>> = LazyLock::new(|| RwLock::new(TestConfig::new()));
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
@@ -124,9 +125,9 @@ mod tests {
     // use std::fs;
 
     fn clear_config_file() {
-        if TestConfig::_get_config_path().exists() {
-            std::fs::remove_file(TestConfig::_get_config_path()).unwrap();
-        }
+        let path = TestConfig::_get_config_path();
+        let _ = std::fs::remove_file(&path);
+        let _ = std::fs::remove_file(path.with_extension("json.tmp"));
     }
 
     fn before_each() {
@@ -134,13 +135,15 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_saving_to_file() {
-        let config = TestConfig::current().read().await;
         before_each();
+        let config = TestConfig::current().read().await;
 
         TestConfig::_save_config(config._get_content().clone()).unwrap();
 
         assert!(TestConfig::_get_config_path().exists());
+        clear_config_file();
     }
 
     // TODO: Bartosz: Fix this. Intermittant failures. Likely race conditions and deadlocks.
@@ -155,23 +158,33 @@ mod tests {
     //     assert_eq!(config._get_content(), &loaded_config);
     // }
 
-    // TODO: Bartosz: Fix this. It locks up for long periods
-    // #[tokio::test]
-    // async fn test_update_field() {
-    //     let config = TestConfig::current().read().await;
-    //     before_each();
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_update_field() {
+        before_each();
+        let initial_value = *TestConfig::current()
+            .read()
+            .await
+            ._get_content()
+            .some_test_bool();
+        TestConfig::update_field(TestConfigContent::set_some_test_bool, !initial_value)
+            .await
+            .unwrap();
 
-    //     let initial_value = *config._get_content().some_test_bool();
-    //     TestConfig::update_field(TestConfigContent::set_some_test_bool, !initial_value)
-    //         .await
-    //         .unwrap();
-
-    //     assert_eq!(!initial_value, *config._get_content().some_test_bool());
-    //     assert_eq!(
-    //         !initial_value,
-    //         *TestConfig::_load_config().unwrap().some_test_bool()
-    //     );
-    // }
+        assert_eq!(
+            !initial_value,
+            *TestConfig::current()
+                .read()
+                .await
+                ._get_content()
+                .some_test_bool()
+        );
+        assert_eq!(
+            !initial_value,
+            *TestConfig::_load_config().unwrap().some_test_bool()
+        );
+        clear_config_file();
+    }
 
     // #[tokio::test]
     // async fn test_if_loading_with_missing_files_is_handled() {

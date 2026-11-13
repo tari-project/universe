@@ -28,7 +28,7 @@ use std::{
     time::Duration,
 };
 
-use axum::async_trait;
+use async_trait::async_trait;
 use log::{info, warn};
 use regex::Regex;
 use serde::Deserialize;
@@ -64,7 +64,7 @@ use crate::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
         StatusMonitor,
     },
-    process_utils::launch_child_process,
+    process_utils::{graceful_kill, launch_child_process},
 };
 
 #[derive(Default)]
@@ -295,7 +295,7 @@ impl LolMinerGpuMiner {
         let outcome = timeout(CAPABILITY_PROBE_TIMEOUT, read_device_table).await;
 
         // The benchmark itself is of no interest, and neither is a hung device init.
-        if let Err(error) = child.kill().await {
+        if let Err(error) = graceful_kill(&mut child).await {
             warn!(target: LOG_TARGET_APP_LOGIC, "Could not stop lolminer after probing: {error}");
         }
 
@@ -419,6 +419,10 @@ impl ProcessAdapter for LolMinerGpuMiner {
             GpuMinerStatusInterface::LolMiner(LolMinerGpuMinerStatusMonitor {
                 http_api_port: api_port,
                 gpu_status_sender: self.gpu_status_sender.clone(),
+                client: reqwest::Client::builder()
+                    .timeout(Duration::from_secs(10))
+                    .build()
+                    .unwrap_or_default(),
             }),
         ))
     }
@@ -436,6 +440,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
 pub struct LolMinerGpuMinerStatusMonitor {
     http_api_port: u16,
     gpu_status_sender: Sender<GpuMinerStatus>,
+    client: reqwest::Client,
 }
 
 // This is a flag to indicate if the fallback to other miner has already been triggered
@@ -510,9 +515,8 @@ impl StatusMonitor for LolMinerGpuMinerStatusMonitor {
 impl LolMinerGpuMinerStatusMonitor {
     #[allow(clippy::cast_possible_truncation)]
     pub async fn status(&self) -> Result<GpuMinerStatus, anyhow::Error> {
-        let client = reqwest::Client::new();
         let url = format!("http://127.0.0.1:{}", self.http_api_port);
-        let response = match client.get(url).send().await {
+        let response = match self.client.get(url).send().await {
             Ok(response) => response,
             Err(e) => {
                 warn!(target: LOG_TARGET_STATUSES, "Error in getting response from LolMiner status: {e}");

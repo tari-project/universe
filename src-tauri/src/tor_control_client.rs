@@ -25,6 +25,7 @@ use log::warn;
 use regex::Regex;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     net::TcpStream,
@@ -35,6 +36,11 @@ use crate::LOG_TARGET_APP_LOGIC;
 const BOOTSTRAP_QUERY: &str = "GETINFO status/bootstrap-phase\r\n";
 const CIRCUIT_QUERY: &str = "GETINFO status/circuit-established\r\n";
 const NETWORK_QUERY: &str = "GETINFO network-liveness\r\n";
+
+static BOOTSTRAP_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"250-status\/bootstrap-phase=NOTICE\s+BOOTSTRAP\s+PROGRESS=(\d+)\s+TAG=(\w+) SUMMARY="([^"]+)""#)
+        .expect("Tor bootstrap regex is valid")
+});
 
 pub(crate) fn control_auth_cookie_path(data_dir: &Path) -> PathBuf {
     data_dir.join("tor-data").join("control_auth_cookie")
@@ -101,8 +107,7 @@ impl TorControlClient {
 
         if let Some(response) = reader.next_line().await? {
             // Expected output 250-status/bootstrap-phase=NOTICE BOOTSTRAP PROGRESS=100 TAG=done SUMMARY="Done"
-            let regex = Regex::new(r#"250-status\/bootstrap-phase=NOTICE\s+BOOTSTRAP\s+PROGRESS=(\d+)\s+TAG=(\w+) SUMMARY="([^"]+)""#).expect("If regex is wrong, don't start");
-            if let Some(captures) = regex.captures(&response) {
+            if let Some(captures) = BOOTSTRAP_REGEX.captures(&response) {
                 bootstrap_phase = captures
                     .get(1)
                     .ok_or_else(|| anyhow!("No progress capture in tor bootstrap status"))?

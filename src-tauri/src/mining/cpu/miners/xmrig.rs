@@ -172,6 +172,10 @@ impl ProcessAdapter for XmrigAdapter {
                 http_api_port: self.http_api_port.to_string(),
                 has_hashed: Arc::new(AtomicBool::new(false)),
                 zero_streak: Arc::new(AtomicU32::new(0)),
+                client: reqwest::Client::builder()
+                    .timeout(Duration::from_secs(10))
+                    .build()
+                    .unwrap_or_default(),
             },
         ))
     }
@@ -202,6 +206,7 @@ pub struct XmrigStatusMonitor {
     /// Consecutive zero-hashrate readings after having hashed; a single
     /// zero sample is a normal transient (e.g. around a mode change).
     zero_streak: Arc<AtomicU32>,
+    client: reqwest::Client,
 }
 
 #[async_trait]
@@ -308,8 +313,8 @@ pub struct Hashrate {
 
 impl XmrigStatusMonitor {
     pub async fn status(&self) -> Result<CpuMinerStatus, Error> {
-        let client = reqwest::Client::new();
-        let response = match client
+        let response = match self
+            .client
             .get(format!("http://127.0.0.1:{}/2/summary", self.http_api_port))
             .header("Authorization", format!("Bearer {}", self.access_token))
             .send()

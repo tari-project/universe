@@ -61,6 +61,7 @@ pub struct MiningStatusManager {
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
     is_started: Arc<Mutex<bool>>,
     app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    client: reqwest::Client,
 }
 
 impl MiningStatusManager {
@@ -79,6 +80,10 @@ impl MiningStatusManager {
             close_channel_tx,
             is_started: Arc::new(Mutex::new(false)),
             app_in_memory_config,
+            client: reqwest::Client::builder()
+                .timeout(Duration::from_secs(10))
+                .build()
+                .unwrap_or_default(),
         }
     }
 
@@ -113,6 +118,7 @@ impl MiningStatusManager {
         let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
 
         let is_started = self.is_started.clone();
+        let client = self.client.clone();
         match self.is_started.try_lock() {
             Some(mut is_started_guard) => {
                 if *is_started_guard {
@@ -137,7 +143,6 @@ impl MiningStatusManager {
                                 _ = interval.tick() => {
                                 if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option)
                                     && let Some(message) = MiningStatusManager::assemble_mining_status(cpu_miner_status_watch_rx.clone(),gpu_latest_miner_stats.clone(),node_latest_status.clone(),app_id.clone(),app_version.clone(),jwt.clone(),).await {
-                                        let client = reqwest::Client::new();
                                         let url = format!("{base_url}/miner/mining-status");
                                         if let Ok(response) = client.post(url).header(AUTHORIZATION, &format!("Bearer {jwt}")).json(&message).send().await.inspect_err(|e|{
                                             error!("error at sending mining status {e}");
