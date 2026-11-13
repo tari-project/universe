@@ -22,7 +22,8 @@ const getNodeType = (nodeType?: NodeType) => {
 export default function Node() {
     const { t } = useTranslation('settings', { useSuspense: false });
     const node_type = useNodeStore((state) => state.node_type);
-    const node_identity = useNodeStore((state) => state.node_identity);
+    const nodePublicKey = useNodeStore((state) => state.node_identity?.public_key);
+    const nodePublicAddresses = useNodeStore((state) => state.node_identity?.public_addresses.join(', '));
     const node_connection_address = useNodeStore((state) => state.node_connection_address);
 
     return (
@@ -44,13 +45,13 @@ export default function Node() {
                                 <Stack direction="row">
                                     <Typography>{t('node-public-key')}</Typography>
                                     <Typography>
-                                        <b>{node_identity?.public_key || 'N/A'}</b>
+                                        <b>{nodePublicKey || 'N/A'}</b>
                                     </Typography>
                                 </Stack>
                                 <Stack direction="row">
                                     <Typography>{t('node-public-address')}</Typography>
                                     <Typography>
-                                        <b>{node_identity?.public_addresses.join(', ') || 'N/A'}</b>
+                                        <b>{nodePublicAddresses || 'N/A'}</b>
                                     </Typography>
                                 </Stack>
                                 <Stack direction="row">

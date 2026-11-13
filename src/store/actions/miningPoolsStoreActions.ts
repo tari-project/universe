@@ -81,22 +81,22 @@ export const setCpuPoolStats = (cpuPoolStats: Record<string, PoolStats>) => {
     useMiningPoolsStore.setState((c) => {
         const parsed = parseValues(cpuPoolStats[currentSelectedPool], c.cpuPoolStats, c.cpuRewards);
         const nextRewardValue = parsed.canTriggerAnimation ? parsed.diff : 0;
-        if (
-            !parsed.shouldUpdate &&
-            c.cpuRewards?.rewardValue === nextRewardValue &&
-            c.cpuRewards?.unpaidFMT === parsed.unpaidFMT
-        ) {
+        const rewardsUnchanged =
+            c.cpuRewards?.rewardValue === nextRewardValue && c.cpuRewards?.unpaidFMT === parsed.unpaidFMT;
+        if (!parsed.shouldUpdate && rewardsUnchanged) {
             return c;
         }
 
         return {
             ...c,
             cpuPoolStats: parsed.stats,
-            cpuRewards: {
-                ...c.cpuRewards,
-                rewardValue: nextRewardValue,
-                unpaidFMT: parsed.unpaidFMT,
-            },
+            cpuRewards: rewardsUnchanged
+                ? c.cpuRewards
+                : {
+                      ...c.cpuRewards,
+                      rewardValue: nextRewardValue,
+                      unpaidFMT: parsed.unpaidFMT,
+                  },
         };
     });
 };
@@ -108,22 +108,22 @@ export const setGpuPoolStats = (gpuPoolStats: Record<string, PoolStats>) => {
     useMiningPoolsStore.setState((c) => {
         const parsed = parseValues(gpuPoolStats[currentSelectedPool], c.gpuPoolStats, c.gpuRewards);
         const nextRewardValue = parsed.canTriggerAnimation ? parsed.diff : 0;
-        if (
-            !parsed.shouldUpdate &&
-            c.gpuRewards?.rewardValue === nextRewardValue &&
-            c.gpuRewards?.unpaidFMT === parsed.unpaidFMT
-        ) {
+        const rewardsUnchanged =
+            c.gpuRewards?.rewardValue === nextRewardValue && c.gpuRewards?.unpaidFMT === parsed.unpaidFMT;
+        if (!parsed.shouldUpdate && rewardsUnchanged) {
             return c;
         }
 
         return {
             ...c,
             gpuPoolStats: parsed.stats,
-            gpuRewards: {
-                ...c.gpuRewards,
-                rewardValue: nextRewardValue,
-                unpaidFMT: parsed.unpaidFMT,
-            },
+            gpuRewards: rewardsUnchanged
+                ? c.gpuRewards
+                : {
+                      ...c.gpuRewards,
+                      rewardValue: nextRewardValue,
+                      unpaidFMT: parsed.unpaidFMT,
+                  },
         };
     });
 };

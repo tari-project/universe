@@ -1,6 +1,6 @@
 import { Receive } from './receive/Receive';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import SendModal from '@app/components/transactions/send/SendModal.tsx';
@@ -13,8 +13,12 @@ import SwapUI from '@app/components/wallet/sidebarWallet/swap.tsx';
 
 export default function WalletSidebarContent() {
     const { t } = useTranslation('wallet');
-    const selectedTransaction = useWalletStore((s) =>
-        s.selectedTransactionId ? (s.wallet_transactions.find((tx) => tx.id === s.selectedTransactionId) ?? null) : null
+    const selectedTransactionId = useWalletStore((s) => s.selectedTransactionId);
+    const walletTransactions = useWalletStore((s) => s.wallet_transactions);
+    const selectedTransaction = useMemo(
+        () =>
+            selectedTransactionId ? (walletTransactions.find((tx) => tx.id === selectedTransactionId) ?? null) : null,
+        [selectedTransactionId, walletTransactions]
     );
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const [section, setSection] = useState('history');

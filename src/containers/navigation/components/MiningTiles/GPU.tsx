@@ -6,15 +6,17 @@ import { useSetupStore } from '@app/store/useSetupStore';
 import { getSelectedMiner } from '@app/store/selectors/miningStoreSelectors';
 
 export default function GPUTile() {
-    const gpuPoolStats = useMiningPoolsStore((s) => s.gpuPoolStats);
-    const gpuRewards = useMiningPoolsStore((s) => s.gpuRewards);
+    const unpaid = useMiningPoolsStore((s) => s.gpuPoolStats?.unpaid);
+    const minPayout = useMiningPoolsStore((s) => s.gpuPoolStats?.min_payout);
+    const rewardValue = useMiningPoolsStore((s) => s.gpuRewards?.rewardValue);
+    const unpaidFMT = useMiningPoolsStore((s) => s.gpuRewards?.unpaidFMT);
 
     const gpuEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const miningInitiated = useMiningStore((s) => s.isGpuMiningInitiated);
     const hash_rate = useMiningMetricsStore((s) => s.gpu_mining_status.hash_rate);
     const is_mining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const isGpuPoolEnabled = useConfigPoolsStore((s) => s.gpu_pool_enabled);
-    const selectedMiner = useMiningStore(getSelectedMiner);
+    const selectedMinerAlgo = useMiningStore((s) => getSelectedMiner(s)?.supported_algorithms?.[0]);
 
     const gpuMiningModuleState = useSetupStore(setupStoreSelectors.selectGpuMiningModule);
 
@@ -27,13 +29,13 @@ export default function GPUTile() {
             isMiningInitiated={miningInitiated}
             hashRate={hash_rate}
             isPoolEnabled={isGpuPoolEnabled}
-            poolStats={gpuPoolStats}
-            rewardThreshold={gpuPoolStats?.min_payout || 2000000}
+            unpaid={unpaid}
+            rewardThreshold={minPayout || 2000000}
             showTooltip={true}
-            progressDiff={gpuRewards?.rewardValue}
-            unpaidFMT={gpuRewards?.unpaidFMT || '-'}
+            progressDiff={rewardValue}
+            unpaidFMT={unpaidFMT || '-'}
             minerModuleState={gpuMiningModuleState}
-            algo={selectedMiner?.supported_algorithms?.[0]}
+            algo={selectedMinerAlgo}
         />
     );
 }

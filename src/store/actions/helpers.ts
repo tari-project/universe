@@ -19,6 +19,8 @@ export const mergeTransactions = (
     incomingList: DisplayedTransaction[],
     upsert: boolean // true = Add if new, false = Only update if exists
 ): DisplayedTransaction[] => {
+    if (incomingList.length === 0) return currentList;
+
     const updatedList = [...currentList];
 
     // TxId is a u64 on the wire; both sides of this comparison come out of the same

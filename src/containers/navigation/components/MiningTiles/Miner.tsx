@@ -25,6 +25,7 @@ export interface MinerTileProps {
     isMining: boolean;
     hashRate: number;
     isPoolEnabled: boolean;
+    unpaid?: number;
     poolStats?: PoolStats;
     rewardThreshold?: number;
     showTooltip?: boolean;
@@ -41,6 +42,7 @@ export default function MinerTile({
     hashRate,
     isMining,
     isMiningInitiated,
+    unpaid,
     poolStats,
     isPoolEnabled,
     rewardThreshold,
@@ -58,7 +60,7 @@ export default function MinerTile({
     const isLoading = (isMiningInitiated && !isMining) || (isMining && !isMiningInitiated) || hashrateLoading;
 
     const formattedHashRate = formatHashrate(hashRate, true, algo);
-    const currentUnpaid = (poolStats?.unpaid || 0) / 1_000_000;
+    const currentUnpaid = ((unpaid ?? poolStats?.unpaid) || 0) / 1_000_000;
 
     const mainNumber = isPoolEnabled ? currentUnpaid : formattedHashRate.value;
     const mainUnit = isPoolEnabled ? 'XTM' : formattedHashRate.unit;

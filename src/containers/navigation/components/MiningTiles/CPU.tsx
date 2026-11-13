@@ -7,8 +7,10 @@ import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts
 import { MiningAlgorithm } from '@app/types/events-payloads.ts';
 
 export default function CPUTile() {
-    const cpuPoolStats = useMiningPoolsStore((s) => s.cpuPoolStats);
-    const cpuRewards = useMiningPoolsStore((s) => s.cpuRewards);
+    const unpaid = useMiningPoolsStore((s) => s.cpuPoolStats?.unpaid);
+    const minPayout = useMiningPoolsStore((s) => s.cpuPoolStats?.min_payout);
+    const rewardValue = useMiningPoolsStore((s) => s.cpuRewards?.rewardValue);
+    const unpaidFMT = useMiningPoolsStore((s) => s.cpuRewards?.unpaidFMT);
 
     const miningInitiated = useMiningStore((s) => s.isCpuMiningInitiated);
     const cpuEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
@@ -27,11 +29,11 @@ export default function CPUTile() {
             isMiningInitiated={miningInitiated}
             hashRate={hash_rate}
             isPoolEnabled={isCpuPoolEnabled}
-            poolStats={cpuPoolStats}
-            rewardThreshold={cpuPoolStats?.min_payout || 2000000} // 2.0 XTM in micro units
+            unpaid={unpaid}
+            rewardThreshold={minPayout || 2000000} // 2.0 XTM in micro units
             showTooltip={true}
-            progressDiff={cpuRewards?.rewardValue}
-            unpaidFMT={cpuRewards?.unpaidFMT || '-'}
+            progressDiff={rewardValue}
+            unpaidFMT={unpaidFMT || '-'}
             minerModuleState={cpuMiningModuleState}
             algo={MiningAlgorithm.RandomX}
         />
