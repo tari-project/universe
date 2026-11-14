@@ -232,7 +232,7 @@
     "very_experimental": "Très Expérimental",
     "wallet": "Portefeuille"
   },
-  "tari-wallet-address": "Adresse du portefeuille Tari",
+  "tari-wallet-address": "Adresse du portefeuille XTM",
   "task-tray": {
     "description": "Tari Universe sera réduit dans la barre d'état système après la fermeture",
     "title": "Exécuter l'application depuis la barre d'état système à la fermeture"

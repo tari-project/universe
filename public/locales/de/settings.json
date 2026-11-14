@@ -232,7 +232,7 @@
     "very_experimental": "Sehr experimentell",
     "wallet": "Wallet"
   },
-  "tari-wallet-address": "Tari-Wallet-Adresse",
+  "tari-wallet-address": "XTM-Wallet-Adresse",
   "task-tray": {
     "description": "Tari Universe wird nach dem Schließen in den Infobereich minimiert",
     "title": "App beim Schließen im Infobereich ausführen"

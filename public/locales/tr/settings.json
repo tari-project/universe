@@ -232,7 +232,7 @@
     "very_experimental": "Çok Deneysel",
     "wallet": "Cüzdan"
   },
-  "tari-wallet-address": "Tari Cüzdan Adresi",
+  "tari-wallet-address": "XTM Cüzdan Adresi",
   "task-tray": {
     "description": "Tari Universe kapatıldıktan sonra görev tepsisine küçültülecek",
     "title": "Kapatıldığında uygulamayı görev tepsisinden çalıştır"

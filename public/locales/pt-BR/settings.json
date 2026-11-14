@@ -232,7 +232,7 @@
     "very_experimental": "Muito Experimental",
     "wallet": "Carteira"
   },
-  "tari-wallet-address": "Endereço da Carteira Tari",
+  "tari-wallet-address": "Endereço da Carteira XTM",
   "task-tray": {
     "description": "O Tari Universe será minimizado para a bandeja do sistema ao ser fechado",
     "title": "Executar o aplicativo na bandeja do sistema ao fechar"

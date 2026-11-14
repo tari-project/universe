@@ -232,7 +232,7 @@
     "very_experimental": "Bardzo Eksperymentalne",
     "wallet": "Portfel"
   },
-  "tari-wallet-address": "Adres portfela Tari",
+  "tari-wallet-address": "Adres portfela XTM",
   "task-tray": {
     "description": "Tari Universe zostanie zminimalizowane do zasobnika systemowego po zamknięciu",
     "title": "Uruchamiaj aplikację z zasobnika po zamknięciu"
