@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
     useExchangeStore,
     universalExchangeMinerOption,
+    havenoExchangeMinerOption,
+    HAVENO_EXCHANGE_URL,
     setShowExchangeModal,
     setShowUniversalModal,
     setCurrentExchangeMinerId,
@@ -46,6 +48,37 @@ describe('useExchangeStore', () => {
 
         it('has wxtm_mode as false', () => {
             expect(universalExchangeMinerOption.wxtm_mode).toBe(false);
+        });
+    });
+
+    describe('havenoExchangeMinerOption constant', () => {
+        it('has id as haveno', () => {
+            expect(havenoExchangeMinerOption.id).toBe('haveno');
+        });
+
+        it('has slug as haveno', () => {
+            expect(havenoExchangeMinerOption.slug).toBe('haveno');
+        });
+
+        it('has name as Haveno DEX', () => {
+            expect(havenoExchangeMinerOption.name).toBe('Haveno DEX');
+        });
+
+        it('has is_hidden as false', () => {
+            expect(havenoExchangeMinerOption.is_hidden).toBe(false);
+        });
+
+        it('has exchange_id as haveno', () => {
+            expect(havenoExchangeMinerOption.exchange_id).toBe('haveno');
+        });
+
+        it('has wxtm_mode as false', () => {
+            expect(havenoExchangeMinerOption.wxtm_mode).toBe(false);
+        });
+
+        it('points exchange_url at the Haveno DEX website', () => {
+            expect(havenoExchangeMinerOption.exchange_url).toBe(HAVENO_EXCHANGE_URL);
+            expect(havenoExchangeMinerOption.exchange_url).toBe('https://haveno.exchange/');
         });
     });
 
