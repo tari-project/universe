@@ -11,6 +11,7 @@ import {
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
+import { WalletConnectDialog } from '@app/containers/floating/SwapDialogs/sections/WalletConnect/WalletConnectDialog';
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
@@ -28,6 +29,7 @@ export const Swap = () => {
     const [confirmingTransaction, setConfirmingTransaction] = useState<SwapConfirmationTransactionProps | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [walletConnectOpen, setWalletConnectOpen] = useState(false);
+    const [walletConnectUri, setWalletConnectUri] = useState<string | null>(null);
     const [swapHeight, setSwapHeight] = useState(0);
     const iframeUrl = useIframeUrl();
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -99,6 +101,7 @@ export const Swap = () => {
             }
             case MessageType.WALLET_CONNECT:
                 setWalletConnectOpen(event.data.payload.open);
+                setWalletConnectUri(event.data.payload.uri ?? null);
                 break;
             case MessageType.SWAP_HEIGHT_CHANGE:
                 setSwapHeight(event.data.payload.height);
@@ -172,6 +175,7 @@ export const Swap = () => {
                 errorMessage={error}
             />
             <SignApprovalMessage isOpen={approving} setIsOpen={setApproving} />
+            <WalletConnectDialog isOpen={walletConnectOpen} setIsOpen={setWalletConnectOpen} uri={walletConnectUri} />
         </SwapsContainer>
     );
 };
