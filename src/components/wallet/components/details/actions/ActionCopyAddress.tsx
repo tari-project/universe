@@ -3,18 +3,24 @@ import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { CopySVG } from '@app/assets/icons/copy';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
-import { useWalletStore } from '@app/store';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { truncateMiddle } from '@app/utils';
 import { offset, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import { AddressTooltip, ActionButton } from './styles.ts';
 
-export default function ActionCopyAddress() {
+interface ActionCopyAddressProps {
+    address?: string;
+    testId?: string;
+}
+
+export default function ActionCopyAddress({ address, testId = 'wallet-copy-address' }: ActionCopyAddressProps = {}) {
     const { t } = useTranslation('wallet');
 
     const [showAdress, setShowAddress] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const tariWalletAddress = useWalletStore((state) => state.tari_address_base58);
-    const displayAddress = truncateMiddle(tariWalletAddress, 5);
+    const targetAddress = address ?? tariWalletAddress;
+    const displayAddress = truncateMiddle(targetAddress, 5);
 
     const { refs, context, floatingStyles } = useFloating({
         open: showAdress,
@@ -25,18 +31,20 @@ export default function ActionCopyAddress() {
     });
 
     function handleCopyClick(event: React.MouseEvent) {
-        copyToClipboard(tariWalletAddress);
+        if (targetAddress) {
+            copyToClipboard(targetAddress);
+        }
         event.stopPropagation();
     }
 
     const hover = useHover(context, {
-        enabled: !!tariWalletAddress,
+        enabled: !!targetAddress,
         move: !showAdress,
     });
 
     const { getFloatingProps } = useInteractions([hover]);
 
-    return tariWalletAddress ? (
+    return targetAddress ? (
         <>
             <AnimatePresence>
                 {showAdress && (
@@ -54,8 +62,8 @@ export default function ActionCopyAddress() {
             <ActionButton
                 ref={refs.setReference}
                 onClick={handleCopyClick}
-                disabled={!tariWalletAddress}
-                data-testid="wallet-copy-address"
+                disabled={!targetAddress}
+                data-testid={testId}
             >
                 <CopySVG />
             </ActionButton>
