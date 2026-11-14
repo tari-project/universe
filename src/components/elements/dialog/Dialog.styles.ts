@@ -25,7 +25,7 @@ export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
                 return css`
                     background-color: ${convertHexToRGBA(
                         theme.palette.background.paper,
-                        theme.mode == 'dark' ? 0.75 : 0.6
+                        theme.mode == 'dark' ? 0.92 : 0.88
                     )};
                     -webkit-backdrop-filter: blur(20px);
                     backdrop-filter: blur(20px);
