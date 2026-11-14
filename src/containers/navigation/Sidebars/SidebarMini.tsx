@@ -7,6 +7,7 @@ import { useHasL2Access } from '@app/hooks/wallet/useHasL2Access.ts';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import MineButton from './buttons/MineButton.tsx';
 import BridgeButton from './buttons/BridgeButton.tsx';
+import BuyButton from './buttons/BuyButton.tsx';
 import L2Button from './buttons/L2Button.tsx';
 import FailedModuleButton from '@app/containers/navigation/Sidebars/buttons/FailedModuleButton.tsx';
 
@@ -25,6 +26,7 @@ export default function SidebarMini() {
                 <MineButton />
                 <FailedModuleButton />
                 {isStandardWalletUI && <BridgeButton />}
+                {isStandardWalletUI && <BuyButton />}
                 {showL2 && <L2Button />}
             </GridCenter>
             <GridBottom>

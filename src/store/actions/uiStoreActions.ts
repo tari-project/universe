@@ -11,6 +11,7 @@ import { Theme } from '@app/theme/types.ts';
 import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
 import { SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 import { useConfigUIStore } from '../useAppConfigStore.ts';
+import { useWalletStore } from '../useWalletStore.ts';
 import { CONNECTION_STATUS, DialogType, sidebarTowerOffset, TOWER_CANVAS_ID } from '../types/ui.ts';
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
@@ -99,16 +100,24 @@ const towerOffset = (sidebarOpen: boolean, l2Open: boolean) => {
 };
 // Only one card is open at a time unless the user allowed them side by side in settings.
 const sideBySide = () => useConfigUIStore.getState().l2_side_by_side;
-export const setSidebarOpen = (sidebarOpen: boolean) =>
-    useUIStore.setState((s) => {
+export const setSidebarOpen = (sidebarOpen: boolean) => {
+    if (sidebarOpen) {
+        useWalletStore.setState({ is_swapping: false });
+    }
+    return useUIStore.setState((s) => {
         const l2Open = sidebarOpen && !sideBySide() ? false : s.l2Open;
         return { sidebarOpen, l2Open, towerSidebarOffset: towerOffset(sidebarOpen, l2Open) };
     });
-export const setL2Open = (l2Open: boolean) =>
-    useUIStore.setState((s) => {
+};
+export const setL2Open = (l2Open: boolean) => {
+    if (l2Open) {
+        useWalletStore.setState({ is_swapping: false });
+    }
+    return useUIStore.setState((s) => {
         const sidebarOpen = l2Open && !sideBySide() ? false : s.sidebarOpen;
         return { sidebarOpen, l2Open, towerSidebarOffset: towerOffset(sidebarOpen, l2Open) };
     });
+};
 
 export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) => ({ ...c, seedlessUI }));
 export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>
@@ -119,7 +128,12 @@ export const handleAskForRestart = () => {
     setDialogToShow('restart');
 };
 export const setShowResumeAppModal = (showResumeAppModal: boolean) => useUIStore.setState({ showResumeAppModal });
-export const setShowTapplet = (showTapplet: boolean) => useUIStore.setState({ showTapplet });
+export const setShowTapplet = (showTapplet: boolean) => {
+    if (showTapplet) {
+        useWalletStore.setState({ is_swapping: false });
+    }
+    return useUIStore.setState({ showTapplet });
+};
 export const animationLightBg = [
     { property: 'bgColor1', value: '#ffffff' },
     { property: 'bgColor2', value: '#d0d0d0' },
