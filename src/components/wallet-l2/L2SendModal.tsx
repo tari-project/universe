@@ -31,7 +31,7 @@ interface L2SendModalProps {
     onClose: () => void;
 }
 
-const defaultValues: SendInputs = { address: '', amount: undefined, l2Address: '' };
+const defaultValues: SendInputs = { address: '', amount: undefined, l2Address: '', message: undefined };
 
 function L2SendForm() {
     const { t } = useTranslation('wallet');
@@ -59,6 +59,11 @@ function L2SendForm() {
 
     function handleAddressChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
         setValue(name, e.target.value.replace(/\s/g, ''), { shouldValidate: true });
+    }
+
+    function handleMessageChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
+        setValue(name, e.target.value, { shouldValidate: true });
+        clearErrors(name);
     }
 
     function handleAmountBlur() {
@@ -90,6 +95,14 @@ function L2SendForm() {
                     required
                     icon={<TariOutlineSVG />}
                     errorText={errors.amount?.message}
+                    secondaryField={
+                        <FormField
+                            control={control}
+                            name="message"
+                            handleChange={handleMessageChange}
+                            isSecondary={true}
+                        />
+                    }
                 />
             </FormFieldsWrapper>
             <BottomWrapper>
@@ -134,6 +147,7 @@ export default function L2SendModal({ show, account, onClose }: L2SendModalProps
                     account,
                     destination: data.l2Address,
                     amount: `${data.amount}`,
+                    ...(data.message ? { message: data.message } : {}),
                 });
                 setTxId(id);
                 setStatus('completed');
@@ -162,6 +176,7 @@ export default function L2SendModal({ show, account, onClose }: L2SendModalProps
             status,
         },
         { label: t('l2.send.address'), value: values.l2Address },
+        { label: t('send.transaction-description'), value: values.message },
         { label: t('send.transaction-id'), value: txId },
     ];
 
@@ -186,6 +201,7 @@ export default function L2SendModal({ show, account, onClose }: L2SendModalProps
                                     kind="l2_send"
                                     amountMicroMinotari={amountMicro}
                                     destination={values.l2Address ?? ''}
+                                    paymentId={values.message || undefined}
                                 />
                                 <Button
                                     type="submit"
