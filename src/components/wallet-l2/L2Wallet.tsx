@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
-import { IoCheckmarkOutline } from 'react-icons/io5';
 import { QRCode } from 'react-qrcode-logo';
-import { CopySVG } from '@app/assets/icons/copy';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
@@ -19,7 +17,7 @@ import {
     DetailsCard,
 } from '@app/components/wallet/sidebarWallet/details.styles.ts';
 import { Actions, Name, Wrapper as DetailsRow } from '@app/components/wallet/components/details/styles.ts';
-import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
+import ActionCopyAddress from '@app/components/wallet/components/details/actions/ActionCopyAddress.tsx';
 import {
     BalanceTextWrapper,
     BottomWrapper,
@@ -89,13 +87,7 @@ export default function L2Wallet({ account }: { account?: L2Account }) {
                         </Name>
                         {account && (
                             <Actions>
-                                <ActionButton
-                                    onClick={() => copyToClipboard(account.address)}
-                                    title={account.address}
-                                    data-testid="l2-copy-address"
-                                >
-                                    {isCopied ? <IoCheckmarkOutline /> : <CopySVG />}
-                                </ActionButton>
+                                <ActionCopyAddress address={account.address} testId="l2-copy-address" />
                             </Actions>
                         )}
                     </DetailsRow>
