@@ -234,7 +234,7 @@
     "very_experimental": "매우 실험적",
     "wallet": "지갑"
   },
-  "tari-wallet-address": "Tari 지갑 주소",
+  "tari-wallet-address": "XTM 지갑 주소",
   "task-tray": {
     "description": "닫은 후 Tari Universe가 작업 트레이로 최소화됩니다",
     "title": "닫을 때 작업 트레이에서 앱 실행"

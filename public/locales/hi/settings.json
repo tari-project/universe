@@ -234,7 +234,7 @@
     "very_experimental": "बहुत प्रयोगात्मक",
     "wallet": "वॉलेट"
   },
-  "tari-wallet-address": "तारी वॉलेट पता",
+  "tari-wallet-address": "XTM वॉलेट पता",
   "task-tray": {
     "description": "बंद करने के बाद Tari Universe टास्क ट्रे में छोटा हो जाएगा",
     "title": "बंद करने पर ऐप को टास्क ट्रे से चलाएँ"

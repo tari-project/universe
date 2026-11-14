@@ -234,7 +234,7 @@
     "very_experimental": "Very Experimental",
     "wallet": "Wallet"
   },
-  "tari-wallet-address": "Tari Wallet Address",
+  "tari-wallet-address": "XTM Wallet Address",
   "task-tray": {
     "description": "Tari universe will be minimized to task tray after closing",
     "title": "Run app from task tray on close"
