@@ -256,6 +256,8 @@ pub struct GatedL2SendRequest {
     pub account: String,
     /// Pay reference for the recipient, UTF-8, at most 64 bytes.
     pub pay_ref: Option<String>,
+    /// Optional user message (`Memo`), UTF-8.
+    pub message: Option<String>,
 }
 
 /// What is being spent, in the terms the user has to approve it in.
@@ -711,6 +713,7 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         destination,
         account,
         pay_ref,
+        message,
     } = request;
 
     check_l2_allowed(
@@ -722,14 +725,23 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         check_tapplet_pay_ref(pay_ref.as_deref())?;
     }
     let address = OotleWalletManager::parse_address(&destination)?;
-    let (pay_ref, memo) = l2_send_memo(pay_ref.as_deref(), &address)?.unzip();
+    let (pay_ref, memo) = l2_send_memo(pay_ref.as_deref(), message.as_deref(), &address)?.unzip();
+    let consent_note = pay_ref.clone();
     // The parsed form, so the PIN prompt never shows padding the parser trimmed away.
     let kind = SpendKind::L2Send {
         destination: address.to_string(),
         account,
         pay_ref,
     };
-    let pass = pass_gates(origin, request_id, &amount, amount_u64, &kind, &None).await?;
+    let pass = pass_gates(
+        origin,
+        request_id,
+        &amount,
+        amount_u64,
+        &kind,
+        &consent_note,
+    )
+    .await?;
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
@@ -750,32 +762,56 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
     .await
 }
 
-/// The pay reference an L2 send carries, as text for the PIN prompt, and the output memo
-/// holding it. An explicit `pay_ref` must match the one embedded in the destination
-/// address, if there is one; without an explicit one the embedded one is used.
+/// The pay reference and/or user message an L2 send carries, as text for the PIN prompt,
+/// and the output memo holding it. An explicit `pay_ref` must match the one embedded in
+/// the destination address, if there is one; without an explicit one the embedded one is
+/// used.
 fn l2_send_memo(
     pay_ref: Option<&str>,
+    message: Option<&str>,
     destination: &OotleAddress,
 ) -> Result<Option<(String, Memo)>, TransactionError> {
+    let message = message.filter(|m| !m.is_empty());
     let embedded = destination.destination_tag().map(|tag| tag.as_bytes());
-    let bytes = match (pay_ref.map(str::as_bytes), embedded) {
+    let tag_bytes = match (pay_ref.map(str::as_bytes), embedded) {
         (Some(explicit), Some(embedded)) if explicit != embedded => {
             return Err(TransactionError::InvalidAddress(
                 "Pay reference differs from the one in the destination address".to_string(),
             ));
         }
-        (Some(bytes), _) | (None, Some(bytes)) => bytes,
-        (None, None) => return Ok(None),
+        (Some(bytes), _) | (None, Some(bytes)) => Some(bytes),
+        (None, None) => None,
     };
-    let memo = DestinationTag::new_checked(bytes)
-        .and_then(|_| Memo::new_destination_tag_and_message(bytes, ""))
-        .ok_or_else(|| {
-            TransactionError::InvalidAddress(format!(
-                "Pay reference must be 1 to {} bytes",
-                DestinationTag::MAX_LEN
-            ))
-        })?;
-    Ok(Some((display_payment_id_bytes(bytes), memo)))
+    match (tag_bytes, message) {
+        (Some(tag), msg) => {
+            DestinationTag::new_checked(tag).ok_or_else(|| {
+                TransactionError::InvalidAddress(format!(
+                    "Pay reference must be 1 to {} bytes",
+                    DestinationTag::MAX_LEN
+                ))
+            })?;
+            let memo =
+                Memo::new_destination_tag_and_message(tag, msg.unwrap_or("")).ok_or_else(|| {
+                    TransactionError::InvalidAddress("Transaction message is too long".to_string())
+                })?;
+            let shown = match msg {
+                Some(m) => format!(
+                    "{} ({})",
+                    display_payment_id_bytes(tag),
+                    display_payment_id_bytes(m.as_bytes())
+                ),
+                None => display_payment_id_bytes(tag),
+            };
+            Ok(Some((shown, memo)))
+        }
+        (None, Some(msg)) => {
+            let memo = Memo::new_message(msg).ok_or_else(|| {
+                TransactionError::InvalidAddress("Transaction message is too long".to_string())
+            })?;
+            Ok(Some((display_payment_id_bytes(msg.as_bytes()), memo)))
+        }
+        (None, None) => Ok(None),
+    }
 }
 
 /// The PIN prompt shows the amount as a JS number divided by 10^6. Above 2^52 micro units that
@@ -1600,7 +1636,7 @@ mod tests {
     #[test]
     fn l2_send_memo_carries_an_explicit_pay_ref() {
         let pay_ref = "0f8fad5b-d9cb-469f-a165-70867728950e";
-        let (shown, memo) = l2_send_memo(Some(pay_ref), &ootle_address())
+        let (shown, memo) = l2_send_memo(Some(pay_ref), None, &ootle_address())
             .expect("valid pay ref")
             .expect("a memo");
         assert_eq!(shown, pay_ref);
@@ -1612,13 +1648,13 @@ mod tests {
         let embedded = DestinationTag::new_checked(b"from-address".as_slice()).expect("pay ref");
         let address = ootle_address().with_destination_tag(embedded);
 
-        let (shown, memo) = l2_send_memo(None, &address)
+        let (shown, memo) = l2_send_memo(None, None, &address)
             .expect("no pay ref")
             .expect("a memo");
         assert_eq!(shown, "from-address");
         assert_eq!(memo_pay_ref(&memo), b"from-address");
 
-        let (_, same) = l2_send_memo(Some("from-address"), &address)
+        let (_, same) = l2_send_memo(Some("from-address"), None, &address)
             .expect("same pay ref")
             .expect("a memo");
         assert_eq!(memo_pay_ref(&same), b"from-address");
@@ -1628,7 +1664,7 @@ mod tests {
     fn l2_send_memo_rejects_a_pay_ref_that_differs_from_the_address_one() {
         let embedded = DestinationTag::new_checked(b"from-address".as_slice()).expect("pay ref");
         let address = ootle_address().with_destination_tag(embedded);
-        let err = l2_send_memo(Some("explicit"), &address).expect_err("rejected");
+        let err = l2_send_memo(Some("explicit"), None, &address).expect_err("rejected");
         assert!(matches!(err, TransactionError::InvalidAddress(_)));
     }
 
@@ -1642,7 +1678,7 @@ mod tests {
         ] {
             let embedded = DestinationTag::new_checked(bytes.clone()).expect("pay ref");
             let address = ootle_address().with_destination_tag(embedded);
-            let (shown, memo) = l2_send_memo(None, &address)
+            let (shown, memo) = l2_send_memo(None, None, &address)
                 .expect("the recipient's bytes are sent")
                 .expect("a memo");
             assert_eq!(memo_pay_ref(&memo), bytes.as_slice());
@@ -1681,18 +1717,49 @@ mod tests {
 
     #[test]
     fn l2_send_memo_is_empty_without_any_pay_ref() {
-        assert!(l2_send_memo(None, &ootle_address()).expect("ok").is_none());
+        assert!(
+            l2_send_memo(None, None, &ootle_address())
+                .expect("ok")
+                .is_none()
+        );
+        assert!(
+            l2_send_memo(None, Some(""), &ootle_address())
+                .expect("ok")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn l2_send_memo_carries_user_message_with_or_without_destination_tag() {
+        let (shown, memo) = l2_send_memo(None, Some("Dinner split"), &ootle_address())
+            .expect("valid message")
+            .expect("a memo");
+        assert_eq!(shown, "Dinner split");
+        assert_eq!(memo.as_memo_message(), Some("Dinner split"));
+
+        let embedded = DestinationTag::new_checked(b"from-address".as_slice()).expect("pay ref");
+        let address = ootle_address().with_destination_tag(embedded);
+        let (shown_both, memo_both) = l2_send_memo(None, Some("Dinner split"), &address)
+            .expect("valid tag and message")
+            .expect("a memo");
+        assert_eq!(shown_both, "from-address (Dinner split)");
+        assert_eq!(memo_pay_ref(&memo_both), b"from-address");
+        assert_eq!(memo_both.as_utf8_str(), Some("Dinner split"));
+
+        let too_long_msg = "m".repeat(Memo::MAX_BYTES_LENGTH + 1);
+        let err = l2_send_memo(None, Some(&too_long_msg), &ootle_address()).expect_err("rejected");
+        assert!(matches!(err, TransactionError::InvalidAddress(_)));
     }
 
     #[test]
     fn l2_send_memo_rejects_an_empty_or_oversized_pay_ref() {
         let too_long = "a".repeat(DestinationTag::MAX_LEN + 1);
         for pay_ref in ["", too_long.as_str()] {
-            let err = l2_send_memo(Some(pay_ref), &ootle_address()).expect_err("rejected");
+            let err = l2_send_memo(Some(pay_ref), None, &ootle_address()).expect_err("rejected");
             assert!(matches!(err, TransactionError::InvalidAddress(_)));
         }
         let longest = "a".repeat(DestinationTag::MAX_LEN);
-        assert!(l2_send_memo(Some(&longest), &ootle_address()).is_ok());
+        assert!(l2_send_memo(Some(&longest), None, &ootle_address()).is_ok());
     }
 
     // =========================================================================

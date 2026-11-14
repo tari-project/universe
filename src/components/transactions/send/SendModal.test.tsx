@@ -279,6 +279,13 @@ describe('SendModal', () => {
         await waitFor(() => expect(screen.getByTestId('send-review-button')).toBeInTheDocument());
         expect(screen.queryByText('send.review-title')).not.toBeInTheDocument();
     });
+
+    it('uses send.cta-send for the fields modal title', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        render(<SendModal section="send" setSection={vi.fn()} />);
+
+        expect(await screen.findByText('send.cta-send')).toBeInTheDocument();
+    });
 });
 
 describe('FormField payment ID byte limit', () => {

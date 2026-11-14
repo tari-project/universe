@@ -173,7 +173,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         if (status === 'reviewing') {
             return t('send.review-title');
         }
-        return `${t('tabs.send')} ${t('tari')}`;
+        return t('send.cta-send');
     };
 
     const formContentMarkup =
