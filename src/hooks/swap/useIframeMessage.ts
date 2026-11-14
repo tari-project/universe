@@ -69,6 +69,11 @@ interface WalletConnectMessage {
     type: MessageType.WALLET_CONNECT;
     payload: {
         open: boolean;
+        /**
+         * WalletConnect pairing URI (wc:...) the iframe wants the user to scan or
+         * paste into a mobile wallet. Optional: older iframes only toggle the panel.
+         */
+        uri?: string;
     };
 }
 
