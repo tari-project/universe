@@ -1,6 +1,6 @@
 import { useConfigBEInMemoryStore, useConfigUIStore } from '@app/store';
 import { useQuery } from '@tanstack/react-query';
-import { setRewardData, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
+import { havenoExchangeMinerOption, setRewardData, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
 import { ExchangeBranding } from '@app/types/exchange.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { WalletUIMode } from '@app/types/events-payloads';
@@ -35,6 +35,7 @@ const queryFn = async (apiUrl: string) => {
                 handleRewardData(filteredList);
             }
             filteredList.push(universalExchangeMinerOption);
+            filteredList.push(havenoExchangeMinerOption);
 
             return filteredList;
         } else {
