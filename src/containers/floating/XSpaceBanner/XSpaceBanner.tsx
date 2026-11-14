@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { formatDateForEvent } from './formatDate';
 import { AnimatePresence } from 'motion/react';
 import { useCrewRewardsStore } from '@app/store/useCrewRewardsStore';
-import { useUIStore } from '@app/store';
+import { useUIStore, useWalletStore } from '@app/store';
 
 /*
 
@@ -40,6 +40,8 @@ const testingXSpaceEvent = {
 const XSpaceEventBanner = () => {
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
     const showTapplet = useUIStore((s) => s.showTapplet);
+    const isSwapping = Boolean(useWalletStore((s) => s.is_swapping));
+    const isFullPage = showTapplet || isSwapping;
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
@@ -94,13 +96,13 @@ const XSpaceEventBanner = () => {
 
     return (
         <AnimatePresence>
-            {latestXSpaceEvent && isVisible && !showTapplet && (
+            {latestXSpaceEvent && isVisible && !isFullPage && (
                 <BannerContent
                     onClick={() => {
                         open(latestXSpaceEvent.link);
                     }}
-                    $crewRewardsActive={crewRewardsActive && !showTapplet}
-                    $crewRewardsMinimized={crewRewardsMinimized && crewRewardsActive && !showTapplet}
+                    $crewRewardsActive={crewRewardsActive && !isFullPage}
+                    $crewRewardsMinimized={crewRewardsMinimized && crewRewardsActive && !isFullPage}
                     $isLoggedIn={isLoggedIn}
                 >
                     <FlexWrapper>

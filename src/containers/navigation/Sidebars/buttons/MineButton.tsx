@@ -1,7 +1,9 @@
 import { useCallback, useEffect } from 'react';
 import { Button, DecorationWrapper, Wrapper } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
+import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 import ConnectedPulse from '../../components/VersionChip/ConnectedPulse/ConnectedPulse.tsx';
 import { useConfigUIStore } from '@app/store';
@@ -12,9 +14,11 @@ export default function MineButton() {
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const towerSidebarOffset = useUIStore((s) => s.towerSidebarOffset);
     const showTapplet = useUIStore((s) => s.showTapplet);
+    const isSwapping = Boolean(useWalletStore((s) => s.is_swapping));
 
     const handleTapplet = useCallback(() => {
         setShowTapplet(false);
+        setIsSwapping(false);
         deactivateTapplet();
         setSidebarOpen(true);
     }, []);
@@ -22,12 +26,12 @@ export default function MineButton() {
     const toggleSidebar = useCallback(() => setSidebarOpen(!sidebarOpen), [sidebarOpen]);
 
     const handleClick = useCallback(() => {
-        if (showTapplet) {
+        if (showTapplet || isSwapping) {
             return handleTapplet();
         } else {
             return toggleSidebar();
         }
-    }, [handleTapplet, showTapplet, toggleSidebar]);
+    }, [handleTapplet, isSwapping, showTapplet, toggleSidebar]);
 
     useEffect(() => {
         if (!visualMode) return;
