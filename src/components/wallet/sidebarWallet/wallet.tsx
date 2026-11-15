@@ -17,6 +17,7 @@ import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts
 import { AppModuleStatus } from '@app/store/types/setup.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
+import PortfolioChart from '@app/components/wallet/components/portfolio/PortfolioChart.tsx';
 
 interface WalletProps {
     section: string;
@@ -53,6 +54,7 @@ export default function Wallet({ section, setSection }: WalletProps) {
             />
             {!listHidden && (
                 <>
+                    <PortfolioChart />
                     <TabsWrapper>
                         <FilterSelect />
                         <WalletActions section={section} setSection={setSection} />
