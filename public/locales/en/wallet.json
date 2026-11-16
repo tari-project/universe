@@ -18,6 +18,8 @@
     "hash": "Hash",
     "input-index": "Input #{{index}}",
     "message": "Message",
+    "note": "Note",
+    "note-placeholder": "Add a note to this transaction...",
     "operations-title": "Details ({{total}})",
     "output-hash": "Output Hash",
     "output-index": "Output #{{index}}",

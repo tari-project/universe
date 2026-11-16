@@ -15,6 +15,7 @@ import {
 import { getTransactionListEntries, getInputDetails, getOutputDetails } from './getTransactionListEntries.tsx';
 import { Wrapper, OperationsSection, OperationsTitle } from './styles.ts';
 import { AbandonStalled } from './AbandonStalled.tsx';
+import { TransactionNote } from './TransactionNote.tsx';
 import { useStalledTransactions } from '@app/hooks/wallet/useStalledTransactions.ts';
 import { useCurrentOutputStatuses } from './useCurrentOutputStatuses.ts';
 
@@ -70,6 +71,8 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
             <Wrapper>
                 {/* Main transaction details */}
                 <StatusList entries={mainEntries} />
+
+                <TransactionNote transactionId={transaction.id} />
 
                 {stalledId && <AbandonStalled key={stalledId} stalledId={stalledId} />}
 

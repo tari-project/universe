@@ -33,6 +33,22 @@ export const OperationsSection = styled.div`
     gap: 8px;
 `;
 
+export const NoteSection = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: max(8px, 0.9vh);
+`;
+
+export const NoteLabel = styled.span`
+    font-size: 14px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.palette.text.primary};
+    text-transform: uppercase;
+    letter-spacing: 0.001rem;
+    opacity: 0.8;
+`;
+
 export const OperationsTitle = styled.h3`
     font-size: 14px;
     font-weight: 600;
