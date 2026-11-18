@@ -710,6 +710,34 @@ fn main() {
                     app_handle.package_info().version
                 );
             }
+            // Dock icon click or relaunch from Finder/Spotlight while already running.
+            // macOS routes these to the existing instance as a reopen event instead of
+            // starting a second instance, so the single-instance handler never fires.
+            // When the main window was never shown (show_window_on_startup = false) and
+            // the tray icon is not reachable, this is the only way back to the UI.
+            #[cfg(target_os = "macos")]
+            RunEvent::Reopen {
+                has_visible_windows,
+                ..
+            } => {
+                if !has_visible_windows {
+                    match app_handle.get_webview_window("main") {
+                        Some(w) => {
+                            let _unused = w.show().map_err(|err| {
+                                error!(
+                                    target: LOG_TARGET_APP_LOGIC,
+                                    "Couldn't show the main window on reopen {err:?}"
+                                )
+                            });
+                            let _unused = w.unminimize();
+                            let _unused = w.set_focus();
+                        }
+                        None => {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Could not find main window to show on reopen");
+                        }
+                    }
+                }
+            }
             RunEvent::MainEventsCleared => {
                 // no need to handle
             }
