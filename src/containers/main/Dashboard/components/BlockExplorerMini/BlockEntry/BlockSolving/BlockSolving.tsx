@@ -42,9 +42,9 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolv
                             </VideoWrapper>
                             <ContentWrapper $isSolved={isSolved}>
                                 <Title>
-                                    <strong>#{formatBlockNumber(id)}</strong>
-                                    {` `}
                                     {t('bubbles.block')}
+                                    {` `}
+                                    <strong>#{formatBlockNumber(id)}</strong>
                                     <br />
                                     {t('bubbles.solving')}
                                 </Title>
