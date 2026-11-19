@@ -13,6 +13,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
+import { setSidebarOpen } from '@app/store/actions/uiStoreActions';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { getIframeOrigin } from '@app/utils/iframeOrigin';
 import { useUIStore } from '@app/store';
@@ -127,7 +128,15 @@ export const Swap = () => {
             <TabHeader $noBorder $hidden={isFullscreen}>
                 <SectionHeaderWrapper>
                     <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
-                    <BackButton onClick={() => setIsSwapping(false)}>{t('swap.back-button')}</BackButton>
+                    <BackButton
+                        type="button"
+                        onClick={() => {
+                            setIsSwapping(false);
+                            setSidebarOpen(true);
+                        }}
+                    >
+                        {t('swap.back-button')}
+                    </BackButton>
                 </SectionHeaderWrapper>
             </TabHeader>
             <IframeContainer>

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
-import { setL2Open, setSidebarOpen } from './uiStoreActions.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { setL2Open, setShowTapplet, setSidebarOpen } from './uiStoreActions.ts';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 vi.mock('@tauri-apps/api/window', () => ({
@@ -33,5 +34,19 @@ describe('wallet cards', () => {
         expect(useUIStore.getState()).toMatchObject({ sidebarOpen: true, l2Open: true });
         setL2Open(false);
         expect(useUIStore.getState()).toMatchObject({ sidebarOpen: true, l2Open: false });
+    });
+
+    it('clears the Buy page state when opening a wallet sidebar or tapplet', () => {
+        useWalletStore.setState({ is_swapping: true });
+        setSidebarOpen(true);
+        expect(useWalletStore.getState().is_swapping).toBe(false);
+
+        useWalletStore.setState({ is_swapping: true });
+        setL2Open(true);
+        expect(useWalletStore.getState().is_swapping).toBe(false);
+
+        useWalletStore.setState({ is_swapping: true });
+        setShowTapplet(true);
+        expect(useWalletStore.getState().is_swapping).toBe(false);
     });
 });

@@ -1,15 +1,8 @@
-import { useTranslation } from 'react-i18next';
-import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 import SidebarWalletDetails from '@app/components/wallet/sidebarWallet/details.tsx';
 import { useState } from 'react';
 import { useConfigUIStore, useNodeStore, useWalletStore } from '@app/store';
 import { FilterSelect } from '@app/components/transactions/history/FilterSelect.tsx';
-import {
-    WalletWrapper,
-    TabsWrapper,
-    CTAWrapper,
-    BuyButton,
-} from '@app/components/wallet/sidebarWallet/wallet.styles.ts';
+import { WalletWrapper, TabsWrapper } from '@app/components/wallet/sidebarWallet/wallet.styles.ts';
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
@@ -24,7 +17,6 @@ interface WalletProps {
 }
 
 export default function Wallet({ section, setSection }: WalletProps) {
-    const { t } = useTranslation('wallet');
     const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
     const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
     const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
@@ -59,13 +51,6 @@ export default function Wallet({ section, setSection }: WalletProps) {
                     </TabsWrapper>
                     {<List setIsScrolled={setIsScrolled} scrolled={isScrolled} />}
                 </>
-            )}
-            {!isWalletModuleFailed && (
-                <CTAWrapper>
-                    <BuyButton onClick={() => setIsSwapping(true)} fluid size="xlarge">
-                        <span>{`${t('swap.buy-tari')} (XTM)`}</span>
-                    </BuyButton>
-                </CTAWrapper>
             )}
         </WalletWrapper>
     );
