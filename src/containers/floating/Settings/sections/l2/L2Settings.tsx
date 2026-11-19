@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react';
+import { IoCloseOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
@@ -7,6 +8,7 @@ import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.
 import { handleL2WalletStateUpdate, PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Input } from '@app/components/elements/inputs/Input';
 import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
@@ -18,7 +20,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import SeedWords from '@app/components/wallet/seedwords/SeedWords.tsx';
 import { resetL2ToL1Seed } from '@app/store/actions/l2WalletStoreActions.ts';
-import { setOotleIndexerUrl } from '@app/store/actions/config/core.ts';
+import { setOotleIndexerUrls } from '@app/store/actions/config/core.ts';
 import { CopyToClipboard } from '../wallet/WalletAddressMarkup/WalletAddressMarkup.tsx';
 import { CTASArea, InputArea, WalletSettingsGrid } from '../wallet/styles.ts';
 import {
@@ -51,26 +53,37 @@ function Field({ value, testId }: { value: string; testId: string }) {
     );
 }
 
+const EMPTY_URLS: string[] = [];
+
+// One row per configured indexer plus a blank row for adding one. Editing, adding or
+// removing a row saves the whole list; clearing every row goes back to the network default.
 function IndexerField() {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const indexerUrl = useConfigCoreStore((s) => s.ootle_indexer_url) ?? '';
-    const [input, setInput] = useState(indexerUrl);
+    const indexerUrls = useConfigCoreStore((s) => s.ootle_indexer_urls) ?? EMPTY_URLS;
+    const [inputs, setInputs] = useState<string[]>([...indexerUrls, '']);
     const [error, setError] = useState('');
     const errorId = useId();
 
-    useEffect(() => setInput(indexerUrl), [indexerUrl]);
+    useEffect(() => setInputs([...indexerUrls, '']), [indexerUrls]);
 
-    async function save() {
-        if (input.trim() === indexerUrl) {
+    async function save(next: string[]) {
+        const urls = next.map((url) => url.trim()).filter(Boolean);
+        if (urls.length === indexerUrls.length && urls.every((url, i) => url === indexerUrls[i])) {
             setError('');
             return;
         }
         try {
-            await setOotleIndexerUrl(input);
+            const resolved = await setOotleIndexerUrls(urls);
+            setInputs([...resolved, '']);
             setError('');
         } catch (e) {
             setError(String(e) || 'validation failed');
         }
+    }
+
+    function edit(index: number, value: string) {
+        setInputs((current) => current.map((url, i) => (i === index ? value : url)));
+        setError('');
     }
 
     return (
@@ -78,33 +91,48 @@ function IndexerField() {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">{t('l2.indexer')}</Typography>
+                        <Typography variant="h6">{t('l2.indexers')}</Typography>
                     </SettingsGroupTitle>
+                    <Typography>{t('l2.indexers-description')}</Typography>
                 </SettingsGroupContent>
             </SettingsGroup>
             <AddressSettingsGroup>
                 <AddressSettingsGroupContent>
                     <AddressFieldWrapper>
-                        <AddressInput
-                            name="ootle-indexer-url"
-                            type="url"
-                            inputMode="url"
-                            autoComplete="off"
-                            spellCheck={false}
-                            placeholder="http://localhost:18300"
-                            value={input}
-                            onChange={(e) => {
-                                setInput(e.target.value);
-                                setError('');
-                            }}
-                            onBlur={save}
-                            onKeyDown={(e) => e.key === 'Enter' && save()}
-                            $hasError={Boolean(error)}
-                            aria-label={t('l2.indexer')}
-                            aria-invalid={Boolean(error)}
-                            aria-describedby={error ? errorId : undefined}
-                            data-testid="l2-settings-indexer"
-                        />
+                        {inputs.map((value, index) => {
+                            const isNew = index === inputs.length - 1;
+                            return (
+                                <Stack key={index} direction="row" alignItems="center" gap={4}>
+                                    <AddressInput
+                                        name={`ootle-indexer-url-${index}`}
+                                        type="url"
+                                        inputMode="url"
+                                        autoComplete="off"
+                                        spellCheck={false}
+                                        placeholder={isNew ? t('l2.indexer-add') : 'http://localhost:18300'}
+                                        value={value}
+                                        onChange={(e) => edit(index, e.target.value)}
+                                        onBlur={() => save(inputs)}
+                                        onKeyDown={(e) => e.key === 'Enter' && save(inputs)}
+                                        $hasError={Boolean(error)}
+                                        aria-label={isNew ? t('l2.indexer-add') : t('l2.indexer')}
+                                        aria-invalid={Boolean(error)}
+                                        aria-describedby={error ? errorId : undefined}
+                                        data-testid={isNew ? 'l2-settings-indexer-new' : `l2-settings-indexer-${index}`}
+                                    />
+                                    {!isNew && (
+                                        <IconButton
+                                            size="small"
+                                            aria-label={t('l2.indexer-remove')}
+                                            onClick={() => save(inputs.filter((_, i) => i !== index))}
+                                            data-testid={`l2-settings-indexer-remove-${index}`}
+                                        >
+                                            <IoCloseOutline />
+                                        </IconButton>
+                                    )}
+                                </Stack>
+                            );
+                        })}
                         {error && (
                             <AddressErrorMessage id={errorId} role="alert" data-testid="l2-settings-indexer-error">
                                 {t('l2.indexer-error', { reason: error })}

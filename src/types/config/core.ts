@@ -25,8 +25,8 @@ export interface ConfigCore {
     use_tor: boolean;
     shutdown_mode: ShutdownMode;
     node_data_directory?: string;
-    /** Indexer the Ootle (L2) wallet talks to. Absent where Universe has no L2. */
-    ootle_indexer_url?: string | null;
+    /** Indexers the Ootle (L2) wallet picks from at random. Absent where Universe has no L2. */
+    ootle_indexer_urls?: string[];
 }
 export enum ShutdownMode {
     Direct = 'Direct',

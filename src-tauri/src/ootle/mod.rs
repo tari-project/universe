@@ -85,7 +85,7 @@ use zeroize::Zeroizing;
 
 use crate::{
     configs::{
-        config_core::{ConfigCore, check_ootle_indexer_network_lenient},
+        config_core::{ConfigCore, check_ootle_indexers_network_lenient},
         trait_config::ConfigImpl,
     },
     credential_manager::CredentialManager,
@@ -453,19 +453,20 @@ impl OotleWalletManager {
         Ok(id.to_string())
     }
 
-    /// Points the open wallet at `indexer`. Every indexer call builds its client from the
-    /// SDK's shared endpoint, and the finalization stream resubscribes there when its
-    /// connection drops, so nothing restarts and the store stays unlocked. A closed store
-    /// picks the URL up from the config when it opens.
-    pub async fn set_indexer_url(indexer: Url) {
+    /// Points the open wallet at `indexers`. The active indexer stays active if it is
+    /// among them, otherwise the SDK picks one at random. Every indexer call builds its
+    /// client from the SDK's shared endpoint, and the finalization stream resubscribes
+    /// there when its connection drops, so nothing restarts and the store stays unlocked.
+    /// A closed store picks the URLs up from the config when it opens.
+    pub async fn set_indexer_urls(indexers: Vec<Url>) {
         if let Some(sdk) = INSTANCE.sdk.lock().await.as_ref() {
-            match sdk
-                .get_network_interface()
-                .set_endpoints(vec![indexer.clone()])
-            {
-                Ok(()) => info!(target: LOG_TARGET, "L2 wallet now uses indexer {indexer}"),
+            let network = sdk.get_network_interface();
+            match network.set_endpoints(indexers) {
+                Ok(()) => {
+                    info!(target: LOG_TARGET, "L2 wallet now uses indexer {}", network.get_endpoint())
+                }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Could not switch the L2 wallet to indexer {indexer}: {e}")
+                    warn!(target: LOG_TARGET, "Could not switch the L2 wallet's indexers: {e}")
                 }
             }
         }
@@ -535,8 +536,8 @@ async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), Transa
         return Ok(());
     }
     let store_dir = found_store_dir().await?;
-    let (network, indexer_url) = network_and_indexer().await?;
-    check_ootle_indexer_network_lenient(&indexer_url, network)
+    let (network, indexer_urls) = network_and_indexer().await?;
+    check_ootle_indexers_network_lenient(&indexer_urls, network)
         .await
         .map_err(wallet_error)?;
     let secret = keyring_secret()?;
@@ -557,7 +558,7 @@ async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), Transa
             open_enabled_store(
                 &store_dir,
                 network,
-                indexer_url,
+                indexer_urls,
                 &seed,
                 &secret,
                 pin_str,
@@ -578,16 +579,16 @@ async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), Transa
                 restore_store(
                     &store_dir,
                     network,
-                    indexer_url.clone(),
+                    indexer_urls.clone(),
                     &password,
                     &seed_words,
                     &owner,
                 )
                 .map_err(wallet_error)?;
-                open_sdk(&store_dir, network, indexer_url, &password).map_err(wallet_error)?
+                open_sdk(&store_dir, network, indexer_urls, &password).map_err(wallet_error)?
             } else {
                 let mut sdk =
-                    open_sdk(&store_dir, network, indexer_url, &password).map_err(wallet_error)?;
+                    open_sdk(&store_dir, network, indexer_urls, &password).map_err(wallet_error)?;
                 sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(&seed_words))
                     .map_err(wallet_error)?;
                 sdk
@@ -635,8 +636,8 @@ async fn replace_store(
     owner: &str,
     password: &str,
 ) -> Result<(), TransactionError> {
-    let (network, indexer_url) = network_and_indexer().await?;
-    check_ootle_indexer_network_lenient(&indexer_url, network)
+    let (network, indexer_urls) = network_and_indexer().await?;
+    check_ootle_indexers_network_lenient(&indexer_urls, network)
         .await
         .map_err(wallet_error)?;
 
@@ -651,7 +652,7 @@ async fn replace_store(
         .await;
     OotleWalletManager::close_database(_lifecycle).await;
     let result = match words {
-        Some(words) => restore_store(store_dir, network, indexer_url, password, words, owner),
+        Some(words) => restore_store(store_dir, network, indexer_urls, password, words, owner),
         None => std::fs::remove_dir_all(store_dir).map_err(Into::into),
     };
     SetupManager::get_instance()
@@ -680,16 +681,17 @@ async fn found_store_dir() -> Result<PathBuf, TransactionError> {
         .ok_or_else(not_started)
 }
 
-/// The network and its indexer. Local store recovery must also work offline.
-async fn network_and_indexer() -> Result<(Network, Url), TransactionError> {
-    let indexer_url = ConfigCore::content()
-        .await
-        .ootle_indexer_url()
-        .clone()
-        .ok_or_else(|| TransactionError::Disabled("No Ootle indexer configured".to_string()))?;
+/// The network and its indexers. Local store recovery must also work offline.
+async fn network_and_indexer() -> Result<(Network, Vec<Url>), TransactionError> {
+    let indexer_urls = ConfigCore::content().await.ootle_indexer_urls();
+    if indexer_urls.is_empty() {
+        return Err(TransactionError::Disabled(
+            "No Ootle indexer configured".to_string(),
+        ));
+    }
     Ok((
         Network::get_current_or_user_setting_or_default(),
-        indexer_url,
+        indexer_urls,
     ))
 }
 
@@ -747,7 +749,7 @@ fn decipher_words(seed: &[u8], password: &str) -> Result<Option<SeedWords>, anyh
 fn open_enabled_store(
     store_dir: &Path,
     network: Network,
-    indexer_url: Url,
+    indexer_urls: Vec<Url>,
     seed: &[u8],
     secret: &str,
     pin: &str,
@@ -769,14 +771,14 @@ fn open_enabled_store(
         restore_store(
             store_dir,
             network,
-            indexer_url.clone(),
+            indexer_urls.clone(),
             &password,
             &words,
             &owner,
         )?;
         info!(target: LOG_TARGET, "L2 store rebuilt from its seed words onto the current schema, the keyring secret and the PIN");
     }
-    open_sdk(store_dir, network, indexer_url, &password)
+    open_sdk(store_dir, network, indexer_urls, &password)
 }
 
 /// What the panel gets while the store is not open: enabled and locked, or not enabled.
@@ -817,7 +819,7 @@ fn not_started() -> TransactionError {
 fn restore_store(
     store_dir: &Path,
     network: Network,
-    indexer_url: Url,
+    indexer_urls: Vec<Url>,
     password: &str,
     words: &SeedWords,
     owner: &str,
@@ -827,7 +829,7 @@ fn restore_store(
     if had_old {
         std::fs::rename(store_dir, &old_dir)?;
     }
-    let result = create_store(store_dir, network, indexer_url, password, words, owner);
+    let result = create_store(store_dir, network, indexer_urls, password, words, owner);
     if result.is_err() {
         if let Err(e) = std::fs::remove_dir_all(store_dir) {
             warn!(target: LOG_TARGET, "Could not remove the unfinished L2 store: {e}");
@@ -872,12 +874,12 @@ fn recover_store_swap(store_dir: &Path) -> Result<(), anyhow::Error> {
 fn create_store(
     store_dir: &Path,
     network: Network,
-    indexer_url: Url,
+    indexer_urls: Vec<Url>,
     password: &str,
     words: &SeedWords,
     owner: &str,
 ) -> Result<(), anyhow::Error> {
-    let mut sdk = open_sdk(store_dir, network, indexer_url, password)?;
+    let mut sdk = open_sdk(store_dir, network, indexer_urls, password)?;
     sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(words))?;
     std::fs::write(store_dir.join(L1_WALLET_ID_FILE), owner)?;
     Ok(())
@@ -1011,7 +1013,7 @@ fn claim_store_for(store_dir: &Path, l1_wallet_id: &str) -> Result<bool, anyhow:
 fn open_sdk(
     store_dir: &Path,
     network: Network,
-    indexer_url: Url,
+    indexer_urls: Vec<Url>,
     password: &str,
 ) -> Result<OotleSdk, anyhow::Error> {
     std::fs::create_dir_all(store_dir)?;
@@ -1023,7 +1025,8 @@ fn open_sdk(
         // Spelled out: an upstream default change must not quietly downgrade to Trust.
         indexer_trust: IndexerTrust::Verify,
     };
-    let indexer = IndexerRestApiNetworkInterface::new(indexer_url);
+    // The SDK starts on one of the indexers at random and fails over to the next.
+    let indexer = IndexerRestApiNetworkInterface::init(indexer_urls)?;
     let sdk = OotleSdk::initialize_with_local_key_store(
         store,
         indexer,
@@ -1308,7 +1311,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp dir");
         let store_dir = dir.path().join("ootle-wallet");
         let url = Url::parse("http://127.0.0.1:1").expect("url");
-        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, url, "test").expect("sdk");
+        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, vec![url], "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("enabled seed");
         let shutdown = Shutdown::new();
@@ -1361,7 +1364,7 @@ mod tests {
     fn recovered_utxo_history_is_recorded_before_state_is_built() {
         let dir = tempfile::tempdir().expect("temp dir");
         let url = Url::parse("http://127.0.0.1:1").expect("url");
-        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, vec![url], "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
         let key = sdk.key_manager_api().next_account_address().expect("key");
@@ -1422,7 +1425,7 @@ mod tests {
     fn test_default_claim_public_key_matches_account_index_zero() {
         let dir = tempfile::tempdir().expect("temp dir");
         let url = Url::parse("http://127.0.0.1:1").expect("url");
-        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, vec![url], "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
 
@@ -1448,14 +1451,16 @@ mod tests {
         let store_dir = dir.path().join("esmeralda");
         let url = Url::parse("http://127.0.0.1:1").expect("url");
         let enabled = |store_dir: &Path| {
-            let sdk = open_sdk(store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+            let sdk =
+                open_sdk(store_dir, Network::Esmeralda, vec![url.clone()], "test").expect("sdk");
             sdk.config_api()
                 .exists(ConfigKey::CipherSeed)
                 .expect("exists")
         };
 
         assert!(!claim_store_for(&store_dir, "first").expect("claim"));
-        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+        let mut sdk =
+            open_sdk(&store_dir, Network::Esmeralda, vec![url.clone()], "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
         drop(sdk);
@@ -1484,7 +1489,8 @@ mod tests {
 
         // A seed made by the current wallet, to put into a v0.44 store.
         let new_dir = dir.path().join("new");
-        let mut sdk = open_sdk(&new_dir, Network::Esmeralda, url.clone(), &password).expect("sdk");
+        let mut sdk =
+            open_sdk(&new_dir, Network::Esmeralda, vec![url.clone()], &password).expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
         let words = words_of(&mut sdk);
@@ -1541,7 +1547,7 @@ mod tests {
         let mut sdk = open_enabled_store(
             &store_dir,
             Network::Esmeralda,
-            url,
+            vec![url],
             &seed,
             &secret,
             &pin,
@@ -1565,7 +1571,7 @@ mod tests {
         let url = Url::parse("http://127.0.0.1:1").expect("url");
         let stored_words = |store_dir: &Path| {
             let mut sdk =
-                open_sdk(store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+                open_sdk(store_dir, Network::Esmeralda, vec![url.clone()], "test").expect("sdk");
             sdk.load_seed_words()
                 .expect("load")
                 .map(|w| w.join(" ").reveal().clone())
@@ -1581,7 +1587,7 @@ mod tests {
             restore_store(
                 &store_dir,
                 Network::Esmeralda,
-                url.clone(),
+                vec![url.clone()],
                 "test",
                 words,
                 owner,
@@ -1657,7 +1663,7 @@ mod tests {
         let url = Url::parse("http://127.0.0.1:1").expect("url");
         let stored_words = |store_dir: &Path| {
             let mut sdk =
-                open_sdk(store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+                open_sdk(store_dir, Network::Esmeralda, vec![url.clone()], "test").expect("sdk");
             sdk.load_seed_words()
                 .expect("load")
                 .map(|w| w.join(" ").reveal().clone())
@@ -1667,7 +1673,8 @@ mod tests {
         };
 
         assert!(!claim_store_for(&store_dir, "first").expect("claim"));
-        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+        let mut sdk =
+            open_sdk(&store_dir, Network::Esmeralda, vec![url.clone()], "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
         let old = sdk.load_seed_words().expect("load").expect("words");
@@ -1691,7 +1698,7 @@ mod tests {
         restore_store(
             &store_dir,
             Network::Esmeralda,
-            url.clone(),
+            vec![url.clone()],
             "test",
             &new,
             IMPORTED_SEED,
@@ -1712,7 +1719,7 @@ mod tests {
         restore_store(
             &store_dir,
             Network::Esmeralda,
-            url.clone(),
+            vec![url.clone()],
             "test",
             &old,
             "second",
@@ -1746,7 +1753,7 @@ mod tests {
             let store_dir = dir.path().join(name);
             assert!(stored_seed(&store_dir).expect("no store").is_none());
             let mut sdk =
-                open_sdk(&store_dir, Network::Esmeralda, url.clone(), legacy).expect("sdk");
+                open_sdk(&store_dir, Network::Esmeralda, vec![url.clone()], legacy).expect("sdk");
             assert!(stored_seed(&store_dir).expect("empty store").is_none());
             sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
                 .expect("seed");
@@ -1763,7 +1770,7 @@ mod tests {
             open_enabled_store(
                 &store_dir,
                 Network::Esmeralda,
-                url.clone(),
+                vec![url.clone()],
                 &seed,
                 &secret,
                 &pin,
@@ -1779,7 +1786,7 @@ mod tests {
             open_enabled_store(
                 &store_dir,
                 Network::Esmeralda,
-                url.clone(),
+                vec![url.clone()],
                 seed,
                 secret,
                 pin,
@@ -1823,7 +1830,7 @@ mod tests {
         let lost_store = |name: &str, owner: &str| {
             let store_dir = dir.path().join(name);
             let mut sdk =
-                open_sdk(&store_dir, Network::Esmeralda, url.clone(), "lost").expect("sdk");
+                open_sdk(&store_dir, Network::Esmeralda, vec![url.clone()], "lost").expect("sdk");
             sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
                 .expect("seed");
             drop(sdk);
@@ -1838,7 +1845,7 @@ mod tests {
         let mut sdk = open_enabled_store(
             &store_dir,
             Network::Esmeralda,
-            url.clone(),
+            vec![url.clone()],
             &seed,
             &secret,
             &pin,
@@ -1864,7 +1871,7 @@ mod tests {
             open_enabled_store(
                 &store_dir,
                 Network::Esmeralda,
-                url.clone(),
+                vec![url.clone()],
                 &seed,
                 &secret,
                 &pin,
@@ -1900,7 +1907,7 @@ mod tests {
             dir.path(),
             Network::get_current_or_user_setting_or_default(),
         );
-        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, url, "old").expect("sdk");
+        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, vec![url], "old").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
         drop(sdk);
@@ -1934,7 +1941,7 @@ mod tests {
     fn parse_address_takes_only_valid_addresses_for_this_network() {
         let dir = tempfile::tempdir().expect("temp dir");
         let url = Url::parse("http://127.0.0.1:1").expect("url");
-        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, vec![url], "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
         let key = sdk.key_manager_api().next_account_address().expect("key");

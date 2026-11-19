@@ -531,7 +531,7 @@ fn main() {
             commands::enable_l2_wallet,
             commands::unlock_l2_wallet,
             commands::l2_create_pin_and_enable,
-            commands::set_ootle_indexer_url,
+            commands::set_ootle_indexer_urls,
             commands::l2_get_state,
             commands::l2_default_claim_public_key,
             commands::l2_get_seed_words,

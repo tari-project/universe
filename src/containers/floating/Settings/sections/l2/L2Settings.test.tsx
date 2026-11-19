@@ -20,6 +20,9 @@ vi.mock('@tauri-apps/api/window', () => ({
     getCurrentWindow: vi.fn(() => ({ onCloseRequested: vi.fn(), listen: vi.fn() })),
 }));
 
+const ESME_A = 'https://esme-indexer-a.ootle.tari.com/';
+const ESME_B = 'https://esme-indexer-b.ootle.tari.com/';
+
 const enabledState: L2WalletState = {
     enabled: true,
     locked: false,
@@ -95,7 +98,7 @@ describe('L2Settings', () => {
     beforeEach(() => {
         vi.mocked(invoke).mockReset();
         useL2WalletStore.setState({ ...initialState }, true);
-        useConfigCoreStore.setState({ ootle_indexer_url: undefined });
+        useConfigCoreStore.setState({ ootle_indexer_urls: undefined });
     });
 
     it('asks for a PIN and does not touch L2 when none is set', () => {
@@ -141,60 +144,81 @@ describe('L2Settings', () => {
         expect(screen.queryByTestId('l2-settings-account')).not.toBeInTheDocument();
     });
 
-    it('shows the default account address, public key and the indexer once enabled', async () => {
+    it('shows the default account address, public key and the indexers once enabled', async () => {
         useWalletStore.setState({ is_pin_locked: true });
-        useConfigCoreStore.setState({ ootle_indexer_url: 'https://esme-indexer-a.ootle.tari.com/' });
+        useConfigCoreStore.setState({ ootle_indexer_urls: [ESME_A, ESME_B] });
         serve(enabledState);
         render(<L2Settings />);
 
         expect(await screen.findByTestId('l2-settings-address')).toHaveValue('otl_esm_test');
         expect(screen.getByTestId('l2-settings-public-key')).toHaveValue('ab'.repeat(32));
-        expect(screen.getByTestId('l2-settings-indexer')).toHaveValue('https://esme-indexer-a.ootle.tari.com/');
+        expect(screen.getByTestId('l2-settings-indexer-0')).toHaveValue(ESME_A);
+        expect(screen.getByTestId('l2-settings-indexer-1')).toHaveValue(ESME_B);
+        expect(screen.getByTestId('l2-settings-indexer-new')).toHaveValue('');
         expect(screen.queryByTestId('l2-settings-enable')).not.toBeInTheDocument();
     });
 
-    it('leaves the indexer field empty when the config has none', async () => {
+    it('shows only the add field when the config has no indexers', async () => {
         useWalletStore.setState({ is_pin_locked: true });
+        useConfigCoreStore.setState({ ootle_indexer_urls: undefined });
         serve(enabledState);
         render(<L2Settings />);
 
         await screen.findByTestId('l2-settings-address');
-        expect(screen.getByTestId('l2-settings-indexer')).toHaveValue('');
+        expect(screen.queryByTestId('l2-settings-indexer-0')).not.toBeInTheDocument();
+        expect(screen.getByTestId('l2-settings-indexer-new')).toHaveValue('');
     });
 
-    it('saves an edited indexer URL and shows what the backend resolved', async () => {
+    it('saves an added indexer URL with the others and shows what the backend resolved', async () => {
         useWalletStore.setState({ is_pin_locked: true });
-        useConfigCoreStore.setState({ ootle_indexer_url: 'https://esme-indexer-a.ootle.tari.com/' });
+        useConfigCoreStore.setState({ ootle_indexer_urls: [ESME_A] });
         vi.mocked(invoke).mockImplementation((async (cmd: string) => {
             if (cmd === 'l2_get_state') return enabledState;
-            if (cmd === 'set_ootle_indexer_url') return 'http://localhost:18300/';
+            if (cmd === 'set_ootle_indexer_urls') return [ESME_A, 'http://localhost:18300/'];
         }) as typeof invoke);
         render(<L2Settings />);
 
-        const field = await screen.findByTestId('l2-settings-indexer');
+        const field = await screen.findByTestId('l2-settings-indexer-new');
         fireEvent.change(field, { target: { value: 'http://localhost:18300' } });
         fireEvent.keyDown(field, { key: 'Enter' });
 
-        await waitFor(() => expect(field).toHaveValue('http://localhost:18300/'));
-        expect(invoke).toHaveBeenCalledWith('set_ootle_indexer_url', { url: 'http://localhost:18300' });
-        expect(useConfigCoreStore.getState().ootle_indexer_url).toBe('http://localhost:18300/');
+        await waitFor(() => expect(screen.getByTestId('l2-settings-indexer-1')).toHaveValue('http://localhost:18300/'));
+        expect(screen.getByTestId('l2-settings-indexer-new')).toHaveValue('');
+        expect(invoke).toHaveBeenCalledWith('set_ootle_indexer_urls', { urls: [ESME_A, 'http://localhost:18300'] });
+        expect(useConfigCoreStore.getState().ootle_indexer_urls).toEqual([ESME_A, 'http://localhost:18300/']);
     });
 
-    it('shows why an indexer URL was refused and keeps the old one', async () => {
+    it('saves the list without a removed indexer', async () => {
         useWalletStore.setState({ is_pin_locked: true });
-        useConfigCoreStore.setState({ ootle_indexer_url: 'https://esme-indexer-a.ootle.tari.com/' });
+        useConfigCoreStore.setState({ ootle_indexer_urls: [ESME_A, ESME_B] });
         vi.mocked(invoke).mockImplementation((async (cmd: string) => {
             if (cmd === 'l2_get_state') return enabledState;
-            if (cmd === 'set_ootle_indexer_url') throw 'missing host';
+            if (cmd === 'set_ootle_indexer_urls') return [ESME_B];
         }) as typeof invoke);
         render(<L2Settings />);
 
-        const field = await screen.findByTestId('l2-settings-indexer');
+        fireEvent.click(await screen.findByTestId('l2-settings-indexer-remove-0'));
+
+        await waitFor(() => expect(screen.getByTestId('l2-settings-indexer-0')).toHaveValue(ESME_B));
+        expect(invoke).toHaveBeenCalledWith('set_ootle_indexer_urls', { urls: [ESME_B] });
+        expect(screen.queryByTestId('l2-settings-indexer-1')).not.toBeInTheDocument();
+    });
+
+    it('shows why an indexer URL was refused and keeps the old ones', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        useConfigCoreStore.setState({ ootle_indexer_urls: [ESME_A] });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'l2_get_state') return enabledState;
+            if (cmd === 'set_ootle_indexer_urls') throw 'missing host';
+        }) as typeof invoke);
+        render(<L2Settings />);
+
+        const field = await screen.findByTestId('l2-settings-indexer-0');
         fireEvent.change(field, { target: { value: 'http://' } });
         fireEvent.blur(field);
 
         expect(await screen.findByTestId('l2-settings-indexer-error')).toBeInTheDocument();
-        expect(useConfigCoreStore.getState().ootle_indexer_url).toBe('https://esme-indexer-a.ootle.tari.com/');
+        expect(useConfigCoreStore.getState().ootle_indexer_urls).toEqual([ESME_A]);
     });
 
     it('picks the seed words note from seed_source and offers the L1 seed back only after an import', async () => {

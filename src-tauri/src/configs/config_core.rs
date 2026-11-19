@@ -93,20 +93,31 @@ pub struct ConfigCoreContent {
     shutdown_mode: ShutdownMode,
     show_window_on_startup: bool,
     node_data_directory: Option<PathBuf>,
-    /// User override for the indexer the Ootle (L2) wallet talks to. The network
-    /// default is not persisted; `ootle_indexer_url()` resolves it at read time so a
-    /// changed default reaches existing installs.
+    /// User override for the indexers the Ootle (L2) wallet talks to; empty means the
+    /// network default. The default is not persisted; `ootle_indexer_urls()` resolves it
+    /// at read time so a changed default reaches existing installs. Configs written with
+    /// a single `ootle_indexer_url` load as a list of one.
     #[getset(skip)]
-    #[serde(deserialize_with = "deserialize_http_url")]
-    ootle_indexer_url: Option<Url>,
+    #[serde(
+        alias = "ootle_indexer_url",
+        deserialize_with = "deserialize_http_urls"
+    )]
+    ootle_indexer_urls: Vec<Url>,
 }
 
-fn default_ootle_indexer_url(network: Network) -> Option<Url> {
-    match network {
-        Network::Esmeralda => Url::parse("https://esme-indexer-a.ootle.tari.com/").ok(),
-        Network::MainNet => Url::parse("https://indexer-a.ootle.tari.com/").ok(),
-        _ => None,
-    }
+fn default_ootle_indexer_urls(network: Network) -> Vec<Url> {
+    let urls: &[&str] = match network {
+        Network::Esmeralda => &[
+            "https://esme-indexer-a.ootle.tari.com/",
+            "https://esme-indexer-b.ootle.tari.com/",
+        ],
+        Network::MainNet => &[
+            "https://indexer-a.ootle.tari.com/",
+            "https://indexer-b.ootle.tari.com/",
+        ],
+        _ => &[],
+    };
+    urls.iter().filter_map(|url| Url::parse(url).ok()).collect()
 }
 
 /// Only http(s) reaches the SDK's REST client; anything else counts as unset.
@@ -120,8 +131,16 @@ fn http_only(url: Option<Url>) -> Option<Url> {
     })
 }
 
-fn resolve_ootle_indexer_url(stored: Option<Url>, network: Network) -> Option<Url> {
-    http_only(stored).or_else(|| default_ootle_indexer_url(network))
+fn resolve_ootle_indexer_urls(stored: Vec<Url>, network: Network) -> Vec<Url> {
+    let stored: Vec<Url> = stored
+        .into_iter()
+        .filter_map(|url| http_only(Some(url)))
+        .collect();
+    if stored.is_empty() {
+        default_ootle_indexer_urls(network)
+    } else {
+        stored
+    }
 }
 
 /// Checks a user-entered indexer URL and returns the form the SDK needs: http(s) with
@@ -241,13 +260,55 @@ pub async fn check_ootle_indexer_network_lenient(
     }
 }
 
+/// [`check_ootle_indexer_network_lenient`] for each of `indexers`, all at once.
+pub async fn check_ootle_indexers_network_lenient(
+    indexers: &[Url],
+    network: Network,
+) -> Result<(), anyhow::Error> {
+    futures::future::try_join_all(
+        indexers
+            .iter()
+            .map(|indexer| check_ootle_indexer_network_lenient(indexer, network)),
+    )
+    .await?;
+    Ok(())
+}
+
+/// [`check_ootle_indexer_network`] for each of `indexers`, all at once.
+pub async fn check_ootle_indexers_network(
+    indexers: &[Url],
+    network: Network,
+) -> Result<(), anyhow::Error> {
+    futures::future::try_join_all(
+        indexers
+            .iter()
+            .map(|indexer| check_ootle_indexer_network(indexer, network)),
+    )
+    .await?;
+    Ok(())
+}
+
 /// Defaults that have since been taken down. A copy of one in a config file is stale, not
 /// a choice the user made, so it loads as unset and the current default applies.
 const RETIRED_OOTLE_INDEXER_URLS: &[&str] = &["http://54.38.0.31:50124/"];
 
-fn deserialize_http_url<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Url>, D::Error> {
-    Ok(http_only(Option::<Url>::deserialize(d)?)
-        .filter(|u| !RETIRED_OOTLE_INDEXER_URLS.contains(&u.as_str())))
+fn deserialize_http_urls<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Vec<Url>, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(Option<Url>),
+        Many(Vec<Url>),
+    }
+
+    let urls = match OneOrMany::deserialize(d)? {
+        OneOrMany::One(url) => url.into_iter().collect(),
+        OneOrMany::Many(urls) => urls,
+    };
+    Ok(urls
+        .into_iter()
+        .filter_map(|url| http_only(Some(url)))
+        .filter(|u| !RETIRED_OOTLE_INDEXER_URLS.contains(&u.as_str()))
+        .collect())
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -309,7 +370,7 @@ impl Default for ConfigCoreContent {
             shutdown_mode: ShutdownMode::Tasktray,
             show_window_on_startup: true,
             node_data_directory: None,
-            ootle_indexer_url: None,
+            ootle_indexer_urls: Vec::new(),
         }
     }
 }
@@ -319,16 +380,16 @@ impl ConfigCoreContent {
         MinerType::from_str(&self.exchange_id).is_exchange_mode()
     }
 
-    /// Sets the user override; None goes back to the network default.
-    pub fn set_ootle_indexer_url(&mut self, url: Option<Url>) -> &mut Self {
-        self.ootle_indexer_url = url;
+    /// Sets the user override; an empty list goes back to the network default.
+    pub fn set_ootle_indexer_urls(&mut self, urls: Vec<Url>) -> &mut Self {
+        self.ootle_indexer_urls = urls;
         self
     }
 
-    /// The stored override if it is http(s), else the network default.
-    pub fn ootle_indexer_url(&self) -> Option<Url> {
-        resolve_ootle_indexer_url(
-            self.ootle_indexer_url.clone(),
+    /// The stored override's http(s) URLs, else the network default.
+    pub fn ootle_indexer_urls(&self) -> Vec<Url> {
+        resolve_ootle_indexer_urls(
+            self.ootle_indexer_urls.clone(),
             Network::get_current_or_user_setting_or_default(),
         )
     }
@@ -403,10 +464,10 @@ impl ConfigImpl for ConfigCore {
     }
 
     /// The copy handed out (and emitted to the frontend) carries the resolved
-    /// indexer URL; the stored content keeps only the user override.
+    /// indexer URLs; the stored content keeps only the user override.
     async fn content() -> Self::Config {
         let mut content = Self::current().read().await.content.clone();
-        content.ootle_indexer_url = content.ootle_indexer_url();
+        content.ootle_indexer_urls = content.ootle_indexer_urls();
         content
     }
 }
@@ -576,15 +637,25 @@ mod tests {
         assert!(error.contains("wallet is on mainnet"), "{error}");
     }
 
+    fn strings(urls: Vec<Url>) -> Vec<String> {
+        urls.into_iter().map(String::from).collect()
+    }
+
     #[test]
-    fn test_supported_networks_have_their_own_default_ootle_indexer() {
+    fn test_supported_networks_have_their_own_default_ootle_indexers() {
         assert_eq!(
-            default_ootle_indexer_url(Network::Esmeralda).map(String::from),
-            Some("https://esme-indexer-a.ootle.tari.com/".to_string())
+            strings(default_ootle_indexer_urls(Network::Esmeralda)),
+            [
+                "https://esme-indexer-a.ootle.tari.com/",
+                "https://esme-indexer-b.ootle.tari.com/"
+            ]
         );
         assert_eq!(
-            default_ootle_indexer_url(Network::MainNet).map(String::from),
-            Some("https://indexer-a.ootle.tari.com/".to_string())
+            strings(default_ootle_indexer_urls(Network::MainNet)),
+            [
+                "https://indexer-a.ootle.tari.com/",
+                "https://indexer-b.ootle.tari.com/"
+            ]
         );
         for network in [
             Network::StageNet,
@@ -592,27 +663,49 @@ mod tests {
             Network::LocalNet,
             Network::Igor,
         ] {
-            assert!(default_ootle_indexer_url(network).is_none(), "{network}");
+            assert!(default_ootle_indexer_urls(network).is_empty(), "{network}");
         }
     }
 
     #[test]
-    fn the_default_indexer_is_resolved_at_read_time_not_persisted() {
+    fn the_default_indexers_are_resolved_at_read_time_not_persisted() {
         let persisted = serde_json::to_value(ConfigCoreContent::default()).expect("json");
-        assert!(persisted["ootle_indexer_url"].is_null());
+        assert_eq!(persisted["ootle_indexer_urls"], serde_json::json!([]));
         assert_eq!(
-            resolve_ootle_indexer_url(None, Network::Esmeralda),
-            default_ootle_indexer_url(Network::Esmeralda)
+            resolve_ootle_indexer_urls(Vec::new(), Network::Esmeralda),
+            default_ootle_indexer_urls(Network::Esmeralda)
         );
+        let loaded: ConfigCoreContent = serde_json::from_str(
+            r#"{"ootle_indexer_urls":["https://a.example/","https://b.example/"]}"#,
+        )
+        .expect("json");
+        assert_eq!(
+            strings(loaded.ootle_indexer_urls.clone()),
+            ["https://a.example/", "https://b.example/"]
+        );
+        assert_eq!(
+            resolve_ootle_indexer_urls(loaded.ootle_indexer_urls.clone(), Network::Esmeralda),
+            loaded.ootle_indexer_urls
+        );
+    }
+
+    #[test]
+    fn a_single_stored_indexer_url_loads_as_a_list_of_one() {
         let loaded: ConfigCoreContent =
             serde_json::from_str(r#"{"ootle_indexer_url":"https://ootle-indexer-a.tari.com/"}"#)
                 .expect("json");
-        let custom = Url::parse("https://ootle-indexer-a.tari.com/").ok();
-        assert_eq!(loaded.ootle_indexer_url, custom);
         assert_eq!(
-            resolve_ootle_indexer_url(custom.clone(), Network::Esmeralda),
-            custom
+            strings(loaded.ootle_indexer_urls.clone()),
+            ["https://ootle-indexer-a.tari.com/"]
         );
+        let persisted = serde_json::to_value(&loaded).expect("json");
+        assert_eq!(
+            persisted["ootle_indexer_urls"],
+            serde_json::json!(["https://ootle-indexer-a.tari.com/"])
+        );
+        let loaded: ConfigCoreContent =
+            serde_json::from_str(r#"{"ootle_indexer_url":null}"#).expect("json");
+        assert!(loaded.ootle_indexer_urls.is_empty());
     }
 
     #[test]
@@ -645,25 +738,26 @@ mod tests {
 
     #[test]
     fn a_non_http_indexer_url_is_treated_as_unset() {
-        let file_url = Url::parse("file:///etc/passwd").ok();
+        let file_url = Url::parse("file:///etc/passwd").unwrap();
         assert_eq!(
-            resolve_ootle_indexer_url(file_url.clone(), Network::Esmeralda),
-            default_ootle_indexer_url(Network::Esmeralda)
+            resolve_ootle_indexer_urls(vec![file_url.clone()], Network::Esmeralda),
+            default_ootle_indexer_urls(Network::Esmeralda)
         );
         assert_eq!(
-            resolve_ootle_indexer_url(file_url, Network::MainNet),
-            default_ootle_indexer_url(Network::MainNet)
+            resolve_ootle_indexer_urls(vec![file_url], Network::MainNet),
+            default_ootle_indexer_urls(Network::MainNet)
         );
 
         let loaded: ConfigCoreContent =
             serde_json::from_str(r#"{"ootle_indexer_url":"file:///etc/passwd"}"#).expect("json");
-        assert_eq!(loaded.ootle_indexer_url, None);
-        let loaded: ConfigCoreContent =
-            serde_json::from_str(r#"{"ootle_indexer_url":"http://localhost:18300"}"#)
-                .expect("json");
+        assert!(loaded.ootle_indexer_urls.is_empty());
+        let loaded: ConfigCoreContent = serde_json::from_str(
+            r#"{"ootle_indexer_urls":["file:///etc/passwd","http://localhost:18300"]}"#,
+        )
+        .expect("json");
         assert_eq!(
-            loaded.ootle_indexer_url.map(String::from),
-            Some("http://localhost:18300/".to_string())
+            strings(loaded.ootle_indexer_urls),
+            ["http://localhost:18300/"]
         );
     }
 
@@ -672,6 +766,6 @@ mod tests {
         let loaded: ConfigCoreContent =
             serde_json::from_str(r#"{"ootle_indexer_url":"http://54.38.0.31:50124/"}"#)
                 .expect("json");
-        assert_eq!(loaded.ootle_indexer_url, None);
+        assert!(loaded.ootle_indexer_urls.is_empty());
     }
 }

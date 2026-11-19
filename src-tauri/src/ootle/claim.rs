@@ -1193,7 +1193,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp dir");
         let url = url::Url::parse("http://127.0.0.1:1").expect("url");
         let mut sdk =
-            super::super::open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+            super::super::open_sdk(dir.path(), Network::Esmeralda, vec![url], "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
         let key = sdk.key_manager_api().next_account_address().expect("key");
@@ -1233,7 +1233,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp dir");
         let url = url::Url::parse("http://127.0.0.1:1").expect("url");
         let mut sdk =
-            super::super::open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+            super::super::open_sdk(dir.path(), Network::Esmeralda, vec![url], "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
         let default_key = hex::encode(
