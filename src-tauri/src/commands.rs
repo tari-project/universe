@@ -26,7 +26,7 @@ use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{
     AirdropTokens, ConfigCore, ConfigCoreContent, canonicalise_ootle_indexer_url,
-    check_ootle_indexer_network,
+    check_ootle_indexers_network,
 };
 use crate::configs::config_mining::{
     ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState,
@@ -1942,30 +1942,35 @@ pub fn l2_validate_address(address: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-/// Point the L2 wallet at another indexer, or back at the network default when `url` is
-/// blank. Applies to the running wallet straight away. Returns the URL now in use, which
-/// is None off networks with a default when the override is cleared.
+/// Point the L2 wallet at another set of indexers, or back at the network default when
+/// `urls` has no non-blank entry. Applies to the running wallet straight away. Returns the
+/// URLs now in use, which are empty off networks with a default when the override is
+/// cleared.
 #[tauri::command]
-pub async fn set_ootle_indexer_url(url: String) -> Result<Option<String>, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[set_ootle_indexer_url] called");
-    let url = url.trim();
-    let custom = if url.is_empty() {
-        None
-    } else {
+pub async fn set_ootle_indexer_urls(urls: Vec<String>) -> Result<Vec<String>, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[set_ootle_indexer_urls] called");
+    let mut custom: Vec<url::Url> = Vec::new();
+    for url in urls
+        .iter()
+        .map(|url| url.trim())
+        .filter(|url| !url.is_empty())
+    {
         let indexer = canonicalise_ootle_indexer_url(url).map_err(|e| e.to_string())?;
-        check_ootle_indexer_network(&indexer, Network::get_current_or_user_setting_or_default())
-            .await
-            .map_err(|e| e.to_string())?;
-        Some(indexer)
-    };
-    ConfigCore::update_field(ConfigCoreContent::set_ootle_indexer_url, custom)
+        if !custom.contains(&indexer) {
+            custom.push(indexer);
+        }
+    }
+    check_ootle_indexers_network(&custom, Network::get_current_or_user_setting_or_default())
         .await
         .map_err(|e| e.to_string())?;
-    let resolved = ConfigCore::content().await.ootle_indexer_url();
-    if let Some(indexer) = resolved.clone() {
-        OotleWalletManager::set_indexer_url(indexer).await;
+    ConfigCore::update_field(ConfigCoreContent::set_ootle_indexer_urls, custom)
+        .await
+        .map_err(|e| e.to_string())?;
+    let resolved = ConfigCore::content().await.ootle_indexer_urls();
+    if !resolved.is_empty() {
+        OotleWalletManager::set_indexer_urls(resolved.clone()).await;
     }
-    Ok(resolved.map(String::from))
+    Ok(resolved.into_iter().map(String::from).collect())
 }
 
 /// Everything the L2 panel shows: accounts, XTR balances and history.
@@ -2441,7 +2446,7 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
 
 /*
  ********** TAPPLETS SECTION **********
-*/
+ */
 
 #[tauri::command]
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {

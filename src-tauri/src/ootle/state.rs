@@ -230,7 +230,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp dir");
         let url = url::Url::parse("http://127.0.0.1:1").expect("url");
         let mut sdk =
-            super::super::open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+            super::super::open_sdk(dir.path(), Network::Esmeralda, vec![url], "test").expect("sdk");
         let state = build_state(&sdk).expect("state");
         assert!(!state.enabled);
         assert!(state.accounts.is_empty());

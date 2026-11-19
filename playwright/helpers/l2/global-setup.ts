@@ -39,7 +39,7 @@ export default async function globalSetup() {
             core: {
                 node_type: 'Remote',
                 remote_base_node_address: endpoints.baseNode,
-                ootle_indexer_url: endpoints.indexer,
+                ootle_indexer_urls: [endpoints.indexer],
             },
             // A fresh swarm starts at genesis, before the common fixture's historical birthday.
             wallet: {
