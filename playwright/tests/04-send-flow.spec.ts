@@ -10,12 +10,12 @@ import { getAppDataDir } from '../helpers/app-dirs';
 const INVALID_ADDRESS = 'this-is-not-a-valid-tari-address';
 const VALID_ADDRESS = TEST_WALLET.address;
 
-/** Open the Send Tari modal and wait for the address input. */
+/** Open the Send XTM modal and wait for the address input. */
 async function openSendModal(page: Page) {
   const sendBtn = page.locator(sel.send.button);
   await sendBtn.waitFor({ state: 'visible', timeout: 10_000 });
   await sendBtn.click({ timeout: 5_000 });
-  await expect(page.getByText('Send Tari').first()).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText('Send XTM').first()).toBeVisible({ timeout: 5_000 });
   const addressInput = page.locator(sel.send.addressInput);
   await addressInput.waitFor({ state: 'visible', timeout: 5_000 });
   return addressInput;
@@ -89,11 +89,11 @@ test.describe('Send Transaction Flow', () => {
     await amountInput.fill('1');
     await page.locator(sel.send.messageInput).fill('validation-check');
     await expect(submitBtn).toBeEnabled({ timeout: 5_000 });
-    await expect(submitBtn).toHaveText(/Send Tari/i);
+    await expect(submitBtn).toHaveText(/Send XTM/i);
 
     // Close the modal without sending — this test only covers validation.
     await page.keyboard.press('Escape');
-    await expect(page.getByText('Send Tari').first()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Send XTM').first()).not.toBeVisible({ timeout: 5_000 });
   });
 
   test('send a transaction end-to-end and see it confirm', async ({ appPage: page }) => {
@@ -136,7 +136,7 @@ test.describe('Send Transaction Flow', () => {
     const doneBtn = page.locator(sel.send.doneButton);
     await doneBtn.waitFor({ state: 'visible', timeout: 5_000 });
     await doneBtn.click({ timeout: 5_000 });
-    await expect(page.getByText(/Send Tari/i).first()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/Send XTM/i).first()).not.toBeVisible({ timeout: 5_000 });
 
     // --- The transaction appears in history ---
     // The row TRUNCATES the message ("pw-send-...") — match on a prefix
