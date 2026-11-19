@@ -46,6 +46,7 @@ export const GridBottom = styled.div`
 
 export const LogoWrapper = styled.div`
     width: 32px;
+    cursor: pointer;
     svg {
         max-width: 100%;
     }
