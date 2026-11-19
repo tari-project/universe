@@ -21,6 +21,18 @@ export const universalExchangeMinerOption: ExchangeBranding = {
     wxtm_mode: false,
 };
 
+// Built-in decentralized exchange (DEX) option for peer-to-peer trading
+export const HAVENO_EXCHANGE_URL = 'https://haveno.exchange/';
+export const havenoExchangeMinerOption: ExchangeBranding = {
+    id: 'haveno',
+    slug: 'haveno',
+    name: 'Haveno DEX',
+    is_hidden: false,
+    exchange_id: 'haveno',
+    exchange_url: HAVENO_EXCHANGE_URL,
+    wxtm_mode: false,
+};
+
 const initialState = {
     showExchangeAddressModal: null,
     showUniversalModal: null,
