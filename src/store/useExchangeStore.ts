@@ -21,6 +21,18 @@ export const universalExchangeMinerOption: ExchangeBranding = {
     wxtm_mode: false,
 };
 
+// Built-in aggregator for wXTM exchange: Rubic widget preconfigured to swap into wXTM on Ethereum
+export const WXTM_AGGREGATOR_URL = 'https://app.rubic.exchange/?from=wXTM&fromChain=ETH&to=USDT&toChain=ETH';
+export const aggregatorExchangeMinerOption: ExchangeBranding = {
+    id: 'wxtm-aggregator',
+    slug: 'wxtm-aggregator',
+    name: 'Rubic',
+    is_hidden: false,
+    exchange_id: 'wxtm-aggregator',
+    exchange_url: WXTM_AGGREGATOR_URL,
+    wxtm_mode: true,
+};
+
 const initialState = {
     showExchangeAddressModal: null,
     showUniversalModal: null,

@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
     useExchangeStore,
     universalExchangeMinerOption,
+    aggregatorExchangeMinerOption,
+    WXTM_AGGREGATOR_URL,
     setShowExchangeModal,
     setShowUniversalModal,
     setCurrentExchangeMinerId,
@@ -46,6 +48,37 @@ describe('useExchangeStore', () => {
 
         it('has wxtm_mode as false', () => {
             expect(universalExchangeMinerOption.wxtm_mode).toBe(false);
+        });
+    });
+
+    describe('aggregatorExchangeMinerOption constant', () => {
+        it('has id as wxtm-aggregator', () => {
+            expect(aggregatorExchangeMinerOption.id).toBe('wxtm-aggregator');
+        });
+
+        it('has slug as wxtm-aggregator', () => {
+            expect(aggregatorExchangeMinerOption.slug).toBe('wxtm-aggregator');
+        });
+
+        it('has name as Rubic', () => {
+            expect(aggregatorExchangeMinerOption.name).toBe('Rubic');
+        });
+
+        it('has is_hidden as false', () => {
+            expect(aggregatorExchangeMinerOption.is_hidden).toBe(false);
+        });
+
+        it('has exchange_id as wxtm-aggregator', () => {
+            expect(aggregatorExchangeMinerOption.exchange_id).toBe('wxtm-aggregator');
+        });
+
+        it('has wxtm_mode as true', () => {
+            expect(aggregatorExchangeMinerOption.wxtm_mode).toBe(true);
+        });
+
+        it('points exchange_url at the wXTM aggregator widget', () => {
+            expect(aggregatorExchangeMinerOption.exchange_url).toBe(WXTM_AGGREGATOR_URL);
+            expect(aggregatorExchangeMinerOption.exchange_url).toContain('from=wXTM');
         });
     });
 
