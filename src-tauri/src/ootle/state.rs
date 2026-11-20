@@ -243,9 +243,8 @@ mod tests {
 
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
-        let address = sdk.key_manager_api().next_account_address().expect("key");
         sdk.accounts_api()
-            .create_account(Some("default"), true, address)
+            .create_next_account(Some("default"), true)
             .expect("account");
 
         let state = build_state(&sdk).expect("state");
