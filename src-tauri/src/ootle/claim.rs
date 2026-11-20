@@ -1196,10 +1196,9 @@ mod tests {
             super::super::open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
-        let key = sdk.key_manager_api().next_account_address().expect("key");
         let account = sdk
             .accounts_api()
-            .create_account(Some("default"), true, key)
+            .create_next_account(Some("default"), true)
             .expect("account");
         let account = sdk
             .accounts_api()

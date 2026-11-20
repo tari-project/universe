@@ -1364,10 +1364,9 @@ mod tests {
         let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
-        let key = sdk.key_manager_api().next_account_address().expect("key");
         let account = sdk
             .accounts_api()
-            .create_account(Some("default"), true, key)
+            .create_next_account(Some("default"), true)
             .expect("account");
         let output = StealthOutputModel {
             owner_account: *account.component_address(),
@@ -1433,11 +1432,14 @@ mod tests {
         assert_eq!(default_claim_public_key(&sdk).expect("claim key"), key);
 
         // The account the wallet creates for key index 0 has exactly this public key.
-        let address = sdk.key_manager_api().next_account_address().expect("key");
-        assert_eq!(address.owner_key_id, KeyId::derived(KeyBranch::Account, 0));
-        sdk.accounts_api()
-            .create_account(Some("default"), true, address)
+        let account = sdk
+            .accounts_api()
+            .create_next_account(Some("default"), true)
             .expect("account");
+        assert_eq!(
+            account.account.owner_key_id,
+            Some(KeyId::derived(KeyBranch::Account, 0))
+        );
         let state = state::build_state(&sdk).expect("state");
         assert_eq!(state.accounts[0].public_key, key);
     }
@@ -1937,9 +1939,8 @@ mod tests {
         let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");
-        let key = sdk.key_manager_api().next_account_address().expect("key");
         sdk.accounts_api()
-            .create_account(Some("default"), true, key)
+            .create_next_account(Some("default"), true)
             .expect("account");
         let state = state::build_state(&sdk).expect("state");
         let address = state.accounts[0].address.clone();

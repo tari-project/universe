@@ -44,7 +44,7 @@ use tari_ootle_wallet_sdk_services::transaction_service::TransactionServiceHandl
 use tari_ootle_wallet_storage_sqlite::SqliteWalletStore;
 use tari_template_lib::{
     prelude::RistrettoPublicKeyBytes,
-    types::{Amount, constants::STEALTH_TARI_RESOURCE_ADDRESS},
+    types::{Amount, UtxoAddress, constants::STEALTH_TARI_RESOURCE_ADDRESS},
 };
 
 use super::{LOG_TARGET, OotleSdk, claim};
@@ -80,6 +80,7 @@ pub async fn send_xtr(
     let mut params = StealthTransferParams {
         fee_params: TransferFeeParams::new(UtxoInputSelection::PreferRevealed),
         input_selection: UtxoInputSelection::PreferRevealed,
+        inputs: None,
         outputs: vec![TransferOutput {
             address: destination,
             revealed_amount: Amount::zero(),
@@ -93,12 +94,14 @@ pub async fn send_xtr(
         max_epoch: Epoch(epoch.as_u64().saturating_add(VALIDITY_EPOCHS)),
         is_dry_run: true,
     };
-    params.max_fee = estimate_fee(sdk, transactions, &account, params.clone()).await?;
-    approve_fee(params.max_fee).await?;
+    let (max_fee, inputs) = estimate_fee(sdk, transactions, &account, params.clone()).await?;
+    approve_fee(max_fee).await?;
+    params.max_fee = max_fee;
+    params.inputs = Some(inputs);
     params.is_dry_run = false;
 
     let context = TransactionContext::with_accounts([*account.component_address()]);
-    let (lock, transaction) = build(sdk, account, params).await?;
+    let (lock, transaction, _) = build(sdk, account, params).await?;
     submit(sdk, transactions, transaction, context, Some(lock), None).await
 }
 
@@ -222,14 +225,17 @@ fn rejection(status: TransactionStatus, reason: Option<&str>) -> Option<anyhow::
 /// Dry runs the transfer, raising the fee to what the run reports until a build at a
 /// fee covers what it's charged. Input selection targets amount + fee, so the fee
 /// changes the shape of the transaction being priced.
+///
+/// Returns the settled fee and the UTXOs the priced build spends: the submitted build
+/// must spend those same UTXOs to have the priced shape.
 async fn estimate_fee(
     sdk: &OotleSdk,
     transactions: &TransactionServiceHandle,
     account: &AccountWithAddress,
     mut params: StealthTransferParams,
-) -> Result<u64, anyhow::Error> {
+) -> Result<(u64, Vec<UtxoAddress>), anyhow::Error> {
     for _ in 0..MAX_FEE_ROUNDS {
-        let (lock, transaction) = build(sdk, account.clone(), params.clone()).await?;
+        let (lock, transaction, inputs) = build(sdk, account.clone(), params.clone()).await?;
         lock.release();
         let result = with_indexer_timeout(transactions.submit_dry_run_transaction(transaction))
             .await?
@@ -239,7 +245,7 @@ async fn estimate_fee(
             if let Some(reason) = finalize.any_reject() {
                 bail!("The L2 transaction would be rejected: {reason}");
             }
-            return Ok(params.max_fee);
+            return Ok((params.max_fee, inputs));
         }
         params.max_fee = check_fee(finalize.required_fees(), MAX_L2_FEE)?;
     }
@@ -273,31 +279,38 @@ async fn with_timeout<T>(
     })
 }
 
-/// Builds and signs the transfer. The returned guard holds the spent inputs locked
-/// until it's released, kept, or dropped.
+/// Builds and signs the transfer, returning the stealth UTXOs it spends with it. The
+/// returned guard holds the spent inputs locked until it's released, kept, or dropped.
 async fn build(
     sdk: &OotleSdk,
     account: AccountWithAddress,
     params: StealthTransferParams,
-) -> Result<(WalletLockDropGuard<'_, SqliteWalletStore>, Transaction), anyhow::Error> {
+) -> Result<
+    (
+        WalletLockDropGuard<'_, SqliteWalletStore>,
+        Transaction,
+        Vec<UtxoAddress>,
+    ),
+    anyhow::Error,
+> {
     let (lock, transfer) =
         with_indexer_timeout(sdk.stealth_transfer_api().transfer(account, params)).await??;
     let main_pk = RistrettoPublicKeyBytes::try_from(transfer.main_signer.public_key().as_bytes())?;
-    let main_signer = sdk.signer_api().with_context(&main_pk);
-    let transaction = match transfer.additional_signer.as_ref() {
-        Some(signer) => main_signer.sign(signer.key_id, transfer.transaction)?,
-        None => transfer.transaction.finish(),
-    };
-    let transaction = transfer
-        .utxo_spend_keys
+    let additional_signers: Vec<_> = transfer
+        .additional_signer
         .iter()
-        .try_fold(transaction, |tx, key| {
-            main_signer.sign_with_stealth_key(key, tx)
-        })?;
+        .map(|s| s.key_id)
+        .collect();
+    let transaction = sdk.signer_api().authorize(
+        &main_pk,
+        &additional_signers,
+        &transfer.utxo_spend_keys,
+        transfer.transaction.finish(),
+    )?;
     let transaction = sdk
         .signer_api()
         .sign(transfer.main_signer.key_id, transaction)?;
-    Ok((lock, transaction))
+    Ok((lock, transaction, transfer.inputs))
 }
 
 #[cfg(test)]
