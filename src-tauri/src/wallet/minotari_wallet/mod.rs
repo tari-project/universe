@@ -451,7 +451,6 @@ impl MinotariWalletManager {
             transaction,
             output_hash,
             tx_id,
-            new_burn_proof,
             ..
         } = result;
 
@@ -461,17 +460,6 @@ impl MinotariWalletManager {
         let accepted_by_node =
             record_first_broadcast(Some(&conn), tx_id, submitted).accepted_by_node;
         drop(conn);
-        // Only node-accepted burns are reported, as before the broadcast was inlined.
-        if accepted_by_node {
-            crate::airdrop::report_burn(serde_json::json!({
-                "txId": tx_id.to_string(),
-                "commitment": hex::encode(&new_burn_proof.commitment),
-                "excessSigNonce": hex::encode(&new_burn_proof.kernel_excess_nonce),
-                "excessSig": hex::encode(&new_burn_proof.kernel_excess_sig),
-                "amountMicroMinotari": amount,
-            }))
-            .await;
-        }
 
         BalanceTracker::current()
             .update_from_transactions(Self::get_latest_account_balance().await)
