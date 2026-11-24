@@ -69,6 +69,7 @@
                 "object-src": "'none'",
                 "base-uri": "'self'",
                 "form-action": "'self'",
+                "frame-src": "'self' https://tari.com",
                 "frame-ancestors": "'none'"
             },
             "assetProtocol": {
