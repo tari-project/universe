@@ -6,8 +6,8 @@ import { renderHook } from '@testing-library/react';
 import type { RefObject } from 'react';
 import { MessageType, useIframeMessage } from './useIframeMessage';
 
-const SWAP_URL = 'https://swap.tari.com/app';
-const SWAP_ORIGIN = 'https://swap.tari.com';
+const SWAP_URL = 'https://tari.com/swaps';
+const SWAP_ORIGIN = 'https://tari.com';
 
 function mountSwapIframe(src = SWAP_URL) {
     const iframe = document.createElement('iframe');
@@ -50,6 +50,16 @@ describe('useIframeMessage', () => {
         postToApp(SWAP_ORIGIN, iframe.contentWindow);
 
         expect(onMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores a message from the swap iframe when its src was pointed at a non-allowlisted origin', () => {
+        const iframe = mountSwapIframe('https://evil.example/swaps');
+        const onMessage = vi.fn();
+        renderHook(() => useIframeMessage(refTo(iframe), onMessage));
+
+        postToApp('https://evil.example', iframe.contentWindow);
+
+        expect(onMessage).not.toHaveBeenCalled();
     });
 
     it('ignores a message from the wrong origin', () => {

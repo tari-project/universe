@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import { getIframeOrigin } from '@app/utils/iframeOrigin';
+import { isAllowedSwapOrigin } from './useIframeUrl';
 import { SelectableTokenInfo, SwapDirection, SwapStatus } from './lib/types';
 
 export enum MessageType {
@@ -104,16 +104,13 @@ export type IframeMessage =
 
 /**
  * Only the swap iframe we embedded may talk to us: the message has to come from that
- * iframe's own window and carry the exact origin the iframe was pointed at. Any other
- * frame (including the tapplet iframe), popup or window is dropped.
+ * iframe's own window and carry an origin from the static swap origin allowlist. Any
+ * other frame (including the tapplet iframe), popup or window is dropped.
  */
 export function isTrustedIframeMessage(event: MessageEvent, iframe: HTMLIFrameElement | null): boolean {
     if (!iframe || !event.source) return false;
 
-    const expectedOrigin = getIframeOrigin(iframe.src);
-    if (!expectedOrigin) return false;
-
-    return event.source === iframe.contentWindow && event.origin === expectedOrigin;
+    return event.source === iframe.contentWindow && isAllowedSwapOrigin(event.origin);
 }
 
 // Hook to listen for messages from the swap iframe owned by `iframeRef`
