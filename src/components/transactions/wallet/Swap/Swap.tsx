@@ -13,29 +13,120 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
-import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
-import { getIframeOrigin } from '@app/utils/iframeOrigin';
+import { IframeMessage, MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { useUIStore } from '@app/store';
-import { useIframeUrl } from '@app/hooks/swap/useIframeUrl';
+import { getAllowedSwapOrigin, useIframeUrl } from '@app/hooks/swap/useIframeUrl';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
+
+const EMPTY_CONFIRMATION: SwapConfirmationTransactionProps = {
+    transaction: undefined,
+    fromTokenDisplay: undefined,
+    toTokenDisplay: undefined,
+    toTokenSymbol: undefined,
+};
+
+const EMPTY_PROCESSING: ProccessingTransactionProps = {
+    status: undefined,
+    fromTokenSymbol: undefined,
+    fromTokenAmount: undefined,
+    toTokenSymbol: undefined,
+    toTokenAmount: undefined,
+    fees: { approval: null, swap: null },
+    txBlockHash: undefined,
+    transactionId: undefined,
+};
+
+interface SwapViewState {
+    processingOpen: boolean;
+    processingTransaction: ProccessingTransactionProps;
+    approving: boolean;
+    confirming: boolean;
+    confirmingTransaction: SwapConfirmationTransactionProps;
+    error: string | null;
+    walletConnectOpen: boolean;
+    swapHeight: number;
+    isFullscreen: boolean;
+}
+
+const INITIAL_VIEW_STATE: SwapViewState = {
+    processingOpen: false,
+    processingTransaction: EMPTY_PROCESSING,
+    approving: false,
+    confirming: false,
+    confirmingTransaction: EMPTY_CONFIRMATION,
+    error: null,
+    walletConnectOpen: false,
+    swapHeight: 0,
+    isFullscreen: false,
+};
+
+function resetModalState(prev: SwapViewState): SwapViewState {
+    return {
+        ...prev,
+        approving: false,
+        confirming: false,
+        processingOpen: false,
+        confirmingTransaction: EMPTY_CONFIRMATION,
+        processingTransaction: EMPTY_PROCESSING,
+    };
+}
+
+function applyProcessingMessage(prev: SwapViewState, payload: ProccessingTransactionProps): SwapViewState {
+    const shouldOpen = prev.processingTransaction.status !== 'error';
+    return {
+        ...prev,
+        approving: false,
+        processingTransaction: payload,
+        processingOpen: shouldOpen ? true : prev.processingOpen,
+    };
+}
+
+type MsgOf<T extends MessageType> = Extract<IframeMessage, { type: T }>;
+type MessageUpdater = (prev: SwapViewState, data: never) => SwapViewState;
+
+const MESSAGE_UPDATERS: Partial<Record<MessageType, MessageUpdater>> = {
+    [MessageType.CONFIRM_REQUEST]: (prev, msg: MsgOf<MessageType.CONFIRM_REQUEST>) => ({
+        ...prev,
+        confirming: true,
+        confirmingTransaction: msg.payload,
+    }),
+    [MessageType.APPROVE_REQUEST]: (prev) => ({ ...prev, approving: true }),
+    [MessageType.SET_FULLSCREEN]: (prev, msg: MsgOf<MessageType.SET_FULLSCREEN>) => ({
+        ...prev,
+        isFullscreen: msg.payload.open,
+    }),
+    [MessageType.APPROVE_SUCCESS]: (prev) => ({ ...prev, approving: false }),
+    [MessageType.PROCESSING_STATUS]: (prev, msg: MsgOf<MessageType.PROCESSING_STATUS>) =>
+        applyProcessingMessage(prev, msg.payload),
+    [MessageType.WALLET_CONNECT]: (prev, msg: MsgOf<MessageType.WALLET_CONNECT>) => ({
+        ...prev,
+        walletConnectOpen: msg.payload.open,
+    }),
+    [MessageType.SWAP_HEIGHT_CHANGE]: (prev, msg: MsgOf<MessageType.SWAP_HEIGHT_CHANGE>) => ({
+        ...prev,
+        swapHeight: msg.payload.height,
+    }),
+    [MessageType.ERROR]: (prev, msg: MsgOf<MessageType.ERROR>) => ({
+        ...resetModalState(prev),
+        error: msg.payload.message,
+    }),
+};
+
+function reduceSwapMessage(prev: SwapViewState, message: IframeMessage): SwapViewState {
+    const updater = MESSAGE_UPDATERS[message.type];
+    return updater ? updater(prev, message as never) : prev;
+}
 
 export const Swap = () => {
     const theme = useUIStore((s) => s.theme);
-    const [processingOpen, setProcessingOpen] = useState(false);
-    const [processingTransaction, setProcessingTransaction] = useState<ProccessingTransactionProps | null>(null);
-    const [approving, setApproving] = useState(false);
-    const [confirming, setConfirming] = useState(false);
-    const [confirmingTransaction, setConfirmingTransaction] = useState<SwapConfirmationTransactionProps | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [walletConnectOpen, setWalletConnectOpen] = useState(false);
-    const [swapHeight, setSwapHeight] = useState(0);
+    const [state, setState] = useState<SwapViewState>(INITIAL_VIEW_STATE);
     const iframeUrl = useIframeUrl();
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
-    const iframeOrigin = useMemo(() => getIframeOrigin(iframeUrl), [iframeUrl]);
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    const iframeOrigin = useMemo(() => getAllowedSwapOrigin(iframeUrl), [iframeUrl]);
+    const { t } = useTranslation(['wallet'], { useSuspense: false });
 
-    // Post only to the origin we loaded, never '*': a navigated-away iframe must not receive
-    // app messages.
+    // Post only to the allowlisted origin we loaded, never '*': a navigated-away iframe
+    // must not receive app messages.
     const postToIframe = useCallback(
         (message: { type: string; payload?: unknown }) => {
             if (!iframeOrigin || !iframeRef.current) return;
@@ -44,87 +135,36 @@ export const Swap = () => {
         [iframeOrigin]
     );
 
-    const { t } = useTranslation(['wallet'], { useSuspense: false });
-
     const handleSetTheme = useCallback(() => {
         if (!iframeUrl) return;
         setTimeout(() => {
             postToIframe({ type: 'SET_THEME', payload: { theme } });
         }, 1000);
     }, [iframeUrl, postToIframe, theme]);
+
     useEffect(() => {
-        // Keep the iframe theme in sync with the app theme
         handleSetTheme();
         const timeout = setTimeout(handleSetTheme, 1000);
-        return () => {
-            clearTimeout(timeout);
-        };
+        return () => clearTimeout(timeout);
     }, [handleSetTheme]);
 
-    const handleClearState = () => {
-        setApproving(false);
-        setConfirming(false);
-        setProcessingOpen(false);
-        setConfirmingTransaction(null);
-        setProcessingTransaction(null);
-    };
-
     useIframeMessage(iframeRef, (event) => {
-        switch (event.data.type) {
-            case MessageType.CONFIRM_REQUEST:
-                setConfirming(true);
-                setConfirmingTransaction({
-                    fromTokenDisplay: event.data.payload.fromTokenDisplay,
-                    toTokenDisplay: event.data.payload.toTokenDisplay,
-                    toTokenSymbol: event.data.payload.toTokenSymbol,
-                    transaction: event.data.payload.transaction,
-                });
-                break;
-            case MessageType.APPROVE_REQUEST:
-                setApproving(true);
-                break;
-            case MessageType.SET_FULLSCREEN:
-                setIsFullscreen(event.data.payload.open);
-                break;
-            case MessageType.APPROVE_SUCCESS:
-                setApproving(false);
-                break;
-            case MessageType.PROCESSING_STATUS: {
-                setApproving(false);
-                setProcessingTransaction(event.data.payload);
-                if (processingTransaction?.status !== 'error') {
-                    setProcessingOpen(true);
-                }
-                break;
-            }
-            case MessageType.WALLET_CONNECT:
-                setWalletConnectOpen(event.data.payload.open);
-                break;
-            case MessageType.SWAP_HEIGHT_CHANGE:
-                setSwapHeight(event.data.payload.height);
-                break;
-            case MessageType.ERROR:
-                handleClearState();
-                setError(event.data.payload.message);
-                break;
-        }
+        setState((prev) => reduceSwapMessage(prev, event.data));
     });
 
-    const handleConfirmTransaction = async () => {
-        if (iframeRef.current) {
-            handleClearState();
-            setApproving(true);
-            postToIframe({ type: 'EXECUTE_SWAP' });
-        }
+    const handleConfirmTransaction = () => {
+        if (!iframeRef.current) return;
+        setState((prev) => ({ ...resetModalState(prev), approving: true }));
+        postToIframe({ type: 'EXECUTE_SWAP' });
     };
 
-    const handleAddXtmToWallet = () => {
-        postToIframe({ type: 'ADD_XTM_TO_WALLET' });
-    };
+    const handleAddXtmToWallet = () => postToIframe({ type: 'ADD_XTM_TO_WALLET' });
+    const tx = state.processingTransaction;
+    const fees = tx.fees ?? { approval: null, swap: null };
 
     return (
         <SwapsContainer>
-            <TabHeader $noBorder $hidden={isFullscreen}>
+            <TabHeader $noBorder $hidden={state.isFullscreen}>
                 <SectionHeaderWrapper>
                     <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
                     <BackButton onClick={() => setIsSwapping(false)}>{t('swap.back-button')}</BackButton>
@@ -133,8 +173,8 @@ export const Swap = () => {
             <IframeContainer>
                 {iframeUrl ? (
                     <SwapsIframe
-                        $swapHeight={swapHeight}
-                        $walletConnectOpen={walletConnectOpen}
+                        $swapHeight={state.swapHeight}
+                        $walletConnectOpen={state.walletConnectOpen}
                         ref={iframeRef}
                         src={iframeUrl}
                         title="Swap Iframe"
@@ -144,34 +184,33 @@ export const Swap = () => {
                     <LoadingDots />
                 )}
             </IframeContainer>
-            {/* Floating Elements */}
             <SwapConfirmation
-                isOpen={confirming}
-                setIsOpen={setConfirming}
+                isOpen={state.confirming}
+                setIsOpen={(open) => setState((prev) => ({ ...prev, confirming: Boolean(open) }))}
                 onConfirm={handleConfirmTransaction}
-                transaction={confirmingTransaction?.transaction}
-                fromTokenDisplay={confirmingTransaction?.fromTokenDisplay}
-                toTokenDisplay={confirmingTransaction?.toTokenDisplay}
-                toTokenSymbol={confirmingTransaction?.toTokenSymbol}
+                transaction={state.confirmingTransaction.transaction}
+                fromTokenDisplay={state.confirmingTransaction.fromTokenDisplay}
+                toTokenDisplay={state.confirmingTransaction.toTokenDisplay}
+                toTokenSymbol={state.confirmingTransaction.toTokenSymbol}
             />
             <ProcessingTransaction
-                status={processingTransaction?.status}
-                isOpen={processingOpen}
-                setIsOpen={setProcessingOpen}
+                status={tx.status}
+                isOpen={state.processingOpen}
+                setIsOpen={(open) => setState((prev) => ({ ...prev, processingOpen: Boolean(open) }))}
                 handleAddXtmToWallet={handleAddXtmToWallet}
-                fromTokenSymbol={processingTransaction?.fromTokenSymbol}
-                fromTokenAmount={processingTransaction?.fromTokenAmount}
-                toTokenSymbol={processingTransaction?.toTokenSymbol}
-                toTokenAmount={processingTransaction?.toTokenAmount}
-                fees={{
-                    approval: processingTransaction?.fees?.approval ?? null,
-                    swap: processingTransaction?.fees?.swap ?? null,
-                }}
-                txBlockHash={processingTransaction?.txBlockHash ?? undefined}
-                transactionId={processingTransaction?.transactionId ?? undefined}
-                errorMessage={error}
+                fromTokenSymbol={tx.fromTokenSymbol}
+                fromTokenAmount={tx.fromTokenAmount}
+                toTokenSymbol={tx.toTokenSymbol}
+                toTokenAmount={tx.toTokenAmount}
+                fees={{ approval: fees.approval ?? null, swap: fees.swap ?? null }}
+                txBlockHash={tx.txBlockHash ?? undefined}
+                transactionId={tx.transactionId ?? undefined}
+                errorMessage={state.error}
             />
-            <SignApprovalMessage isOpen={approving} setIsOpen={setApproving} />
+            <SignApprovalMessage
+                isOpen={state.approving}
+                setIsOpen={(open) => setState((prev) => ({ ...prev, approving: Boolean(open) }))}
+            />
         </SwapsContainer>
     );
 };
