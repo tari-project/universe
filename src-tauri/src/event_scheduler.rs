@@ -440,6 +440,7 @@ impl SchedulerEventTiming {
     /// let timing = SchedulerEventTiming::parse_in_variant(2, TimeUnit::Hours)?;
     /// ```
     pub fn parse_in_variant(value: i64, unit: TimeUnit) -> Result<Self, SchedulerError> {
+        Self::parse_duration_unit(value, unit.clone())?;
         let payload = InVariantPayload {
             time_value: value,
             time_unit: unit,
@@ -782,7 +783,7 @@ impl EventScheduler {
                         id: info.id,
                         event_type: info.event_type,
                         timing: info.timing,
-                        state: SchedulerEventState::Active,
+                        state: info.state,
                         task_handle: None,
                     },
                 )
@@ -823,10 +824,14 @@ impl EventScheduler {
         task_tracker.spawn(async move {
             let mut internal_events: HashMap<String, ScheduledEvent> = HashMap::new();
             for (id, event) in persistent_events_from_config {
+                let was_paused = event.state == SchedulerEventState::Paused;
                 Self::handle_add_event(&mut internal_events, event.event_type.clone(), id.clone(), event.timing.clone()).await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET_APP_LOGIC, "Failed to reschedule persistent event {:?}: {}", id, e);
                     e.to_string()
                 });
+                if was_paused {
+                    let _ = Self::handle_pause_event(&mut internal_events, id);
+                }
             }
 
             let message_receiver = &mut *INSTANCE.message_receiver.write().await;
@@ -860,11 +865,19 @@ impl EventScheduler {
                             },
                             Some(SchedulerMessage::PauseEvent { event_id, response }) => {
                                 let result = Self::handle_pause_event(&mut internal_events, event_id);
+                                let should_persist = result.is_ok();
                                 let _unused = response.send(result);
+                                if should_persist {
+                                    Self::save_persistent_events_to_config(&internal_events).await;
+                                }
                             },
                             Some(SchedulerMessage::ResumeEvent { event_id, response }) => {
                                 let result = Self::handle_resume_event(&mut internal_events, event_id).await;
+                                let should_persist = result.is_ok();
                                 let _unused = response.send(result);
+                                if should_persist {
+                                    Self::save_persistent_events_to_config(&internal_events).await;
+                                }
                             },
                             Some(SchedulerMessage::TriggerEnterCallback { event_id }) => {
                                 Self::handle_enter_callback(&internal_events, event_id).await;

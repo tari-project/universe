@@ -130,7 +130,7 @@ pub async fn stop_mining(cpu: Option<bool>, gpu: Option<bool>) -> Result<String,
     serde_json::to_string(&results).map_err(|e| e.to_string())
 }
 
-fn resolve_canonical_mining_mode(
+pub(crate) fn resolve_canonical_mining_mode(
     requested: &str,
     modes: &std::collections::HashMap<String, crate::configs::config_mining::MiningMode>,
 ) -> Result<String, String> {
