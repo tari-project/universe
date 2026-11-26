@@ -21,7 +21,11 @@ export function isLocalNet(): boolean {
     return storedNetwork === Network.LocalNet;
 }
 
-/** Networks that support L2 and burning to it. Mirrors network_supports_l2 on the backend. */
+/**
+ * Networks that support L2 and burning to it. Mirrors network_supports_l2 on the backend. On MainNet L2 also
+ * needs the ootle-wallet-available or ootle-mainnet-live flag (see useHasL2Access), which the backend enforces
+ * itself in check_l2_allowed.
+ */
 export function networkSupportsL2(network: string | undefined): boolean {
     return network === Network.Esmeralda || network === Network.MainNet || network === Network.LocalNet;
 }

@@ -239,7 +239,8 @@ impl OotleWalletManager {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
             PinManager::pin_locked().await,
-        )?;
+        )
+        .await?;
         let pin = PinManager::get_validated_pin(app_handle, Some(PinPromptContext::L2Unlock))
             .await
             .map_err(wallet_error)?;
@@ -249,7 +250,7 @@ impl OotleWalletManager {
     /// Has the user create a PIN and opens L2 with it, so turning L2 on from a wallet with
     /// no PIN asks for the PIN once. Refused on unsupported networks.
     pub async fn create_pin_and_enable(app_handle: &AppHandle) -> Result<(), TransactionError> {
-        check_l2_allowed(Network::get_current_or_user_setting_or_default(), true)?;
+        check_l2_allowed(Network::get_current_or_user_setting_or_default(), true).await?;
         let pin = InternalWallet::create_pin(app_handle)
             .await
             .map_err(wallet_error)?;
@@ -301,7 +302,8 @@ impl OotleWalletManager {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
             PinManager::pin_locked().await,
-        )?;
+        )
+        .await?;
         let mut sdk = started_sdk().await?;
         PinManager::get_validated_pin_if_defined(app_handle, Some(PinPromptContext::L2SeedExport))
             .await
@@ -325,7 +327,8 @@ impl OotleWalletManager {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
             PinManager::pin_locked().await,
-        )?;
+        )
+        .await?;
         let words = parse_seed_words(&seed_words)?;
         let pin = PinManager::get_validated_pin(app_handle, Some(PinPromptContext::L2SeedImport))
             .await
@@ -354,7 +357,8 @@ impl OotleWalletManager {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
             PinManager::pin_locked().await,
-        )?;
+        )
+        .await?;
         let wallet_id = InternalWallet::tari_wallet_details()
             .await
             .ok_or_else(|| TransactionError::WalletError("No L1 wallet found".to_string()))?
@@ -390,7 +394,8 @@ impl OotleWalletManager {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
             PinManager::pin_locked().await,
-        )?;
+        )
+        .await?;
         if let Some(sdk) = INSTANCE.sdk.lock().await.clone() {
             return state::build_state(&sdk).map_err(wallet_error);
         }
@@ -477,7 +482,8 @@ impl OotleWalletManager {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
             PinManager::pin_locked().await,
-        )?;
+        )
+        .await?;
         let mut burns = listed_burns().await?;
         claim::mark_foreign(&started_sdk().await?, &mut burns).map_err(wallet_error)?;
         Ok(burns)
