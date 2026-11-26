@@ -111,15 +111,21 @@ async fn fetch(
     client: &reqwest::Client,
     indexer: &Url,
 ) -> Result<(EpochStats, Economics), anyhow::Error> {
+    let mut base = indexer.clone();
+    if !base.path().ends_with('/') {
+        let mut path = base.path().to_string();
+        path.push('/');
+        base.set_path(&path);
+    }
     let epoch = client
-        .get(indexer.join("epoch-manager/stats")?)
+        .get(base.join("epoch-manager/stats")?)
         .send()
         .await?
         .error_for_status()?
         .json()
         .await?;
     let economics = client
-        .get(indexer.join("network/economics")?)
+        .get(base.join("network/economics")?)
         .send()
         .await?
         .error_for_status()?
