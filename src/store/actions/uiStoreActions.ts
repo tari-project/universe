@@ -92,9 +92,9 @@ export const setIsReconnecting = (isReconnecting: boolean) => useUIStore.setStat
 
 export const toggleHideWalletBalance = () =>
     useUIStore.setState((current) => ({ hideWalletBalance: !current.hideWalletBalance }));
-// The tower shifts right by every open card, plus the gap between the two cards.
-const towerOffset = (sidebarOpen: boolean, l2Open: boolean) => {
-    const cards = Number(sidebarOpen) + Number(l2Open);
+// The tower shifts right by every open card, plus the gap between the cards.
+const towerOffset = (sidebarOpen: boolean, l2Open: boolean, miningPageOpen: boolean) => {
+    const cards = Number(sidebarOpen) + Number(l2Open) + Number(miningPageOpen);
     return sidebarTowerOffset + cards * SB_WIDTH + (cards > 1 ? SB_SPACING : 0);
 };
 // Only one card is open at a time unless the user allowed them side by side in settings.
@@ -102,12 +102,35 @@ const sideBySide = () => useConfigUIStore.getState().l2_side_by_side;
 export const setSidebarOpen = (sidebarOpen: boolean) =>
     useUIStore.setState((s) => {
         const l2Open = sidebarOpen && !sideBySide() ? false : s.l2Open;
-        return { sidebarOpen, l2Open, towerSidebarOffset: towerOffset(sidebarOpen, l2Open) };
+        const miningPageOpen = sidebarOpen && !sideBySide() ? false : s.miningPageOpen;
+        return {
+            sidebarOpen,
+            l2Open,
+            miningPageOpen,
+            towerSidebarOffset: towerOffset(sidebarOpen, l2Open, miningPageOpen),
+        };
     });
 export const setL2Open = (l2Open: boolean) =>
     useUIStore.setState((s) => {
         const sidebarOpen = l2Open && !sideBySide() ? false : s.sidebarOpen;
-        return { sidebarOpen, l2Open, towerSidebarOffset: towerOffset(sidebarOpen, l2Open) };
+        const miningPageOpen = l2Open && !sideBySide() ? false : s.miningPageOpen;
+        return {
+            sidebarOpen,
+            l2Open,
+            miningPageOpen,
+            towerSidebarOffset: towerOffset(sidebarOpen, l2Open, miningPageOpen),
+        };
+    });
+export const setMiningPageOpen = (miningPageOpen: boolean) =>
+    useUIStore.setState((s) => {
+        const sidebarOpen = miningPageOpen && !sideBySide() ? false : s.sidebarOpen;
+        const l2Open = miningPageOpen && !sideBySide() ? false : s.l2Open;
+        return {
+            sidebarOpen,
+            l2Open,
+            miningPageOpen,
+            towerSidebarOffset: towerOffset(sidebarOpen, l2Open, miningPageOpen),
+        };
     });
 
 export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) => ({ ...c, seedlessUI }));

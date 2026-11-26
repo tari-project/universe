@@ -6,6 +6,10 @@
   "history-hide-button": "Hide History",
   "history-show-button": "History",
   "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
+  "mining-page": {
+    "pool-settings": "Pool settings",
+    "title": "Mining"
+  },
   "mining-schedules": "Mining Schedules",
   "mining-schedules-description": "Schedule your mining activity",
   "next-milestone": "Next Milestone",

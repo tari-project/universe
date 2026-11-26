@@ -3,6 +3,7 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import SidebarMini from './Sidebars/SidebarMini.tsx';
 import Sidebar from './Sidebars/Sidebar.tsx';
 import SidebarL2 from './Sidebars/SidebarL2.tsx';
+import SidebarMining from './Sidebars/SidebarMining.tsx';
 import { useHasL2Access } from '@app/hooks/wallet/useHasL2Access.ts';
 import { SidebarNavigationWrapper } from './SidebarNavigation.styles.ts';
 
@@ -10,16 +11,19 @@ export default function SidebarNavigation() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const l2Open = useUIStore((s) => s.l2Open);
+    const miningPageOpen = useUIStore((s) => s.miningPageOpen);
     const l2Supported = useHasL2Access();
 
     const showSidebar = sidebarOpen && !showTapplet;
     const showL2 = l2Open && l2Supported && !showTapplet;
+    const showMiningPage = miningPageOpen && !showTapplet;
 
     return (
         <SidebarNavigationWrapper>
             <SidebarMini />
             <AnimatePresence>{showSidebar && <Sidebar />}</AnimatePresence>
             <AnimatePresence>{showL2 && <SidebarL2 />}</AnimatePresence>
+            <AnimatePresence>{showMiningPage && <SidebarMining />}</AnimatePresence>
         </SidebarNavigationWrapper>
     );
 }
