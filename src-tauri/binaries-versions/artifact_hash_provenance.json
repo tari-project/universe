@@ -174,5 +174,10 @@
                 "checksum_status": 404
             }
         ]
+    },
+    "bridge-v0.5.0.zip": {
+        "url": "https://github.com/tari-project/wxtm-bridge-frontend/releases/download/v0.5.0/bridge-v0.5.0.zip",
+        "archive_sha256": "bebced25a52963cd93c130eb0e426a908494d41d50d922d8a0d7c5f95b0883c3",
+        "checksum_source": "https://github.com/tari-project/wxtm-bridge-frontend/releases/download/v0.5.0/bridge-v0.5.0.zip.sha256"
     }
 }
