@@ -560,6 +560,7 @@ pub async fn gated_send_with_cancel(
 }
 
 /// Networks with an L2 Universe can use. A burn anywhere else would just destroy funds.
+/// MainNet additionally needs one of the L2 access flags, see [`check_l2_allowed`].
 pub fn network_supports_l2(network: Network) -> bool {
     matches!(
         network,
@@ -567,14 +568,119 @@ pub fn network_supports_l2(network: Network) -> bool {
     )
 }
 
+/// Either flag opens L2 on MainNet, the same pair `useHasL2Access` checks: the wallet
+/// flag for the pre-launch panel (pre-burns), the live flag once Ootle has launched.
+pub const L2_ACCESS_FLAGS: [&str; 2] = ["ootle-wallet-available", "ootle-mainnet-live"];
+
+/// How long a fetched answer about the MainNet L2 flags is reused, on or off.
+const L2_FLAG_CACHE_TTL: Duration = Duration::from_secs(60);
+/// How long the flag request may take before L2 is refused.
+const L2_FLAG_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// The last answer from the feature service. Only answers are kept, never errors.
+#[derive(Default)]
+struct L2FlagCache {
+    entry: Option<(std::time::Instant, bool)>,
+}
+
+impl L2FlagCache {
+    /// The cached answer while it is fresh, else whatever `fetch` returns. An error is
+    /// returned as is and leaves the cache empty, so the next check asks again.
+    async fn get_or_fetch<F, Fut>(
+        &mut self,
+        now: std::time::Instant,
+        fetch: F,
+    ) -> Result<bool, String>
+    where
+        F: FnOnce() -> Fut,
+        Fut: std::future::Future<Output = Result<bool, String>>,
+    {
+        if let Some((at, on)) = self.entry
+            && now.saturating_duration_since(at) < L2_FLAG_CACHE_TTL
+        {
+            return Ok(on);
+        }
+        self.entry = None;
+        let on = fetch().await?;
+        self.entry = Some((now, on));
+        Ok(on)
+    }
+}
+
+/// Held across the fetch so concurrent checks share one request.
+static L2_FLAG_CACHE: LazyLock<tokio::sync::Mutex<L2FlagCache>> =
+    LazyLock::new(|| tokio::sync::Mutex::new(L2FlagCache::default()));
+
+/// Whether the enabled features include one of [`L2_ACCESS_FLAGS`]. Exact names only,
+/// as the frontend compares them.
+fn l2_access_flag_on(features: &[String]) -> bool {
+    features
+        .iter()
+        .any(|f| L2_ACCESS_FLAGS.contains(&f.as_str()))
+}
+
+/// Whether the feature service has one of [`L2_ACCESS_FLAGS`] on, read by the backend
+/// itself and never taken from the frontend. Cached for [`L2_FLAG_CACHE_TTL`].
+async fn mainnet_l2_flag_on() -> Result<bool, String> {
+    L2_FLAG_CACHE
+        .lock()
+        .await
+        .get_or_fetch(std::time::Instant::now(), || async {
+            crate::airdrop::fetch_enabled_features(L2_FLAG_FETCH_TIMEOUT)
+                .await
+                .map(|features| l2_access_flag_on(&features))
+                .map_err(|e| format!("{e:#}"))
+        })
+        .await
+}
+
 /// Checks run before anything on L2 (and any burn to it) shows a dialog or takes the
 /// gate permit. L2 needs a PIN: without one the only gate would be a confirmation
-/// dialog, and a script in the webview can answer that.
-pub fn check_l2_allowed(network: Network, pin_configured: bool) -> Result<(), TransactionError> {
+/// dialog, and a script in the webview can answer that. For the same reason MainNet's
+/// L2 access flags are fetched here by the backend, not trusted from the frontend: on
+/// MainNet one of [`L2_ACCESS_FLAGS`] must be on, and a failed lookup refuses L2.
+pub async fn check_l2_allowed(
+    network: Network,
+    pin_configured: bool,
+) -> Result<(), TransactionError> {
+    check_l2_allowed_with(network, pin_configured, mainnet_l2_flag_on).await
+}
+
+/// [`check_l2_allowed`] with the MainNet flag lookup passed in. `mainnet_flag` is only
+/// called on MainNet.
+async fn check_l2_allowed_with<F, Fut>(
+    network: Network,
+    pin_configured: bool,
+    mainnet_flag: F,
+) -> Result<(), TransactionError>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = Result<bool, String>>,
+{
     if !network_supports_l2(network) {
         return Err(TransactionError::Disabled(format!(
             "Layer 2 is not available on {network}"
         )));
+    }
+    if network == Network::MainNet {
+        match mainnet_flag().await {
+            Ok(true) => {}
+            Ok(false) => {
+                return Err(TransactionError::Disabled(
+                    "Layer 2 is not available on mainnet yet".to_string(),
+                ));
+            }
+            Err(e) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "send gate: could not read the L2 access flags, refusing L2: {e}"
+                );
+                return Err(TransactionError::Disabled(
+                    "Layer 2 is not available on mainnet: could not confirm it is enabled. Try again later."
+                        .to_string(),
+                ));
+            }
+        }
     }
     if !pin_configured {
         return Err(TransactionError::NoPinConfigured(
@@ -597,7 +703,8 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
     check_l2_allowed(
         Network::get_current_or_user_setting_or_default(),
         PinManager::pin_locked().await,
-    )?;
+    )
+    .await?;
     let amount_u64 = parse_amount(&amount)?;
     let kind = SpendKind::Burn { claim_public_key };
     let pass = pass_gates(
@@ -716,7 +823,8 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
     check_l2_allowed(
         Network::get_current_or_user_setting_or_default(),
         PinManager::pin_locked().await,
-    )?;
+    )
+    .await?;
     let amount_u64 = parse_amount(&amount)?;
     if origin == SendOrigin::Tapplet {
         check_tapplet_pay_ref(pay_ref.as_deref())?;
@@ -821,7 +929,8 @@ pub async fn gated_l2_claim(
     check_l2_allowed(
         Network::get_current_or_user_setting_or_default(),
         PinManager::pin_locked().await,
-    )?;
+    )
+    .await?;
     let (file_name, proof) = OotleWalletManager::find_claimable_burn(&commitment)?;
     let amount_u64 = proof.claim_proof.value;
     let amount = micro_to_decimal(amount_u64);
@@ -1310,29 +1419,106 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_l2_requires_pin_on_supported_networks() {
-        assert!(check_l2_allowed(Network::Esmeralda, true).is_ok());
-        assert!(check_l2_allowed(Network::MainNet, true).is_ok());
-        assert!(check_l2_allowed(Network::LocalNet, true).is_ok());
+    async fn flag_on() -> Result<bool, String> {
+        Ok(true)
+    }
+    async fn flag_off() -> Result<bool, String> {
+        Ok(false)
+    }
+    async fn flag_error() -> Result<bool, String> {
+        Err("features request timed out".to_string())
+    }
+    async fn flag_not_asked() -> Result<bool, String> {
+        panic!("the L2 access flags must only be read on MainNet")
+    }
+
+    #[tokio::test]
+    async fn test_l2_requires_pin_on_supported_networks() {
+        for network in [Network::Esmeralda, Network::LocalNet] {
+            assert!(
+                check_l2_allowed_with(network, true, flag_not_asked)
+                    .await
+                    .is_ok()
+            );
+            assert!(matches!(
+                check_l2_allowed_with(network, false, flag_not_asked).await,
+                Err(TransactionError::NoPinConfigured(_))
+            ));
+        }
+        assert!(
+            check_l2_allowed_with(Network::MainNet, true, flag_on)
+                .await
+                .is_ok()
+        );
         assert!(matches!(
-            check_l2_allowed(Network::LocalNet, false),
-            Err(TransactionError::NoPinConfigured(_))
-        ));
-        assert!(matches!(
-            check_l2_allowed(Network::MainNet, false),
-            Err(TransactionError::NoPinConfigured(_))
-        ));
-        assert!(matches!(
-            check_l2_allowed(Network::Esmeralda, false),
+            check_l2_allowed_with(Network::MainNet, false, flag_on).await,
             Err(TransactionError::NoPinConfigured(_))
         ));
         for network in [Network::Igor, Network::StageNet, Network::NextNet] {
             assert!(matches!(
-                check_l2_allowed(network, true),
+                check_l2_allowed_with(network, true, flag_not_asked).await,
                 Err(TransactionError::Disabled(_))
             ));
         }
+    }
+
+    #[tokio::test]
+    async fn test_mainnet_l2_refused_without_an_access_flag() {
+        for pin in [true, false] {
+            let error = check_l2_allowed_with(Network::MainNet, pin, flag_off)
+                .await
+                .expect_err("refused without a flag");
+            assert_eq!(error.code(), "disabled", "{error}");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_mainnet_l2_refused_when_the_flags_cannot_be_read() {
+        for pin in [true, false] {
+            let error = check_l2_allowed_with(Network::MainNet, pin, flag_error)
+                .await
+                .expect_err("fails closed");
+            assert_eq!(error.code(), "disabled", "{error}");
+        }
+    }
+
+    #[test]
+    fn test_either_access_flag_opens_mainnet_l2() {
+        let opens = |features: &[&str]| {
+            l2_access_flag_on(&features.iter().map(|f| f.to_string()).collect::<Vec<_>>())
+        };
+        assert!(opens(&["ootle-wallet-available"]));
+        assert!(opens(&["ootle-mainnet-live"]));
+        assert!(opens(&["polling", "ootle-mainnet-live"]));
+        assert!(!opens(&[]));
+        assert!(!opens(&["polling", "ootle-mainnet", "OOTLE-MAINNET-LIVE"]));
+    }
+
+    #[tokio::test]
+    async fn test_l2_flag_cache_keeps_answers_but_not_errors() {
+        let start = std::time::Instant::now();
+        let mut cache = L2FlagCache::default();
+
+        assert_eq!(
+            cache.get_or_fetch(start, flag_error).await,
+            Err("features request timed out".to_string())
+        );
+        assert!(cache.entry.is_none(), "an error is never cached");
+
+        assert_eq!(cache.get_or_fetch(start, flag_off).await, Ok(false));
+        let later = start + L2_FLAG_CACHE_TTL - Duration::from_secs(1);
+        assert_eq!(cache.get_or_fetch(later, flag_not_asked).await, Ok(false));
+
+        let expired = start + L2_FLAG_CACHE_TTL;
+        assert_eq!(cache.get_or_fetch(expired, flag_on).await, Ok(true));
+        assert_eq!(cache.get_or_fetch(expired, flag_not_asked).await, Ok(true));
+
+        let expired_again = expired + L2_FLAG_CACHE_TTL;
+        assert_eq!(
+            cache.get_or_fetch(expired_again, flag_error).await,
+            Err("features request timed out".to_string())
+        );
+        assert!(cache.entry.is_none(), "an error drops the stale answer");
     }
 
     #[test]

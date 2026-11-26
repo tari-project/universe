@@ -209,3 +209,27 @@ pub async fn report_burn(mut body: serde_json::Value) {
         }
     });
 }
+
+/// Enabled feature flags from the public `GET {airdrop_api_url}/features`, the same
+/// request and response (`{ "features": [..] }`) the frontend's `fetchFeatures` reads.
+/// Any transport error, timeout, non-2xx status or body without a `features` list is an
+/// error, never an empty list.
+pub async fn fetch_enabled_features(timeout: std::time::Duration) -> anyhow::Result<Vec<String>> {
+    #[derive(Deserialize)]
+    struct FeaturesResponse {
+        features: Vec<String>,
+    }
+
+    let url = format!("{}/features", AppInMemoryConfig::default().airdrop_api_url);
+    let response = reqwest::Client::new()
+        .get(url)
+        .timeout(timeout)
+        .header(
+            "X-Requested-With",
+            concat!("TariUniverse/", env!("CARGO_PKG_VERSION")),
+        )
+        .send()
+        .await?
+        .error_for_status()?;
+    Ok(response.json::<FeaturesResponse>().await?.features)
+}
