@@ -1,88 +1,140 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@app/test/test-utils';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { Network } from '@app/utils/network.ts';
-import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { L2BurnStats } from './L2BurnStats';
 
 vi.mock('@tauri-apps/api/window', () => ({
     getCurrentWindow: vi.fn(() => ({ onCloseRequested: vi.fn(), listen: vi.fn() })),
 }));
-vi.mock('@app/hooks/airdrop/utils/useHandleRequest.ts', () => ({ handleAirdropRequest: vi.fn() }));
 
-const stats = { network: 'mainnet', totalMicroMinotari: '5000000000123456', burnCount: 125000, uniqueBurners: 42000 };
+const economics = {
+    current_epoch: 39026,
+    total_claimed: '5000000000123456',
+    total_supply: '4999999000123456',
+};
+
+const jsonResponse = (body: unknown, ok = true, status = 200) =>
+    ({
+        ok,
+        status,
+        json: async () => body,
+    }) as Response;
 
 describe('L2BurnStats', () => {
+    let fetchSpy: ReturnType<typeof vi.spyOn>;
+
     beforeEach(() => {
         vi.useFakeTimers();
-        vi.mocked(handleAirdropRequest).mockReset();
-        useMiningStore.setState({ network: Network.MainNet });
+        fetchSpy = vi.spyOn(globalThis, 'fetch');
+        useConfigCoreStore.setState({ ootle_indexer_url: 'https://indexer-a.ootle.tari.com/' });
     });
-    afterEach(() => vi.useRealTimers());
 
-    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+        useConfigCoreStore.setState({ ootle_indexer_url: undefined });
+    });
 
-    it('shows whole XTM burned, burns and unique burners for the current network', async () => {
-        vi.mocked(handleAirdropRequest).mockResolvedValue(stats);
-        render(<L2BurnStats />);
-        await flush();
+    const renderCard = async () => {
+        await act(async () => {
+            render(<L2BurnStats />);
+            await vi.advanceTimersByTimeAsync(0);
+        });
+    };
 
-        expect(handleAirdropRequest).toHaveBeenCalledWith(
-            expect.objectContaining({ path: '/miner/burns/stats?network=mainnet', publicRequest: true })
+    it('fetches total_claimed from the configured Ootle indexer and shows whole XTM burned', async () => {
+        fetchSpy.mockResolvedValue(jsonResponse(economics));
+        await renderCard();
+
+        expect(fetchSpy).toHaveBeenCalledWith(
+            'https://indexer-a.ootle.tari.com/network/economics',
+            expect.objectContaining({ signal: expect.any(AbortSignal) })
         );
         expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('5,000,000,000');
         expect(screen.getByRole('heading')).toHaveTextContent('l2.burn-stats.total');
     });
 
-    it('rotates through XTM burned, burns and unique burners every five seconds, then wraps', async () => {
-        vi.mocked(handleAirdropRequest).mockResolvedValue(stats);
-        render(<L2BurnStats />);
-        await flush();
+    it('resolves subpath indexer URLs without a trailing slash', async () => {
+        useConfigCoreStore.setState({ ootle_indexer_url: 'http://localhost:18300/proxy' });
+        fetchSpy.mockResolvedValue(jsonResponse(economics));
+        await renderCard();
 
-        await act(() => vi.advanceTimersByTimeAsync(5000));
-        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('125,000');
-        expect(screen.getByRole('heading')).toHaveTextContent('l2.burn-stats.burns');
-        await act(() => vi.advanceTimersByTimeAsync(5000));
-        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('42,000');
-        await act(() => vi.advanceTimersByTimeAsync(5000));
-        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('5,000,000,000');
-    });
-
-    it('jumps to a stat from its dot and restarts the wait', async () => {
-        vi.mocked(handleAirdropRequest).mockResolvedValue(stats);
-        render(<L2BurnStats />);
-        await flush();
-
-        await act(() => vi.advanceTimersByTimeAsync(4000));
-        act(() => screen.getByRole('button', { name: 'l2.burn-stats.people' }).click());
-        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('42,000');
-        await act(() => vi.advanceTimersByTimeAsync(4000));
-        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('42,000');
+        expect(fetchSpy).toHaveBeenCalledWith(
+            'http://localhost:18300/proxy/network/economics',
+            expect.objectContaining({ signal: expect.any(AbortSignal) })
+        );
     });
 
     it('refreshes every minute', async () => {
-        vi.mocked(handleAirdropRequest).mockResolvedValue(stats);
-        render(<L2BurnStats />);
-        await flush();
+        fetchSpy.mockResolvedValueOnce(jsonResponse(economics));
+        await renderCard();
 
-        vi.mocked(handleAirdropRequest).mockResolvedValue({ ...stats, totalMicroMinotari: '6000000000000000' });
-        await act(() => vi.advanceTimersByTimeAsync(60_000));
-        act(() => screen.getByRole('button', { name: 'l2.burn-stats.total' }).click());
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ ...economics, total_claimed: '6000000000000000' }));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000);
+        });
         expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('6,000,000,000');
     });
 
+    it('clears stale stats and re-fetches when the indexer URL changes', async () => {
+        fetchSpy.mockResolvedValueOnce(jsonResponse(economics));
+        await renderCard();
+        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('5,000,000,000');
+
+        let resolveSecond!: (res: Response) => void;
+        fetchSpy.mockImplementationOnce(
+            () =>
+                new Promise<Response>((resolve) => {
+                    resolveSecond = resolve;
+                })
+        );
+        act(() => useConfigCoreStore.setState({ ootle_indexer_url: 'https://esme-indexer-a.ootle.tari.com/' }));
+        expect(screen.queryByTestId('l2-burn-stats')).not.toBeInTheDocument();
+
+        await act(async () => {
+            resolveSecond(jsonResponse({ ...economics, total_claimed: '3607558990000' }));
+            await vi.advanceTimersByTimeAsync(0);
+        });
+        expect(fetchSpy).toHaveBeenLastCalledWith(
+            'https://esme-indexer-a.ootle.tari.com/network/economics',
+            expect.objectContaining({ signal: expect.any(AbortSignal) })
+        );
+        expect(screen.getByTestId('l2-burn-value')).toHaveTextContent('3,607,558');
+    });
+
+    it('makes no request and stays hidden when no valid indexer URL is configured', async () => {
+        for (const url of [undefined, null, '', 'ftp://indexer.example/', 'not-a-url']) {
+            useConfigCoreStore.setState({ ootle_indexer_url: url });
+            const { unmount } = render(<L2BurnStats />);
+            await act(() => vi.advanceTimersByTimeAsync(0));
+            expect(fetchSpy).not.toHaveBeenCalled();
+            expect(screen.queryByTestId('l2-burn-stats')).not.toBeInTheDocument();
+            unmount();
+        }
+    });
+
+    it('aborts any in-flight request on unmount', async () => {
+        let capturedSignal: AbortSignal | undefined;
+        fetchSpy.mockImplementation((_url: unknown, init?: RequestInit) => {
+            capturedSignal = init?.signal ?? undefined;
+            return new Promise<Response>(() => undefined);
+        });
+
+        const { unmount } = render(<L2BurnStats />);
+        expect(capturedSignal?.aborted).toBe(false);
+        unmount();
+        expect(capturedSignal?.aborted).toBe(true);
+    });
+
     it.each([
-        ['a failed request', () => vi.mocked(handleAirdropRequest).mockRejectedValue(new Error('down'))],
-        ['another network', () => vi.mocked(handleAirdropRequest).mockResolvedValue({ ...stats, network: 'nextnet' })],
-        [
-            'a malformed total',
-            () => vi.mocked(handleAirdropRequest).mockResolvedValue({ ...stats, totalMicroMinotari: '-1' }),
-        ],
-        ['no response', () => vi.mocked(handleAirdropRequest).mockResolvedValue(undefined)],
+        ['a failed request', () => fetchSpy.mockRejectedValue(new Error('down'))],
+        ['a non-OK response', () => fetchSpy.mockResolvedValue(jsonResponse({}, false, 500))],
+        ['a malformed total', () => fetchSpy.mockResolvedValue(jsonResponse({ ...economics, total_claimed: '-1' }))],
+        ['an empty response', () => fetchSpy.mockResolvedValue(jsonResponse(undefined))],
+        ['a null response', () => fetchSpy.mockResolvedValue(jsonResponse(null))],
     ])('renders nothing for %s', async (_, arrange) => {
         arrange();
-        render(<L2BurnStats />);
-        await flush();
+        await renderCard();
 
         expect(screen.queryByTestId('l2-burn-stats')).not.toBeInTheDocument();
     });

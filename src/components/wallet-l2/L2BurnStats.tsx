@@ -1,30 +1,34 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
-interface BurnStats {
-    network: string;
-    totalMicroMinotari: string;
-    burnCount: number;
-    uniqueBurners: number;
+interface NetworkEconomics {
+    total_claimed: string;
 }
 
 const REFRESH_MS = 60_000;
-const ROTATE_MS = 5_000;
 // A visual scale for the ember glow, not an issuance rule: full heat at 1M XTM.
 const FULL_HEAT_MICRO = 1_000_000n * 1_000_000n;
 
-const isValid = (d: BurnStats | undefined, network?: string): d is BurnStats =>
-    !!d &&
-    d.network === network &&
-    Number.isSafeInteger(d.burnCount) &&
-    d.burnCount >= 0 &&
-    Number.isSafeInteger(d.uniqueBurners) &&
-    d.uniqueBurners >= 0 &&
-    typeof d.totalMicroMinotari === 'string' &&
-    /^\d+$/.test(d.totalMicroMinotari);
+const isValid = (d: unknown): d is NetworkEconomics =>
+    typeof d === 'object' &&
+    d !== null &&
+    'total_claimed' in d &&
+    typeof d.total_claimed === 'string' &&
+    /^\d+$/.test(d.total_claimed);
+
+const economicsUrl = (indexerUrl: string | null | undefined): string | null => {
+    if (!indexerUrl) return null;
+    try {
+        const base = new URL(indexerUrl);
+        if (base.protocol !== 'http:' && base.protocol !== 'https:') return null;
+        if (!base.pathname.endsWith('/')) base.pathname += '/';
+        return new URL('network/economics', base).toString();
+    } catch {
+        return null;
+    }
+};
 
 const heat = (micro: bigint) =>
     Math.log1p(Number(micro > FULL_HEAT_MICRO ? FULL_HEAT_MICRO : micro) / 1e9) / Math.log1p(1000);
@@ -37,7 +41,7 @@ const Card = styled.section<{ $heat: number }>`
     /* The sidebar is a full-height flex column; overflow: hidden would otherwise let the wallet card squeeze this one. */
     flex-shrink: 0;
     width: 100%;
-    padding: 24px 20px 16px;
+    padding: 24px 20px;
     border-radius: 20px;
     background: #0c0718;
     color: #fbf7ef;
@@ -86,83 +90,50 @@ const Label = styled.h2`
     color: #e2d6eb;
 `;
 
-const Dots = styled.div`
-    display: flex;
-    gap: 6px;
-    margin-top: 16px;
-`;
+const fmt = (n: bigint) => n.toLocaleString('en-US');
 
-const Dot = styled.button<{ $active: boolean }>`
-    width: ${({ $active }) => ($active ? '18px' : '6px')};
-    height: 6px;
-    padding: 0;
-    border: none;
-    border-radius: 3px;
-    background: ${({ $active }) => ($active ? '#fbf7ef' : '#d3c4e25c')};
-    cursor: pointer;
-    transition: width 0.3s ease;
-`;
-
-const fmt = (n: bigint | number) => n.toLocaleString('en-US');
-
-/** Network-wide burn totals from the RWA API, refreshed every minute and rotated one at a time. Shows nothing until a valid response lands. */
+/** Network-wide XTM burned and claimed on Ootle, polled from the configured Ootle indexer every minute. Shows nothing until a valid response lands. */
 export function L2BurnStats() {
     const { t } = useTranslation('wallet');
-    const network = useMiningStore((s) => s.network);
-    const [stats, setStats] = useState<BurnStats>();
-    const [index, setIndex] = useState(0);
+    const indexerUrl = useConfigCoreStore((s) => s.ootle_indexer_url);
+    const [result, setResult] = useState<{ url: string; economics: NetworkEconomics }>();
+    const url = economicsUrl(indexerUrl);
 
     useEffect(() => {
-        if (!network) return;
+        if (!url) return;
         let live = true;
-        const load = () =>
-            handleAirdropRequest<BurnStats>({
-                path: `/miner/burns/stats?network=${network}`,
-                method: 'GET',
-                publicRequest: true,
-            })
-                .then((d) => live && isValid(d, network) && setStats(d))
-                .catch((e) => console.warn('Burn stats request failed', e));
+        const controller = new AbortController();
+        const load = async () => {
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data: unknown = await res.json();
+                if (live && isValid(data)) setResult({ url, economics: data });
+            } catch (e) {
+                if (live && !controller.signal.aborted) {
+                    console.warn('Burn stats request failed', e);
+                }
+            }
+        };
         void load();
-        const timer = setInterval(load, REFRESH_MS);
+        const timer = setInterval(() => void load(), REFRESH_MS);
         return () => {
             live = false;
+            controller.abort();
             clearInterval(timer);
         };
-    }, [network]);
+    }, [url]);
 
-    // Keyed on the index, so picking a dot restarts the wait for the next slide.
-    useEffect(() => {
-        const timer = setTimeout(() => setIndex((i) => (i + 1) % 3), ROTATE_MS);
-        return () => clearTimeout(timer);
-    }, [index]);
-
-    if (!isValid(stats, network)) return null;
-    const micro = BigInt(stats.totalMicroMinotari);
-    const slides = [
-        [fmt(micro / 1_000_000n), t('l2.burn-stats.total')],
-        [fmt(stats.burnCount), t('l2.burn-stats.burns')],
-        [fmt(stats.uniqueBurners), t('l2.burn-stats.people')],
-    ];
-    const [value, label] = slides[index];
+    const stats = url && result?.url === url ? result.economics : undefined;
+    if (!stats) return null;
+    const micro = BigInt(stats.total_claimed);
 
     return (
         <Card $heat={heat(micro)} data-testid="l2-burn-stats">
-            <Slide key={index}>
-                <Value data-testid="l2-burn-value">{value}</Value>
-                <Label>{label}</Label>
+            <Slide>
+                <Value data-testid="l2-burn-value">{fmt(micro / 1_000_000n)}</Value>
+                <Label>{t('l2.burn-stats.total')}</Label>
             </Slide>
-            <Dots>
-                {slides.map(([, l], i) => (
-                    <Dot
-                        key={l}
-                        $active={i === index}
-                        aria-label={l}
-                        aria-current={i === index}
-                        onClick={() => setIndex(i)}
-                    />
-                ))}
-            </Dots>
         </Card>
     );
 }

@@ -291,9 +291,7 @@
       "seconds": "Seconds"
     },
     "burn-stats": {
-      "total": "XTM burned",
-      "burns": "Burns",
-      "people": "Unique burners"
+      "total": "XTM burned"
     },
     "filter": {
       "waiting-claims": "Waiting claims"
