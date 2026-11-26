@@ -2441,7 +2441,7 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
 
 /*
  ********** TAPPLETS SECTION **********
-*/
+ */
 
 #[tauri::command]
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
