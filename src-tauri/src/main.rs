@@ -478,6 +478,7 @@ fn main() {
             commands::get_network,
             commands::get_seed_words,
             commands::get_tor_config,
+            commands::get_tor_entry_guards,
             commands::import_seed_words,
             commands::revert_to_internal_wallet,
             commands::log_web_message,

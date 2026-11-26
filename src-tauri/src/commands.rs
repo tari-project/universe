@@ -533,6 +533,25 @@ pub async fn get_tor_config(
     Ok(tor_config)
 }
 
+/// Reads the current entry guards from Tor's control port. The Tor debug panel calls
+/// this when it opens, so it shows the guards Tor is using now rather than the ones
+/// read once at startup (Tor picks new guards after a restart).
+#[tauri::command]
+pub async fn get_tor_entry_guards(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+    let entry_guards = state
+        .tor_manager
+        .get_entry_guards()
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "get_tor_entry_guards took too long: {:?}", timer.elapsed());
+    }
+    Ok(entry_guards)
+}
+
 #[tauri::command]
 pub async fn get_airdrop_tokens(
     _window: tauri::Window,
