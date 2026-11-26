@@ -469,20 +469,27 @@ pub async fn set_external_tari_address(
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
-    SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
-        .await;
-
-    // Validate PIN if pin locked
+    // Validate PIN if pin locked, before any side effect
     let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(InvokeError::from_anyhow)?;
 
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
-    InternalWallet::initialize_seedless(Some(new_external_tari_address))
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+        .await;
+
+    let result = InternalWallet::initialize_seedless(Some(new_external_tari_address)).await;
+
+    tauri::async_runtime::spawn(async move {
+        SetupManager::get_instance()
+            .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+            .await;
+    });
+
+    result.map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_tari_address took too long: {:?}", timer.elapsed());
@@ -3057,6 +3064,11 @@ mod pin_gate_tests {
         }
     }
 
+    fn position_in(body: &str, needle: &str) -> usize {
+        body.find(needle)
+            .unwrap_or_else(|| panic!("{needle} not found"))
+    }
+
     #[test]
     fn test_confirm_exchange_address_pin_checked_before_side_effects() {
         assert_pin_gated_before_side_effects("confirm_exchange_address");
@@ -3070,5 +3082,23 @@ mod pin_gate_tests {
     #[test]
     fn test_revert_to_internal_wallet_pin_checked_before_side_effects() {
         assert_pin_gated_before_side_effects("revert_to_internal_wallet");
+    }
+
+    #[test]
+    fn test_set_external_tari_address_pin_checked_before_side_effects() {
+        assert_pin_gated_before_side_effects("set_external_tari_address");
+    }
+
+    #[test]
+    fn test_set_external_tari_address_parses_before_shutdown_and_resumes() {
+        let body = command("set_external_tari_address");
+        let parse_at = position_in(body, "TariAddress::from_str");
+        let shutdown_at = position_in(body, "shutdown_phases");
+        let init_at = position_in(body, "InternalWallet::initialize_seedless");
+        let resume_at = position_in(body, "resume_phases");
+        assert!(parse_at < shutdown_at);
+        assert!(shutdown_at < init_at);
+        assert!(init_at < resume_at);
+        assert!(!body[shutdown_at..resume_at].contains('?'));
     }
 }
