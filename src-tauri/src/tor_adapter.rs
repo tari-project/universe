@@ -51,6 +51,23 @@ use crate::{
 
 const TOR_CONTROL_TIMEOUT: Duration = Duration::from_secs(5);
 
+/// Regenerable Tor directory-cache files that can become stale or corrupted and
+/// wedge bootstrapping. Deliberately excludes `state` (entry guards), `lock`,
+/// `keys/`, and `pt_state/` so guard persistence survives recovery.
+const TOR_CACHE_FILES: &[&str] = &[
+    "cached-certs",
+    "cached-consensus",
+    "cached-microdesc-consensus",
+    "cached-microdescs",
+    "cached-microdescs.new",
+    "cached-descriptors",
+    "cached-descriptors.new",
+    "cached-extrainfo",
+    "cached-extrainfo.new",
+    "unverified-consensus",
+    "unverified-microdesc-consensus",
+];
+
 pub(crate) struct TorAdapter {
     socks_port: u16,
     config_file: Option<PathBuf>,
@@ -60,17 +77,52 @@ pub(crate) struct TorAdapter {
     status_broadcast: watch::Sender<TorStatus>,
 }
 
-fn prepare_tor_working_dir(data_dir: &Path, is_first_start: bool) -> Result<PathBuf, Error> {
-    let working_dir: PathBuf = data_dir.join("tor-data");
-    if is_first_start {
-        info!(target: LOG_TARGET_APP_LOGIC, "Clearing tor data directory on first start");
-        if std::fs::exists(&working_dir)? {
-            std::fs::remove_dir_all(&working_dir)?;
-            info!(target: LOG_TARGET_APP_LOGIC, "Removed tor data directory");
-        }
+fn remove_file_if_exists(path: &Path) -> std::io::Result<()> {
+    match std::fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(err),
     }
+}
+
+async fn remove_file_if_exists_async(path: &Path) -> std::io::Result<()> {
+    match fs::remove_file(path).await {
+        Ok(()) => Ok(()),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(err),
+    }
+}
+
+fn prepare_tor_working_dir(data_dir: &Path) -> Result<PathBuf, Error> {
+    let working_dir: PathBuf = data_dir.join("tor-data");
     std::fs::create_dir_all(&working_dir)?;
+    // Preserve Tor's persistent state (entry guards, consensus, microdescriptors,
+    // and pluggable-transport state) across launches, removing only any leftover
+    // control auth cookie so callers wait for the new process's fresh cookie.
+    let cookie_path = control_auth_cookie_path(data_dir);
+    remove_file_if_exists(&cookie_path)?;
     Ok(working_dir)
+}
+
+fn classify_tor_health(status: TorStatus) -> HealthStatus {
+    if status.network_liveness {
+        if status.is_bootstrapped {
+            HealthStatus::Healthy
+        } else {
+            warn!(target: LOG_TARGET_STATUSES, "Tor Healthcheck status: {status:?}");
+            HealthStatus::Warning
+        }
+    } else {
+        // Tor is alive and answering its control port, but reports the host
+        // network as down (`network-liveness=down`). Return `Initializing` so
+        // `ProcessWatcher` waits for connectivity without restarting Tor in a
+        // loop while `status_broadcast` still reports the live `TorStatus`.
+        debug!(
+            target: LOG_TARGET_STATUSES,
+            "Tor network liveness is down; waiting for connectivity without restarting: {status:?}"
+        );
+        HealthStatus::Initializing
+    }
 }
 
 impl TorAdapter {
@@ -217,13 +269,13 @@ impl ProcessAdapter for TorAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
-        is_first_start: bool,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
         info!(target: LOG_TARGET_APP_LOGIC, "Starting tor");
         let data_dir = std::path::absolute(data_dir)?;
-        let working_dir = prepare_tor_working_dir(&data_dir, is_first_start)?;
+        let working_dir = prepare_tor_working_dir(&data_dir)?;
         let cookie_path = control_auth_cookie_path(&data_dir);
         *self
             .cookie_path
@@ -341,12 +393,7 @@ impl StatusMonitor for TorStatusMonitor {
         match timeout(timeout_duration, client.get_info()).await {
             Ok(Ok(status)) => {
                 let _res = self.status_broadcast.send(status);
-                if status.is_bootstrapped && status.network_liveness {
-                    HealthStatus::Healthy
-                } else {
-                    warn!(target: LOG_TARGET_STATUSES, "Tor Healthcheck status: {status:?}");
-                    HealthStatus::Warning
-                }
+                classify_tor_health(status)
             }
             Ok(Err(e)) => {
                 warn!(target: LOG_TARGET_STATUSES, "Failed to get Tor Healthcheck status: {e}");
@@ -361,9 +408,31 @@ impl StatusMonitor for TorStatusMonitor {
 
     async fn handle_unhealthy(
         &self,
-        _duration_since_last_healthy_status: Duration,
+        duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
-        fs::remove_dir_all(self.base_path.join("tor-data")).await?;
+        let working_dir = self.base_path.join("tor-data");
+        fs::create_dir_all(&working_dir).await?;
+        remove_file_if_exists_async(&self.cookie_path()).await?;
+
+        let last_status = *self.status_broadcast.borrow();
+        let clear_caches =
+            duration_since_last_healthy_status > Duration::ZERO || !last_status.is_bootstrapped;
+        if clear_caches {
+            info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Clearing regenerable Tor directory cache files for recovery while preserving persistent state"
+            );
+            for file in TOR_CACHE_FILES {
+                remove_file_if_exists_async(&working_dir.join(file)).await?;
+            }
+        } else {
+            info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Cleared Tor control auth cookie for recovery while preserving persistent state and caches"
+            );
+        }
+
+        let _res = self.status_broadcast.send(TorStatus::default());
 
         Ok(HandleUnhealthyResult::Continue)
     }
@@ -442,42 +511,310 @@ mod tests {
     }
 
     #[test]
-    fn prepare_tor_working_dir_clears_stale_files_and_recreates_dir_on_first_start() {
+    fn prepare_tor_working_dir_preserves_persistent_state_and_removes_stale_cookie() {
         let temp = tempfile::tempdir().expect("tempdir");
-        let stale_dir = temp.path().join("tor-data");
-        std::fs::create_dir_all(&stale_dir).expect("create stale dir");
-        let stale_file = stale_dir.join("stale_state");
-        std::fs::write(&stale_file, b"old").expect("write stale file");
+        let tor_dir = temp.path().join("tor-data");
+        let pt_dir = tor_dir.join("pt_state");
+        std::fs::create_dir_all(&pt_dir).expect("create tor-data");
+        let state_file = tor_dir.join("state");
+        let consensus_file = tor_dir.join("cached-microdesc-consensus");
+        let pt_file = pt_dir.join("lyrebird_state");
+        let stale_cookie = tor_dir.join("control_auth_cookie");
+        std::fs::write(&state_file, b"EntryGuard guard1").expect("write state");
+        std::fs::write(&consensus_file, b"consensus").expect("write consensus");
+        std::fs::write(&pt_file, b"pt").expect("write pt_state");
+        std::fs::write(&stale_cookie, [0x11; 32]).expect("write stale cookie");
 
-        let working_dir =
-            prepare_tor_working_dir(temp.path(), true).expect("prepare_tor_working_dir");
+        let working_dir = prepare_tor_working_dir(temp.path()).expect("prepare_tor_working_dir");
+        assert!(working_dir.is_dir(), "tor-data must exist after prepare");
         assert!(
-            working_dir.is_dir(),
-            "tor-data must exist after first-start reset"
+            state_file.exists(),
+            "Tor state (entry guards) must survive across launches"
         );
         assert!(
-            !stale_file.exists(),
-            "stale files inside tor-data must be cleared"
+            consensus_file.exists(),
+            "cached consensus must survive across launches"
+        );
+        assert!(
+            pt_file.exists(),
+            "pluggable transport state must survive across launches"
+        );
+        assert!(
+            !stale_cookie.exists(),
+            "stale control_auth_cookie must be removed before spawning Tor"
         );
     }
 
     #[cfg(unix)]
     #[test]
-    fn first_start_fails_if_stale_tor_directory_cannot_be_removed() {
+    fn prepare_tor_working_dir_fails_if_stale_cookie_cannot_be_removed() {
         use std::os::unix::fs::PermissionsExt;
 
         let temp = tempfile::tempdir().expect("tempdir");
-        let stale_dir = temp.path().join("tor-data");
-        std::fs::create_dir_all(&stale_dir).expect("create stale dir");
-        let stale_file = stale_dir.join("stale_state");
-        std::fs::write(&stale_file, b"old").expect("write stale file");
-        std::fs::set_permissions(temp.path(), std::fs::Permissions::from_mode(0o555))
-            .expect("make parent read-only");
+        let tor_dir = temp.path().join("tor-data");
+        std::fs::create_dir_all(&tor_dir).expect("create tor-data");
+        let stale_cookie = tor_dir.join("control_auth_cookie");
+        std::fs::write(&stale_cookie, [0x22; 32]).expect("write stale cookie");
+        std::fs::set_permissions(&tor_dir, std::fs::Permissions::from_mode(0o555))
+            .expect("make tor-data read-only");
 
-        let result = prepare_tor_working_dir(temp.path(), true);
-        std::fs::set_permissions(temp.path(), std::fs::Permissions::from_mode(0o755))
-            .expect("restore parent permissions");
-        assert!(result.is_err(), "Tor must not start with stale state");
+        let result = prepare_tor_working_dir(temp.path());
+        std::fs::set_permissions(&tor_dir, std::fs::Permissions::from_mode(0o755))
+            .expect("restore tor-data permissions");
+        assert!(
+            result.is_err(),
+            "Tor must not start when a stale control cookie cannot be removed"
+        );
+    }
+
+    #[test]
+    fn classify_tor_health_does_not_mark_offline_as_warning() {
+        assert_eq!(
+            classify_tor_health(TorStatus {
+                bootstrap_phase: 100,
+                is_bootstrapped: true,
+                network_liveness: true,
+                circuit_ok: true,
+            }),
+            HealthStatus::Healthy
+        );
+        assert_eq!(
+            classify_tor_health(TorStatus {
+                bootstrap_phase: 100,
+                is_bootstrapped: true,
+                network_liveness: false,
+                circuit_ok: false,
+            }),
+            HealthStatus::Initializing
+        );
+        assert_eq!(
+            classify_tor_health(TorStatus {
+                bootstrap_phase: 25,
+                is_bootstrapped: false,
+                network_liveness: false,
+                circuit_ok: false,
+            }),
+            HealthStatus::Initializing
+        );
+        assert_eq!(
+            classify_tor_health(TorStatus {
+                bootstrap_phase: 50,
+                is_bootstrapped: false,
+                network_liveness: true,
+                circuit_ok: false,
+            }),
+            HealthStatus::Warning
+        );
+    }
+
+    async fn serve_mock_tor_status_replies(
+        listener: TcpListener,
+        polls: usize,
+        network_liveness: &'static str,
+    ) {
+        let liveness_reply = format!("250-network-liveness={network_liveness}\r\n250 OK\r\n");
+        for _ in 0..polls {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let mut reader = BufReader::new(stream);
+            let mut line = String::new();
+            for reply in [
+                "250 OK\r\n",
+                "250-status/bootstrap-phase=NOTICE BOOTSTRAP PROGRESS=100 TAG=done SUMMARY=\"Done\"\r\n250 OK\r\n",
+                "250-status/circuit-established=0\r\n250 OK\r\n",
+                liveness_reply.as_str(),
+            ] {
+                line.clear();
+                reader.read_line(&mut line).await.expect("read command");
+                reader
+                    .get_mut()
+                    .write_all(reply.as_bytes())
+                    .await
+                    .expect("write reply");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn offline_network_liveness_does_not_trigger_watcher_restart_or_wipe_state() {
+        use crate::process_adapter::ProcessInstanceTrait;
+        use crate::process_watcher::{ProcessWatcherStats, do_health_check};
+        use crate::testing::mocks::process_mocks::MockProcessInstance;
+        use tokio::time::Instant;
+        use tokio_util::task::TaskTracker;
+
+        let temp = tempfile::tempdir().expect("tempdir");
+        let tor_dir = temp.path().join("tor-data");
+        std::fs::create_dir_all(&tor_dir).expect("create tor-data");
+        let state_file = tor_dir.join("state");
+        std::fs::write(&state_file, b"EntryGuard guard1").expect("write state");
+        let cookie_path = control_auth_cookie_path(temp.path());
+        std::fs::write(&cookie_path, [0xab; 32]).expect("write cookie");
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+        let port = listener.local_addr().expect("addr").port();
+        let polls = 15usize;
+        let server = tokio::spawn(serve_mock_tor_status_replies(listener, polls, "down"));
+
+        let (tx, rx) = watch::channel(TorStatus::default());
+        let monitor = TorStatusMonitor {
+            control_port: port,
+            status_broadcast: tx,
+            base_path: temp.path().to_path_buf(),
+        };
+        let mut child = MockProcessInstance::new();
+        let tracker = TaskTracker::new();
+        child.start(tracker.clone()).await.expect("start mock");
+
+        let global_shutdown = Shutdown::new();
+        let inner_shutdown = Shutdown::new();
+        let mut uptime = Instant::now();
+        let mut duration_since_last_healthy = Duration::ZERO;
+        let mut warning_count = 0u32;
+        let mut stats = ProcessWatcherStats::default();
+
+        for _ in 0..polls {
+            let res = do_health_check(
+                &mut child,
+                monitor.clone(),
+                "tor".to_string(),
+                &mut uptime,
+                &mut duration_since_last_healthy,
+                Instant::now(),
+                Duration::ZERO,
+                Duration::from_secs(5),
+                global_shutdown.to_signal(),
+                tracker.clone(),
+                inner_shutdown.to_signal(),
+                &mut warning_count,
+                &[],
+                &mut stats,
+            )
+            .await
+            .expect("do_health_check");
+            assert!(res.is_none());
+        }
+
+        server.await.expect("server join");
+        assert_eq!(stats.num_restarts, 0, "offline polls must not restart Tor");
+        assert_eq!(
+            stats.num_warnings, 0,
+            "offline polls must not accumulate warnings"
+        );
+        assert_eq!(warning_count, 0);
+        assert!(
+            state_file.exists(),
+            "Tor state must remain intact while offline"
+        );
+        let latest = *rx.borrow();
+        assert!(latest.is_bootstrapped);
+        assert!(!latest.network_liveness);
+    }
+
+    #[tokio::test]
+    async fn handle_unhealthy_preserves_guards_and_only_clears_caches_when_needed() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let tor_dir = temp.path().join("tor-data");
+        let keys_dir = tor_dir.join("keys");
+        let pt_dir = tor_dir.join("pt_state");
+        std::fs::create_dir_all(&keys_dir).expect("create keys dir");
+        std::fs::create_dir_all(&pt_dir).expect("create pt_state dir");
+
+        let state_file = tor_dir.join("state");
+        let lock_file = tor_dir.join("lock");
+        let key_file = keys_dir.join("secret_key");
+        let pt_file = pt_dir.join("lyrebird_state");
+        let cookie_file = tor_dir.join("control_auth_cookie");
+        let consensus_file = tor_dir.join("cached-microdesc-consensus");
+        let microdescs_file = tor_dir.join("cached-microdescs");
+        let certs_file = tor_dir.join("cached-certs");
+
+        std::fs::write(&state_file, b"EntryGuard guard1").expect("write state");
+        std::fs::write(&lock_file, b"").expect("write lock");
+        std::fs::write(&key_file, b"key").expect("write key");
+        std::fs::write(&pt_file, b"pt").expect("write pt");
+        std::fs::write(&cookie_file, [0xaa; 32]).expect("write cookie");
+        std::fs::write(&consensus_file, b"consensus").expect("write consensus");
+        std::fs::write(&microdescs_file, b"microdescs").expect("write microdescs");
+        std::fs::write(&certs_file, b"certs").expect("write certs");
+
+        let (tx, rx) = watch::channel(TorStatus {
+            bootstrap_phase: 100,
+            is_bootstrapped: true,
+            network_liveness: true,
+            circuit_ok: true,
+        });
+        let monitor = TorStatusMonitor {
+            control_port: 0,
+            status_broadcast: tx,
+            base_path: temp.path().to_path_buf(),
+        };
+
+        // First recovery after being bootstrapped keeps caches and guards, clearing only the cookie.
+        let first = monitor
+            .handle_unhealthy(Duration::ZERO)
+            .await
+            .expect("first handle_unhealthy");
+        assert_eq!(first, HandleUnhealthyResult::Continue);
+        assert!(!cookie_file.exists(), "stale cookie must be removed");
+        assert!(state_file.exists(), "entry guards must be preserved");
+        assert!(
+            consensus_file.exists(),
+            "first recovery should keep valid consensus cache"
+        );
+        assert!(
+            microdescs_file.exists(),
+            "first recovery should keep microdesc cache"
+        );
+        assert!(
+            !rx.borrow().is_bootstrapped,
+            "status should reset while restarting"
+        );
+
+        // Second recovery clears regenerable directory caches while still keeping guards and keys.
+        std::fs::write(&cookie_file, [0xbb; 32]).expect("rewrite cookie");
+        let second = monitor
+            .handle_unhealthy(Duration::from_secs(10))
+            .await
+            .expect("second handle_unhealthy");
+        assert_eq!(second, HandleUnhealthyResult::Continue);
+        assert!(!cookie_file.exists(), "stale cookie must be removed");
+        assert!(
+            !consensus_file.exists(),
+            "consensus cache should be cleared on repeated recovery"
+        );
+        assert!(
+            !microdescs_file.exists(),
+            "microdesc cache should be cleared on repeated recovery"
+        );
+        assert!(
+            !certs_file.exists(),
+            "certs cache should be cleared on repeated recovery"
+        );
+        assert!(
+            state_file.exists(),
+            "entry guards must survive repeated recovery"
+        );
+        assert!(lock_file.exists(), "Tor lock file must not be removed");
+        assert!(key_file.exists(), "keys directory must survive recovery");
+        assert!(pt_file.exists(), "pt_state directory must survive recovery");
+    }
+
+    #[tokio::test]
+    async fn handle_unhealthy_succeeds_when_tor_data_dir_is_missing() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let (tx, _rx) = watch::channel(TorStatus::default());
+        let monitor = TorStatusMonitor {
+            control_port: 0,
+            status_broadcast: tx,
+            base_path: temp.path().to_path_buf(),
+        };
+
+        let result = monitor
+            .handle_unhealthy(Duration::ZERO)
+            .await
+            .expect("handle_unhealthy when tor-data missing");
+        assert_eq!(result, HandleUnhealthyResult::Continue);
+        assert!(temp.path().join("tor-data").is_dir());
     }
 
     #[tokio::test]
