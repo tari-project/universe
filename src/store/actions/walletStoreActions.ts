@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { AccountBalance, DisplayedTransaction } from '@app/types/app-status.ts';
-import { useWalletStore } from '../useWalletStore';
+import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 
@@ -13,7 +13,7 @@ import { useMiningStore } from '../useMiningStore';
 import { queryClient } from '@app/App/queryClient.ts';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
-import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
+import { bridgeReference, fetchBridgeTransactionsHistory } from './bridgeApiActions';
 import { mergeTransactions } from '@app/store/actions/helpers.ts';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
@@ -137,7 +137,30 @@ export const handleSeedBackedUp = (is_seed_backed_up: boolean) => {
     }));
 };
 
-function shouldFetchBridgeItems(incomingWalletTransactions: DisplayedTransaction[]): boolean {
+// The bridge listing carries only a reference derived from the wrap's paymentId (the payment's
+// message), so each message is mapped to the reference it would be listed under.
+const bridgeReferencesOf = async (txs: DisplayedTransaction[]): Promise<Map<string, string>> =>
+    new Map(
+        await Promise.all(
+            txs
+                .flatMap(({ message }) => (message ? [message] : []))
+                .map(async (m) => [m, await bridgeReference(m)] as const)
+        )
+    );
+
+// A backend from before references lists the paymentId (the message) itself.
+const isBridgeTxFor = (bridgeTx: BackendBridgeTransaction, message: string | null, references: Map<string, string>) => {
+    const reference = message ? references.get(message) : undefined;
+    if (!reference) return false;
+    return bridgeTx.reference
+        ? bridgeTx.reference === reference
+        : (bridgeTx as { paymentId?: string }).paymentId === message;
+};
+
+function shouldFetchBridgeItems(
+    incomingWalletTransactions: DisplayedTransaction[],
+    references: Map<string, string>
+): boolean {
     const bridgeWalletTransactions = useWalletStore.getState().bridge_transactions;
     const coldWalletAddress = useWalletStore.getState().cold_wallet_address;
 
@@ -146,20 +169,28 @@ function shouldFetchBridgeItems(incomingWalletTransactions: DisplayedTransaction
             tx.counterparty === coldWalletAddress &&
             (bridgeWalletTransactions.length === 0 ||
                 !bridgeWalletTransactions?.some(
-                    (bridgeTx) => bridgeTx.paymentId === tx.message && Number(bridgeTx.tokenAmount) === tx.amount
+                    (bridgeTx) =>
+                        isBridgeTxFor(bridgeTx, tx.message, references) && Number(bridgeTx.tokenAmount) === tx.amount
                 ))
     );
 }
 
 const solveBridgeTransactionDetails = async (walletTxs: DisplayedTransaction[]): Promise<DisplayedTransaction[]> => {
-    if (shouldFetchBridgeItems(walletTxs)) {
+    const coldWalletAddress = useWalletStore.getState().cold_wallet_address;
+    const bridgePayments = walletTxs.filter((tx) => tx.counterparty === coldWalletAddress);
+    // Hashing waits on a later task, so other wallet events could overtake this one; most events
+    // carry no payment to the bridge, and return without waiting, in order as before.
+    if (!bridgePayments.length) return walletTxs;
+
+    const references = await bridgeReferencesOf(bridgePayments);
+    if (shouldFetchBridgeItems(walletTxs, references)) {
         const processedTransactions: DisplayedTransaction[] = [...walletTxs];
         const walletAddress = useWalletStore.getState().tari_address_base58;
         const bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress).catch(() => []);
         bridgeTransactions.forEach((bridgeTx) => {
             walletTxs.forEach((walletTx, index) => {
                 if (
-                    bridgeTx.paymentId === walletTx.message ||
+                    isBridgeTxFor(bridgeTx, walletTx.message, references) ||
                     (Number(bridgeTx.tokenAmount) === walletTx.amount &&
                         walletTx.counterparty === useWalletStore.getState().cold_wallet_address)
                 ) {
