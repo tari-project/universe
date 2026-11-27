@@ -121,7 +121,7 @@ mod checksum_security_tests {
 
     #[tokio::test]
     async fn test_checksum_spoofed_or_malformed_xmrig_entry_rejected() {
-        let asset = "xmrig-6.26.0-linux-static-x64.tar.gz";
+        let asset = "xmrig-6.27.0-linux-static-x64.tar.gz";
         for entry in [
             format!("{}  {asset}.sig", "a".repeat(64)),
             format!("bad  {asset}"),

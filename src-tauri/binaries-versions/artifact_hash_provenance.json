@@ -84,25 +84,25 @@
         "archive_sha256": "2ee123e9167318a3742778ff704e75f01d4780f05a14522d451fe011011077c4",
         "checksum_source": "https://archive.torproject.org/tor-package-archive/torbrowser/16.0/sha256sums-signed-build.txt"
     },
-    "xmrig-6.26.0-linux-static-x64.tar.gz": {
-        "url": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-linux-static-x64.tar.gz",
-        "archive_sha256": "fc6f8ae5f64e4f17481f7e3be29a1c56949f216a998414188003eae1db20c9e5",
-        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/SHA256SUMS"
+    "xmrig-6.27.0-linux-static-x64.tar.gz": {
+        "url": "https://github.com/xmrig/xmrig/releases/download/v6.27.0/xmrig-6.27.0-linux-static-x64.tar.gz",
+        "archive_sha256": "1357440946eff0ee02042473c2da96b0543f88ba4e45d9abde62ec7eb428ccdb",
+        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.27.0/SHA256SUMS"
     },
-    "xmrig-6.26.0-macos-arm64.tar.gz": {
-        "url": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-macos-arm64.tar.gz",
-        "archive_sha256": "6ae4eb4216e99a201ae9a3d2c3a7c275207c5165cfc25da1f3d735d6c4829c18",
-        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/SHA256SUMS"
+    "xmrig-6.27.0-macos-arm64.tar.gz": {
+        "url": "https://github.com/xmrig/xmrig/releases/download/v6.27.0/xmrig-6.27.0-macos-arm64.tar.gz",
+        "archive_sha256": "6afd4500344fbf1c69040223ebd084a2c35f72e4a9ce62a640bb8a56d07b8425",
+        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.27.0/SHA256SUMS"
     },
-    "xmrig-6.26.0-macos-x64.tar.gz": {
-        "url": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-macos-x64.tar.gz",
-        "archive_sha256": "1da924b358c0089e361540c4a9e6f8b09538b29efeafa2379590e0f6db358ff4",
-        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/SHA256SUMS"
+    "xmrig-6.27.0-macos-x64.tar.gz": {
+        "url": "https://github.com/xmrig/xmrig/releases/download/v6.27.0/xmrig-6.27.0-macos-x64.tar.gz",
+        "archive_sha256": "fc1bc58d9dbf45132e074c4be5d6ed6ddc4e2db640fa3641778961b3c660cfe7",
+        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.27.0/SHA256SUMS"
     },
-    "xmrig-6.26.0-windows-x64.zip": {
-        "url": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-windows-x64.zip",
-        "archive_sha256": "bba8097cb37d9b458a1cb1137876b27cde6740d17fe4ccbc086ba07d87d9e147",
-        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.26.0/SHA256SUMS"
+    "xmrig-6.27.0-windows-x64.zip": {
+        "url": "https://github.com/xmrig/xmrig/releases/download/v6.27.0/xmrig-6.27.0-windows-x64.zip",
+        "archive_sha256": "9511d0a00da3e7474e81bd7fb12ad58a8c95853cbd51fdc198fd2a05b6b74f34",
+        "checksum_source": "https://github.com/xmrig/xmrig/releases/download/v6.27.0/SHA256SUMS"
     },
     "_unavailable_network_artifacts": {
         "release_api": "https://api.github.com/repos/tari-project/tari/releases/tags/v6.3.0-pre.2",
