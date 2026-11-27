@@ -167,3 +167,109 @@ fn test_localnet_explicit_remote_uses_the_configured_chain() {
         assert_eq!(NodeType::Remote.for_network(network), expected);
     }
 }
+
+#[tokio::test]
+async fn remote_until_local_remote_configuration_is_ready_without_local_or_tor() {
+    use super::node_manager::NodeManager;
+    use crate::{
+        BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter,
+        process_stats_collector::ProcessStatsCollectorBuilder,
+    };
+    use tari_common::configuration::Network;
+    use tari_transaction_components::consensus::ConsensusManager;
+    use tokio::sync::watch;
+
+    let mut stats = ProcessStatsCollectorBuilder::new();
+    let (base_tx, _base_rx) = watch::channel(BaseNodeStatus::default());
+    let (local_tx, local_rx) = watch::channel(BaseNodeStatus::default());
+    let (remote_tx, remote_rx) = watch::channel(BaseNodeStatus::default());
+    let consensus = ConsensusManager::builder(Network::get_current()).build();
+
+    let manager = NodeManager::new(
+        &mut stats,
+        LocalNodeAdapter::new(local_tx, consensus.clone()),
+        RemoteNodeAdapter::new(remote_tx, consensus),
+        NodeType::RemoteUntilLocal,
+        base_tx,
+        local_rx,
+        remote_rx,
+    );
+
+    manager
+        .configure_remote_only_for_test(Some("https://grpc.tari.com:443".to_string()))
+        .await
+        .expect("configure remote");
+
+    // Remote service is immediately active for wallet & solo mining before Tor or local node start.
+    assert_eq!(
+        manager.get_grpc_address().await.expect("remote grpc"),
+        "https://grpc.tari.com:443"
+    );
+    assert!(!manager.is_local_watcher_running_for_test().await);
+
+    // Background local node falls back to TCP without displacing current remote service.
+    manager
+        .configure_local_for_test(false, None, None)
+        .await
+        .expect("configure local tcp fallback");
+
+    assert_eq!(
+        manager.local_adapter_tor_state_for_test().await,
+        Some((false, None))
+    );
+    assert_eq!(
+        manager.get_grpc_address().await.expect("still remote grpc"),
+        "https://grpc.tari.com:443"
+    );
+}
+
+#[tokio::test]
+async fn local_node_tcp_fallback_clears_tor_settings_on_current_adapter() {
+    use super::node_manager::NodeManager;
+    use crate::{
+        BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter,
+        process_stats_collector::ProcessStatsCollectorBuilder,
+    };
+    use std::path::PathBuf;
+    use tari_common::configuration::Network;
+    use tari_transaction_components::consensus::ConsensusManager;
+    use tokio::sync::watch;
+
+    let mut stats = ProcessStatsCollectorBuilder::new();
+    let (base_tx, _base_rx) = watch::channel(BaseNodeStatus::default());
+    let (local_tx, local_rx) = watch::channel(BaseNodeStatus::default());
+    let (remote_tx, remote_rx) = watch::channel(BaseNodeStatus::default());
+    let consensus = ConsensusManager::builder(Network::get_current()).build();
+
+    let manager = NodeManager::new(
+        &mut stats,
+        LocalNodeAdapter::new(local_tx, consensus.clone()),
+        RemoteNodeAdapter::new(remote_tx, consensus),
+        NodeType::Local,
+        base_tx,
+        local_rx,
+        remote_rx,
+    );
+
+    manager
+        .configure_local_for_test(
+            true,
+            Some(9051),
+            Some(PathBuf::from("/var/empty/control_auth_cookie")),
+        )
+        .await
+        .expect("configure local tor");
+    assert_eq!(
+        manager.local_adapter_tor_state_for_test().await,
+        Some((true, Some(9051)))
+    );
+
+    manager
+        .configure_local_for_test(false, None, None)
+        .await
+        .expect("configure local tcp fallback");
+    assert_eq!(
+        manager.local_adapter_tor_state_for_test().await,
+        Some((false, None))
+    );
+}

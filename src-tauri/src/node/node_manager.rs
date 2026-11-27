@@ -231,6 +231,97 @@ impl NodeManager {
         Ok(())
     }
 
+    /// Starts only the remote node watcher and status forwarding thread.
+    ///
+    /// Used in `NodeType::RemoteUntilLocal` ("Remote & Local") so remote connectivity,
+    /// wallet unlock, and solo mining come online immediately without blocking on Tor
+    /// binary download, Tor bootstrap, or local node startup.
+    pub async fn ensure_remote_started(
+        &self,
+        base_path: PathBuf,
+        config_path: PathBuf,
+        log_path: PathBuf,
+        remote_grpc_address: Option<String>,
+    ) -> Result<(), NodeManagerError> {
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+
+        self.configure_adapter(
+            self.remote_node_watcher.clone(),
+            self.is_remote_current().await,
+            remote_grpc_address,
+            false,
+            None,
+            None,
+        )
+        .await?;
+        start_watcher(
+            &self.remote_node_watcher,
+            base_path,
+            config_path,
+            log_path,
+            shutdown_signal.clone(),
+            task_tracker,
+        )
+        .await?;
+
+        start_status_forwarding_thread(
+            self.clone(),
+            self.base_node_watch_tx.clone(),
+            self.local_node_watch_rx.clone(),
+            self.remote_node_watch_rx.clone(),
+            shutdown_signal,
+        )
+        .await?;
+        ensure_node_identity_reachable(&self.remote_node_watcher, "Remote").await?;
+
+        Ok(())
+    }
+
+    /// Starts the background local node watcher for `NodeType::RemoteUntilLocal` and
+    /// schedules switching from remote to local once the local node finishes syncing.
+    pub async fn ensure_local_started_for_remote_until_local(
+        &self,
+        base_path: PathBuf,
+        config_path: PathBuf,
+        log_path: PathBuf,
+        use_tor: bool,
+        tor_control_port: Option<u16>,
+        tor_cookie_path: Option<PathBuf>,
+    ) -> Result<(), NodeManagerError> {
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        if shutdown_signal.is_triggered() {
+            return Ok(());
+        }
+        let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+
+        self.configure_adapter(
+            self.local_node_watcher.clone(),
+            self.is_local_current().await,
+            None,
+            use_tor,
+            tor_control_port,
+            tor_cookie_path,
+        )
+        .await?;
+        start_watcher(
+            &self.local_node_watcher,
+            base_path,
+            config_path,
+            log_path,
+            shutdown_signal.clone(),
+            task_tracker,
+        )
+        .await?;
+
+        ensure_node_identity_reachable(&self.local_node_watcher, "Local").await?;
+        if matches!(self.get_node_type().await, NodeType::RemoteUntilLocal) {
+            self.switch_to_local_when_synced(shutdown_signal).await?;
+        }
+
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     async fn configure_adapter<T>(
         &self,
@@ -562,6 +653,54 @@ impl NodeManager {
     pub async fn is_remote(&self) -> bool {
         let node_type = self.get_node_type().await;
         node_type.is_remote()
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn configure_remote_only_for_test(
+        &self,
+        remote_grpc_address: Option<String>,
+    ) -> Result<(), anyhow::Error> {
+        self.configure_adapter(
+            self.remote_node_watcher.clone(),
+            self.is_remote_current().await,
+            remote_grpc_address,
+            false,
+            None,
+            None,
+        )
+        .await
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn configure_local_for_test(
+        &self,
+        use_tor: bool,
+        tor_control_port: Option<u16>,
+        tor_cookie_path: Option<PathBuf>,
+    ) -> Result<(), anyhow::Error> {
+        self.configure_adapter(
+            self.local_node_watcher.clone(),
+            self.is_local_current().await,
+            None,
+            use_tor,
+            tor_control_port,
+            tor_cookie_path,
+        )
+        .await
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn local_adapter_tor_state_for_test(&self) -> Option<(bool, Option<u16>)> {
+        let guard = self.local_node_watcher.read().await;
+        guard
+            .as_ref()
+            .map(|w| (w.adapter.use_tor, w.adapter.tor_control_port))
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn is_local_watcher_running_for_test(&self) -> bool {
+        let guard = self.local_node_watcher.read().await;
+        guard.as_ref().is_some_and(|w| w.is_running())
     }
 }
 

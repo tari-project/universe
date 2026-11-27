@@ -50,7 +50,12 @@ import {
     setInitialSetupFinished,
     updateSetupProgress,
 } from '@app/store/actions/setupStoreActions';
-import { setBackgroundNodeState, setNodeStoreState, setTorEntryGuards } from '@app/store/useNodeStore';
+import {
+    handleTorFallback,
+    setBackgroundNodeState,
+    setNodeStoreState,
+    setTorEntryGuards,
+} from '@app/store/useNodeStore';
 import {
     handleExchangeIdChanged,
     handleConfigMcpLoaded,
@@ -116,6 +121,9 @@ const useTauriEventsListener = () => {
                         break;
                     case 'UpdateTorEntryGuards':
                         setTorEntryGuards(event.payload);
+                        break;
+                    case 'TorFallback':
+                        handleTorFallback(event.payload);
                         break;
                     case 'InitialSetupFinished':
                         setInitialSetupFinished(true);

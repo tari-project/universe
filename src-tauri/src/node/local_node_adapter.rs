@@ -490,4 +490,76 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_local_node_tcp_fallback_uses_tcp_transport_and_omits_tor_args() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let network = Network::get_current_or_user_setting_or_default();
+        let stale_peer_db = temp
+            .path()
+            .join("node")
+            .join(network.to_string().to_lowercase())
+            .join("peer_db");
+        std::fs::create_dir_all(&stale_peer_db).expect("create stale peer_db");
+        std::fs::write(stale_peer_db.join("peers.dat"), b"onion-peer").expect("write stale peer");
+        std::fs::write(
+            temp.path()
+                .join("node")
+                .join(network.to_string().to_lowercase())
+                .join("migrations.json"),
+            r#"{"version":2}"#,
+        )
+        .expect("write migrations.json");
+
+        let (tx, _rx) = watch::channel(BaseNodeStatus::default());
+        let consensus = ConsensusManager::builder(Network::get_current()).build();
+        let mut adapter = LocalNodeAdapter::new(tx, consensus);
+
+        // Simulate prior Tor configuration followed by runtime TCP fallback.
+        let cookie = temp.path().join("tor-data/control_auth_cookie");
+        adapter.use_tor(true);
+        adapter.set_tor_control_port(Some(19051), Some(cookie));
+        adapter.use_tor(false);
+        adapter.set_tor_control_port(None, None);
+
+        let (process, _) = adapter
+            .spawn_inner(
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().to_path_buf(),
+                temp.path().join("node-binary"),
+                false,
+            )
+            .expect("spawn spec");
+
+        let args = &process.startup_spec.args;
+        assert!(
+            args.windows(2)
+                .any(|pair| pair[0] == "-p" && pair[1] == "base_node.p2p.transport.type=tcp")
+        );
+        assert!(
+            !args
+                .windows(2)
+                .any(|pair| pair[0] == "-p" && pair[1] == "base_node.p2p.transport.type=tor")
+        );
+        assert!(!args.iter().any(|arg| arg.contains("tor.control_address=")));
+        assert!(!args.iter().any(|arg| arg.contains("tor.control_auth=")));
+        assert!(
+            !args
+                .iter()
+                .any(|arg| arg.contains("proxy_bypass_for_outbound_tcp"))
+        );
+        assert!(!args.iter().any(|arg| arg.contains("use_libtor=")));
+        assert!(
+            !stale_peer_db.exists(),
+            "stale peer_db must be cleared on startup so TCP fallback discovers IPv4/IPv6 peers"
+        );
+
+        if !network.is_solo_network() && network != Network::LocalNet {
+            assert!(
+                args.iter()
+                    .any(|arg| arg.contains("ip4.seeds.") && arg.contains("ip6.seeds."))
+            );
+        }
+    }
 }

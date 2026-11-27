@@ -87,6 +87,7 @@ pub enum EventType {
     SeedBackedUp,
     SetupProgressUpdate,
     UpdateTorEntryGuards,
+    TorFallback,
     UpdateAppModuleStatus,
     UpdateSelectedMiner,
     AvailableMiners,
@@ -187,6 +188,12 @@ pub struct NodeTypeUpdatePayload {
     pub node_type: Option<NodeType>,
     pub node_identity: Option<NodeIdentity>,
     pub node_connection_address: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+pub struct TorFallbackPayload {
+    pub active: bool,
+    pub reason: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
