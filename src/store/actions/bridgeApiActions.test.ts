@@ -81,7 +81,7 @@ describe('fetchBridgeTransactionsHistory', () => {
         const rows = await fetchBridgeTransactionsHistory('me');
 
         expect(rows).toHaveLength(150);
-        expect(getUserTransactions).toHaveBeenNthCalledWith(1, 'me', 100, 0);
+        expect(getUserTransactions).toHaveBeenNthCalledWith(1, 'me');
         expect(getUserTransactions).toHaveBeenNthCalledWith(2, 'me', 100, 100);
         expect(useWalletStore.getState().bridge_transactions).toHaveLength(150);
     });
@@ -118,5 +118,39 @@ describe('bridge details on wallet payments (SEC-20)', () => {
         expect(digest).not.toHaveBeenCalled();
         expect(getUserTransactions).not.toHaveBeenCalled();
         digest.mockRestore();
+    });
+
+    describe('against a backend from before references and paging', () => {
+        const oldRow = (paymentId: string, tokenAmount = '5000') => {
+            const { reference: _, ...row } = bridgeRow('unused', tokenAmount);
+            return { ...row, paymentId } as unknown as UserTransactionDTO;
+        };
+
+        it('reads the history in one call', async () => {
+            getUserTransactions.mockResolvedValue({ transactions: [oldRow(PAYMENT_ID)] });
+
+            expect(await fetchBridgeTransactionsHistory('me')).toHaveLength(1);
+            expect(getUserTransactions).toHaveBeenCalledTimes(1);
+            expect(getUserTransactions).toHaveBeenCalledWith('me');
+        });
+
+        it('matches by paymentId, never a payment outside the bridge, and does not refetch a known wrap', async () => {
+            useWalletStore.setState({ bridge_transactions: [oldRow(PAYMENT_ID)] });
+
+            await handleWalletTransactionsFound([payment(PAYMENT_ID, 5000)]);
+            expect(getUserTransactions).not.toHaveBeenCalled();
+
+            getUserTransactions.mockResolvedValue({ transactions: [oldRow(PAYMENT_ID, '7000')] });
+            await handleWalletTransactionsFound([
+                { ...payment('another-id', 1), id: 2 },
+                { ...payment('message-elsewhere', 2), id: 3, counterparty: 'someone-else' },
+            ]);
+
+            const details = useWalletStore
+                .getState()
+                .wallet_transactions.filter((tx) => tx.id !== 1)
+                .map((tx) => tx.bridge_transaction_details);
+            expect(details).toEqual([undefined, undefined]);
+        });
     });
 });

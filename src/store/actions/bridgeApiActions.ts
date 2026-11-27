@@ -29,11 +29,11 @@ export const fetchBridgeTransactionsHistory = async (
     try {
         const transactions: BackendBridgeTransaction[] = [];
         for (let page = 0; page < MAX_PAGES; page++) {
-            const response = await WrapTokenService.getUserTransactions(
-                tari_address_base58,
-                PAGE_LIMIT,
-                transactions.length
-            );
+            // The first page without paging parameters: a backend from before paging refuses them,
+            // and answers with every row and no total, which ends the loop.
+            const response = transactions.length
+                ? await WrapTokenService.getUserTransactions(tari_address_base58, PAGE_LIMIT, transactions.length)
+                : await WrapTokenService.getUserTransactions(tari_address_base58);
             transactions.push(...response.transactions);
             const total = Number(response.total);
             if (!response.transactions.length || !Number.isFinite(total) || transactions.length >= total) break;

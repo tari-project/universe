@@ -148,8 +148,14 @@ const bridgeReferencesOf = async (txs: DisplayedTransaction[]): Promise<Map<stri
         )
     );
 
-const isBridgeTxFor = (bridgeTx: BackendBridgeTransaction, message: string | null, references: Map<string, string>) =>
-    !!message && bridgeTx.reference === references.get(message);
+// A backend from before references lists the paymentId (the message) itself.
+const isBridgeTxFor = (bridgeTx: BackendBridgeTransaction, message: string | null, references: Map<string, string>) => {
+    const reference = message ? references.get(message) : undefined;
+    if (!reference) return false;
+    return bridgeTx.reference
+        ? bridgeTx.reference === reference
+        : (bridgeTx as { paymentId?: string }).paymentId === message;
+};
 
 function shouldFetchBridgeItems(
     incomingWalletTransactions: DisplayedTransaction[],
