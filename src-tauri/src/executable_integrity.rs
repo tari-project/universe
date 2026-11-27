@@ -410,7 +410,7 @@ mod tests {
     #[test]
     fn test_launch_wrong_network_rejected_before_reading_bytes() {
         let error = verify_launch_path(
-            Path::new("/cache/binaries/xmrig/esmeralda/6.26.0/xmrig-6.26.0/xmrig"),
+            Path::new("/cache/binaries/xmrig/esmeralda/6.27.0/xmrig-6.27.0/xmrig"),
             "mainnet",
         )
         .expect_err("wrong selected network must reject");
@@ -422,7 +422,7 @@ mod tests {
         let root = tempfile::tempdir().expect("create cache fixture");
         let path = root
             .path()
-            .join("binaries/user/cache/binaries/xmrig/mainnet/6.26.0/xmrig-6.26.0")
+            .join("binaries/user/cache/binaries/xmrig/mainnet/6.27.0/xmrig-6.27.0")
             .join(if cfg!(windows) { "xmrig.exe" } else { "xmrig" });
         let error = verify_launch_path(&path, "mainnet").expect_err("fixture file is absent");
         assert_eq!(error.kind(), io::ErrorKind::NotFound);

@@ -8,24 +8,24 @@
         "tariminer": "1.1.8",
         "tor": "16.0",
         "wallet": "6.3.0-pre.2 | e5635bf",
-        "xmrig": "6.26.0"
+        "xmrig": "6.27.0"
     },
     "hashes": {
         "xmrig": {
-            "version": "6.26.0",
+            "version": "6.27.0",
             "platforms": {
                 "linux-x86_64": {
-                    "xmrig-6.26.0/xmrig": "b20f39fc00d242e706b6c30367ad811c676e0575050a4ec2f30104b696944b49"
+                    "xmrig-6.27.0/xmrig": "d4eeeea12d4c0f2e9e5c1e5421c7993f2627af00521465c9ad942457e519888c"
                 },
                 "windows-x86_64": {
-                    "xmrig-6.26.0/WinRing0x64.sys": "11bd2c9f9e2397c9a16e0990e4ed2cf0679498fe0fd418a3dfdac60b5c160ee5",
-                    "xmrig-6.26.0/xmrig.exe": "6fa80698d7268f6e88aa88c06fb27ee99e1bcee747c2e76911e6206a5b1aeeb3"
+                    "xmrig-6.27.0/WinRing0x64.sys": "11bd2c9f9e2397c9a16e0990e4ed2cf0679498fe0fd418a3dfdac60b5c160ee5",
+                    "xmrig-6.27.0/xmrig.exe": "b4cb89df0aaa03aea57a4d91359c6a2ce6034b9ecc0c8d36f381e79d9b2b435c"
                 },
                 "macos-x86_64": {
-                    "xmrig-6.26.0/xmrig": "3bf7a353daa4af0f4d2aa4c5a0294fd14d3a330b0abf2e2e4dd23e14650aa527"
+                    "xmrig-6.27.0/xmrig": "e6b11ba9880b65746e308a3d5e55e22a6b05859be04de5794c4539ea62e54ee2"
                 },
                 "macos-aarch64": {
-                    "xmrig-6.26.0/xmrig": "c66f9881bed79a550e18d54b9ae5cf03b91a0e881efdbf7962db2e58de0b4f7b"
+                    "xmrig-6.27.0/xmrig": "241975a4f46bc6d4b7cf66c646142fcf5774eab0bb1a90f541cccc09d0bbc0ba"
                 }
             }
         },
