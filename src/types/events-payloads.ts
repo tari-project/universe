@@ -42,6 +42,17 @@ export interface CriticalProblemPayload {
     error_message?: string;
 }
 
+export interface OrphanedWalletCandidate {
+    wallet_id: string;
+    redacted_address: string;
+    full_address: string;
+}
+
+export interface OrphanedWalletRecoveryPayload {
+    plain_candidates: OrphanedWalletCandidate[];
+    pin_protected_count: number;
+}
+
 export interface ShowReleaseNotesPayload {
     release_notes: string;
     is_app_update_available: boolean;

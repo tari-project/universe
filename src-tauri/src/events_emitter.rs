@@ -25,7 +25,8 @@ use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload, NewBlockHeightPayload,
-    UpdateAppModuleStatusPayload, WalletScanningProgressUpdatePayload,
+    OrphanedWalletRecoveryPayload, UpdateAppModuleStatusPayload,
+    WalletScanningProgressUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::MinerControlsState;
@@ -158,6 +159,20 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit CriticalProblem event: {e:?}");
+        }
+    }
+
+    pub async fn emit_orphaned_wallet_recovery(payload: OrphanedWalletRecoveryPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::OrphanedWalletRecovery,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit OrphanedWalletRecovery event: {e:?}");
         }
     }
 

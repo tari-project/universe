@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { ApplicationsVersions, NetworkStatus, SystemDependency } from '@app/types/app-status';
-import { CriticalProblemPayload } from '@app/types/events-payloads';
+import { CriticalProblemPayload, OrphanedWalletRecoveryPayload } from '@app/types/events-payloads';
 
 interface AppState {
     error?: string;
     criticalProblem?: Partial<CriticalProblemPayload>;
+    orphanedWalletRecovery?: OrphanedWalletRecoveryPayload;
     isSettingsOpen: boolean;
     criticalError?: Partial<CriticalProblemPayload>;
     systemDependencies: SystemDependency[];

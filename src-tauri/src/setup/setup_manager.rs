@@ -35,7 +35,7 @@ use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::event_scheduler::EventScheduler;
-use crate::events::CriticalProblemPayload;
+use crate::events::{CriticalProblemPayload, OrphanedWalletRecoveryPayload};
 use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
@@ -453,19 +453,26 @@ impl SetupManager {
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET_APP_LOGIC, "Error loading internal wallet: {e:?}");
-                        // A failure that already knows what to tell the user carries its own
-                        // payload; anything else gets the generic one.
-                        let payload = e.downcast::<CriticalProblemPayload>().unwrap_or_else(|e| {
-                            CriticalProblemPayload {
-                                title: Some("Wallet(seed) not initialized!".to_string()),
-                                description: Some(
-                                    "Encountered an error while initializing the wallet."
-                                        .to_string(),
-                                ),
-                                error_message: Some(e.to_string()),
+                        match e.downcast::<OrphanedWalletRecoveryPayload>() {
+                            Ok(recovery) => {
+                                EventsEmitter::emit_orphaned_wallet_recovery(recovery).await;
                             }
-                        });
-                        EventsEmitter::emit_critical_problem(payload).await;
+                            Err(e) => {
+                                // A failure that already knows what to tell the user carries its own
+                                // payload; anything else gets the generic one.
+                                let payload = e
+                                    .downcast::<CriticalProblemPayload>()
+                                    .unwrap_or_else(|e| CriticalProblemPayload {
+                                        title: Some("Wallet(seed) not initialized!".to_string()),
+                                        description: Some(
+                                            "Encountered an error while initializing the wallet."
+                                                .to_string(),
+                                        ),
+                                        error_message: Some(e.to_string()),
+                                    });
+                                EventsEmitter::emit_critical_problem(payload).await;
+                            }
+                        }
                     }
                 };
             }

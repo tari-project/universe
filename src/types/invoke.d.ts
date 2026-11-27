@@ -16,7 +16,7 @@ import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from './tapplets/tapplet.types';
 import { SchedulerEventTiming, SchedulerEventType } from './mining/schedule.ts';
 import { Language } from '../i18initializer.ts';
-import { EffectiveL1PaymentId } from './events-payloads.ts';
+import { EffectiveL1PaymentId, OrphanedWalletCandidate, OrphanedWalletRecoveryPayload } from './events-payloads.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -72,6 +72,15 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'discard_unreadable_wallet_config'): Promise<void>;
+    function invoke(param: 'list_orphaned_wallet_candidates'): Promise<OrphanedWalletRecoveryPayload>;
+    function invoke(
+        param: 'unlock_orphaned_wallet_candidates',
+        payload: { pin: string }
+    ): Promise<OrphanedWalletCandidate[]>;
+    function invoke(
+        param: 'restore_orphaned_wallet_candidate',
+        payload: { walletId: string; pin?: string }
+    ): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
     function invoke(param: 'restart_application'): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;

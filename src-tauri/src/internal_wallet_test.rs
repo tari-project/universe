@@ -953,3 +953,218 @@ fn test_previous_wallet_problem_moved_aside_file_reports_the_unreadable_config()
         Some(moved_aside.display().to_string().as_str())
     );
 }
+
+#[tokio::test]
+async fn test_classify_orphaned_wallet_candidates_sorts_plain_before_pin_and_derives_plain_addresses()
+ {
+    use super::credential_manager::Credential;
+    use super::internal_wallet::classify_orphaned_wallet_candidates;
+
+    let pin = SafePassword::from("4321".to_string());
+    let pin_seed = CipherSeed::random();
+    let plain_seed_a = CipherSeed::random();
+    let plain_seed_b = CipherSeed::random();
+
+    let expected_a = derived_details("PlainA", plain_seed_a.clone()).await;
+    let expected_b = derived_details("PlainB", plain_seed_b.clone()).await;
+
+    let entries = vec![
+        (
+            WalletId::new("PinOne".to_string()),
+            Credential {
+                encrypted_seed: pin_seed
+                    .encipher(Some(pin))
+                    .expect("encipher seed")
+                    .to_vec(),
+            },
+        ),
+        (
+            WalletId::new("PlainA".to_string()),
+            Credential {
+                encrypted_seed: plain_seed_a.to_binary().expect("plain binary"),
+            },
+        ),
+        (
+            WalletId::new("Empty0".to_string()),
+            Credential {
+                encrypted_seed: Vec::new(),
+            },
+        ),
+        (
+            WalletId::new("PlainB".to_string()),
+            Credential {
+                encrypted_seed: plain_seed_b.to_binary().expect("plain binary"),
+            },
+        ),
+    ];
+
+    let classified = classify_orphaned_wallet_candidates(entries).await;
+    let candidates: Vec<_> = classified.into_iter().map(|(c, _)| c).collect();
+
+    assert_eq!(candidates.len(), 3);
+    assert_eq!(candidates[0].id, WalletId::new("PlainA".to_string()));
+    assert!(!candidates[0].pin_protected);
+    assert_eq!(
+        candidates[0].tari_address_base58.as_deref(),
+        Some(expected_a.tari_address.to_base58().as_str())
+    );
+
+    assert_eq!(candidates[1].id, WalletId::new("PlainB".to_string()));
+    assert!(!candidates[1].pin_protected);
+    assert_eq!(
+        candidates[1].tari_address_base58.as_deref(),
+        Some(expected_b.tari_address.to_base58().as_str())
+    );
+
+    assert_eq!(candidates[2].id, WalletId::new("PinOne".to_string()));
+    assert!(candidates[2].pin_protected);
+    assert_eq!(candidates[2].tari_address_base58, None);
+    assert_eq!(candidates[2].tari_address_emoji, None);
+}
+
+#[tokio::test]
+async fn test_decrypt_orphaned_wallet_entries_unlocks_matching_pin_only() {
+    use super::internal_wallet::decrypt_orphaned_wallet_entries;
+
+    let pin_one = SafePassword::from("1111".to_string());
+    let pin_two = SafePassword::from("2222".to_string());
+    let wrong_pin = SafePassword::from("9999".to_string());
+
+    let seed_one = CipherSeed::random();
+    let seed_two = CipherSeed::random();
+    let expected_one = derived_details("WalOne", seed_one.clone()).await;
+
+    let entries = vec![
+        (
+            WalletId::new("WalOne".to_string()),
+            seed_one
+                .encipher(Some(pin_one.clone()))
+                .expect("encipher one")
+                .to_vec(),
+        ),
+        (
+            WalletId::new("WalTwo".to_string()),
+            seed_two
+                .encipher(Some(pin_two.clone()))
+                .expect("encipher two")
+                .to_vec(),
+        ),
+    ];
+
+    assert!(
+        decrypt_orphaned_wallet_entries(&entries, &wrong_pin).is_empty(),
+        "wrong PIN must not unlock any entry"
+    );
+
+    let unlocked = decrypt_orphaned_wallet_entries(&entries, &pin_one);
+    assert_eq!(unlocked.len(), 1);
+    assert_eq!(unlocked[0].0, WalletId::new("WalOne".to_string()));
+    let derived =
+        InternalWallet::get_tari_wallet_details(unlocked[0].0.clone(), unlocked[0].1.clone())
+            .await
+            .expect("derive unlocked details");
+    assert_eq!(derived.tari_address, expected_one.tari_address);
+}
+
+#[test]
+fn test_adopt_orphaned_wallet_in_config_sets_single_wallet_and_pin_locked_flag() {
+    use super::configs::config_wallet::ConfigWalletContent;
+    use super::internal_wallet::adopt_orphaned_wallet_in_config;
+
+    let mut content = ConfigWalletContent::default();
+    adopt_orphaned_wallet_in_config(&mut content, (WalletId::new("Ab12Cd".to_string()), true));
+
+    assert_eq!(
+        content.tari_wallets(),
+        &vec![WalletId::new("Ab12Cd".to_string())]
+    );
+    assert!(content.tari_wallet_details().is_none());
+    assert!(content.pin_locker_state().pin_locked());
+}
+
+#[test]
+fn test_monero_seed_address_with_pin_handles_plain_and_enciphered_seeds() {
+    use super::credential_manager::Credential;
+    use super::internal_wallet::monero_seed_address_with_pin;
+    use monero_address_creator::Seed as MoneroSeed;
+    use monero_address_creator::network::Mainnet;
+
+    let expected = MoneroSeed::new([9u8; 32])
+        .to_address::<Mainnet>()
+        .expect("derive mainnet address");
+    let pin = SafePassword::from("246810".to_string());
+    let wrong_pin = SafePassword::from("000000".to_string());
+    let enciphered = super::utils::cryptography::encrypt(&[9u8; 32], &pin).expect("encrypt seed");
+
+    assert_eq!(
+        monero_seed_address_with_pin(
+            Ok(Credential {
+                encrypted_seed: vec![9u8; 32]
+            }),
+            None
+        ),
+        Some(expected.clone())
+    );
+    assert_eq!(
+        monero_seed_address_with_pin(
+            Ok(Credential {
+                encrypted_seed: enciphered.clone()
+            }),
+            None
+        ),
+        None
+    );
+    assert_eq!(
+        monero_seed_address_with_pin(
+            Ok(Credential {
+                encrypted_seed: enciphered.clone()
+            }),
+            Some(&wrong_pin)
+        ),
+        None
+    );
+    assert_eq!(
+        monero_seed_address_with_pin(
+            Ok(Credential {
+                encrypted_seed: enciphered
+            }),
+            Some(&pin)
+        ),
+        Some(expected)
+    );
+}
+
+#[test]
+fn test_orphaned_wallet_recovery_payload_redacts_ids_and_addresses_in_logs() {
+    use super::events::{OrphanedWalletCandidate, OrphanedWalletRecoveryPayload};
+
+    let secret_address = "1234567890abcdef_secret_base58_address";
+    let secret_id = "SecId1";
+    let payload = OrphanedWalletRecoveryPayload {
+        candidates: vec![
+            OrphanedWalletCandidate {
+                id: WalletId::new(secret_id.to_string()),
+                pin_protected: false,
+                tari_address_base58: Some(secret_address.to_string()),
+                tari_address_emoji: Some("🐢".to_string()),
+            },
+            OrphanedWalletCandidate {
+                id: WalletId::new("PinId2".to_string()),
+                pin_protected: true,
+                tari_address_base58: None,
+                tari_address_emoji: None,
+            },
+        ],
+    };
+
+    let display = format!("{payload}");
+    let debug = format!("{payload:?}");
+    let candidate_debug = format!("{:?}", payload.candidates[0]);
+    assert!(display.contains("plain=1, pin=1"));
+    assert!(!display.contains(secret_address));
+    assert!(!display.contains(secret_id));
+    assert!(!debug.contains(secret_address));
+    assert!(!debug.contains(secret_id));
+    assert!(!candidate_debug.contains(secret_address));
+    assert!(!candidate_debug.contains(secret_id));
+}

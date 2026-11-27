@@ -58,6 +58,69 @@ const MINOTARI_DB_ENTRY: &str = "minotari_db_password";
 const OOTLE_KEYRING_ENTRY: &str = "ootle_keyring_password";
 const MCP_TOKEN_KEY_ENTRY: &str = "mcp_token_key";
 const MINOTARI_DB_PASSWORD_BYTES: usize = 32;
+const NON_TARI_WALLET_ENTRIES: &[&str] = &[
+    crate::internal_wallet::MONERO_WALLET_ID,
+    MINOTARI_DB_ENTRY,
+    OOTLE_KEYRING_ENTRY,
+    MCP_TOKEN_KEY_ENTRY,
+];
+
+/// Extracts a Tari `WalletId` for `network_key` from an OS credential store entry name
+/// (`inner_wallet_credentials_<network>_<id>` on macOS/Linux, or
+/// `inner_wallet_credentials_<network>_<id>.<service>` on Windows). Ignores the non-Tari
+/// entries Universe keeps under the same service (`monero`, `minotari_db_password`,
+/// `ootle_keyring_password`, `mcp_token_key`) as well as entries for other networks.
+pub(crate) fn extract_tari_wallet_id_for_network(
+    entry_name: &str,
+    network_key: &str,
+) -> Option<WalletId> {
+    extract_tari_wallet_id_for_service_and_network(entry_name, APPLICATION_FOLDER_ID, network_key)
+}
+
+pub(crate) fn extract_tari_wallet_id_for_service_and_network(
+    entry_name: &str,
+    service_name: &str,
+    network_key: &str,
+) -> Option<WalletId> {
+    let service_suffix = format!(".{service_name}");
+    let username = entry_name
+        .strip_suffix(&service_suffix)
+        .unwrap_or(entry_name);
+    let prefix = format!("{KEYCHAIN_USERNAME}_{network_key}_");
+    let id = username.strip_prefix(&prefix)?;
+    if id.len() != 6
+        || NON_TARI_WALLET_ENTRIES.contains(&id)
+        || !id.bytes().all(|b| b.is_ascii_alphanumeric())
+    {
+        return None;
+    }
+    Some(WalletId::new(id.to_string()))
+}
+
+/// Deduplicates and preserves the caller's ordering (for example `LastWritten` on Windows)
+/// while filtering raw OS credential store entry names down to Tari `WalletId`s for `network_key`.
+pub(crate) fn filter_tari_wallet_ids_for_network<I, S>(
+    entry_names: I,
+    service_name: &str,
+    network_key: &str,
+) -> Vec<WalletId>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    let mut ids = Vec::new();
+    for entry_name in entry_names {
+        if let Some(wallet_id) = extract_tari_wallet_id_for_service_and_network(
+            entry_name.as_ref(),
+            service_name,
+            network_key,
+        ) && !ids.contains(&wallet_id)
+        {
+            ids.push(wallet_id);
+        }
+    }
+    ids
+}
 
 pub struct CredentialManager {
     service_name: String,
@@ -188,6 +251,153 @@ impl CredentialManager {
         let credential: Credential = serde_cbor::from_slice(&encoded)?;
         Ok(credential)
     }
+
+    /// Enumerates the OS credential store for Tari wallet ids belonging to the current network.
+    pub fn enumerate_tari_wallet_ids() -> Result<Vec<WalletId>, CredentialError> {
+        let network = Network::get_current_or_user_setting_or_default();
+        Self::enumerate_tari_wallet_ids_for_network(APPLICATION_FOLDER_ID, network.as_key_str())
+    }
+
+    pub(crate) fn enumerate_tari_wallet_ids_for_network(
+        service_name: &str,
+        network_key: &str,
+    ) -> Result<Vec<WalletId>, CredentialError> {
+        let entry_names = enumerate_platform_entry_names(service_name, network_key)?;
+        Ok(filter_tari_wallet_ids_for_network(
+            entry_names,
+            service_name,
+            network_key,
+        ))
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn enumerate_platform_entry_names(
+    service_name: &str,
+    _network_key: &str,
+) -> Result<Vec<String>, CredentialError> {
+    use dbus_secret_service::{EncryptionType, SecretService};
+    use std::collections::HashMap;
+
+    let ss = SecretService::connect(EncryptionType::Plain)
+        .map_err(|e| CredentialError::Io(io::Error::other(e.to_string())))?;
+    let search = ss
+        .search_items(HashMap::from([("service", service_name)]))
+        .map_err(|e| CredentialError::Io(io::Error::other(e.to_string())))?;
+
+    let mut entries_with_mtime: Vec<(String, u64)> = Vec::new();
+    for item in search.unlocked.iter().chain(search.locked.iter()) {
+        if let Ok(attributes) = item.get_attributes()
+            && let Some(username) = attributes.get("username")
+        {
+            let modified = item.get_modified().unwrap_or(0);
+            entries_with_mtime.push((username.clone(), modified));
+        }
+    }
+    entries_with_mtime.sort_by(|a, b| b.1.cmp(&a.1));
+    Ok(entries_with_mtime
+        .into_iter()
+        .map(|(username, _)| username)
+        .collect())
+}
+
+#[cfg(target_os = "macos")]
+fn enumerate_platform_entry_names(
+    service_name: &str,
+    _network_key: &str,
+) -> Result<Vec<String>, CredentialError> {
+    use security_framework::item::{ItemClass, ItemSearchOptions, Limit};
+    use security_framework::os::macos::keychain::{SecKeychain, SecPreferencesDomain};
+
+    const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
+
+    let keychain = SecKeychain::default_for_domain(SecPreferencesDomain::User)
+        .map_err(|e| CredentialError::Io(io::Error::other(e.to_string())))?;
+    let results = match ItemSearchOptions::new()
+        .keychains(&[keychain])
+        .class(ItemClass::generic_password())
+        .service(service_name)
+        .load_attributes(true)
+        .limit(Limit::All)
+        .search()
+    {
+        Ok(results) => results,
+        Err(err) if err.code() == ERR_SEC_ITEM_NOT_FOUND => return Ok(Vec::new()),
+        Err(err) => return Err(CredentialError::Io(io::Error::other(err.to_string()))),
+    };
+
+    let mut accounts = Vec::new();
+    for result in results {
+        if let Some(attributes) = result.simplify_dict()
+            && let Some(account) = attributes.get("acct")
+        {
+            accounts.push(account.clone());
+        }
+    }
+    Ok(accounts)
+}
+
+#[cfg(target_os = "windows")]
+fn enumerate_platform_entry_names(
+    service_name: &str,
+    network_key: &str,
+) -> Result<Vec<String>, CredentialError> {
+    use std::iter::once;
+    use windows_sys::Win32::Foundation::{ERROR_NOT_FOUND, GetLastError};
+    use windows_sys::Win32::Security::Credentials::{
+        CRED_TYPE_GENERIC, CREDENTIALW, CredEnumerateW, CredFree,
+    };
+
+    // `keyring` on Windows formats generic credential target names as `<username>.<service>`.
+    let filter_str = format!("{KEYCHAIN_USERNAME}_{network_key}_*");
+    let filter_wide: Vec<u16> = filter_str.encode_utf16().chain(once(0)).collect();
+    let service_suffix = format!(".{service_name}");
+
+    let mut count: u32 = 0;
+    let mut credentials_ptr: *mut *mut CREDENTIALW = std::ptr::null_mut();
+    let ok = unsafe { CredEnumerateW(filter_wide.as_ptr(), 0, &mut count, &mut credentials_ptr) };
+    if ok == 0 {
+        let err = unsafe { GetLastError() };
+        if err == ERROR_NOT_FOUND {
+            return Ok(Vec::new());
+        }
+        return Err(CredentialError::Io(io::Error::from_raw_os_error(
+            err as i32,
+        )));
+    }
+
+    let mut entries_with_time: Vec<(String, u64)> = Vec::new();
+    unsafe {
+        let slice = std::slice::from_raw_parts(credentials_ptr, count as usize);
+        for &cred_ptr in slice {
+            if cred_ptr.is_null() {
+                continue;
+            }
+            let cred = &*cred_ptr;
+            if cred.Type != CRED_TYPE_GENERIC || cred.TargetName.is_null() {
+                continue;
+            }
+            let mut len = 0usize;
+            while *cred.TargetName.add(len) != 0 {
+                len += 1;
+            }
+            let target_slice = std::slice::from_raw_parts(cred.TargetName, len);
+            if let Ok(target_name) = String::from_utf16(target_slice)
+                && target_name.ends_with(&service_suffix)
+            {
+                let last_written = (u64::from(cred.LastWritten.dwHighDateTime) << 32)
+                    | u64::from(cred.LastWritten.dwLowDateTime);
+                entries_with_time.push((target_name, last_written));
+            }
+        }
+        CredFree(credentials_ptr as *const _);
+    }
+
+    entries_with_time.sort_by(|a, b| b.1.cmp(&a.1));
+    Ok(entries_with_time
+        .into_iter()
+        .map(|(target_name, _)| target_name)
+        .collect())
 }
 
 // =================================================================================
@@ -316,6 +526,76 @@ mod tests {
 
         let second = CredentialManager::read_or_create_password(&entry).expect("second read");
         assert_eq!(*first, *second, "a stored password must never be replaced");
+    }
+
+    #[test]
+    fn extract_tari_wallet_id_accepts_current_network_ids_and_ignores_non_wallet_entries() {
+        assert_eq!(
+            extract_tari_wallet_id_for_network(
+                "inner_wallet_credentials_mainnet_Ab12Cd",
+                "mainnet"
+            ),
+            Some(WalletId::new("Ab12Cd".to_string()))
+        );
+        // Windows `keyring` target format: `<username>.<service>`
+        assert_eq!(
+            extract_tari_wallet_id_for_network(
+                &format!("inner_wallet_credentials_mainnet_Xy98Zw.{APPLICATION_FOLDER_ID}"),
+                "mainnet"
+            ),
+            Some(WalletId::new("Xy98Zw".to_string()))
+        );
+        assert_eq!(
+            extract_tari_wallet_id_for_service_and_network(
+                "inner_wallet_credentials_mainnet_Xy98Zw.com.tari.universe",
+                "com.tari.universe",
+                "mainnet"
+            ),
+            Some(WalletId::new("Xy98Zw".to_string()))
+        );
+
+        // Non-Tari entries kept under the same service must be ignored
+        for ignored in [
+            "inner_wallet_credentials_mainnet_monero",
+            "inner_wallet_credentials_mainnet_monero.com.tari.universe",
+            "inner_wallet_credentials_mainnet_minotari_db_password",
+            "inner_wallet_credentials_mainnet_ootle_keyring_password",
+            "inner_wallet_credentials_mainnet_mcp_token_key",
+            "inner_wallet_credentials_esmeralda_Ab12Cd",
+            "inner_wallet_credentials_mainnet_short",
+            "inner_wallet_credentials_mainnet_toolong7",
+            "inner_wallet_credentials_mainnet_bad-id",
+            "unrelated_entry",
+        ] {
+            assert_eq!(
+                extract_tari_wallet_id_for_network(ignored, "mainnet"),
+                None,
+                "{ignored} must not be treated as a Tari wallet id"
+            );
+        }
+    }
+
+    #[test]
+    fn filter_tari_wallet_ids_preserves_order_and_deduplicates() {
+        let newest_win = format!("inner_wallet_credentials_mainnet_Newest.{APPLICATION_FOLDER_ID}");
+        let entries = [
+            "inner_wallet_credentials_mainnet_monero",
+            newest_win.as_str(),
+            "inner_wallet_credentials_mainnet_minotari_db_password",
+            "inner_wallet_credentials_esmeralda_OtherN",
+            "inner_wallet_credentials_mainnet_Older1",
+            "inner_wallet_credentials_mainnet_Newest",
+            "inner_wallet_credentials_mainnet_ootle_keyring_password",
+            "inner_wallet_credentials_mainnet_mcp_token_key",
+        ];
+        let ids = filter_tari_wallet_ids_for_network(entries, APPLICATION_FOLDER_ID, "mainnet");
+        assert_eq!(
+            ids,
+            vec![
+                WalletId::new("Newest".to_string()),
+                WalletId::new("Older1".to_string()),
+            ]
+        );
     }
     #[cfg(feature = "test-mode")]
     #[test]

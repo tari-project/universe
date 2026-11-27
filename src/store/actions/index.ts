@@ -21,6 +21,7 @@ export {
 export {
     fetchApplicationsVersions,
     fetchApplicationsVersionsWithRetry,
+    handleOrphanedWalletRecoveryEvent,
     loadSystemDependencies as loadExternalDependencies,
     setCriticalError,
     setCriticalProblem,
@@ -28,6 +29,7 @@ export {
     setIsAppUpdateAvailable,
     setIsSettingsOpen,
     setIssueReference,
+    setOrphanedWalletRecovery,
     setReleaseNotes,
 } from './appStateStoreActions.ts';
 
