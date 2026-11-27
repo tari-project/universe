@@ -170,7 +170,13 @@ function shouldFetchBridgeItems(
 }
 
 const solveBridgeTransactionDetails = async (walletTxs: DisplayedTransaction[]): Promise<DisplayedTransaction[]> => {
-    const references = await bridgeReferencesOf(walletTxs);
+    const coldWalletAddress = useWalletStore.getState().cold_wallet_address;
+    const bridgePayments = walletTxs.filter((tx) => tx.counterparty === coldWalletAddress);
+    // Hashing waits on a later task, so other wallet events could overtake this one; most events
+    // carry no payment to the bridge, and return without waiting, in order as before.
+    if (!bridgePayments.length) return walletTxs;
+
+    const references = await bridgeReferencesOf(bridgePayments);
     if (shouldFetchBridgeItems(walletTxs, references)) {
         const processedTransactions: DisplayedTransaction[] = [...walletTxs];
         const walletAddress = useWalletStore.getState().tari_address_base58;

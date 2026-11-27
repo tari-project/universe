@@ -109,4 +109,14 @@ describe('bridge details on wallet payments (SEC-20)', () => {
 
         expect(getUserTransactions).not.toHaveBeenCalled();
     });
+
+    it('does not hash or wait for wallet events without a payment to the bridge', async () => {
+        const digest = vi.spyOn(crypto.subtle, 'digest');
+
+        await handleWalletTransactionsFound([{ ...payment(PAYMENT_ID, 5000), counterparty: 'someone-else' }]);
+
+        expect(digest).not.toHaveBeenCalled();
+        expect(getUserTransactions).not.toHaveBeenCalled();
+        digest.mockRestore();
+    });
 });
