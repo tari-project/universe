@@ -232,7 +232,7 @@
     "very_experimental": "Очень экспериментальные",
     "wallet": "Кошелек"
   },
-  "tari-wallet-address": "Адрес кошелька Tari",
+  "tari-wallet-address": "Адрес кошелька XTM",
   "task-tray": {
     "description": "Tari Universe будет свёрнут в системный трей после закрытия",
     "title": "Сворачивать в системный трей при закрытии"
