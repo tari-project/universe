@@ -475,32 +475,174 @@ fn wipe_and_remove_file_unlinks_symlink_without_touching_target() {
 
 // --- Legacy credential purge gate ---
 
-/// The address a wallet that silently replaced the legacy one would record. The gate compares the
-/// recorded strings, so this never has to decode.
 const OTHER_TARI_ADDRESS: &str = "a_different_wallet_address";
 
-#[test]
-fn legacy_config_is_kept_when_the_wallet_in_use_is_a_different_wallet() {
-    let details = sentinel_wallet_details();
+#[tokio::test]
+async fn purge_legacy_credential_files_removes_legacy_files_when_modern_wallet_has_different_address()
+ {
+    use super::configs::config_wallet::ConfigWalletContent;
+    use super::credential_manager::{Credential, LegacyCredential};
+    use super::internal_wallet::{
+        LEGACY_FALLBACK_FILE_NAME, LEGACY_WALLET_CONFIG_FILE_NAME, MONERO_WALLET_ID,
+        purge_legacy_credential_files_in,
+    };
 
-    assert_eq!(
-        super::internal_wallet::legacy_config_keep_reason(
-            OTHER_TARI_ADDRESS,
-            Some(&details.id),
-            Some(&details),
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fallback = dir.path().join(LEGACY_FALLBACK_FILE_NAME);
+    let legacy_config = dir.path().join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    let legacy_cred = LegacyCredential {
+        tari_seed_passphrase: Some(SafePassword::from("legacy-passphrase")),
+        monero_seed: Some([7u8; 32]),
+    };
+    std::fs::write(
+        &fallback,
+        serde_cbor::to_vec(&legacy_cred).expect("serialize legacy credential"),
+    )
+    .expect("write fallback");
+    std::fs::write(
+        &legacy_config,
+        format!(
+            r#"{{"tari_address_base58":"{OTHER_TARI_ADDRESS}","view_key_private_hex":"b","spend_public_key_hex":"c","seed_words_encrypted_base58":"d","config_path":null}}"#
         ),
-        Some("address_mismatch"),
-        "a legacy file describing another wallet is the only copy of that wallet's seed"
+    )
+    .expect("write legacy wallet config");
+
+    // User migrated `migrated_id` and later imported `details` (different address, prepended).
+    let details = sentinel_wallet_details();
+    let migrated_id = WalletId::new("oldwal".to_string());
+    let mut config = ConfigWalletContent::default();
+    config.set_tari_wallets(vec![details.id.clone(), migrated_id.clone()]);
+    config.set_tari_wallet_details(Some(details.clone()));
+
+    purge_legacy_credential_files_in(dir.path(), true, &config, |id| {
+        let allowed = [
+            details.id.as_str().to_string(),
+            migrated_id.as_str().to_string(),
+            MONERO_WALLET_ID.to_string(),
+        ];
+        async move {
+            if allowed.contains(&id.as_str().to_string()) {
+                Ok(Credential {
+                    encrypted_seed: vec![1, 2, 3],
+                })
+            } else {
+                Err(anyhow::anyhow!("unexpected credential lookup"))
+            }
+        }
+    })
+    .await;
+
+    assert!(
+        !legacy_config.exists(),
+        "stale legacy wallet_config.json must be removed even when its address differs"
     );
-    assert_eq!(
-        super::internal_wallet::legacy_config_keep_reason(
-            TEST_TARI_ADDRESS,
-            Some(&details.id),
-            Some(&details),
-        ),
-        None,
-        "the legacy wallet is the wallet in use, so its file may be removed"
+    assert!(
+        !fallback.exists(),
+        "legacy credentials_backup.bin must be removed once modern credentials read cleanly"
     );
+
+    // Even an unreadable legacy `wallet_config.json` or a config without cached details (e.g.
+    // seedless mode with a configured wallet id) is cleaned up once the modern keyring reads pass.
+    std::fs::write(&legacy_config, b"not json").expect("write corrupt legacy wallet config");
+    config.set_tari_wallet_details(None);
+    purge_legacy_credential_files_in(dir.path(), true, &config, |_| async {
+        Ok(Credential {
+            encrypted_seed: vec![1, 2, 3],
+        })
+    })
+    .await;
+    assert!(!legacy_config.exists());
+}
+
+#[tokio::test]
+async fn purge_legacy_credential_files_defers_until_modern_wallet_and_keyring_are_ready() {
+    use super::configs::config_wallet::{ConfigWalletContent, WALLET_VERSION};
+    use super::credential_manager::{Credential, LegacyCredential};
+    use super::internal_wallet::{
+        LEGACY_FALLBACK_FILE_NAME, LEGACY_WALLET_CONFIG_FILE_NAME, MONERO_WALLET_ID,
+        purge_legacy_credential_files_in,
+    };
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fallback = dir.path().join(LEGACY_FALLBACK_FILE_NAME);
+    let legacy_config = dir.path().join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    let write_valid_legacy_files = || {
+        let cred = LegacyCredential {
+            tari_seed_passphrase: None,
+            monero_seed: Some([9u8; 32]),
+        };
+        std::fs::write(&fallback, serde_cbor::to_vec(&cred).expect("cbor")).expect("fallback");
+        std::fs::write(&legacy_config, "{}").expect("legacy config");
+    };
+    write_valid_legacy_files();
+
+    let details = sentinel_wallet_details();
+    let second_id = WalletId::new("second".to_string());
+    let mut ready_config = ConfigWalletContent::default();
+    ready_config.set_tari_wallets(vec![details.id.clone(), second_id.clone()]);
+
+    // 1. Wallet not initialized yet.
+    purge_legacy_credential_files_in(dir.path(), false, &ready_config, |_| async {
+        panic!("keyring must not be queried before wallet init")
+    })
+    .await;
+    assert!(legacy_config.exists() && fallback.exists());
+
+    // 2. Empty modern wallet list (legacy wallet not migrated yet).
+    let empty_config = ConfigWalletContent::default();
+    purge_legacy_credential_files_in(dir.path(), true, &empty_config, |_| async {
+        panic!("keyring must not be queried with no configured Tari wallet")
+    })
+    .await;
+    assert!(legacy_config.exists() && fallback.exists());
+
+    // 3. Outdated schema version.
+    let mut outdated_config = ready_config.clone();
+    outdated_config.set_version_counter(WALLET_VERSION - 1);
+    purge_legacy_credential_files_in(dir.path(), true, &outdated_config, |_| async {
+        panic!("keyring must not be queried on an outdated config schema")
+    })
+    .await;
+    assert!(legacy_config.exists() && fallback.exists());
+
+    // 4. Second configured Tari wallet missing from keyring.
+    purge_legacy_credential_files_in(dir.path(), true, &ready_config, |id| {
+        let second = second_id.clone();
+        async move {
+            if id == second {
+                Err(anyhow::anyhow!("missing entry"))
+            } else {
+                Ok(Credential {
+                    encrypted_seed: vec![1],
+                })
+            }
+        }
+    })
+    .await;
+    assert!(legacy_config.exists() && fallback.exists());
+
+    // 5. Fallback carries a Monero seed, but the Monero keyring entry is unreadable.
+    purge_legacy_credential_files_in(dir.path(), true, &ready_config, |id| async move {
+        if id.as_str() == MONERO_WALLET_ID {
+            Err(anyhow::anyhow!("missing monero entry"))
+        } else {
+            Ok(Credential {
+                encrypted_seed: vec![1],
+            })
+        }
+    })
+    .await;
+    assert!(legacy_config.exists() && fallback.exists());
+
+    // 6. Corrupt fallback file fails closed rather than deleting a potentially unmigrated seed.
+    std::fs::write(&fallback, b"\xff\x00not-cbor").expect("write corrupt fallback");
+    purge_legacy_credential_files_in(dir.path(), true, &ready_config, |_| async {
+        Ok(Credential {
+            encrypted_seed: vec![1],
+        })
+    })
+    .await;
+    assert!(legacy_config.exists() && fallback.exists());
 }
 
 /// `create_pin` tells an already enciphered Monero credential from a plain seed by decrypting it,
@@ -951,5 +1093,130 @@ fn test_previous_wallet_problem_moved_aside_file_reports_the_unreadable_config()
     assert_eq!(
         payload.error_message.as_deref(),
         Some(moved_aside.display().to_string().as_str())
+    );
+}
+
+fn write_stale_legacy_wallet_config(app_config_dir: &std::path::Path) -> std::path::PathBuf {
+    use super::internal_wallet::LEGACY_WALLET_CONFIG_FILE_NAME;
+    use tari_common::configuration::Network;
+
+    let legacy_dir =
+        app_config_dir.join(Network::get_current_or_user_setting_or_default().as_key_str());
+    std::fs::create_dir_all(&legacy_dir).expect("create legacy network dir");
+    let legacy_file = legacy_dir.join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    std::fs::write(
+        &legacy_file,
+        format!(
+            r#"{{"tari_address_base58":"{OTHER_TARI_ADDRESS}","view_key_private_hex":"deadbeef","spend_public_key_hex":"cafebabe","seed_words_encrypted_base58":"1111","config_path":null}}"#
+        ),
+    )
+    .expect("write stale legacy wallet_config.json");
+    legacy_file
+}
+
+/// Regression for #3567: when `config_wallet.json` was moved aside as `.corrupt.*`, a stale
+/// legacy `wallet_config.json` on disk must never be migrated in its place.
+#[tokio::test]
+async fn legacy_wallet_for_migration_refuses_when_modern_config_was_moved_aside_as_corrupt() {
+    use super::internal_wallet::{
+        legacy_wallet_for_migration, modern_wallet_files, move_unreadable_wallet_config_to_recovery,
+    };
+
+    let config_dir = tempfile::tempdir().expect("modern config dir");
+    let app_config_dir = tempfile::tempdir().expect("app config dir");
+    let config_backup = config_dir.path().join("config_wallet.json.backup");
+    let moved_aside = config_dir
+        .path()
+        .join("config_wallet.json.corrupt.1790000000");
+    std::fs::write(&moved_aside, [0u8; 256]).expect("write NUL-filled corrupt config");
+    let legacy_file = write_stale_legacy_wallet_config(app_config_dir.path());
+
+    let err = legacy_wallet_for_migration(&config_backup, app_config_dir.path())
+        .await
+        .expect_err("corrupt modern config must block legacy migration");
+    let payload = critical_problem(err);
+
+    assert_eq!(
+        payload.title.as_deref(),
+        Some("common:wallet-settings-problem")
+    );
+    assert_eq!(
+        payload.description.as_deref(),
+        Some("common:wallet-config-unreadable")
+    );
+    assert_eq!(
+        payload.error_message.as_deref(),
+        Some(moved_aside.display().to_string().as_str())
+    );
+    assert!(
+        legacy_file.exists(),
+        "refusal leaves the legacy file untouched until start fresh or recovery completes"
+    );
+
+    // Start fresh moves `.corrupt.*` into `recovery/`, clearing the modern-config refusal gate.
+    move_unreadable_wallet_config_to_recovery(config_dir.path()).expect("move to recovery");
+    assert_eq!(modern_wallet_files(&config_backup), None);
+}
+
+/// Regression for #3567: when `config_wallet.json` is missing and `.backup` names a modern wallet
+/// (or is unreadable), setup must refuse rather than migrating a stale legacy `wallet_config.json`.
+#[tokio::test]
+async fn legacy_wallet_for_migration_refuses_when_backup_names_a_wallet_or_is_unreadable() {
+    use super::internal_wallet::legacy_wallet_for_migration;
+
+    let config_dir = tempfile::tempdir().expect("modern config dir");
+    let app_config_dir = tempfile::tempdir().expect("app config dir");
+    let config_backup = config_dir.path().join("config_wallet.json.backup");
+    write_stale_legacy_wallet_config(app_config_dir.path());
+
+    for fixture in [
+        r#"{"tari_wallets":[],"tari_wallet_details":{"id":"abc123"}}"#,
+        "not json",
+    ] {
+        std::fs::write(&config_backup, fixture).expect("write backup fixture");
+        let err = legacy_wallet_for_migration(&config_backup, app_config_dir.path())
+            .await
+            .expect_err("modern backup evidence must block legacy migration");
+        let payload = critical_problem(err);
+        assert_eq!(
+            payload.description.as_deref(),
+            Some("common:wallet-config-missing")
+        );
+        assert_eq!(
+            payload.error_message.as_deref(),
+            Some("config_wallet.json is missing, config_wallet.json.backup is unreadable")
+        );
+    }
+}
+
+/// Genuine first-time legacy migration (no `.corrupt.*` and no backup naming a wallet) still
+/// loads `wallet_config.json`, and a fresh install with neither returns `Ok(None)`.
+#[tokio::test]
+async fn legacy_wallet_for_migration_loads_legacy_wallet_when_no_modern_wallet_existed() {
+    use super::internal_wallet::legacy_wallet_for_migration;
+
+    let config_dir = tempfile::tempdir().expect("modern config dir");
+    let app_config_dir = tempfile::tempdir().expect("app config dir");
+    let config_backup = config_dir.path().join("config_wallet.json.backup");
+
+    assert!(
+        legacy_wallet_for_migration(&config_backup, app_config_dir.path())
+            .await
+            .expect("fresh install")
+            .is_none()
+    );
+
+    // An empty backup (e.g. a v1 config before any modern wallet existed) is not modern evidence.
+    std::fs::write(&config_backup, r#"{"tari_wallets":[]}"#).expect("write empty backup");
+    write_stale_legacy_wallet_config(app_config_dir.path());
+
+    let migrated = legacy_wallet_for_migration(&config_backup, app_config_dir.path())
+        .await
+        .expect("genuine first-time legacy migration must be allowed")
+        .expect("legacy wallet config must be loaded");
+    let value = serde_json::to_value(&migrated).expect("serialize loaded legacy config");
+    assert_eq!(
+        value["tari_address_base58"].as_str(),
+        Some(OTHER_TARI_ADDRESS)
     );
 }
