@@ -21,11 +21,14 @@ describe('L2SendModal', () => {
         }) as typeof invoke);
     });
 
-    async function fill(address: string, amount: string) {
+    async function fill(address: string, amount: string, message?: string) {
         render(<L2SendModal show account="component_test" onClose={vi.fn()} />);
-        const [addressInput, amountInput] = await screen.findAllByRole('textbox');
+        const [addressInput, amountInput, messageInput] = await screen.findAllByRole('textbox');
         fireEvent.change(addressInput, { target: { value: address } });
         fireEvent.change(amountInput, { target: { value: amount } });
+        if (message !== undefined) {
+            fireEvent.change(messageInput, { target: { value: message } });
+        }
         await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_validate_address', { address }));
     }
 
@@ -59,5 +62,32 @@ describe('L2SendModal', () => {
 
         expect(await screen.findByTestId('form-root-error')).toHaveTextContent('send.error-denied');
         expect(screen.getByTestId('l2-send-review-button')).toBeInTheDocument();
+    });
+
+    it('renders optional message field, shows it on review, and forwards it to l2_send', async () => {
+        vi.mocked(invoke).mockImplementation((async (cmd: string, args?: { address?: string }) => {
+            if (cmd === 'l2_validate_address' && args?.address !== GOOD) throw 'Invalid L2 address';
+            if (cmd === 'l2_send') return 'tx_memo_123';
+        }) as typeof invoke);
+
+        await fill(GOOD, '2', 'Dinner split');
+
+        await waitFor(() => expect(screen.getByTestId('l2-send-review-button')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('l2-send-review-button'));
+
+        await screen.findByTestId('l2-send-confirm-button');
+        expect(screen.getByText('Dinner split')).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('l2-send-confirm-button'));
+
+        await waitFor(() =>
+            expect(invoke).toHaveBeenCalledWith('l2_send', {
+                account: 'component_test',
+                destination: GOOD,
+                amount: '2',
+                message: 'Dinner split',
+            })
+        );
+        expect(await screen.findByText('tx_memo_123')).toBeInTheDocument();
+        expect(screen.getByText('Dinner split')).toBeInTheDocument();
     });
 });

@@ -189,7 +189,7 @@ describe('L2WalletCard', () => {
         finishSend('tx-1');
 
         fireEvent.click(await screen.findByTestId('l2-send-button'));
-        expect(await screen.findAllByRole('textbox')).toHaveLength(2);
+        expect(await screen.findAllByRole('textbox')).toHaveLength(3);
         expect(screen.queryByTestId('l2-send-status')).not.toBeInTheDocument();
     });
 

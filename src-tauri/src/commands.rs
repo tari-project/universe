@@ -1896,6 +1896,7 @@ pub async fn l2_send(
     account: String,
     destination: String,
     amount: String,
+    message: Option<String>,
 ) -> Result<String, String> {
     info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called");
     gated_l2_send(GatedL2SendRequest {
@@ -1906,6 +1907,7 @@ pub async fn l2_send(
         destination,
         account,
         pay_ref: None,
+        message,
     })
     .await
     .map_err(|e| e.to_string())
@@ -1929,6 +1931,7 @@ pub async fn l2_send_from_tapplet(
         destination,
         account,
         pay_ref: Some(pay_ref),
+        message: None,
     })
     .await
     .map_err(|e| e.to_string())
